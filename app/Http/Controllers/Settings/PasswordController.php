@@ -8,7 +8,6 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -37,14 +36,18 @@ class PasswordController extends Controller
         $validated = $request->validated();
         $user = $request->user();
 
-        // Update password
-        $user->update([
+        // Update password first
+        $user->forceFill([
             'password' => Hash::make($validated['password']),
-        ]);
+        ])->save();
 
-        // Invalidate all other sessions for security
-        // This logs out the user from all other devices
-        $this->invalidateOtherSessions($request);
+        // Refresh the user model so the guard has the updated password hash
+        $user->refresh();
+
+        // Invalidate all other sessions.
+        // After the password update, the new password is in the DB,
+        // so we pass the new password to logoutOtherDevices.
+        $this->invalidateOtherSessions($validated['password']);
 
         Log::info('User password changed - other sessions invalidated', [
             'user_id' => $user->id,
@@ -58,24 +61,23 @@ class PasswordController extends Controller
      *
      * This ensures that if a password was compromised, the attacker
      * will be logged out from all sessions immediately.
+     *
+     * Order matters: logoutOtherDevices MUST be called before session()->regenerate().
+     * If regenerate() runs first, the session ID changes and logoutOtherDevices
+     * cannot identify the current session to preserve it — potentially logging
+     * the user out of ALL sessions including the current one.
+     *
+     * Requires `auth.session` (AuthenticateSession) middleware on the route.
+     *
+     * @see https://laravel.com/docs/13.x/authentication#invalidating-sessions-on-other-devices
      */
-    private function invalidateOtherSessions(Request $request): void
+    private function invalidateOtherSessions(string $password): void
     {
-        // Get current session ID
-        $currentSessionId = $request->session()->getId();
-
-        // Delete all other sessions for this user from the database
-        // This works because we're using database session driver
-        DB::table('sessions')
-            ->where('user_id', $request->user()->id)
-            ->where('id', '!=', $currentSessionId)
-            ->delete();
+        // logoutOtherDevices verifies the given password against the current DB hash,
+        // then rehashes it to trigger AuthenticateSession's invalidation of other sessions.
+        Auth::logoutOtherDevices($password);
 
         // Regenerate the current session token for added security
-        $request->session()->regenerate();
-
-        // Re-authenticate with the new password hash
-        // This ensures the remember token is refreshed
-        Auth::logoutOtherDevices($request->input('password'));
+        request()->session()->regenerate();
     }
 }

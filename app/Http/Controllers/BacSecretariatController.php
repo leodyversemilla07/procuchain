@@ -117,7 +117,7 @@ class BacSecretariatController extends BaseDashboardController
                     }
                 } catch (\Exception $e) {
                     Log::warning("Failed to get priority action for procurement {$procurement['id']}", [
-                        'error' => $e->getMessage(),
+                        'error' => 'An error occurred processing the BAC secretariat request.',
                     ]);
 
                     continue;
@@ -128,7 +128,7 @@ class BacSecretariatController extends BaseDashboardController
 
         } catch (\Exception $e) {
             Log::error('Failed to retrieve priority actions', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the BAC secretariat request.',
             ]);
 
             return [];

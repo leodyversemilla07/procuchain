@@ -71,6 +71,7 @@ class DocumentDownloadController extends BaseController
                     ->header('Accept-Ranges', 'bytes')
                     ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
             } catch (Exception $blockchainError) {
+                report($blockchainError);
                 Log::error('Failed to retrieve file from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
@@ -94,9 +95,10 @@ class DocumentDownloadController extends BaseController
                     ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
             }
         } catch (Exception $e) {
+            report($e);
             Log::error('Secure file download failed', [
                 'file_key' => $fileKey,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred downloading the document.',
                 'user_id' => Auth::id() ?? 'guest',
             ]);
 
@@ -132,9 +134,10 @@ class DocumentDownloadController extends BaseController
 
             return null;
         } catch (Exception $e) {
+            report($e);
             Log::error('File access validation failed', [
                 'file_key' => $fileKey,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred downloading the document.',
             ]);
 
             $documentView = DocumentView::where('file_key', $fileKey)->first();
@@ -178,10 +181,11 @@ class DocumentDownloadController extends BaseController
                 'viewed_at' => now(),
             ]);
         } catch (Exception $e) {
+            report($e);
             Log::error('Failed to record document view', [
                 'file_key' => $fileKey,
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred downloading the document.',
             ]);
         }
     }

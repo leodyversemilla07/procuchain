@@ -18,18 +18,8 @@ describe('User Model - Configuration', function () {
             'email',
             'email_verified_at',
             'blockchain_address',
-            'password',
-            'account_locked',
-            'locked_at',
-            'lock_expires_at',
-            'failed_login_attempts',
-            'last_failed_login_at',
-            'locked_reason',
             'email_notifications_enabled',
             'notification_preferences',
-            'two_factor_secret',
-            'two_factor_recovery_codes',
-            'two_factor_confirmed_at',
         ];
 
         expect($user->getFillable())->toBe($expectedFillable);

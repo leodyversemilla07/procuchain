@@ -35,7 +35,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch login logs', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return Inertia::render('admin/login-logs', [
@@ -63,7 +63,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch recent logins', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return response()->json([
@@ -88,7 +88,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch login statistics', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return response()->json([
@@ -113,7 +113,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch suspicious activities', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return response()->json([
@@ -158,7 +158,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to block IP address', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return back()->with('error', 'Failed to block IP address.');
@@ -190,7 +190,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to unblock IP address', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return back()->with('error', 'Failed to unblock IP address.');
@@ -212,7 +212,7 @@ class LoginLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch blocked IPs', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
             return response()->json([

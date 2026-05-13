@@ -189,8 +189,9 @@ class SharedLedgerController extends Controller
                 'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
             ]);
         } catch (Exception $e) {
+            report($e);
             Log::error('SharedLedger: Failed to fetch ledger entries', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading the shared ledger.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -260,8 +261,9 @@ class SharedLedgerController extends Controller
 
             return $this->fetchEntriesFromClient($client);
         } catch (Exception $e) {
+            report($e);
             Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading the shared ledger.',
             ]);
 
             return $this->fetchFromDefaultClient();
@@ -301,8 +303,9 @@ class SharedLedgerController extends Controller
                     }
                 }
             } catch (Exception $e) {
+                report($e);
                 Log::warning("SharedLedger: Failed to query node {$nodeConfig['id']}", [
-                    'error' => $e->getMessage(),
+                    'error' => 'An error occurred loading the shared ledger.',
                 ]);
             }
         }
@@ -340,16 +343,18 @@ class SharedLedgerController extends Controller
                     try {
                         $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
                     } catch (Exception $e) {
+                        report($e);
                         Log::warning('SharedLedger: Skipping invalid stream item', [
                             'stream' => $stream,
-                            'error' => $e->getMessage(),
+                            'error' => 'An error occurred loading the shared ledger.',
                         ]);
                     }
                 }
             } catch (Exception $e) {
+                report($e);
                 Log::warning('SharedLedger: Failed to read stream', [
                     'stream' => $stream,
-                    'error' => $e->getMessage(),
+                    'error' => 'An error occurred loading the shared ledger.',
                 ]);
             }
         }
@@ -382,16 +387,18 @@ class SharedLedgerController extends Controller
                     try {
                         $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
                     } catch (Exception $e) {
+                        report($e);
                         Log::warning('SharedLedger: Skipping invalid stream item', [
                             'stream' => $stream,
-                            'error' => $e->getMessage(),
+                            'error' => 'An error occurred loading the shared ledger.',
                         ]);
                     }
                 }
             } catch (Exception $e) {
+                report($e);
                 Log::warning('SharedLedger: Failed to read stream from client', [
                     'stream' => $stream,
-                    'error' => $e->getMessage(),
+                    'error' => 'An error occurred loading the shared ledger.',
                 ]);
             }
         }

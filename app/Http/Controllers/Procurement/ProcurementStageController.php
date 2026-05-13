@@ -84,7 +84,7 @@ class ProcurementStageController extends BaseController
             Log::error('Failed to upload single document', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the procurement stage.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -120,7 +120,7 @@ class ProcurementStageController extends BaseController
             Log::error('Error marking stage as complete', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the procurement stage.',
             ]);
 
             return response()->json(['error' => 'Failed to mark stage as complete. Please try again.'], 500);
@@ -147,10 +147,10 @@ class ProcurementStageController extends BaseController
             Log::error('Error skipping stage', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the procurement stage.',
             ]);
 
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'An error occurred processing the procurement stage.'], 500);
         }
     }
 
@@ -278,7 +278,7 @@ class ProcurementStageController extends BaseController
             Log::error('Error repeating stage', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the procurement stage.',
             ]);
 
             return response()->json(['error' => 'Failed to repeat stage. Please try again.'], 500);
@@ -312,7 +312,7 @@ class ProcurementStageController extends BaseController
         } catch (\Exception $e) {
             Log::error('Failed to update delivery details', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the procurement stage.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -346,7 +346,7 @@ class ProcurementStageController extends BaseController
         } catch (\Exception $e) {
             Log::error("Failed to dispatch {$decisionType} decision job", [
                 'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred processing the procurement stage.',
             ]);
 
             return response()->json(['error' => 'Failed to publish decision to blockchain. Please try again.'], 500);

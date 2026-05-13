@@ -496,7 +496,7 @@ describe('DocumentView Model - Query Scenarios', function () {
         ]);
 
         DocumentView::factory()->count(2)->create([
-            'pr_number' => 'PR-OTHER-001',
+            'pr_number' => 'PR-2025-400-0001',
         ]);
 
         $views = DocumentView::where('pr_number', $pr_number)->get();

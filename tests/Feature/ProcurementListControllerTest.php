@@ -53,8 +53,8 @@ describe('ProcurementListController', function () {
                 $user->assignRole($case['role']);
 
                 bindProcurementControllerMocks(
-                    repositoryFixture: procurementFixture('TEST-001', (string) $user->id),
-                    detailFixture: detailPayload('TEST-001'),
+                    repositoryFixture: procurementFixture('PR-2025-001-0001', (string) $user->id),
+                    detailFixture: detailPayload('PR-2025-001-0001'),
                 );
 
                 actingAs($user);
@@ -76,12 +76,12 @@ describe('ProcurementListController', function () {
 
             bindProcurementControllerMocks(
                 listRepositoryFixtures: [
-                    'PR-OWNED' => procurementFixture('PR-OWNED', (string) $secretariat->id),
-                    'PR-OTHER' => procurementFixture('PR-OTHER', '999'),
+                    'PR-2025-300-0001' => procurementFixture('PR-2025-300-0001', (string) $secretariat->id),
+                    'PR-2025-400-0001' => procurementFixture('PR-2025-400-0001', '999'),
                 ],
                 listStatusFixtures: [
-                    listStatusFixture('PR-OWNED', 'secretariat-address', 'Owned Procurement'),
-                    listStatusFixture('PR-OTHER', 'different-address', 'Other Procurement'),
+                    listStatusFixture('PR-2025-300-0001', 'secretariat-address', 'Owned Procurement'),
+                    listStatusFixture('PR-2025-400-0001', 'different-address', 'Other Procurement'),
                 ],
             );
 
@@ -91,7 +91,7 @@ describe('ProcurementListController', function () {
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->has('procurements', 1)
-                    ->where('procurements.0.id', 'PR-OWNED')
+                    ->where('procurements.0.id', 'PR-2025-300-0001')
                     ->where('procurements.0.title', 'Owned Procurement')
                 );
         });
@@ -104,12 +104,12 @@ describe('ProcurementListController', function () {
 
             bindProcurementControllerMocks(
                 listRepositoryFixtures: [
-                    'PR-OWNED' => procurementFixture('PR-OWNED', '1'),
-                    'PR-OTHER' => procurementFixture('PR-OTHER', '2'),
+                    'PR-2025-300-0001' => procurementFixture('PR-2025-300-0001', '1'),
+                    'PR-2025-400-0001' => procurementFixture('PR-2025-400-0001', '2'),
                 ],
                 listStatusFixtures: [
-                    listStatusFixture('PR-OWNED', 'secretariat-address', 'Owned Procurement'),
-                    listStatusFixture('PR-OTHER', 'different-address', 'Other Procurement'),
+                    listStatusFixture('PR-2025-300-0001', 'secretariat-address', 'Owned Procurement'),
+                    listStatusFixture('PR-2025-400-0001', 'different-address', 'Other Procurement'),
                 ],
             );
 
@@ -126,10 +126,10 @@ describe('ProcurementListController', function () {
     describe('showProcurement', function () {
         it('shows procurement details for supported roles', function () {
             $cases = [
-                ['role' => 'bac_secretariat', 'route' => 'bac-secretariat.procurements.show', 'pr' => 'TEST-001'],
-                ['role' => 'bac_chairman', 'route' => 'bac-chairman.procurements.show', 'pr' => 'TEST-002'],
-                ['role' => 'hope', 'route' => 'hope.procurements.show', 'pr' => 'TEST-003'],
-                ['role' => 'admin', 'route' => 'admin.procurements.show', 'pr' => 'TEST-004'],
+                ['role' => 'bac_secretariat', 'route' => 'bac-secretariat.procurements.show', 'pr' => 'PR-2025-001-0001'],
+                ['role' => 'bac_chairman', 'route' => 'bac-chairman.procurements.show', 'pr' => 'PR-2025-002-0001'],
+                ['role' => 'hope', 'route' => 'hope.procurements.show', 'pr' => 'PR-2025-003-0001'],
+                ['role' => 'admin', 'route' => 'admin.procurements.show', 'pr' => 'PR-2025-004-0001'],
             ];
 
             foreach ($cases as $case) {
@@ -163,16 +163,16 @@ describe('ProcurementListController', function () {
             $secretariat->assignRole('bac_secretariat');
 
             bindProcurementControllerMocks(
-                repositoryFixture: procurementFixture('PR-LOCKED', '999'),
+                repositoryFixture: procurementFixture('PR-2025-100-0001', '999'),
                 statusItems: collect([
                     detailStatusItem('different-address'),
                 ]),
-                detailFixture: detailPayload('PR-LOCKED'),
+                detailFixture: detailPayload('PR-2025-100-0001'),
             );
 
             actingAs($secretariat);
 
-            get(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-LOCKED']))
+            get(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-2025-100-0001']))
                 ->assertForbidden();
         });
 
@@ -183,16 +183,16 @@ describe('ProcurementListController', function () {
             $secretariat->assignRole('bac_secretariat');
 
             bindProcurementControllerMocks(
-                repositoryFixture: procurementFixture('PR-OPEN', '999'),
+                repositoryFixture: procurementFixture('PR-2025-200-0001', '999'),
                 statusItems: collect([
                     detailStatusItem('secretariat-address'),
                 ]),
-                detailFixture: detailPayload('PR-OPEN'),
+                detailFixture: detailPayload('PR-2025-200-0001'),
             );
 
             actingAs($secretariat);
 
-            get(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-OPEN']))
+            get(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-2025-200-0001']))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/show-procurement')
@@ -206,7 +206,7 @@ describe('ProcurementListController', function () {
             $secretariat->assignRole('bac_secretariat');
 
             bindProcurementControllerMocks(
-                repositoryFixture: procurementFixture('PR-LOCKED', '999'),
+                repositoryFixture: procurementFixture('PR-2025-100-0001', '999'),
                 statusItems: collect([
                     detailStatusItem('different-address'),
                 ]),
@@ -214,7 +214,7 @@ describe('ProcurementListController', function () {
 
             actingAs($secretariat);
 
-            getJson(route('procurements.blockchain-status', ['pr_number' => 'PR-LOCKED']))
+            getJson(route('procurements.blockchain-status', ['pr_number' => 'PR-2025-100-0001']))
                 ->assertForbidden();
         });
     });
@@ -224,7 +224,7 @@ describe('ProcurementListController', function () {
             get(route('bac-secretariat.procurements.index'))
                 ->assertRedirect(route('login'));
 
-            get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
+            get(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-2025-001-0001']))
                 ->assertRedirect(route('login'));
         });
 

@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\NotificationPreferenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,9 +19,9 @@ class NotificationPreferenceController extends Controller
     /**
      * Show the notification preferences page.
      */
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         return Inertia::render('settings/notification-preferences', [
             ...$this->preferenceService->getPreferencesForFrontend($user),
@@ -44,7 +42,7 @@ class NotificationPreferenceController extends Controller
             'notification_preferences.*.push' => ['boolean'],
         ]);
 
-        $user = Auth::user();
+        $user = $request->user();
 
         try {
             $user->update([
@@ -58,21 +56,14 @@ class NotificationPreferenceController extends Controller
                 'email' => $user->email,
             ]);
 
-            return redirect()
-                ->route('settings.notification-preferences.edit')
-                ->with('flash', [
-                    'message' => 'Notification preferences updated successfully!',
-                    'type' => 'success',
-                ]);
+            return redirect()->back()->with('success', 'Notification preferences updated successfully!');
         } catch (\Exception $e) {
             Log::error('Failed to update notification preferences', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred updating notification preferences.',
             ]);
 
-            throw ValidationException::withMessages([
-                'notification_preferences' => 'Failed to update notification preferences. Please try again.',
-            ]);
+            return redirect()->back()->with('error', 'Failed to update notification preferences. Please try again.');
         }
     }
 }

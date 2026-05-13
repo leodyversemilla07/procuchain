@@ -9,6 +9,10 @@ use App\Events\AccountUnlocked;
  *
  * Handles locking/unlocking accounts, tracking failed login attempts,
  * and calculating remaining lock time.
+ *
+ * SECURITY: Lockout fields (account_locked, locked_at, etc.) are intentionally
+ * excluded from User::$fillable to prevent mass assignment attacks. All writes
+ * in this trait use explicit property assignment instead of mass assignment.
  */
 trait HasAccountLock
 {
@@ -36,12 +40,11 @@ trait HasAccountLock
      */
     public function lockAccount(string $reason = 'Multiple failed login attempts', int $durationMinutes = 30): void
     {
-        $this->update([
-            'account_locked' => true,
-            'locked_at' => now(),
-            'lock_expires_at' => now()->addMinutes($durationMinutes),
-            'locked_reason' => $reason,
-        ]);
+        $this->account_locked = true;
+        $this->locked_at = now();
+        $this->lock_expires_at = now()->addMinutes($durationMinutes);
+        $this->locked_reason = $reason;
+        $this->save();
     }
 
     /**
@@ -56,14 +59,13 @@ trait HasAccountLock
             return;
         }
 
-        $this->update([
-            'account_locked' => false,
-            'locked_at' => null,
-            'lock_expires_at' => null,
-            'failed_login_attempts' => 0,
-            'last_failed_login_at' => null,
-            'locked_reason' => null,
-        ]);
+        $this->account_locked = false;
+        $this->locked_at = null;
+        $this->lock_expires_at = null;
+        $this->failed_login_attempts = 0;
+        $this->last_failed_login_at = null;
+        $this->locked_reason = null;
+        $this->save();
 
         AccountUnlocked::dispatch(
             $this,
@@ -78,10 +80,9 @@ trait HasAccountLock
      */
     public function incrementFailedLoginAttempts(): void
     {
-        $this->update([
-            'failed_login_attempts' => $this->failed_login_attempts + 1,
-            'last_failed_login_at' => now(),
-        ]);
+        $this->failed_login_attempts = $this->failed_login_attempts + 1;
+        $this->last_failed_login_at = now();
+        $this->save();
     }
 
     /**
@@ -89,10 +90,9 @@ trait HasAccountLock
      */
     public function resetFailedLoginAttempts(): void
     {
-        $this->update([
-            'failed_login_attempts' => 0,
-            'last_failed_login_at' => null,
-        ]);
+        $this->failed_login_attempts = 0;
+        $this->last_failed_login_at = null;
+        $this->save();
     }
 
     /**

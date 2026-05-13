@@ -57,7 +57,7 @@ class ProcurementArchiveController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to archive procurement', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the archive operation.',
             ]);
 
             return back()->with('error', 'Failed to archive procurement. Please try again.');
@@ -81,7 +81,7 @@ class ProcurementArchiveController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to restore procurement', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the archive operation.',
             ]);
 
             return back()->with('error', 'Failed to restore procurement. Please try again.');

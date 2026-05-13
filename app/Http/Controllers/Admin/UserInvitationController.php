@@ -97,12 +97,12 @@ class UserInvitationController extends Controller
             return redirect()->back()->with('success', "Invitation sent successfully to {$invitation->email}.");
         } catch (\Exception $e) {
             Log::error('Failed to send user invitation', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the user invitation.',
                 'invited_by' => Auth::id(),
                 'email' => $validated['email'],
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to send invitation. Please try again.']);
+            return redirect()->back()->with('error', 'Failed to send invitation. Please try again.');
         }
     }
 
@@ -114,7 +114,7 @@ class UserInvitationController extends Controller
         $this->authorize('create', User::class);
 
         if (! $invitation->isPending()) {
-            return redirect()->back()->withErrors(['error' => 'This invitation cannot be resent. It may have expired, been accepted, or revoked.']);
+            return redirect()->back()->with('error', 'This invitation cannot be resent. It may have expired, been accepted, or revoked.');
         }
 
         try {
@@ -138,11 +138,11 @@ class UserInvitationController extends Controller
             return redirect()->back()->with('success', "Invitation resent to {$invitation->email}.");
         } catch (\Exception $e) {
             Log::error('Failed to resend user invitation', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the user invitation.',
                 'invitation_id' => $invitation->id,
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to resend invitation. Please try again.']);
+            return redirect()->back()->with('error', 'Failed to resend invitation. Please try again.');
         }
     }
 
@@ -154,11 +154,11 @@ class UserInvitationController extends Controller
         $this->authorize('create', User::class);
 
         if ($invitation->isAccepted()) {
-            return redirect()->back()->withErrors(['error' => 'Cannot revoke an invitation that has already been accepted.']);
+            return redirect()->back()->with('error', 'Cannot revoke an invitation that has already been accepted.');
         }
 
         if ($invitation->isRevoked()) {
-            return redirect()->back()->withErrors(['error' => 'This invitation has already been revoked.']);
+            return redirect()->back()->with('error', 'This invitation has already been revoked.');
         }
 
         try {
@@ -173,11 +173,11 @@ class UserInvitationController extends Controller
             return redirect()->back()->with('success', 'Invitation revoked successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to revoke user invitation', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the user invitation.',
                 'invitation_id' => $invitation->id,
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to revoke invitation. Please try again.']);
+            return redirect()->back()->with('error', 'Failed to revoke invitation. Please try again.');
         }
     }
 }

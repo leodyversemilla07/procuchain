@@ -62,7 +62,7 @@ class ProcurementActionsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to fetch actions',
-                'message' => $e->getMessage(),
+                'message' => 'An error occurred processing the procurement action.',
             ], 500);
         }
     }

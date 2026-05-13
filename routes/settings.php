@@ -20,7 +20,7 @@ Route::middleware('auth')->group(function () {
     // Password settings
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('settings.password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])
-        ->middleware('throttle:6,1')
+        ->middleware(['throttle:6,1', 'auth.session'])
         ->name('settings.password.update');
 
     // Push notification settings

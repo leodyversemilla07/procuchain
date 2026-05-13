@@ -117,17 +117,15 @@ test('admin can unlock user account via API', function () {
         'lock_expires_at' => now()->addMinutes(30),
         'failed_login_attempts' => 3,
         'locked_reason' => 'Multiple failed login attempts',
-    ]);    // Login as admin
+    ]); // Login as admin
     $this->actingAs($admin);
 
-    // Unlock user account
-    $response = $this->post("/admin/accounts/{$lockedUser->id}/unlock");
+    // Unlock user account (controller returns redirect per AGENTS.md)
+    $response = $this->from('/admin/locked-accounts')
+        ->post("/admin/accounts/{$lockedUser->id}/unlock");
 
-    $response->assertStatus(200);
-    $response->assertJson([
-        'success' => true,
-        'message' => 'Account unlocked successfully',
-    ]);
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     // Check that user is unlocked
     $lockedUser->refresh();
@@ -139,9 +137,9 @@ test('admin can unlock user account via API', function () {
     // Check that unlock email was sent
     Mail::assertSent(AccountUnlockedMail::class, function ($mail) use ($lockedUser) {
         return $mail->hasTo($lockedUser->email) &&
-               $mail->user->id === $lockedUser->id &&
-               $mail->unlockReason === 'Manually unlocked by admin' &&
-               $mail->wasAutoUnlocked === false;
+        $mail->user->id === $lockedUser->id &&
+        $mail->unlockReason === 'Manually unlocked by admin' &&
+        $mail->wasAutoUnlocked === false;
     });
 });
 
@@ -159,20 +157,18 @@ test('admin can lock user account via API', function () {
         'email' => 'user@example.com',
         'name' => 'Regular User',
         'account_locked' => false,
-    ]);    // Login as admin
+    ]); // Login as admin
     $this->actingAs($admin);
 
-    // Lock user account
-    $response = $this->post("/admin/accounts/{$user->id}/lock", [
-        'reason' => 'Administrative action',
-        'duration' => 60, // 1 hour
-    ]);
+    // Lock user account (controller returns redirect per AGENTS.md)
+    $response = $this->from('/admin/locked-accounts')
+        ->post("/admin/accounts/{$user->id}/lock", [
+            'reason' => 'Administrative action',
+            'duration' => 60, // 1 hour
+        ]);
 
-    $response->assertStatus(200);
-    $response->assertJson([
-        'success' => true,
-        'message' => 'Account locked successfully',
-    ]);
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     // Check that user is locked
     $user->refresh();
@@ -184,8 +180,8 @@ test('admin can lock user account via API', function () {
     // Check that lock email was sent
     Mail::assertSent(AccountLockedMail::class, function ($mail) use ($user) {
         return $mail->hasTo($user->email) &&
-               $mail->user->id === $user->id &&
-               $mail->lockReason === 'Administrative action';
+        $mail->user->id === $user->id &&
+        $mail->lockReason === 'Administrative action';
     });
 });
 

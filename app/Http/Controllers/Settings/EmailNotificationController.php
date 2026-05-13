@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateEmailNotificationsRequest;
 use App\Services\NotificationPreferenceService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,9 +17,9 @@ class EmailNotificationController extends Controller
     /**
      * Show the email notification settings page.
      */
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         return Inertia::render('settings/email-notification', $this->preferenceService->getPreferencesForFrontend($user));
     }
@@ -30,7 +30,7 @@ class EmailNotificationController extends Controller
     public function update(UpdateEmailNotificationsRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $user = Auth::user();
+        $user = $request->user();
 
         $user->update([
             'email_notifications_enabled' => $validated['email_notifications_enabled'],
@@ -40,11 +40,6 @@ class EmailNotificationController extends Controller
             $this->preferenceService->updatePreferences($user, $validated['notification_preferences']);
         }
 
-        return redirect()
-            ->route('settings.email-notification.edit')
-            ->with('flash', [
-                'message' => 'Email notification settings updated successfully!',
-                'type' => 'success',
-            ]);
+        return redirect()->back()->with('success', 'Email notification settings updated successfully!');
     }
 }

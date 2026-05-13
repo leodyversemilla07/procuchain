@@ -33,7 +33,7 @@ class AcceptInvitationController extends Controller
                     ? 'This invitation has already been accepted.'
                     : 'This invitation is no longer valid.');
 
-            return redirect()->route('login')->withErrors(['error' => $reason]);
+            return redirect()->route('login')->with('error', $reason);
         }
 
         return Inertia::render('auth/accept-invitation', [
@@ -65,7 +65,7 @@ class AcceptInvitationController extends Controller
                     ? 'This invitation has already been accepted.'
                     : 'This invitation is no longer valid.');
 
-            return redirect()->route('login')->withErrors(['error' => $reason]);
+            return redirect()->route('login')->with('error', $reason);
         }
 
         $validated = $request->validated();
@@ -76,13 +76,18 @@ class AcceptInvitationController extends Controller
             $blockchainAddress = $multichain->getnewaddress();
 
             // Create user
-            $user = User::create([
+            // Password is set explicitly (not via $fillable) to prevent mass assignment attacks
+            // Use User::make() to avoid NOT NULL constraint violation on password column
+            $user = User::make([
                 'name' => $validated['name'],
                 'email' => $invitation->email,
-                'password' => Hash::make($validated['password']),
                 'blockchain_address' => $blockchainAddress,
                 'email_verified_at' => now(), // Auto-verify email since invitation was sent to it
             ]);
+
+            // Password is set explicitly (not via $fillable) to prevent mass assignment attacks
+            $user->password = Hash::make($validated['password']);
+            $user->save();
 
             // Assign role
             $user->assignRole($invitation->role);
@@ -109,12 +114,12 @@ class AcceptInvitationController extends Controller
             DB::rollBack();
 
             Log::error('Failed to accept invitation', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred accepting the invitation.',
                 'invitation_id' => $invitation->id,
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to create account. Please try again or contact support.']);
+            return redirect()->back()->with('error', 'Failed to create account. Please try again or contact support.');
         }
     }
 }

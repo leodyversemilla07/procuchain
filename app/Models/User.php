@@ -60,6 +60,12 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
+     * SECURITY: Sensitive fields (password, 2FA secrets, account lockout fields)
+     * are intentionally excluded from $fillable. These must be set explicitly
+     * via `$model->field = value` to prevent mass assignment attacks.
+     *
+     * @see https://laravel.com/docs/13.x/eloquent#mass-assignment
+     *
      * @var list<string>
      */
     protected $fillable = [
@@ -67,18 +73,8 @@ class User extends Authenticatable
         'email',
         'email_verified_at',
         'blockchain_address',
-        'password',
-        'account_locked',
-        'locked_at',
-        'lock_expires_at',
-        'failed_login_attempts',
-        'last_failed_login_at',
-        'locked_reason',
         'email_notifications_enabled',
         'notification_preferences',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
-        'two_factor_confirmed_at',
     ];
 
     /**

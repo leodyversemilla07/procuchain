@@ -3,21 +3,33 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class PushNotificationController extends Controller
 {
     /**
+     * List the current user's push subscriptions (JSON API).
+     */
+    public function index(Request $request)
+    {
+        $subscriptions = $request->user()->pushSubscriptions;
+
+        return response()->json([
+            'count' => $subscriptions->count(),
+            'subscriptions' => $subscriptions,
+        ]);
+    }
+
+    /**
      * Show the push notification settings page.
      */
-    public function edit()
+    public function edit(Request $request)
     {
         return Inertia::render('settings/push-notification', [
             'vapidPublicKey' => config('webpush.vapid.public_key'),
+            'subscriptions' => $request->user()->pushSubscriptions,
         ]);
     }
 
@@ -32,16 +44,7 @@ class PushNotificationController extends Controller
             'keys.auth' => 'required|string',
         ]);
 
-        $user = Auth::user();
-
-        if (! $user) {
-            return redirect()
-                ->route('settings.push-notification.edit')
-                ->with('flash', [
-                    'message' => 'User not authenticated',
-                    'type' => 'error',
-                ]);
-        }
+        $user = $request->user();
 
         // Check if subscription already exists
         $existingSubscription = $user->pushSubscriptions()
@@ -49,12 +52,7 @@ class PushNotificationController extends Controller
             ->first();
 
         if ($existingSubscription) {
-            return redirect()
-                ->route('settings.push-notification.edit')
-                ->with('flash', [
-                    'message' => 'You are already subscribed to push notifications',
-                    'type' => 'info',
-                ]);
+            return redirect()->back()->with('success', 'You are already subscribed to push notifications.');
         }
 
         // Create new subscription
@@ -65,12 +63,7 @@ class PushNotificationController extends Controller
             'content_encoding' => $request->input('contentEncoding', 'aesgcm'),
         ]);
 
-        return redirect()
-            ->route('settings.push-notification.edit')
-            ->with('flash', [
-                'message' => 'Successfully subscribed to push notifications!',
-                'type' => 'success',
-            ]);
+        return redirect()->back()->with('success', 'Successfully subscribed to push notifications!');
     }
 
     /**
@@ -82,56 +75,16 @@ class PushNotificationController extends Controller
             'endpoint' => 'required|string',
         ]);
 
-        $user = Auth::user();
-
-        if (! $user) {
-            return redirect()
-                ->route('settings.push-notification.edit')
-                ->with('flash', [
-                    'message' => 'User not authenticated',
-                    'type' => 'error',
-                ]);
-        }
+        $user = $request->user();
 
         $deleted = $user->pushSubscriptions()
             ->where('endpoint', $request->endpoint)
             ->delete();
 
         if ($deleted) {
-            return redirect()
-                ->route('settings.push-notification.edit')
-                ->with('flash', [
-                    'message' => 'Successfully unsubscribed from push notifications',
-                    'type' => 'success',
-                ]);
+            return redirect()->back()->with('success', 'Successfully unsubscribed from push notifications.');
         }
 
-        return redirect()
-            ->route('settings.push-notification.edit')
-            ->with('flash', [
-                'message' => 'Push subscription not found',
-                'type' => 'error',
-            ]);
-    }
-
-    /**
-     * Get user's push subscriptions
-     *
-     * @return JsonResponse
-     */
-    public function index()
-    {
-        $user = Auth::user();
-
-        if (! $user) {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
-
-        $subscriptions = $user->pushSubscriptions;
-
-        return response()->json([
-            'subscriptions' => $subscriptions,
-            'count' => $subscriptions->count(),
-        ]);
+        return redirect()->back()->with('error', 'Push subscription not found.');
     }
 }

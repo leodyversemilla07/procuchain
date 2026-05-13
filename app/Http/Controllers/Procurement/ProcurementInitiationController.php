@@ -194,7 +194,7 @@ class ProcurementInitiationController extends BaseController
             \Log::error('Failed to upload single document', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred initiating the procurement.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -257,11 +257,11 @@ class ProcurementInitiationController extends BaseController
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred initiating the procurement.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json(['error' => 'Failed to mark stage as complete: '.$e->getMessage()], 500);
+            return response()->json(['error' => 'Failed to mark stage as complete. Please try again.'], 500);
         }
     }
 }

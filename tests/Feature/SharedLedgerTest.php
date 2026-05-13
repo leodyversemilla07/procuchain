@@ -26,8 +26,9 @@ it('returns the shared ledger page for authenticated users', function () {
         ->andReturn([]);
     $this->app->instance(Manager::class, $managerMock);
 
+    // Use node=default to avoid new Client() calls that bypass the container
     $this->actingAs($user)
-        ->get('/admin/shared-ledger')
+        ->get('/admin/shared-ledger?node=default')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')
@@ -98,7 +99,7 @@ it('filters ledger entries by pr_number', function () {
     $this->app->instance(Manager::class, $managerMock);
 
     $this->actingAs($user)
-        ->get('/admin/shared-ledger?pr_number=PR-2025-001')
+        ->get('/admin/shared-ledger?pr_number=PR-2025-001&node=default')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')
@@ -117,8 +118,9 @@ it('handles blockchain unavailability gracefully', function () {
         ->andThrow(new Exception('Connection refused'));
     $this->app->instance(Manager::class, $managerMock);
 
+    // Use node=default to avoid new Client() calls that bypass the container
     $this->actingAs($user)
-        ->get('/admin/shared-ledger')
+        ->get('/admin/shared-ledger?node=default')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')

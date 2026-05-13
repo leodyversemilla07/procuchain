@@ -90,7 +90,7 @@ test('user cannot mark another users notification as read', function () {
         ->post("/notifications/{$notification->id}/mark-as-read");
 
     $response->assertRedirect('/notifications')
-        ->assertSessionHasErrors(['error' => 'Notification not found']);
+        ->assertSessionHas('error', 'Notification not found');
 
     expect($notification->fresh()->read_at)->toBeNull();
 });
