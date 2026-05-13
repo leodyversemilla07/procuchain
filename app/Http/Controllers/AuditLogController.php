@@ -45,7 +45,7 @@ class AuditLogController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch audit logs', [
                 'admin_id' => Auth::id(),
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading audit log data.',
             ]);
 
             return Inertia::render('admin/audit-log', [

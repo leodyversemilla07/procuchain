@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'role:bac_secretariat', 'throttle:blockchain_writes'])
     ->prefix('bac-secretariat')
     ->name('bac-secretariat.')
+    ->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?', 'stage' => '[a-z_\-]+'])
     ->group(function () {
         Route::post('/initiate-procurement', [ProcurementInitiationController::class, 'initiate'])
             ->name('procurement.initiate');
@@ -61,6 +62,7 @@ Route::middleware(['auth', 'role:bac_secretariat', 'throttle:blockchain_writes']
 Route::middleware(['auth', 'role:bac_secretariat'])
     ->prefix('bac-secretariat')
     ->name('bac-secretariat.')
+    ->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?', 'stage' => '[a-z_\-]+'])
     ->group(function () {
         Route::get('/dashboard', [BacSecretariatController::class, 'dashboard'])->name('dashboard');
 

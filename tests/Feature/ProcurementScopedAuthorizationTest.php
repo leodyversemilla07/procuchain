@@ -35,45 +35,45 @@ beforeEach(function () {
 
 describe('procurement-scoped authorization', function () {
     it('forbids inaccessible procurement initiation pages for bac secretariat', function () {
-        denyProcurementAccess('PR-LOCKED');
+        denyProcurementAccess('PR-2025-999-0001');
 
         $this->actingAs($this->secretariat)
-            ->get(route('bac-secretariat.procurement.initiation.show', ['pr_number' => 'PR-LOCKED']))
+            ->get(route('bac-secretariat.procurement.initiation.show', ['pr_number' => 'PR-2025-999-0001']))
             ->assertForbidden();
     });
 
     it('forbids inaccessible stage pages for bac secretariat', function () {
-        denyProcurementAccess('PR-LOCKED');
+        denyProcurementAccess('PR-2025-999-0001');
 
         $this->actingAs($this->secretariat)
             ->get(route('bac-secretariat.procurement.pre-procurement.show', [
-                'pr_number' => 'PR-LOCKED',
+                'pr_number' => 'PR-2025-999-0001',
                 'stage' => 'pre_procurement_conference',
             ]))
             ->assertForbidden();
     });
 
     it('forbids inaccessible verification pages for bac secretariat', function () {
-        denyProcurementAccess('PR-LOCKED');
+        denyProcurementAccess('PR-2025-999-0001');
 
         $this->actingAs($this->secretariat)
-            ->get(route('procurement.verification', ['pr_number' => 'PR-LOCKED']))
+            ->get(route('procurement.verification', ['pr_number' => 'PR-2025-999-0001']))
             ->assertForbidden();
     });
 
     it('forbids inaccessible procurement correction pages for bac secretariat', function () {
-        denyProcurementAccess('PR-LOCKED');
+        denyProcurementAccess('PR-2025-999-0001');
 
         $this->actingAs($this->secretariat)
-            ->get(route('procurements.corrections.show', ['pr_number' => 'PR-LOCKED']))
+            ->get(route('procurements.corrections.show', ['pr_number' => 'PR-2025-999-0001']))
             ->assertForbidden();
     });
 
     it('forbids archiving inaccessible procurements for bac secretariat', function () {
-        denyProcurementAccess('PR-LOCKED');
+        denyProcurementAccess('PR-2025-999-0001');
 
         $this->actingAs($this->secretariat)
-            ->post(route('procurement.archive', ['pr_number' => 'PR-LOCKED']))
+            ->post(route('procurement.archive', ['pr_number' => 'PR-2025-999-0001']))
             ->assertForbidden();
     });
 });

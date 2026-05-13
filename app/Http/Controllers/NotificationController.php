@@ -18,7 +18,7 @@ class NotificationController extends Controller
         $user = Auth::user();
 
         if (! $user) {
-            return redirect()->back()->withErrors(['error' => 'User not authenticated']);
+            return redirect()->back()->with('error', 'User not authenticated');
         }
 
         $notification = $user->notifications()
@@ -31,7 +31,7 @@ class NotificationController extends Controller
             return redirect()->back()->with('success', 'Notification marked as read');
         }
 
-        return redirect()->back()->withErrors(['error' => 'Notification not found']);
+        return redirect()->back()->with('error', 'Notification not found');
     }
 
     /**
@@ -42,7 +42,7 @@ class NotificationController extends Controller
         $user = Auth::user();
 
         if (! $user) {
-            return redirect()->back()->withErrors(['error' => 'User not authenticated']);
+            return redirect()->back()->with('error', 'User not authenticated');
         }
 
         $user->unreadNotifications()->update(['read_at' => now()]);

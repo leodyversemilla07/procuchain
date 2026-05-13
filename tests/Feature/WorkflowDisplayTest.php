@@ -162,7 +162,7 @@ describe('Mode-Specific Workflow Validation', function () {
     it('returns workflow info even when the procurement mode is not yet available', function () {
         actingAs($this->bacSecretariat);
 
-        $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION, 'PR-NEW-001'));
+        $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION, 'PR-2025-500-0001'));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page

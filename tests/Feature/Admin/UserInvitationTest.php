@@ -118,7 +118,7 @@ test('cannot resend expired invitation', function () {
 
     $response = $this->actingAs($this->admin)->post("/admin/invitations/{$invitation->id}/resend");
 
-    $response->assertSessionHasErrors();
+    $response->assertSessionHas('error');
 });
 
 test('admin can revoke pending invitation', function () {
@@ -145,7 +145,7 @@ test('cannot revoke accepted invitation', function () {
 
     $response = $this->actingAs($this->admin)->delete("/admin/invitations/{$invitation->id}");
 
-    $response->assertSessionHasErrors();
+    $response->assertSessionHas('error');
 });
 
 test('non-admin cannot access invitations', function () {
@@ -186,7 +186,7 @@ test('cannot view expired invitation', function () {
     $response = $this->get($url);
 
     $response->assertRedirect('/login');
-    $response->assertSessionHasErrors();
+    $response->assertSessionHas('error');
 });
 
 test('can accept valid invitation and create account', function () {
@@ -258,7 +258,7 @@ test('cannot accept expired invitation', function () {
     ]);
 
     $response->assertRedirect('/login');
-    $response->assertSessionHasErrors();
+    $response->assertSessionHas('error');
 });
 
 test('invitation statistics are correct', function () {

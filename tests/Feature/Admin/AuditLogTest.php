@@ -127,11 +127,12 @@ it('locking an account writes an account.locked audit log entry', function () {
     $this->app->instance(AccountLockoutService::class, $lockoutMock);
 
     $this->actingAs($this->admin)
-        ->postJson("/admin/accounts/{$target->id}/lock", [
+        ->from('/admin/locked-accounts')
+        ->post("/admin/accounts/{$target->id}/lock", [
             'reason' => 'Suspicious activity',
             'duration_hours' => 24,
         ])
-        ->assertOk();
+        ->assertRedirect();
 
     expect(AuditLog::where('action', 'account.locked')
         ->where('subject_id', (string) $target->id)
@@ -147,8 +148,9 @@ it('unlocking an account writes an account.unlocked audit log entry', function (
     $this->app->instance(AccountLockoutService::class, $lockoutMock);
 
     $this->actingAs($this->admin)
-        ->postJson("/admin/accounts/{$target->id}/unlock", ['reason' => 'Resolved'])
-        ->assertSuccessful();
+        ->from('/admin/locked-accounts')
+        ->post("/admin/accounts/{$target->id}/unlock", ['reason' => 'Resolved'])
+        ->assertRedirect();
 
     expect(AuditLog::where('action', 'account.unlocked')
         ->where('subject_id', (string) $target->id)
@@ -164,8 +166,9 @@ it('resetting login attempts writes an account.attempts_reset audit log entry', 
     $this->app->instance(AccountLockoutService::class, $lockoutMock);
 
     $this->actingAs($this->admin)
+        ->from('/admin/locked-accounts')
         ->post("/admin/accounts/{$target->id}/reset-attempts")
-        ->assertSuccessful();
+        ->assertRedirect();
 
     expect(AuditLog::where('action', 'account.attempts_reset')
         ->where('subject_id', (string) $target->id)

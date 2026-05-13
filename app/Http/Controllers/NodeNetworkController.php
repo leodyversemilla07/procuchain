@@ -148,6 +148,7 @@ class NodeNetworkController extends Controller
                 'peerInfo' => $mappedPeers,
             ];
         } catch (Exception $e) {
+            report($e);
             Log::warning("NodeNetwork: Failed to query node {$nodeId} at {$host}:{$port}: ".$e->getMessage());
 
             return [

@@ -47,8 +47,9 @@ class BlockchainExplorerController extends Controller
                             'size' => $block['size'] ?? 0,
                         ];
                     } catch (Exception $e) {
+                        report($e);
                         Log::warning('Failed to fetch block at height '.($currentHeight - $i), [
-                            'error' => $e->getMessage(),
+                            'error' => 'An error occurred loading blockchain data.',
                         ]);
                     }
                 }
@@ -138,19 +139,18 @@ class BlockchainExplorerController extends Controller
                 'health' => $health,
             ]);
         } catch (Exception $e) {
-            Log::error('Blockchain explorer error', [
-                'error' => $e->getMessage(),
-            ]);
+            report($e);
 
             // Still get health status even if blockchain connection fails
             try {
                 $health = $this->healthService->getHealthStatus();
             } catch (Exception $healthError) {
+                report($healthError);
                 $health = null;
             }
 
             return Inertia::render('admin/blockchain-explorer', [
-                'error' => 'Failed to connect to blockchain node: '.$e->getMessage(),
+                'error' => 'An unexpected error occurred while loading the blockchain explorer. Please try again.',
                 'overview' => null,
                 'latestBlocks' => [],
                 'streams' => [],
@@ -180,9 +180,11 @@ class BlockchainExplorerController extends Controller
                 'block' => $block,
             ];
         } catch (Exception $e) {
+            report($e);
+
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'Failed to retrieve block details. Please try again.',
             ];
         }
     }
@@ -206,9 +208,11 @@ class BlockchainExplorerController extends Controller
                 'transaction' => $transaction,
             ];
         } catch (Exception $e) {
+            report($e);
+
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading blockchain data.',
             ];
         }
     }
@@ -229,9 +233,11 @@ class BlockchainExplorerController extends Controller
                 'items' => $items,
             ];
         } catch (Exception $e) {
+            report($e);
+
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading blockchain data.',
             ];
         }
     }
@@ -250,9 +256,11 @@ class BlockchainExplorerController extends Controller
                 'address' => array_merge($addressInfo, $addressDetails[0] ?? []),
             ];
         } catch (Exception $e) {
+            report($e);
+
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading blockchain data.',
             ];
         }
     }
@@ -277,6 +285,7 @@ class BlockchainExplorerController extends Controller
                     $block = $this->multichain->getblock((int) $query, 1);
                     $results['block'] = $block;
                 } catch (Exception $e) {
+                    report($e);
                     // Not a valid block height
                 }
             }
@@ -286,6 +295,7 @@ class BlockchainExplorerController extends Controller
                 $block = $this->multichain->getblock($query, 1);
                 $results['block'] = $block;
             } catch (Exception $e) {
+                report($e);
                 // Not a valid block hash
             }
 
@@ -294,6 +304,7 @@ class BlockchainExplorerController extends Controller
                 $tx = $this->multichain->getrawtransaction($query, true);
                 $results['transaction'] = $tx;
             } catch (Exception $e) {
+                report($e);
                 // Not a valid transaction
             }
 
@@ -304,6 +315,7 @@ class BlockchainExplorerController extends Controller
                     $results['address'] = $address;
                 }
             } catch (Exception $e) {
+                report($e);
                 // Not a valid address
             }
 
@@ -312,9 +324,11 @@ class BlockchainExplorerController extends Controller
                 'results' => $results,
             ];
         } catch (Exception $e) {
+            report($e);
+
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading blockchain data.',
             ];
         }
     }

@@ -40,15 +40,15 @@ class ProcurementCorrectionController extends Controller
 
             return back()->with('success', 'Procurement correction submitted successfully. The blockchain write will complete in the background.');
         } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', 'An error occurred with the procurement correction.');
         } catch (\Exception $e) {
             Log::error('Failed to submit procurement correction', [
                 'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the procurement correction.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Failed to submit correction: '.$e->getMessage());
+            return back()->with('error', 'Failed to submit correction. Please try again.');
         }
     }
 
@@ -70,12 +70,12 @@ class ProcurementCorrectionController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to retrieve procurement correction history from blockchain', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the procurement correction.',
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve correction history: '.$e->getMessage(),
+                'message' => 'Failed to retrieve correction history. Please try again.',
                 'corrections' => [],
             ], 500);
         }
@@ -102,7 +102,7 @@ class ProcurementCorrectionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to check procurement corrections: '.$e->getMessage(),
+                'message' => 'Failed to check procurement corrections. Please try again.',
             ], 500);
         }
     }
@@ -121,7 +121,7 @@ class ProcurementCorrectionController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to fetch procurement correction data from blockchain', [
                 'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the procurement correction.',
             ]);
 
             abort(500, 'Failed to load procurement data from blockchain');

@@ -122,8 +122,9 @@ class ProcurementListController extends BaseController
                 'is_archived' => $showArchived,
             ]);
         } catch (Exception $e) {
+            report($e);
             Log::error('Failed to retrieve procurements list', [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading procurement data.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -202,9 +203,10 @@ class ProcurementListController extends BaseController
                 'now' => now()->toIso8601String(),
             ]);
         } catch (Exception $e) {
+            report($e);
             Log::error('Failed to retrieve procurement details', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading procurement data.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -292,9 +294,10 @@ class ProcurementListController extends BaseController
                 'documents' => array_values($documents),
             ]);
         } catch (Exception $e) {
+            report($e);
             Log::error('Failed to fetch blockchain status', [
                 'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading procurement data.',
                 'trace' => $e->getTraceAsString(),
             ]);
 

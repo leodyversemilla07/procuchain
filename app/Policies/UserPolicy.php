@@ -47,12 +47,30 @@ class UserPolicy
 
     /**
      * Determine whether the user can delete the model.
+     *
+     * Prevents deleting the last admin to avoid system lockout.
      */
     public function delete(User $user, User $model): bool
     {
         // Users cannot delete themselves
-        // Only admins can delete users
-        return $user->id !== $model->id && $user->hasPermissionTo('delete users');
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        // Must have permission
+        if (! $user->hasPermissionTo('delete users')) {
+            return false;
+        }
+
+        // Prevent deleting the last admin — would lock the system
+        if ($model->hasRole('admin')) {
+            $adminCount = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->count();
+            if ($adminCount <= 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -73,11 +91,29 @@ class UserPolicy
 
     /**
      * Determine whether the user can permanently delete the model.
+     *
+     * Prevents deleting the last admin to avoid system lockout.
      */
     public function forceDelete(User $user, User $model): bool
     {
-        // Only admins can permanently delete users, but not themselves
-        return $user->id !== $model->id && $user->hasPermissionTo('delete users');
+        // Users cannot permanently delete themselves
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        if (! $user->hasPermissionTo('delete users')) {
+            return false;
+        }
+
+        // Prevent deleting the last admin
+        if ($model->hasRole('admin')) {
+            $adminCount = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->count();
+            if ($adminCount <= 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

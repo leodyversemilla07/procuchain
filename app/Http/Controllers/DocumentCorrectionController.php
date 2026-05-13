@@ -79,11 +79,11 @@ class DocumentCorrectionController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to submit document correction', [
                 'txid' => $txid,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the document correction.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Failed to submit correction: '.$e->getMessage());
+            return back()->with('error', 'Failed to submit correction. Please try again.');
         }
     }
 
@@ -175,12 +175,12 @@ class DocumentCorrectionController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to retrieve correction history from blockchain', [
                 'pr_number' => $procurement,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred with the document correction.',
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve correction history: '.$e->getMessage(),
+                'message' => 'Failed to retrieve correction history. Please try again.',
                 'corrections' => [],
             ], 500);
         }
@@ -210,7 +210,7 @@ class DocumentCorrectionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to check correction: '.$e->getMessage(),
+                'message' => 'Failed to check correction. Please try again.',
             ], 500);
         }
     }

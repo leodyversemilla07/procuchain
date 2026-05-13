@@ -88,8 +88,9 @@ abstract class BaseDashboardController extends Controller
             return Inertia::render($this->getViewName(), $dashboardData);
 
         } catch (Exception $e) {
+            report($e);
             Log::error("Failed to retrieve {$this->getRoleLabel()} Dashboard data", [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading dashboard data.',
                 'trace' => $e->getTraceAsString(),
             ]);
 
@@ -151,8 +152,9 @@ abstract class BaseDashboardController extends Controller
 
             return $procurementsByKey;
         } catch (Exception $e) {
+            report($e);
             Log::warning("Failed to refresh {$roleLabel} dashboard procurements, attempting snapshot fallback", [
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading dashboard data.',
                 'cache_key' => $cacheKey,
                 'snapshot_key' => $snapshotKey,
             ]);
@@ -182,7 +184,7 @@ abstract class BaseDashboardController extends Controller
         } catch (\Throwable $e) {
             Log::warning("Failed to read {$cacheType} dashboard cache for {$roleLabel}", [
                 'cache_key' => $cacheKey,
-                'error' => $e->getMessage(),
+                'error' => 'An error occurred loading dashboard data.',
             ]);
 
             Cache::store('database')->forget($cacheKey);
@@ -300,6 +302,7 @@ abstract class BaseDashboardController extends Controller
 
             return $this->dashboardService->calculateStats($procurementsByKey, $totalDocuments);
         } catch (Exception $e) {
+            report($e);
             Log::error("Failed to calculate {$this->getRoleLabel()} Dashboard stats", ['error' => $e->getMessage()]);
             Cache::forget(DashboardCacheKeys::totalDocuments($this->getRoleName(), $this->getDashboardCacheUserId($this->getRoleName())));
 

@@ -428,7 +428,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
     ]);
     $this->app->instance(EventPublisher::class, $eventPublisher);
 
-    $prNumber = 'PR-2025-TEST-0001';
+    $prNumber = 'PR-2025-100-0001';
 
     // Mock document repository to return uploaded documents
     $documentRepo = Mockery::mock(DocumentRepository::class)->makePartial();
@@ -489,7 +489,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
  * Test: Cannot mark stage as complete without all required documents
  */
 test('cannot mark procurement initiation stage as complete without required documents', function () {
-    $prNumber = 'PR-2025-TEST-0002';
+    $prNumber = 'PR-2025-200-0001';
 
     // Mock document repository to return no documents
     $documentRepo = Mockery::mock(DocumentRepository::class)->makePartial();
