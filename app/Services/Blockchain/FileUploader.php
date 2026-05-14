@@ -397,20 +397,22 @@ class FileUploader
         );
     }
 
-    /**
-     * Get phase name based on stage ID
-     *
-     * Stage 1-3: Pre-Procurement (Planning & Preparation)
-     * Stage 4-9: Procurement (Bidding & Evaluation)
-     * Stage 10-15: Post-Procurement (Award & Implementation)
-     */
-    private function getPhaseFromStage(int $stageId): string
-    {
-        return match (true) {
-            $stageId >= 1 && $stageId <= 3 => 'pre-procurement',
-            $stageId >= 4 && $stageId <= 9 => 'procurement',
-            $stageId >= 10 && $stageId <= 15 => 'post-procurement',
-            default => 'unknown-phase',
-        };
+/**
+ * Get phase name based on stage ID
+ *
+ * Stage 1-3: Pre-Procurement (Planning & Preparation)
+ * Stage 4-11: Procurement (Bidding & Evaluation) — includes BAC Resolution (11)
+ * Stage 12-17: Post-Procurement (Award & Implementation) — includes Completion (16) and Completed (17)
+ *
+ * Aligned with StageEnums::getPhase() — BAC Resolution is procurement phase per RA 9184.
+ */
+private function getPhaseFromStage(int $stageId): string
+{
+    return match (true) {
+        $stageId >= 1 && $stageId <= 3 => 'pre-procurement',
+        $stageId >= 4 && $stageId <= 11 => 'procurement',
+        $stageId >= 12 && $stageId <= 17 => 'post-procurement',
+        default => 'unknown-phase',
+    };
     }
 }

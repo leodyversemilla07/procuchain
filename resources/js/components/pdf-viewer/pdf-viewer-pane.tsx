@@ -1,14 +1,16 @@
 import { Button } from '@/components/ui/button';
 import { Download, Eye, FileText, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
 // Configure pdf.js worker — serve from public/ as a static asset.
 // Vite's `new URL(..., import.meta.url)` pattern doesn't emit the worker file
 // when it's inside a bundled dependency (Vite #7025, #20631).
 // Per react-pdf v10 docs "Option 2: Copy worker to public directory":
-//   Copy pdfjs-dist/build/pdf.worker.min.mjs → public/pdf.worker.min.mjs
-//   Then set workerSrc to the static path.
+// Copy pdfjs-dist/build/pdf.worker.min.mjs → public/pdf.worker.min.mjs
+// Then set workerSrc to the static path.
 //
 // CSP: worker-src 'self' blob: — 'self' covers /pdf.worker.min.mjs.
 // The predeploy hook must also copy this file (see .platform/hooks/predeploy/).
@@ -46,6 +48,14 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
   const [scale, setScale] = useState<number>(1.2);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // Pass file as an object with withCredentials so pdfjs includes session cookies
+  // when fetching the PDF from the authenticated /files/ endpoint.
+  // Must be memoized per react-pdf docs to avoid unnecessary reloads.
+  const fileConfig = useMemo(() => ({
+    url: pdfUrl,
+    withCredentials: true as const,
+  }), [pdfUrl]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -142,21 +152,16 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
           </div>
         ) : (
           <div className="flex justify-center py-4">
-            <Document
-              file={pdfUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={onDocumentLoadError}
-              loading={
-                <div className="flex items-center justify-center py-20">
-                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                </div>
-              }
-              options={{
-                // Pass cookies for authenticated PDF fetching
-                httpHeaders: {}, // react-pdf uses same-origin fetch by default
-                withCredentials: true,
-              }}
-            >
+ <Document
+ file={fileConfig}
+ onLoadSuccess={onDocumentLoadSuccess}
+ onLoadError={onDocumentLoadError}
+ loading={
+ <div className="flex items-center justify-center py-20">
+ <Loader2 className="text-primary h-8 w-8 animate-spin" />
+ </div>
+ }
+ >
               <Page
                 pageNumber={pageNumber}
                 scale={scale}
