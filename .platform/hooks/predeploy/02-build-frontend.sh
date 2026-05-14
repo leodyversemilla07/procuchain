@@ -29,4 +29,11 @@ npm install --production=false 2>&1 | tail -3
 echo "PREDEPLOY: Running npm run build..."
 npm run build 2>&1 | tail -5
 
+# Copy pdf.js worker to public/ (react-pdf "Option 2: Copy worker to public directory")
+# This must happen AFTER npm install (so node_modules exists) but can be before or after build.
+echo "PREDEPLOY: Copying pdf.js worker to public/..."
+mkdir -p "$STAGING_DIR/public"
+cp "$STAGING_DIR/node_modules/pdfjs-dist/build/pdf.worker.min.mjs" "$STAGING_DIR/public/pdf.worker.min.mjs"
+echo "PREDEPLOY: pdf.js worker copied ($(wc -c < "$STAGING_DIR/public/pdf.worker.min.mjs") bytes)"
+
 echo "PREDEPLOY: Frontend assets built successfully"

@@ -3,12 +3,16 @@ import { Download, Eye, FileText, Loader2, ChevronLeft, ChevronRight, ZoomIn, Zo
 import { useCallback, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
-// Configure pdf.js worker — use the copy bundled in react-pdf's package.
-// This avoids network requests for the worker (CSP-compliant, works offline).
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'react-pdf/pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+// Configure pdf.js worker — serve from public/ as a static asset.
+// Vite's `new URL(..., import.meta.url)` pattern doesn't emit the worker file
+// when it's inside a bundled dependency (Vite #7025, #20631).
+// Per react-pdf v10 docs "Option 2: Copy worker to public directory":
+//   Copy pdfjs-dist/build/pdf.worker.min.mjs → public/pdf.worker.min.mjs
+//   Then set workerSrc to the static path.
+//
+// CSP: worker-src 'self' blob: — 'self' covers /pdf.worker.min.mjs.
+// The predeploy hook must also copy this file (see .platform/hooks/predeploy/).
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface Props {
   pdfUrl: string;
