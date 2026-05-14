@@ -21,6 +21,8 @@ class LoginLogController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('view-login-logs');
+
         try {
             $recentLogins = $this->loginAnalytics->getRecentLogins(50);
             $statistics = $this->loginAnalytics->getLoginStatistics();
@@ -51,6 +53,8 @@ class LoginLogController extends Controller
      */
     public function recent(Request $request)
     {
+        $this->authorize('view-login-logs');
+
         try {
             $limit = $request->get('limit', 50);
             $recentLogins = $this->loginAnalytics->getRecentLogins($limit);
@@ -77,6 +81,7 @@ class LoginLogController extends Controller
      */
     public function statistics(Request $request)
     {
+        $this->authorize('view-login-logs');
         try {
             $statistics = $this->loginAnalytics->getLoginStatistics();
 
@@ -102,6 +107,7 @@ class LoginLogController extends Controller
      */
     public function suspicious(Request $request)
     {
+        $this->authorize('view-login-logs');
         try {
             $activities = $this->loginAnalytics->getSuspiciousActivities();
 
@@ -127,6 +133,7 @@ class LoginLogController extends Controller
      */
     public function blockIp(Request $request)
     {
+        $this->authorize('manage-blocked-ips');
         try {
             $validated = $request->validate([
                 'ip_address' => 'required|ip',
@@ -170,6 +177,7 @@ class LoginLogController extends Controller
      */
     public function unblockIp(Request $request)
     {
+        $this->authorize('manage-blocked-ips');
         try {
             $validated = $request->validate([
                 'ip_address' => 'required|ip',
@@ -202,6 +210,7 @@ class LoginLogController extends Controller
      */
     public function blockedIps(Request $request)
     {
+        $this->authorize('manage-blocked-ips');
         try {
             $blockedIps = $this->blockedIpService->getBlockedIps();
 

@@ -24,6 +24,8 @@ class BlockchainExplorerController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('view-blockchain-explorer');
+
         try {
             // Cache blockchain info for 30 seconds to prevent repeated RPC calls
             $blockchainInfo = Cache::remember('blockchain:info', 60, fn () => $this->multichain->getblockchaininfo());
@@ -166,6 +168,8 @@ class BlockchainExplorerController extends Controller
      */
     public function getBlock(Request $request): array
     {
+        $this->authorize('view-blockchain-explorer');
+
         try {
             $hashOrHeight = $request->input('block');
 
@@ -194,6 +198,8 @@ class BlockchainExplorerController extends Controller
      */
     public function getTransaction(Request $request): array
     {
+        $this->authorize('view-blockchain-transactions');
+
         try {
             $txid = $request->input('txid');
 
@@ -222,6 +228,8 @@ class BlockchainExplorerController extends Controller
      */
     public function getStreamItems(Request $request, string $streamName): array
     {
+        $this->authorize('view-blockchain-explorer');
+
         try {
             $count = $request->input('count', 100);
             $start = $request->input('start', -100);
@@ -247,6 +255,8 @@ class BlockchainExplorerController extends Controller
      */
     public function getAddress(Request $request, string $address): array
     {
+        $this->authorize('view-blockchain-explorer');
+
         try {
             $addressInfo = $this->multichain->validateAddress($address);
             $addressDetails = $this->multichain->listaddresses($address, true);
@@ -270,6 +280,8 @@ class BlockchainExplorerController extends Controller
      */
     public function search(Request $request): array
     {
+        $this->authorize('view-blockchain-explorer');
+
         try {
             $query = $request->input('query');
 
@@ -338,6 +350,8 @@ class BlockchainExplorerController extends Controller
      */
     public function resetCircuitBreaker(): RedirectResponse
     {
+        $this->authorize('reset-blockchain-circuit-breaker');
+
         $this->healthService->resetCircuitBreaker();
 
         return redirect()->back()->with('success', 'Circuit breaker has been reset successfully.');

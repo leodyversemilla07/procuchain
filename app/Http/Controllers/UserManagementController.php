@@ -26,7 +26,7 @@ class UserManagementController extends Controller
      */
     public function index(Request $request): Response
     {
-        $this->authorize('viewAny', User::class);
+        $this->authorize('view-any-user');
 
         // SECURITY: Only select non-sensitive columns - never expose tokens, secrets, or recovery codes
         $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_confirmed_at')
@@ -71,6 +71,8 @@ class UserManagementController extends Controller
      */
     public function store(StoreUserRequest $request, Manager $multichain)
     {
+        $this->authorize('create-user');
+
         $validated = $request->validated();
 
         try {
@@ -132,7 +134,7 @@ class UserManagementController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        $this->authorize('update', $user);
+        $this->authorize('update-user', $user);
 
         $validated = $request->validated();
 
@@ -188,7 +190,7 @@ class UserManagementController extends Controller
      */
     public function destroy(Request $request, User $user)
     {
-        $this->authorize('delete', $user);
+        $this->authorize('delete-user', $user);
 
         try {
             // Policy already prevents deleting own account, but keeping check for explicit error message
@@ -228,7 +230,7 @@ class UserManagementController extends Controller
      */
     public function bulkDelete(BulkDeleteUsersRequest $request)
     {
-        $this->authorize('deleteAny', User::class);
+        $this->authorize('delete-any-user');
 
         $validated = $request->validated();
 
@@ -310,7 +312,7 @@ class UserManagementController extends Controller
      */
     public function resetPassword(ResetUserPasswordRequest $request, User $user)
     {
-        $this->authorize('resetPassword', $user);
+        $this->authorize('reset-user-password', $user);
 
         $validated = $request->validated();
 

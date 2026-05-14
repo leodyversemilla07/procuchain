@@ -69,6 +69,8 @@ class SharedLedgerController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('view-shared-ledger');
+
         try {
             $selectedNode = $request->string('node', 'all')->toString();
 

@@ -41,6 +41,8 @@ class BacSecretariatController extends BaseDashboardController
 
     public function dashboard()
     {
+        $this->authorize('view-bac-secretariat-dashboard');
+
         return $this->index();
     }
 

@@ -12,8 +12,16 @@ use App\Contracts\NotificationServiceInterface;
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\Contracts\StatusPublisherInterface;
+use App\Policies\AuditLogPolicy;
+use App\Policies\BlockchainPolicy;
+use App\Policies\DashboardPolicy;
 use App\Policies\DocumentPolicy;
+use App\Policies\LoginLogPolicy;
+use App\Policies\NotificationPolicy;
 use App\Policies\ProcurementPolicy;
+use App\Policies\ReportPolicy;
+use App\Policies\SettingsPolicy;
+use App\Policies\UserPolicy;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
@@ -71,7 +79,34 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        // Register procurement policy abilities as named Gates (no Eloquent model binding).
+        // Implicitly grant "admin" role all permissions (Spatie best practice).
+        // Must return null (not false) to avoid interfering with normal policy checks.
+        // However, certain self-targeting abilities must still go through policy
+        // checks (e.g., admin cannot delete themselves, reset own password, etc.).
+        Gate::before(function ($user, $ability) {
+            if (! $user->hasRole('admin')) {
+                return null;
+            }
+
+            // These abilities need to respect policy-level self-action guards
+            // (both the Laravel policy method names and our named gate equivalents)
+            $selfRestrictedAbilities = [
+                'delete', 'delete-user',
+                'forceDelete', 'force-delete-user',
+                'resetPassword', 'reset-user-password',
+                'assignRoles', 'assign-user-roles',
+            ];
+
+            if (in_array($ability, $selfRestrictedAbilities)) {
+                return null; // Let the policy decide (policy handles self-checks)
+            }
+
+            return true;
+        });
+
+        // ──────────────────────────────────────────────────────────────
+        // Procurement Gates (delegated to ProcurementPolicy)
+        // ──────────────────────────────────────────────────────────────
         Gate::define('view-procurement', [ProcurementPolicy::class, 'view']);
         Gate::define('create-procurement', [ProcurementPolicy::class, 'create']);
         Gate::define('initiate-procurement', [ProcurementPolicy::class, 'create']);
@@ -81,11 +116,78 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('approve-procurement', [ProcurementPolicy::class, 'approve']);
         Gate::define('publish-procurement', [ProcurementPolicy::class, 'publish']);
 
-        // Register document policy abilities as named Gates.
+        // ──────────────────────────────────────────────────────────────
+        // Document Gates (delegated to DocumentPolicy)
+        // ──────────────────────────────────────────────────────────────
         Gate::define('view-document', [DocumentPolicy::class, 'view']);
         Gate::define('download-document', [DocumentPolicy::class, 'download']);
         Gate::define('upload-document', [DocumentPolicy::class, 'upload']);
         Gate::define('correct-document', [DocumentPolicy::class, 'correct']);
+
+        // ──────────────────────────────────────────────────────────────
+        // User Gates (delegated to UserPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-any-user', [UserPolicy::class, 'viewAny']);
+        Gate::define('view-user', [UserPolicy::class, 'view']);
+        Gate::define('create-user', [UserPolicy::class, 'create']);
+        Gate::define('update-user', [UserPolicy::class, 'update']);
+        Gate::define('delete-user', [UserPolicy::class, 'delete']);
+        Gate::define('delete-any-user', [UserPolicy::class, 'deleteAny']);
+        Gate::define('restore-user', [UserPolicy::class, 'restore']);
+        Gate::define('force-delete-user', [UserPolicy::class, 'forceDelete']);
+        Gate::define('reset-user-password', [UserPolicy::class, 'resetPassword']);
+        Gate::define('assign-user-roles', [UserPolicy::class, 'assignRoles']);
+        Gate::define('unlock-user-account', [UserPolicy::class, 'unlockAccount']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Dashboard Gates (delegated to DashboardPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-admin-dashboard', [DashboardPolicy::class, 'viewAdmin']);
+        Gate::define('view-bac-secretariat-dashboard', [DashboardPolicy::class, 'viewBacSecretariat']);
+        Gate::define('view-bac-chairman-dashboard', [DashboardPolicy::class, 'viewBacChairman']);
+        Gate::define('view-hope-dashboard', [DashboardPolicy::class, 'viewHope']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Blockchain Gates (delegated to BlockchainPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-blockchain-explorer', [BlockchainPolicy::class, 'viewExplorer']);
+        Gate::define('view-blockchain-transactions', [BlockchainPolicy::class, 'viewTransactions']);
+        Gate::define('view-blockchain-network', [BlockchainPolicy::class, 'viewNetwork']);
+        Gate::define('reset-blockchain-circuit-breaker', [BlockchainPolicy::class, 'resetCircuitBreaker']);
+        Gate::define('view-shared-ledger', [BlockchainPolicy::class, 'viewSharedLedger']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Audit Log Gates (delegated to AuditLogPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-audit-log', [AuditLogPolicy::class, 'viewAny']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Login Log Gates (delegated to LoginLogPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-login-logs', [LoginLogPolicy::class, 'viewAny']);
+        Gate::define('manage-blocked-ips', [LoginLogPolicy::class, 'manageBlockedIps']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Notification Gates (delegated to NotificationPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-notifications', [NotificationPolicy::class, 'view']);
+        Gate::define('manage-notifications', [NotificationPolicy::class, 'manage']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Report Gates (delegated to ReportPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-reports', [ReportPolicy::class, 'view']);
+        Gate::define('generate-reports', [ReportPolicy::class, 'generate']);
+        Gate::define('export-reports', [ReportPolicy::class, 'export']);
+
+        // ──────────────────────────────────────────────────────────────
+        // Settings Gates (delegated to SettingsPolicy)
+        // ──────────────────────────────────────────────────────────────
+        Gate::define('view-settings', [SettingsPolicy::class, 'view']);
+        Gate::define('manage-settings', [SettingsPolicy::class, 'manage']);
+        Gate::define('manage-workflow-config', [SettingsPolicy::class, 'manageWorkflowConfig']);
+        Gate::define('manage-stage-document-config', [SettingsPolicy::class, 'manageStageDocumentConfig']);
+        Gate::define('manage-user-invitations', [SettingsPolicy::class, 'manageUserInvitations']);
 
         // Register custom rate limiter for blockchain writes (Issue #20: use config)
         RateLimiter::for('blockchain_writes', function ($request) {

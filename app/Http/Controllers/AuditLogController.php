@@ -12,6 +12,8 @@ class AuditLogController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorize('view-audit-log');
+
         try {
             $query = AuditLog::with('actor:id,name,email')
                 ->latest('created_at');

@@ -14,6 +14,8 @@ class NotificationController extends Controller
      */
     public function markAsRead(Request $request, $id)
     {
+        $this->authorize('view-notifications');
+
         $user = $request->user();
 
         if (! $user) {
@@ -38,6 +40,8 @@ class NotificationController extends Controller
      */
     public function markAllAsRead(Request $request)
     {
+        $this->authorize('view-notifications');
+
         $user = $request->user();
 
         if (! $user) {
@@ -54,6 +58,8 @@ class NotificationController extends Controller
      */
     public function page(Request $request)
     {
+        $this->authorize('view-notifications');
+
         $user = $request->user();
 
         if ($user && $user->role === UserRoleEnums::BAC_SECRETARIAT->value) {

@@ -22,6 +22,7 @@ class AccountLockoutController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('unlock-user-account');
         try {
             $lockedUsers = $this->accountLockout->getLockedAccounts();
 
@@ -67,6 +68,7 @@ class AccountLockoutController extends Controller
      */
     public function unlock(Request $request, User $user)
     {
+        $this->authorize('unlock-user-account');
         try {
             $validated = $request->validate([
                 'reason' => 'nullable|string|max:255',
@@ -110,6 +112,7 @@ class AccountLockoutController extends Controller
      */
     public function lock(Request $request, User $user)
     {
+        $this->authorize('unlock-user-account');
         try {
             $validated = $request->validate([
                 'reason' => 'required|string|max:255',
@@ -161,6 +164,7 @@ class AccountLockoutController extends Controller
      */
     public function resetAttempts(Request $request, User $user)
     {
+        $this->authorize('unlock-user-account');
         try {
             $result = $this->accountLockout->resetFailedAttempts($user, $request->user());
 
@@ -199,6 +203,7 @@ class AccountLockoutController extends Controller
      */
     public function bulkUnlock(Request $request)
     {
+        $this->authorize('unlock-user-account');
         $validated = $request->validate([
             'account_ids' => 'required|array|min:1',
             'account_ids.*' => 'required|integer|exists:users,id',
@@ -265,6 +270,7 @@ class AccountLockoutController extends Controller
      */
     public function bulkResetAttempts(Request $request)
     {
+        $this->authorize('unlock-user-account');
         $validated = $request->validate([
             'account_ids' => 'required|array|min:1',
             'account_ids.*' => 'required|integer|exists:users,id',

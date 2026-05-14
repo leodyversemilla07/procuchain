@@ -28,6 +28,8 @@ class ReportController extends Controller
      */
     public function index(): Response
     {
+        $this->authorize('view-reports');
+
         return Inertia::render('reports/index', [
             'now' => now()->toIso8601String(),
         ]);
@@ -38,6 +40,8 @@ class ReportController extends Controller
      */
     public function generate(Request $request): JsonResponse
     {
+        $this->authorize('generate-reports');
+
         $validated = $request->validate([
             'filter_type' => 'nullable|string|in:month,year,quarter,date_range',
             'month' => 'nullable|integer|min:1|max:12',
@@ -87,6 +91,8 @@ class ReportController extends Controller
      */
     public function export(Request $request): JsonResponse|StreamedResponse|\Symfony\Component\HttpFoundation\Response
     {
+        $this->authorize('export-reports');
+
         $validated = $request->validate([
             'filter_type' => 'nullable|string|in:month,year,quarter,date_range',
             'month' => 'nullable|integer|min:1|max:12',
@@ -155,6 +161,8 @@ class ReportController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
+        $this->authorize('view-reports');
+
         $validated = $request->validate([
             'query' => 'required|string|max:255',
             'status' => 'nullable|string',

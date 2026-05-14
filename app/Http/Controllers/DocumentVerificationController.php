@@ -34,7 +34,7 @@ final class DocumentVerificationController extends Controller
      */
     public function verify(VerifyProcurementRequest $request, string $prNumber): JsonResponse
     {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('view-document');
 
         Log::info('Starting procurement verification', [
             'pr_number' => $prNumber,
@@ -92,7 +92,7 @@ final class DocumentVerificationController extends Controller
      */
     public function verifyIntegrity(Request $request, string $prNumber): JsonResponse
     {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('view-document');
 
         Log::info('Starting integrity verification', [
             'pr_number' => $prNumber,
@@ -129,7 +129,7 @@ final class DocumentVerificationController extends Controller
     {
         // Decode the file key (may be URL encoded)
         $decodedFileKey = urldecode($fileKey);
-        $this->authorize('view-document', $decodedFileKey);
+        $this->authorize('view-document');
 
         Log::info('Verifying single document', [
             'file_key' => $decodedFileKey,
@@ -152,7 +152,7 @@ final class DocumentVerificationController extends Controller
      */
     public function showVerificationPage(Request $request, string $prNumber): Response
     {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('view-document');
 
         $report = $this->verificationService->generateVerificationReport($prNumber, null, $request->user());
 

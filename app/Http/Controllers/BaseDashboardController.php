@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\CacheStrategyInterface;
 use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
+use App\Http\Controllers\Controller as BaseController;
 use App\Repositories\ProcurementRepository;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
@@ -12,14 +13,13 @@ use App\Services\Manager;
 use DateInterval;
 use DateTimeInterface;
 use Exception;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
-abstract class BaseDashboardController extends Controller
+abstract class BaseDashboardController extends BaseController
 {
     public function __construct(
         protected Manager $multichain,
@@ -32,6 +32,8 @@ abstract class BaseDashboardController extends Controller
      */
     public function index(): Response
     {
+        $this->authorizeDashboard();
+
         try {
             $roleName = $this->getRoleName();
             $roleLabel = $this->getRoleLabel();
@@ -349,6 +351,26 @@ abstract class BaseDashboardController extends Controller
      * Get the role name for middleware and cache keys (e.g., 'hope', 'admin', 'bac_chairman')
      */
     abstract protected function getRoleName(): string;
+
+    /**
+     * Authorize dashboard access based on the role.
+     * Maps role names to their corresponding Gates.
+     */
+    protected function authorizeDashboard(): void
+    {
+        $gateMap = [
+            'admin' => 'view-admin-dashboard',
+            'bac_secretariat' => 'view-bac-secretariat-dashboard',
+            'bac_chairman' => 'view-bac-chairman-dashboard',
+            'hope' => 'view-hope-dashboard',
+        ];
+
+        $gate = $gateMap[$this->getRoleName()] ?? null;
+
+        if ($gate !== null) {
+            $this->authorize($gate);
+        }
+    }
 
     /**
      * Get the human-readable role label for logging (e.g., 'Head of Procuring Entity', 'Admin')

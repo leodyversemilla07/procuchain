@@ -8,7 +8,9 @@ use function Pest\Laravel\getJson;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
+    $this->owner->givePermissionTo('view blockchain transactions');
     $this->otherUser = User::factory()->create();
+    $this->otherUser->givePermissionTo('view blockchain transactions');
 });
 
 it('returns pending for unknown blockchain jobs', function () {

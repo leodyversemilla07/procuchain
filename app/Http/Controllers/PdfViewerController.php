@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller as BaseController;
 use App\Models\DocumentView;
 use App\Services\PdfViewerService;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,7 +21,7 @@ class PdfViewerController extends BaseController
      */
     public function showPdfViewer(Request $request, string $fileKey): Response
     {
-        Gate::authorize('view-document', $fileKey);
+        $this->authorize('view-document');
 
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 

@@ -26,6 +26,8 @@ class StageDocumentConfigController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('manage-stage-document-config');
+
         $selectedMode = $request->query('mode', ProcurementModeEnums::COMPETITIVE_BIDDING->value);
         $modeEnum = ProcurementModeEnums::tryFrom($selectedMode) ?? ProcurementModeEnums::COMPETITIVE_BIDDING;
 
@@ -79,6 +81,8 @@ class StageDocumentConfigController extends Controller
      */
     public function edit(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): Response
     {
+        $this->authorize('manage-stage-document-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
 
@@ -118,6 +122,8 @@ class StageDocumentConfigController extends Controller
      */
     public function update(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): RedirectResponse
     {
+        $this->authorize('manage-stage-document-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
 
@@ -173,6 +179,8 @@ class StageDocumentConfigController extends Controller
      */
     public function resetToDefaults(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): RedirectResponse
     {
+        $this->authorize('manage-stage-document-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
 

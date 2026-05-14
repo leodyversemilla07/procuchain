@@ -25,6 +25,8 @@ class ProcurementWorkflowConfigController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('manage-workflow-config');
+
         $configs = [];
 
         foreach (ProcurementModeEnums::cases() as $mode) {
@@ -61,6 +63,8 @@ class ProcurementWorkflowConfigController extends Controller
      */
     public function edit(Request $request, string|ProcurementModeEnums $mode): Response
     {
+        $this->authorize('manage-workflow-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 
         if (! $modeEnum) {
@@ -104,6 +108,8 @@ class ProcurementWorkflowConfigController extends Controller
      */
     public function update(Request $request, string|ProcurementModeEnums $mode): RedirectResponse
     {
+        $this->authorize('manage-workflow-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 
         if (! $modeEnum) {
@@ -157,6 +163,8 @@ class ProcurementWorkflowConfigController extends Controller
      */
     public function resetToDefaults(Request $request, string|ProcurementModeEnums $mode): RedirectResponse
     {
+        $this->authorize('manage-workflow-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 
         if (! $modeEnum) {
@@ -176,6 +184,8 @@ class ProcurementWorkflowConfigController extends Controller
      */
     public function preview(Request $request, string|ProcurementModeEnums $mode): Response
     {
+        $this->authorize('manage-workflow-config');
+
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 
         if (! $modeEnum) {

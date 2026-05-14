@@ -52,11 +52,15 @@ class NodeNetworkController extends Controller
 
     public function index(): Response
     {
+        $this->authorize('view-blockchain-network');
+
         return Inertia::render('admin/network-visualization', $this->getNetworkData());
     }
 
     public function data(): JsonResponse
     {
+        $this->authorize('view-blockchain-network');
+
         return response()->json($this->getNetworkData());
     }
 

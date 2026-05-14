@@ -13,6 +13,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
 use App\Enums\UserRoleEnums;
+use App\Http\Controllers\Controller as BaseController;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Services\Procurement\ProcurementDetailService;
@@ -22,7 +23,6 @@ use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -246,7 +246,7 @@ class ProcurementListController extends BaseController
      */
     public function getBlockchainStatus(string $pr_number): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('view-blockchain-transactions');
 
         try {
             // Fetch documents from blockchain for this procurement

@@ -17,6 +17,8 @@ class BlockchainJobStatusController extends Controller
      */
     public function status(Request $request, string $jobId): JsonResponse
     {
+        $this->authorize('view-blockchain-transactions');
+
         $cached = Cache::get("blockchain_job:{$jobId}");
 
         if ($cached === null) {

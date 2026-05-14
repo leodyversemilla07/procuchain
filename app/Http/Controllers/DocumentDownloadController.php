@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller as BaseController;
 use App\Models\DocumentView;
 use App\Services\BlockchainStorageService;
 use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 
 class DocumentDownloadController extends BaseController
@@ -23,7 +22,7 @@ class DocumentDownloadController extends BaseController
      */
     public function downloadFile(Request $request, string $fileKey)
     {
-        Gate::authorize('download-document', $fileKey);
+        $this->authorize('download-document');
 
         try {
             if (empty($fileKey)) {
