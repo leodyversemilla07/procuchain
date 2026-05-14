@@ -68,16 +68,15 @@ class DocumentDownloadController extends BaseController
                     'ip' => $request->ip(),
                 ]);
 
-                return response($fileData['content'])
-                    ->header('Content-Type', 'application/pdf')
-                    ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
-                    ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
-                    ->header('Pragma', 'no-cache')
-                    ->header('Expires', '0')
-                    ->header('X-Content-Type-Options', 'nosniff')
-                    ->header('X-Frame-Options', 'SAMEORIGIN')
-                    ->header('Accept-Ranges', 'bytes')
-                    ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
+ return response($fileData['content'])
+ ->header('Content-Type', 'application/pdf')
+ ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
+ ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+ ->header('Pragma', 'no-cache')
+ ->header('Expires', '0')
+ ->header('X-Content-Type-Options', 'nosniff')
+ ->header('X-Frame-Options', 'SAMEORIGIN')
+ ->header('Accept-Ranges', 'bytes');
             } catch (Exception $blockchainError) {
                 report($blockchainError);
                 Log::error('Failed to retrieve file from blockchain', [
@@ -91,16 +90,15 @@ class DocumentDownloadController extends BaseController
 
                 $this->recordDocumentView($request, $fileKey, $documentData);
 
-                return response($placeholderPdf)
-                    ->header('Content-Type', 'application/pdf')
-                    ->header('Content-Disposition', 'inline; filename="'.basename($fileKey).'"')
-                    ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
-                    ->header('Pragma', 'no-cache')
-                    ->header('Expires', '0')
-                    ->header('X-Content-Type-Options', 'nosniff')
-                    ->header('X-Frame-Options', 'SAMEORIGIN')
-                    ->header('Accept-Ranges', 'bytes')
-                    ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
+ return response($placeholderPdf)
+ ->header('Content-Type', 'application/pdf')
+ ->header('Content-Disposition', 'inline; filename="'.basename($fileKey).'"')
+ ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+ ->header('Pragma', 'no-cache')
+ ->header('Expires', '0')
+ ->header('X-Content-Type-Options', 'nosniff')
+ ->header('X-Frame-Options', 'SAMEORIGIN')
+ ->header('Accept-Ranges', 'bytes');
             }
         } catch (Exception $e) {
             report($e);
