@@ -1,6 +1,14 @@
 import { Button } from '@/components/ui/button';
-import { Download, Eye, FileText, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Download, Eye, FileText, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+
+// Configure pdf.js worker — use the copy bundled in react-pdf's package.
+// This avoids network requests for the worker (CSP-compliant, works offline).
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'react-pdf/pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface Props {
   pdfUrl: string;
@@ -12,131 +20,150 @@ interface Props {
 }
 
 /**
- * PDF Viewer using blob URL + iframe approach.
+ * PDF Viewer using react-pdf (pdf.js) — renders via Canvas, no iframe/plugin.
  *
- * Why this works when direct iframe/embed/object fail:
+ * Why react-pdf instead of <iframe src="blob:...">:
  *
- * 1. AUTH: The /files/{key} endpoint requires session cookies.
- *    <iframe src="/files/..."> makes a navigation request which sends cookies,
- *    but CSP frame-ancestors/object-src can block the browser's PDF plugin.
+ * Chrome's built-in PDF viewer is a MimeHandlerView plugin that creates its own
+ * internal iframe. That plugin-iframe is blocked by CSP sandbox directives — and
+ * there's NO sandbox allow-* directive that permits PDF plugins (confirmed by
+ * WHATWG, Chromium issue #343754409, PrivateBin #1552, bulwarkmail/webmail #253).
  *
- * 2. CSP: We fetch the PDF with credentials via JS (not blocked by CSP),
- *    create a blob: URL, and set it as the iframe src.
- *    Blob URLs are same-origin and don't trigger frame-ancestors checks
- *    because the blob was created by this page, not served by a remote endpoint.
- *
- * 3. The parent page CSP needs frame-src 'self' blob: and object-src 'self' blob:
- *    to allow the browser's built-in PDF renderer to work inside the iframe.
- *
- * Reference: https://notes.alexkehayias.com/preview-a-pdf-in-the-browser-with-authentication/
- * Reference: https://github.com/owncloud/web/pull/8498 (ownCloud fixed the same issue)
+ * react-pdf renders PDFs to <canvas> elements via Mozilla's pdf.js library:
+ * - No plugin, no iframe, no CSP sandbox issues
+ * - Works identically across Chrome, Firefox, Safari, Edge
+ * - Full control over UI (page nav, zoom, download)
+ * - Security: pdf.js doesn't execute embedded PDF JavaScript
+ * - Our strict CSP (with sandbox) remains fully intact
  */
 export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onErrorChange }: Props) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.2);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const prevBlobUrl = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!pdfUrl) return;
-
-    setLoading(true);
+  const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+    setLoading(false);
     setError(false);
-    onLoadingChange(true);
+    onLoadingChange(false);
     onErrorChange(false);
+  }, [onLoadingChange, onErrorChange]);
 
-    // Fetch the PDF with session cookies, then create a blob URL.
-    // The blob URL is same-origin and bypasses CSP frame-ancestors restrictions.
-    fetch(pdfUrl, { credentials: 'same-origin' })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        return res.blob();
-      })
-      .then((blob) => {
-        // Clean up previous blob URL to prevent memory leaks
-        if (prevBlobUrl.current) {
-          URL.revokeObjectURL(prevBlobUrl.current);
-        }
-        const url = URL.createObjectURL(blob);
-        prevBlobUrl.current = url;
-        setBlobUrl(url);
-        setLoading(false);
-        onLoadingChange(false);
-      })
-      .catch(() => {
-        setLoading(false);
-        setError(true);
-        onLoadingChange(false);
-        onErrorChange(true);
-      });
+  const onDocumentLoadError = useCallback(() => {
+    setLoading(false);
+    setError(true);
+    onLoadingChange(false);
+    onErrorChange(true);
+  }, [onLoadingChange, onErrorChange]);
 
-    // Cleanup on unmount
-    return () => {
-      if (prevBlobUrl.current) {
-        URL.revokeObjectURL(prevBlobUrl.current);
-        prevBlobUrl.current = null;
-      }
-    };
-  }, [pdfUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
+  const goToNextPage = () => setPageNumber((prev) => Math.min(prev + 1, numPages));
+  const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3.0));
+  const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.4));
+
+  const containerHeight = Math.max(500, pdfHeight);
 
   return (
-    <div className="border-sidebar-border/70 dark:border-sidebar-border bg-background relative overflow-hidden rounded-lg border shadow-md">
-      {loading ? (
-        <div
-          className="flex items-center justify-center"
-          style={{
-            height: `${pdfHeight}px`,
-            minHeight: '500px',
-            maxHeight: 'calc(100vh - 250px)',
-          }}
-        >
-          <div className="text-center">
-            <Loader2 className="text-primary mx-auto mb-4 h-10 w-10 animate-spin sm:h-12 sm:w-12" />
-            <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
-            <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
+    <div className="border-sidebar-border/70 dark:border-sidebar-border bg-background relative flex flex-col overflow-hidden rounded-lg border shadow-md">
+      {/* Toolbar */}
+      {!loading && !error && numPages > 0 && (
+        <div className="bg-muted/50 border-b flex items-center justify-between gap-2 px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+            <span className="text-muted-foreground min-w-[60px] text-center">
+              {pageNumber} / {numPages}
+            </span>
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={goToNextPage} disabled={pageNumber >= numPages}>
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomOut} disabled={scale <= 0.4}>
+              <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+            <span className="text-muted-foreground min-w-[40px] text-center">{Math.round(scale * 100)}%</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomIn} disabled={scale >= 3.0}>
+              <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="sm" className="h-7 text-xs sm:h-8" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
+              <Eye className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">Open</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs sm:h-8" render={<a href={pdfUrl} download />}>
+              <Download className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">Download</span>
+            </Button>
           </div>
         </div>
-      ) : error ? (
-        <div
-          className="bg-muted flex items-center justify-center"
-          style={{
-            height: `${pdfHeight}px`,
-            minHeight: '500px',
-            maxHeight: 'calc(100vh - 250px)',
-          }}
-        >
-          <div className="max-w-md p-6 text-center sm:p-8">
-            <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16" />
-            <h3 className="text-primary mb-2 text-base font-semibold sm:text-lg">PDF Viewer Error</h3>
-            <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
-              Unable to display the PDF in the browser. You can view the document using the options below.
-            </p>
-            <div className="space-y-2 sm:space-y-3">
-              <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
-                <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                Open PDF in New Tab
-              </Button>
-              <Button variant="outline" className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} download />}>
-                <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                Download PDF
-              </Button>
+      )}
+
+      {/* PDF Content */}
+      <div className="flex-1 overflow-auto" style={{ height: `${containerHeight}px`, maxHeight: 'calc(100vh - 250px)' }}>
+        {loading && !error ? (
+          <div className="flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
+            <div className="text-center">
+              <Loader2 className="text-primary mx-auto mb-4 h-10 w-10 animate-spin sm:h-12 sm:w-12" />
+              <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
+              <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
             </div>
           </div>
-        </div>
-      ) : blobUrl ? (
-        <iframe
-          src={blobUrl}
-          title="PDF Document"
-          className="w-full border-0"
-          style={{
-            height: `${pdfHeight}px`,
-            minHeight: '500px',
-            maxHeight: 'calc(100vh - 250px)',
-          }}
-        />
-      ) : null}
+        ) : error ? (
+          <div className="bg-muted flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
+            <div className="max-w-md p-6 text-center sm:p-8">
+              <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16" />
+              <h3 className="text-primary mb-2 text-base font-semibold sm:text-lg">PDF Viewer Error</h3>
+              <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
+                Unable to display the PDF in the browser. You can view the document using the options below.
+              </p>
+              <div className="space-y-2 sm:space-y-3">
+                <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
+                  <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  Open PDF in New Tab
+                </Button>
+                <Button variant="outline" className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} download />}>
+                  <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center py-4">
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
+              loading={
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
+                </div>
+              }
+              options={{
+                // Pass cookies for authenticated PDF fetching
+                httpHeaders: {}, // react-pdf uses same-origin fetch by default
+                withCredentials: true,
+              }}
+            >
+              <Page
+                pageNumber={pageNumber}
+                scale={scale}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                className="react-pdf__page"
+              />
+            </Document>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

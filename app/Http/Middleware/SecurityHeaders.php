@@ -66,15 +66,6 @@ class SecurityHeaders
             }
         }
 
- // PDF responses: nginx handles the /files/ route with a tight PDF-specific CSP
- // (default-src 'none'; frame-ancestors 'self'; sandbox; object-src 'none').
- // We still remove X-Frame-Options here so it doesn't conflict with nginx's CSP.
- if ($response->headers->get('Content-Type') === 'application/pdf') {
- $response->headers->remove('X-Frame-Options');
-
- return $response;
- }
-
  $csp = implode('; ', [
  ...$directives,
  "object-src 'self' blob:",
