@@ -1,1 +1,0 @@
-function e(){let e=document.cookie.match(/XSRF-TOKEN=([^;]+)/);return e?decodeURIComponent(e[1]):``}export{e as t};

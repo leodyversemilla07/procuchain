@@ -66,20 +66,11 @@ class SecurityHeaders
             }
         }
 
- // Allow PDF responses to be embedded in iframes on the same site.
- // The PDF viewer page uses <iframe src="blob:..."> to display documents.
- // Blob URLs are created by the page itself (same-origin) but the browser's
- // built-in PDF plugin still needs object-src and frame-src to allow blob:.
- // See: https://github.com/owncloud/web/pull/8498
- // See: https://stackoverflow.com/questions/69122526/pdf-loaded-via-embed-tag-blocked-by-frame-src-directive-in-csp
- $isPdfResponse = $response->headers->get('Content-Type') === 'application/pdf';
-
- if ($isPdfResponse) {
- // PDF binary responses: use minimal CSP that allows browser PDF plugin.
- // Remove X-Frame-Options (CSP frame-ancestors is the modern replacement).
+ // PDF responses: nginx handles the /files/ route with a tight PDF-specific CSP
+ // (default-src 'none'; frame-ancestors 'self'; sandbox; object-src 'none').
+ // We still remove X-Frame-Options here so it doesn't conflict with nginx's CSP.
+ if ($response->headers->get('Content-Type') === 'application/pdf') {
  $response->headers->remove('X-Frame-Options');
- $csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
- $response->headers->set('Content-Security-Policy', $csp);
 
  return $response;
  }

@@ -1,1 +1,0 @@
-import{_ as e,b as t}from"./dist-0PRlmvnN.js";var n=t(e()),r=n.createContext({disabled:!1});function i(){return n.useContext(r)}export{i as t};
