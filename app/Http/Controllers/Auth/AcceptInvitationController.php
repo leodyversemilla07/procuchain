@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\User\AcceptInvitationRequest;
 use App\Models\User;
 use App\Models\UserInvitation;
+use App\Services\AuditLogger;
 use App\Services\Manager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,10 @@ use Inertia\Response;
 
 class AcceptInvitationController extends Controller
 {
+    public function __construct(
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Show the invitation acceptance form
      */
@@ -103,6 +108,14 @@ class AcceptInvitationController extends Controller
                 'role' => $invitation->role,
                 'invited_by' => $invitation->invited_by,
             ]);
+
+            $this->auditLogger->log(
+                'auth.invitation_accepted',
+                'user',
+                (string) $user->id,
+                [],
+                ['role' => $invitation->role, 'invited_by' => $invitation->invited_by],
+            );
 
             // Log the user in
             Auth::login($user);

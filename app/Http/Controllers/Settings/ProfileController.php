@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -14,6 +15,10 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Show the user's profile settings page.
      */
@@ -44,6 +49,12 @@ class ProfileController extends Controller
 
         $user->save();
 
+        $this->auditLogger->log(
+            'settings.profile_updated',
+            'user',
+            (string) $user->id,
+        );
+
         return to_route('settings.profile.edit');
     }
 
@@ -58,6 +69,12 @@ class ProfileController extends Controller
 
         /** @var User $user */
         $user = $request->user();
+
+        $this->auditLogger->log(
+            'settings.account_deleted',
+            'user',
+            (string) $user->id,
+        );
 
         Auth::logout();
 

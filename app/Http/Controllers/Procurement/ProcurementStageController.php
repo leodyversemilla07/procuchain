@@ -10,6 +10,7 @@ use App\Http\Requests\Procurement\PreProcurementConferenceDecisionRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDecisionRequest;
 use App\Http\Requests\Procurement\UpdateDeliveryDetailsRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
+use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementStageCompletionService;
 use App\Services\Procurement\ProcurementStageMutationService;
 use App\Services\Procurement\ProcurementStagePageService;
@@ -37,6 +38,7 @@ class ProcurementStageController extends BaseController
         protected ProcurementStageUploadService $stageUploadService,
         protected ProcurementStageCompletionService $stageCompletionService,
         protected ProcurementStageMutationService $stageMutationService,
+        protected AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -79,6 +81,14 @@ class ProcurementStageController extends BaseController
                 $user,
             );
 
+            $this->auditLogger->log(
+                'procurement.document_uploaded',
+                'procurement',
+                $pr_number,
+                [],
+                ['stage' => $stage->value, 'document_type' => $documentTypeValue],
+            );
+
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
             Log::error('Failed to upload single document', [
@@ -115,6 +125,14 @@ class ProcurementStageController extends BaseController
             $user = $request->user();
             $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $user);
 
+            $this->auditLogger->log(
+                'procurement.stage_completed',
+                'procurement',
+                $pr_number,
+                [],
+                ['stage' => $stage->value],
+            );
+
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
             Log::error('Error marking stage as complete', [
@@ -137,12 +155,22 @@ class ProcurementStageController extends BaseController
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         try {
-            return response()->json($this->stageMutationService->queueSkipStage(
+            $result = $this->stageMutationService->queueSkipStage(
                 $pr_number,
                 $stage,
                 $request->input('reason', 'Stage marked as optional and skipped by user.'),
                 $request->user(),
-            ), 202);
+            );
+
+            $this->auditLogger->log(
+                'procurement.stage_skipped',
+                'procurement',
+                $pr_number,
+                [],
+                ['stage' => $stage->value, 'reason' => $request->input('reason', 'Stage marked as optional and skipped by user.')],
+            );
+
+            return response()->json($result, 202);
         } catch (\Exception $e) {
             Log::error('Error skipping stage', [
                 'pr_number' => $pr_number,
@@ -211,6 +239,7 @@ class ProcurementStageController extends BaseController
             prNumber: $validated['pr_number'],
             procurementTitle: $validated['procurement_title'],
             wasHeld: $validated['conference_held'],
+            auditAction: 'procurement.decision_published',
         );
     }
 
@@ -228,6 +257,7 @@ class ProcurementStageController extends BaseController
             prNumber: $validated['pr_number'],
             procurementTitle: $validated['procurement_title'],
             wasHeld: $validated['conference_held'],
+            auditAction: 'procurement.pre_bid_decision_published',
         );
     }
 
@@ -245,6 +275,7 @@ class ProcurementStageController extends BaseController
             prNumber: $validated['pr_number'],
             procurementTitle: $validated['procurement_title'],
             wasHeld: $validated['supplemental_bid_needed'],
+            auditAction: 'procurement.supplemental_bulletin_published',
         );
     }
 
@@ -271,12 +302,22 @@ class ProcurementStageController extends BaseController
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         try {
-            return response()->json($this->stageMutationService->queueRepeatStage(
+            $result = $this->stageMutationService->queueRepeatStage(
                 $pr_number,
                 $stage,
                 $request->input('reason', 'Additional bulletin required'),
                 $request->user(),
-            ), 202);
+            );
+
+            $this->auditLogger->log(
+                'procurement.stage_repeated',
+                'procurement',
+                $pr_number,
+                [],
+                ['stage' => $stage->value, 'reason' => $request->input('reason', 'Additional bulletin required')],
+            );
+
+            return response()->json($result, 202);
         } catch (\Exception $e) {
             Log::error('Error repeating stage', [
                 'pr_number' => $pr_number,
@@ -305,13 +346,23 @@ class ProcurementStageController extends BaseController
         $this->authorize('view-procurement', $pr_number);
 
         try {
-            return response()->json($this->stageMutationService->queueDeliveryDetails(
+            $result = $this->stageMutationService->queueDeliveryDetails(
                 $pr_number,
                 $request->input('delivery_location'),
                 $request->input('delivery_date'),
                 (int) $request->input('delivery_term_days'),
                 $request->user(),
-            ), 202);
+            );
+
+            $this->auditLogger->log(
+                'procurement.delivery_updated',
+                'procurement',
+                $pr_number,
+                [],
+                ['delivery_location' => $request->input('delivery_location'), 'delivery_date' => $request->input('delivery_date')],
+            );
+
+            return response()->json($result, 202);
         } catch (\Exception $e) {
             Log::error('Failed to update delivery details', [
                 'pr_number' => $pr_number,
@@ -336,17 +387,28 @@ class ProcurementStageController extends BaseController
         string $prNumber,
         string $procurementTitle,
         bool $wasHeld,
+        string $auditAction = 'procurement.decision_published',
     ): JsonResponse {
         $this->authorize('view-procurement', $prNumber);
 
         try {
-            return response()->json($this->stageMutationService->queueDecisionPublishing(
+            $result = $this->stageMutationService->queueDecisionPublishing(
                 $decisionType,
                 $prNumber,
                 $procurementTitle,
                 $wasHeld,
                 $request->user(),
-            ), 202);
+            );
+
+            $this->auditLogger->log(
+                $auditAction,
+                'procurement',
+                $prNumber,
+                [],
+                ['decision_type' => $decisionType, 'conference_held' => $wasHeld],
+            );
+
+            return response()->json($result, 202);
         } catch (\Exception $e) {
             Log::error("Failed to dispatch {$decisionType} decision job", [
                 'pr_number' => $prNumber,

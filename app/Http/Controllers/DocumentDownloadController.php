@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller as BaseController;
 use App\Models\DocumentView;
+use App\Services\AuditLogger;
 use App\Services\BlockchainStorageService;
 use App\Services\ProcurementDataService;
 use Exception;
@@ -14,7 +15,8 @@ class DocumentDownloadController extends BaseController
 {
     public function __construct(
         private ProcurementDataService $procurementDataService,
-        private BlockchainStorageService $fileStorageService
+        private BlockchainStorageService $fileStorageService,
+        private AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -48,9 +50,17 @@ class DocumentDownloadController extends BaseController
             try {
                 $fileData = $this->fileStorageService->retrieveFile($fileKey, $dataTxid);
 
-                $this->recordDocumentView($request, $fileKey, $documentData);
+        $this->recordDocumentView($request, $fileKey, $documentData);
 
-                Log::info('Secure file access from blockchain', [
+        $this->auditLogger->log(
+            'document.downloaded',
+            'document',
+            $fileKey,
+            [],
+            ['pr_number' => $documentData['pr_number'] ?? null, 'document_type' => $documentData['document_type'] ?? null],
+        );
+
+        Log::info('Secure file access from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
                     'user_id' => $request->user()->id,

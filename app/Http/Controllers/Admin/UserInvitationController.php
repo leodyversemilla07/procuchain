@@ -6,6 +6,7 @@ use App\Events\UserInvited;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\SendInvitationRequest;
 use App\Models\UserInvitation;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,10 @@ use Inertia\Response;
 
 class UserInvitationController extends Controller
 {
+    public function __construct(
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Display invitation management page
      */
@@ -95,6 +100,14 @@ class UserInvitationController extends Controller
                 'role' => $invitation->role,
             ]);
 
+            $this->auditLogger->log(
+                'admin.invitation_sent',
+                'invitation',
+                (string) $invitation->id,
+                [],
+                ['email' => $invitation->email, 'role' => $invitation->role],
+            );
+
             return redirect()->back()->with('success', "Invitation sent successfully to {$invitation->email}.");
         } catch (\Exception $e) {
             Log::error('Failed to send user invitation', [
@@ -136,6 +149,12 @@ class UserInvitationController extends Controller
                 'invitee_email' => $invitation->email,
             ]);
 
+            $this->auditLogger->log(
+                'admin.invitation_resent',
+                'invitation',
+                (string) $invitation->id,
+            );
+
             return redirect()->back()->with('success', "Invitation resent to {$invitation->email}.");
         } catch (\Exception $e) {
             Log::error('Failed to resend user invitation', [
@@ -170,6 +189,12 @@ class UserInvitationController extends Controller
                 'revoked_by' => $request->user()->id,
                 'invitee_email' => $invitation->email,
             ]);
+
+            $this->auditLogger->log(
+                'admin.invitation_revoked',
+                'invitation',
+                (string) $invitation->id,
+            );
 
             return redirect()->back()->with('success', 'Invitation revoked successfully.');
         } catch (\Exception $e) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
 use App\Services\BlockedIpService;
 use App\Services\LoginAnalyticsService;
 use Illuminate\Http\Request;
@@ -13,7 +14,8 @@ class LoginLogController extends Controller
 {
     public function __construct(
         private LoginAnalyticsService $loginAnalytics,
-        private BlockedIpService $blockedIpService
+        private BlockedIpService $blockedIpService,
+        private AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -161,6 +163,14 @@ class LoginLogController extends Controller
                 'expires_at' => $expiresAt?->toDateTimeString(),
             ]);
 
+            $this->auditLogger->log(
+                'security.ip_blocked',
+                'blocked_ip',
+                $validated['ip_address'],
+                [],
+                ['reason' => $validated['reason'] ?? 'Blocked due to suspicious activity', 'duration' => $validated['duration'] ?? 'permanent'],
+            );
+
             return back()->with('success', 'IP address blocked successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to block IP address', [
@@ -193,6 +203,12 @@ class LoginLogController extends Controller
                 'ip_address' => $validated['ip_address'],
                 'unblocked_by' => $request->user()->id,
             ]);
+
+            $this->auditLogger->log(
+                'security.ip_unblocked',
+                'blocked_ip',
+                $validated['ip_address'],
+            );
 
             return back()->with('success', 'IP address unblocked successfully.');
         } catch (\Exception $e) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use App\Http\Requests\Settings\UpdatePasswordRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,10 @@ use Inertia\Response;
 
 class PasswordController extends Controller
 {
+    public function __construct(
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Show the user's password settings page.
      */
@@ -52,6 +57,12 @@ class PasswordController extends Controller
         Log::info('User password changed - other sessions invalidated', [
             'user_id' => $user->id,
         ]);
+
+        $this->auditLogger->log(
+            'settings.password_changed',
+            'user',
+            (string) $user->id,
+        );
 
         return back()->with('status', 'password-updated');
     }

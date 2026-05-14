@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRoleEnums;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 
 class NotificationController extends Controller
 {
+    public function __construct(
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Mark a notification as read.
      */
@@ -28,6 +33,12 @@ class NotificationController extends Controller
 
         if ($notification) {
             $notification->markAsRead();
+
+            $this->auditLogger->log(
+                'security.notification_read',
+                'notification',
+                $id,
+            );
 
             return redirect()->back()->with('success', 'Notification marked as read');
         }
@@ -49,6 +60,12 @@ class NotificationController extends Controller
         }
 
         $user->unreadNotifications()->update(['read_at' => now()]);
+
+        $this->auditLogger->log(
+            'security.notifications_all_read',
+            'notification',
+            'all',
+        );
 
         return redirect()->back()->with('success', 'All notifications marked as read');
     }

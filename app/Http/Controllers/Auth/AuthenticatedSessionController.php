@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\AuditLogger;
 use App\Services\LoginLoggerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,8 @@ use Laravel\Fortify\Features;
 class AuthenticatedSessionController extends Controller
 {
     public function __construct(
-        private LoginLoggerService $loginLogger
+        private LoginLoggerService $loginLogger,
+        private AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -53,6 +55,8 @@ class AuthenticatedSessionController extends Controller
         // Log successful login
         $this->loginLogger->logLogin($user, $request);
 
+        $this->auditLogger->log('auth.login', 'user', (string) $user->id);
+
         // Redirect to appropriate dashboard based on user role
         $targetUrl = $this->redirectToDashboard($request, $user);
 
@@ -72,6 +76,7 @@ class AuthenticatedSessionController extends Controller
         // Log logout before destroying session
         if ($user) {
             $this->loginLogger->logLogout($user);
+            $this->auditLogger->log('auth.logout', 'user', (string) $user->id);
         }
 
         Auth::guard('web')->logout();

@@ -7,6 +7,7 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
 use App\Models\StageDocumentConfig;
+use App\Services\AuditLogger;
 use App\Services\ProcurementWorkflowService;
 use App\Services\StageDocumentConfigService;
 use Illuminate\Http\RedirectResponse;
@@ -18,9 +19,9 @@ class StageDocumentConfigController extends Controller
 {
     public function __construct(
         private readonly StageDocumentConfigService $documentConfigService,
-        private readonly ProcurementWorkflowService $workflowService
+        private readonly ProcurementWorkflowService $workflowService,
+        private readonly AuditLogger $auditLogger,
     ) {}
-
     /**
      * Display a listing of stage document configurations.
      */
@@ -169,6 +170,14 @@ class StageDocumentConfigController extends Controller
             $request->user()->id
         );
 
+        $this->auditLogger->log(
+            'admin.stage_document_config_updated',
+            'stage_document_config',
+            "{$modeEnum->value}:{$stageEnum->value}",
+            [],
+            ['required_count' => count($requiredDocuments), 'optional_count' => count($optionalDocuments)],
+        );
+
         return redirect()
             ->route('admin.stage-documents.index', ['mode' => $modeEnum->value])
             ->with('success', "Document configuration for {$stageEnum->getDisplayName()} updated successfully.");
@@ -189,6 +198,12 @@ class StageDocumentConfigController extends Controller
         }
 
         $this->documentConfigService->resetToDefaults($stageEnum, $modeEnum, $request->user()->id);
+
+        $this->auditLogger->log(
+            'admin.stage_document_config_reset',
+            'stage_document_config',
+            "{$modeEnum->value}:{$stageEnum->value}",
+        );
 
         return redirect()
             ->route('admin.stage-documents.index', ['mode' => $modeEnum->value])

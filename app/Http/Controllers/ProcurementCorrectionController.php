@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Procurement\CorrectProcurementRequest;
 use App\Jobs\BlockchainWriteJob;
+use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementCorrectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class ProcurementCorrectionController extends Controller
 {
     public function __construct(
         private readonly ProcurementCorrectionService $correctionService,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     public function correctProcurement(CorrectProcurementRequest $request, string $prNumber)
@@ -29,16 +31,24 @@ class ProcurementCorrectionController extends Controller
             $correctedData = $this->correctionService->extractCorrectedData($validated);
             $jobId = Str::uuid()->toString();
 
-            BlockchainWriteJob::dispatch('correct_procurement', [
-                'original_procurement' => $originalProcurement->toBlockchainArray(),
-                'corrected_data' => $correctedData,
-                'reason' => $validated['correction_reason'],
-                'corrected_by' => $request->user()->name ?? 'System',
-                'user_address' => $request->user()->blockchain_address ?? '',
-                'pr_number' => $prNumber,
-            ], $jobId, $request->user()->id);
+        BlockchainWriteJob::dispatch('correct_procurement', [
+            'original_procurement' => $originalProcurement->toBlockchainArray(),
+            'corrected_data' => $correctedData,
+            'reason' => $validated['correction_reason'],
+            'corrected_by' => $request->user()->name ?? 'System',
+            'user_address' => $request->user()->blockchain_address ?? '',
+            'pr_number' => $prNumber,
+        ], $jobId, $request->user()->id);
 
-            return back()->with('success', 'Procurement correction submitted successfully. The blockchain write will complete in the background.');
+        $this->auditLogger->log(
+            'procurement.corrected',
+            'procurement',
+            $prNumber,
+            [],
+            ['reason' => $validated['correction_reason']],
+        );
+
+        return back()->with('success', 'Procurement correction submitted successfully. The blockchain write will complete in the background.');
         } catch (\RuntimeException $e) {
             return back()->with('error', 'An error occurred with the procurement correction.');
         } catch (\Exception $e) {

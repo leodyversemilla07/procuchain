@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogger;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,10 @@ use Inertia\Response;
 
 class NewPasswordController extends Controller
 {
+    public function __construct(
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Show the password reset page.
      */
@@ -57,11 +62,13 @@ class NewPasswordController extends Controller
                 // When password is reset, all existing sessions should be terminated
                 $this->invalidateAllSessions($user);
 
-                Log::info('User password reset - all sessions invalidated', [
-                    'user_id' => $user->id,
-                ]);
+            Log::info('User password reset - all sessions invalidated', [
+                'user_id' => $user->id,
+            ]);
 
-                event(new PasswordReset($user));
+            $this->auditLogger->log('auth.password_reset', 'user', (string) $user->id);
+
+            event(new PasswordReset($user));
             }
         );
 

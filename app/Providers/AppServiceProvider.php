@@ -34,12 +34,17 @@ use App\Services\ProcurementStageTransitionService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
+use App\Services\AuditLogger;
 use App\Services\WorkflowDefinitionService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Fortify\Events\TwoFactorAuthenticationEnabled;
+use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
+use Laravel\Fortify\Events\TwoFactorAuthenticationConfirmed;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -216,6 +221,33 @@ class AppServiceProvider extends ServiceProvider
                         'limit' => $limit,
                     ], 429, $headers);
                 });
+        });
+
+        // ──────────────────────────────────────────────────────────────
+        // 2FA Fortify Event Hooks — Audit Logging (NGPA compliance)
+        // ──────────────────────────────────────────────────────────────
+        Event::listen(TwoFactorAuthenticationEnabled::class, function ($event) {
+            app(AuditLogger::class)->log(
+                'settings.two_factor_enabled',
+                'user',
+                (string) $event->user->id,
+            );
+        });
+
+        Event::listen(TwoFactorAuthenticationConfirmed::class, function ($event) {
+            app(AuditLogger::class)->log(
+                'settings.two_factor_confirmed',
+                'user',
+                (string) $event->user->id,
+            );
+        });
+
+        Event::listen(TwoFactorAuthenticationDisabled::class, function ($event) {
+            app(AuditLogger::class)->log(
+                'settings.two_factor_disabled',
+                'user',
+                (string) $event->user->id,
+            );
         });
     }
 }

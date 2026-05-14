@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Procurement;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
 use App\Repositories\ProcurementArchiveRepository;
+use App\Services\AuditLogger;
 use App\Services\ProcurementDataService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class ProcurementArchiveController extends Controller
     public function __construct(
         private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementDataService $procurementDataService,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -53,6 +55,14 @@ class ProcurementArchiveController extends Controller
                 $request->input('reason')
             );
 
+            $this->auditLogger->log(
+                'procurement.archived',
+                'procurement',
+                $pr_number,
+                [],
+                ['reason' => $request->input('reason')],
+            );
+
             return back()->with('success', 'Procurement archived successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to archive procurement', [
@@ -75,6 +85,12 @@ class ProcurementArchiveController extends Controller
             $this->archiveRepository->restore(
                 $pr_number,
                 (string) $request->user()->id
+            );
+
+            $this->auditLogger->log(
+                'procurement.restored',
+                'procurement',
+                $pr_number,
             );
 
             return back()->with('success', 'Procurement restored successfully.');

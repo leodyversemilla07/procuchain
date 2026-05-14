@@ -6,6 +6,7 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementWorkflowConfig;
+use App\Services\AuditLogger;
 use App\Services\ProcurementWorkflowService;
 use App\Services\StageDocumentConfigService;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,8 @@ class ProcurementWorkflowConfigController extends Controller
 {
     public function __construct(
         private readonly ProcurementWorkflowService $workflowService,
-        private readonly StageDocumentConfigService $documentConfigService
+        private readonly StageDocumentConfigService $documentConfigService,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -146,16 +148,24 @@ class ProcurementWorkflowConfigController extends Controller
             $optionalStages[] = $stageEnum;
         }
 
-        $this->workflowService->saveWorkflowConfig(
-            $modeEnum,
-            $stages,
-            $optionalStages,
-            $request->user()->id
-        );
+    $this->workflowService->saveWorkflowConfig(
+        $modeEnum,
+        $stages,
+        $optionalStages,
+        $request->user()->id
+    );
 
-        return redirect()
-            ->route('admin.workflow-config.index')
-            ->with('success', "Workflow configuration for {$modeEnum->getDisplayName()} updated successfully.");
+    $this->auditLogger->log(
+        'admin.workflow_config_updated',
+        'workflow_config',
+        $modeEnum->value,
+        [],
+        ['stages_count' => count($stages), 'optional_stages_count' => count($optionalStages)],
+    );
+
+    return redirect()
+        ->route('admin.workflow-config.index')
+        ->with('success', "Workflow configuration for {$modeEnum->getDisplayName()} updated successfully.");
     }
 
     /**
@@ -172,6 +182,12 @@ class ProcurementWorkflowConfigController extends Controller
         }
 
         $this->workflowService->resetToDefaults($modeEnum, $request->user()->id);
+
+        $this->auditLogger->log(
+            'admin.workflow_config_reset',
+            'workflow_config',
+            $modeEnum->value,
+        );
 
         return redirect()
             ->route('admin.workflow-config.index')

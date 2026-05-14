@@ -17,6 +17,7 @@ use App\Repositories\StatusRepository;
 use App\Services\Procurement\ProcurementStageCompletionService;
 use App\Services\Procurement\ProcurementStagePageService;
 use App\Services\Procurement\ProcurementStageUploadService;
+use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementSupportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class ProcurementInitiationController extends BaseController
         private readonly ProcurementStagePageService $stagePageService,
         private readonly ProcurementStageUploadService $stageUploadService,
         private readonly ProcurementStageCompletionService $stageCompletionService,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     public function show(?string $id = null): Response
@@ -153,6 +155,14 @@ class ProcurementInitiationController extends BaseController
             'pr_number' => $prNumber,
         ], $jobId, $user->id);
 
+        $this->auditLogger->log(
+            'procurement.initiated',
+            'procurement',
+            $prNumber,
+            [],
+            ['title' => $procurementData['title'], 'category' => $procurementData['category'], 'procurement_mode' => $procurementData['procurement_mode'], 'abc_amount' => $procurementData['abc_amount']],
+        );
+
         return response()->json([
             'job_id' => $jobId,
             'status' => 'pending',
@@ -189,6 +199,14 @@ class ProcurementInitiationController extends BaseController
                 $request->input('description'),
                 $request->input('metadata', []),
                 $user,
+            );
+
+            $this->auditLogger->log(
+                'procurement.document_uploaded',
+                'procurement',
+                $pr_number,
+                [],
+                ['stage' => $stage->value, 'document_type' => $documentTypeValue],
             );
 
             return response()->json($response['data'], $response['status']);
@@ -252,10 +270,18 @@ class ProcurementInitiationController extends BaseController
 
         $stage = StageEnums::PROCUREMENT_INITIATION;
 
-        try {
-            $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
+    try {
+        $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
 
-            return response()->json($response['data'], $response['status']);
+        $this->auditLogger->log(
+            'procurement.stage_completed',
+            'procurement',
+            $pr_number,
+            [],
+            ['stage' => $stage->value],
+        );
+
+        return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,

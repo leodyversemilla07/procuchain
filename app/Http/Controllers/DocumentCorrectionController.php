@@ -7,6 +7,7 @@ use App\Http\Requests\Document\CorrectDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
+use App\Services\AuditLogger;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,8 @@ class DocumentCorrectionController extends Controller
     public function __construct(
         protected DocumentRepository $documentRepository,
         protected CorrectionRepository $correctionRepository,
-        protected CorrectionPublisher $correctionPublisher
+        protected CorrectionPublisher $correctionPublisher,
+        protected AuditLogger $auditLogger,
     ) {}
 
     public function correctDocument(CorrectDocumentRequest $request, string $txid)
@@ -72,10 +74,18 @@ class DocumentCorrectionController extends Controller
                 $jobData['mime_type'] = $corrFile->getMimeType() ?? 'application/octet-stream';
             }
 
-            $jobId = Str::uuid()->toString();
-            BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
+        $jobId = Str::uuid()->toString();
+        BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
 
-            return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
+        $this->auditLogger->log(
+            'document.corrected',
+            'document',
+            $txid,
+            [],
+            ['pr_number' => $pr_number, 'correction_type' => $correctionType, 'reason' => $validated['correction_reason']],
+        );
+
+        return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
         } catch (\Exception $e) {
             Log::error('Failed to submit document correction', [
                 'txid' => $txid,
