@@ -66,13 +66,29 @@ class SecurityHeaders
             }
         }
 
-        $csp = implode('; ', [
-            ...$directives,
-            "frame-ancestors 'self'",
-            "base-uri 'self'",
-            "form-action 'self'",
-        ]);
-        $response->headers->set('Content-Security-Policy', $csp);
+ // Allow PDF responses to be embedded in iframes on the same site.
+ // The PDF viewer page uses <iframe src="/files/..."> to display documents.
+ // Without this, frame-ancestors 'self' on the PDF response blocks
+ // the browser's built-in PDF renderer inside the iframe.
+ $frameAncestors = "'self'";
+ if ($response->headers->get('Content-Type') === 'application/pdf') {
+ $frameAncestors = "'self'";
+ // PDF responses need a permissive CSP to allow the browser's
+ // built-in PDF plugin to function inside the iframe.
+ $csp = "default-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
+ $response->headers->set('Content-Security-Policy', $csp);
+ $response->headers->remove('X-Frame-Options');
+
+ return $response;
+ }
+
+ $csp = implode('; ', [
+ ...$directives,
+ "frame-ancestors {$frameAncestors}",
+ "base-uri 'self'",
+ "form-action 'self'",
+ ]);
+ $response->headers->set('Content-Security-Policy', $csp);
 
         // Permissions Policy - restrict powerful browser features
         $permissionsPolicy = implode(', ', [

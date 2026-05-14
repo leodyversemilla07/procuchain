@@ -74,8 +74,6 @@ class DocumentDownloadController extends BaseController
  ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
  ->header('Pragma', 'no-cache')
  ->header('Expires', '0')
- ->header('X-Content-Type-Options', 'nosniff')
- ->header('X-Frame-Options', 'SAMEORIGIN')
  ->header('Accept-Ranges', 'bytes');
             } catch (Exception $blockchainError) {
                 report($blockchainError);
@@ -96,8 +94,6 @@ class DocumentDownloadController extends BaseController
  ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
  ->header('Pragma', 'no-cache')
  ->header('Expires', '0')
- ->header('X-Content-Type-Options', 'nosniff')
- ->header('X-Frame-Options', 'SAMEORIGIN')
  ->header('Accept-Ranges', 'bytes');
             }
         } catch (Exception $e) {
