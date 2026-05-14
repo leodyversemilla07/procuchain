@@ -22,6 +22,7 @@ use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\mock;
 
 beforeEach(function () {
@@ -199,11 +200,22 @@ describe('ProcurementListController', function () {
         });
 
         it('forbids inaccessible blockchain status polling for bac secretariat', function () {
-            // TODO: Scoped procurement access control for blockchain status polling
-            // is not yet implemented. Currently, any user with 'view blockchain transactions'
-            // permission can poll any procurement's blockchain status.
-            // This test should be enabled once per-procurement scoped access checks are added.
-            $this->markTestSkipped('Scoped blockchain status access not yet implemented — tracked as future enhancement');
+            $secretariat = User::factory()->create([
+                'blockchain_address' => 'secretariat-address',
+            ]);
+            $secretariat->assignRole('bac_secretariat');
+
+            bindProcurementControllerMocks(
+                repositoryFixture: procurementFixture('PR-2025-100-0001', '999'),
+                statusItems: collect([
+                    detailStatusItem('different-address'),
+                ]),
+            );
+
+            actingAs($secretariat);
+
+            getJson(route('procurements.blockchain-status', ['pr_number' => 'PR-2025-100-0001']))
+                ->assertForbidden();
         });
     });
 

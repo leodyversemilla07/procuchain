@@ -246,7 +246,7 @@ class ProcurementListController extends BaseController
      */
     public function getBlockchainStatus(string $pr_number): JsonResponse
     {
-        $this->authorize('view-blockchain-transactions');
+        $this->authorize('view-procurement', $pr_number);
 
         try {
             // Fetch documents from blockchain for this procurement

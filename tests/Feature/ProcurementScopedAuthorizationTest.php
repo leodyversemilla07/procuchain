@@ -54,19 +54,19 @@ describe('procurement-scoped authorization', function () {
     });
 
     it('forbids inaccessible verification pages for bac secretariat', function () {
-        // TODO: Scoped procurement access control for verification pages
-        // is not yet implemented. Currently, any user with 'edit procurement' permission
-        // can access verification for any procurement.
-        // This test should be enabled once per-procurement scoped access checks are added.
-        $this->markTestSkipped('Scoped verification page access not yet implemented — tracked as future enhancement');
+        denyProcurementAccess('PR-2025-999-0001');
+
+        $this->actingAs($this->secretariat)
+            ->get(route('procurement.verification', ['pr_number' => 'PR-2025-999-0001']))
+            ->assertForbidden();
     });
 
     it('forbids inaccessible procurement correction pages for bac secretariat', function () {
-        // TODO: Scoped procurement access control for correction pages
-        // is not yet implemented. Currently, any user with 'edit procurement' permission
-        // can access corrections for any procurement.
-        // This test should be enabled once per-procurement scoped access checks are added.
-        $this->markTestSkipped('Scoped correction page access not yet implemented — tracked as future enhancement');
+        denyProcurementAccess('PR-2025-999-0001');
+
+        $this->actingAs($this->secretariat)
+            ->get(route('procurements.corrections.show', ['pr_number' => 'PR-2025-999-0001']))
+            ->assertForbidden();
     });
 
     it('forbids archiving inaccessible procurements for bac secretariat', function () {

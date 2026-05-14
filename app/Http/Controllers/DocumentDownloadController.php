@@ -22,7 +22,7 @@ class DocumentDownloadController extends BaseController
      */
     public function downloadFile(Request $request, string $fileKey)
     {
-        $this->authorize('download-document');
+        $this->authorize('download-document', $fileKey);
 
         try {
             if (empty($fileKey)) {

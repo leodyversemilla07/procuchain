@@ -3,6 +3,8 @@
 use App\DataTransferObjects\ProcurementData;
 use App\Models\DocumentView;
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
@@ -122,10 +124,42 @@ it('formats stage enum to display name correctly', function () {
 });
 
 it('forbids bac secretariat from viewing inaccessible procurement documents', function () {
-    // TODO: Scoped document access control is not yet implemented in PdfViewerController.
-    // Currently, any user with 'view documents' permission can view any document.
-    // This test should be enabled once per-procurement scoped access checks are added.
-    $this->markTestSkipped('Scoped document access not yet implemented — tracked as future enhancement');
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    Role::findByName('bac_secretariat', 'web')->givePermissionTo([
+        'view documents',
+        'download documents',
+        'view procurement',
+    ]);
+
+    $user = User::factory()->createOne([
+        'blockchain_address' => 'secretariat-address',
+    ]);
+    $user->assignRole('bac_secretariat');
+
+    $dataService = Mockery::mock(ProcurementDataService::class);
+    $dataService->shouldReceive('getDocumentDataByFileKey')
+        ->once()
+        ->with('locked-document')
+        ->andReturn([
+            'pr_number' => 'PR-2025-998-0003',
+        ]);
+    $dataService->shouldReceive('fetchStatusItems')
+        ->once()
+        ->with('PR-2025-998-0003')
+        ->andReturn(collect([
+            ['user_address' => 'different-address'],
+        ]));
+    app()->instance(ProcurementDataService::class, $dataService);
+
+    $repository = Mockery::mock(ProcurementRepository::class);
+    $repository->shouldReceive('findByProcurement')
+        ->once()
+        ->with('PR-2025-998-0003')
+        ->andReturn(viewerLockedProcurementFixture());
+    app()->instance(ProcurementRepository::class, $repository);
+
+    actingAs($user);
+    get('/pdf-viewer/locked-document')->assertForbidden();
 });
 
 function viewerLockedProcurementFixture(): ProcurementData

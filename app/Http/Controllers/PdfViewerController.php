@@ -21,7 +21,7 @@ class PdfViewerController extends BaseController
      */
     public function showPdfViewer(Request $request, string $fileKey): Response
     {
-        $this->authorize('view-document');
+        $this->authorize('view-document', $fileKey);
 
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 

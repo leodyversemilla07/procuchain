@@ -20,7 +20,7 @@ class ProcurementCorrectionController extends Controller
 
     public function correctProcurement(CorrectProcurementRequest $request, string $prNumber)
     {
-        $this->authorize('correct-procurement');
+        $this->authorize('correct-procurement', $prNumber);
 
         $validated = $request->validated();
 
@@ -112,7 +112,7 @@ class ProcurementCorrectionController extends Controller
      */
     public function showProcurementCorrectionsPage(string $prNumber): InertiaResponse
     {
-        $this->authorize('correct-procurement');
+        $this->authorize('correct-procurement', $prNumber);
 
         try {
             $pageData = $this->correctionService->getCorrectionPageData($prNumber);
