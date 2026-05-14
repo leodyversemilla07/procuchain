@@ -205,24 +205,48 @@ class DocumentDownloadController extends BaseController
         $pr_number = $documentData['pr_number'] ?? 'Unknown';
         $stage = $documentData['stage'] ?? 'Unknown';
 
+        // Build the stream content first, then calculate its actual length
+        // to produce a structurally valid PDF that pdf.js can parse.
+        $stream = "BT\n/F1 16 Tf\n100 700 Td\n(DEVELOPMENT MODE - PLACEHOLDER PDF) Tj\n";
+        $stream .= "0 -30 Td\n(Document: {$documentType}) Tj\n";
+        $stream .= "0 -20 Td\n(Procurement ID: {$pr_number}) Tj\n";
+        $stream .= "0 -20 Td\n(Stage: {$stage}) Tj\n";
+        $stream .= "0 -40 Td\n(File Key: {$fileKey}) Tj\n";
+        $stream .= "0 -60 Td\n(This is a placeholder PDF for development purposes.) Tj\n";
+        $stream .= "0 -20 Td\n(The actual file is not available in the storage.) Tj\n";
+        $stream .= "ET\n";
+
+        $streamLength = strlen($stream);
+
         $pdf = "%PDF-1.4\n";
         $pdf .= "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
         $pdf .= "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
         $pdf .= "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
         $pdf .= "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
-        $pdf .= "5 0 obj\n<< /Length 200 >>\nstream\n";
-        $pdf .= "BT\n/F1 16 Tf\n100 700 Td\n(DEVELOPMENT MODE - PLACEHOLDER PDF) Tj\n";
-        $pdf .= "0 -30 Td\n(Document: {$documentType}) Tj\n";
-        $pdf .= "0 -20 Td\n(Procurement ID: {$pr_number}) Tj\n";
-        $pdf .= "0 -20 Td\n(Stage: {$stage}) Tj\n";
-        $pdf .= "0 -40 Td\n(File Key: {$fileKey}) Tj\n";
-        $pdf .= "0 -60 Td\n(This is a placeholder PDF for development purposes.) Tj\n";
-        $pdf .= "0 -20 Td\n(The actual file is not available in the storage.) Tj\n";
-        $pdf .= "ET\n";
+        $pdf .= "5 0 obj\n<< /Length {$streamLength} >>\nstream\n";
+        $pdf .= $stream;
         $pdf .= "endstream\nendobj\n";
-        $pdf .= "xref\n0 6\n0000000000 65535 f \n0000000010 00000 n \n0000000053 00000 n \n0000000107 00000 n \n0000000225 00000 n \n0000000284 00000 n \n";
+
+        // Calculate correct byte offsets for xref table
+        $offsets = [];
+        $offsets[0] = 0;
+        $offsets[1] = 10; // "1 0 obj" starts after "%PDF-1.4\n" = 10 bytes
+        $offsets[2] = $offsets[1] + strlen("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+        $offsets[3] = $offsets[2] + strlen("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+        $offsets[4] = $offsets[3] + strlen("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n");
+        $offsets[5] = $offsets[4] + strlen("4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n");
+
+        $xrefPos = $offsets[5] + strlen("5 0 obj\n<< /Length {$streamLength} >>\nstream\n") + $streamLength + strlen("endstream\nendobj\n");
+
+        $pdf .= "xref\n0 6\n";
+        $pdf .= sprintf("0000000000 65535 f \n");
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[1]);
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[2]);
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[3]);
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[4]);
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[5]);
         $pdf .= "trailer\n<< /Size 6 /Root 1 0 R >>\n";
-        $pdf .= "startxref\n536\n%%EOF";
+        $pdf .= "startxref\n{$xrefPos}\n%%EOF";
 
         return $pdf;
     }
