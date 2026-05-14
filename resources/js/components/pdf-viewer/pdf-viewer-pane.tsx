@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Eye, FileText, Loader2, Minus, Plus, RotateCw } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
 // Import styles for annotations and text layer
@@ -25,9 +25,17 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfError, onLoadingCh
     const [pageNumber, setPageNumber] = useState<number>(1);
     const [scale, setScale] = useState<number>(1.0);
     const [rotation, setRotation] = useState<number>(0);
-    const [viewerError, setViewerError] = useState<boolean>(false);
+  const [viewerError, setViewerError] = useState<boolean>(false);
 
-    const onDocumentLoadSuccess = useCallback(
+  // Memoize pdfjs options to prevent infinite re-renders.
+  // withCredentials ensures cookies (session/XSRF) are sent with the PDF fetch,
+  // which is required since the /files/{key} route is auth-gated.
+  const pdfOptions = useMemo(
+    () => ({ withCredentials: true }),
+    [],
+  );
+
+  const onDocumentLoadSuccess = useCallback(
         ({ numPages }: { numPages: number }) => {
             setNumPages(numPages);
             onLoadingChange(false);
@@ -124,10 +132,11 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfError, onLoadingCh
                         </div>
                     </div>
                 ) : (
-                    <Document
-                        file={pdfUrl}
-                        onLoadSuccess={onDocumentLoadSuccess}
-                        onLoadError={onDocumentLoadError}
+ <Document
+ file={{ url: pdfUrl, withCredentials: true }}
+ options={pdfOptions}
+ onLoadSuccess={onDocumentLoadSuccess}
+ onLoadError={onDocumentLoadError}
                         loading={
                             <div className="flex h-full min-h-[400px] items-center justify-center">
                                 <div className="text-center">
