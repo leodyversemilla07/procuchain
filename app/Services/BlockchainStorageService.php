@@ -360,12 +360,255 @@ class BlockchainStorageService implements BlockchainStorageInterface
  }
  }
 
-    /**
-     * Get maximum file size supported for on-chain storage
-     *
-     * @return int Maximum file size in bytes
-     */
-    public function getMaxFileSize(): int
+ /**
+ * Delete a file's data from a single node's local storage.
+ * The data remains on other nodes and will be re-synced automatically.
+ * The deletion event is recorded on-chain for audit compliance (RA 12009).
+ *
+ * @param string $fileKey The file key to delete from the node
+ * @param string $nodeId The target node ID (e.g. 'admin', 'bac-secretariat')
+ * @param string $reason Reason for single-node deletion
+ * @return array{success: bool, message: string}
+ */
+ public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
+ {
+ try {
+ $nodes = config('multichain.nodes', []);
+ $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+
+ if (! $targetNode) {
+ return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
+ }
+
+ $dataKey = str_replace('/', '_', $fileKey);
+
+ // Connect to the specific node and remove its local stream data
+ $nodeClient = new \App\Libraries\MultiChain\Client(
+ $targetNode['private_ip'],
+ $targetNode['rpc_port'],
+ config('multichain.rpc.username', 'multichainrpc'),
+ config('multichain.rpc.password'),
+ false
+ );
+ $nodeClient->setoption('chain_name', config('multichain.chain_name'));
+
+ // Remove stream items from this node only (local purge)
+ // MultiChain: liststreamkeyitems to get txids, then purge each
+ $items = $nodeClient->liststreamkeyitems(
+ StreamEnums::FILE_METADATA->value,
+ $dataKey,
+ false,
+ 100,
+ 0,
+ false
+ );
+
+ $purgedCount = 0;
+ foreach ($items as $item) {
+ try {
+ $txid = $item['txid'] ?? null;
+ if ($txid) {
+ // Use MultiChain's purge function to remove from local node
+ $nodeClient->__call('purge', [StreamEnums::FILE_METADATA->value, $txid]);
+ $purgedCount++;
+ }
+ } catch (Exception $purgeEx) {
+ Log::warning("Could not purge txid from node {$nodeId}: ".$purgeEx->getMessage());
+ }
+ }
+
+ // Also purge file data chunks from this node
+ $chunkItems = $nodeClient->liststreamkeyitems(
+ StreamEnums::FILE_DATA->value,
+ $dataKey,
+ false,
+ 1000,
+ 0,
+ false
+ );
+
+ foreach ($chunkItems as $item) {
+ try {
+ $txid = $item['txid'] ?? null;
+ if ($txid) {
+ $nodeClient->__call('purge', [StreamEnums::FILE_DATA->value, $txid]);
+ $purgedCount++;
+ }
+ } catch (Exception $purgeEx) {
+ Log::warning("Could not purge chunk txid from node {$nodeId}: ".$purgeEx->getMessage());
+ }
+ }
+
+ // Record the single-node deletion on-chain (from the primary node)
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
+ 'json' => [
+ 'file_key' => $fileKey,
+ 'data_key' => $dataKey,
+ 'action' => 'node_purge',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'items_purged' => $purgedCount,
+ 'reason' => $reason,
+ 'purged_at' => now()->toIso8601String(),
+ ],
+ ]);
+
+ Log::info("File data purged from node {$nodeId}", [
+ 'file_key' => $fileKey,
+ 'node_id' => $nodeId,
+ 'items_purged' => $purgedCount,
+ ]);
+
+ // Audit log for RA 12009 (NGPA) compliance
+ app(AuditLogger::class)->log(
+ action: 'file.node_purge',
+ subjectType: 'file',
+ subjectId: $fileKey,
+ oldValues: [
+ 'file_key' => $fileKey,
+ 'action' => 'node_purge',
+ 'node_id' => $nodeId,
+ 'items_purged' => $purgedCount,
+ 'reason' => $reason,
+ ],
+ );
+
+ return [
+ 'success' => true,
+ 'message' => "Purged {$purgedCount} items from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes and will resync automatically.",
+ ];
+ } catch (Exception $e) {
+ Log::error('Single-node file purge failed', [
+ 'file_key' => $fileKey,
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
+ }
+ }
+
+ /**
+ * Resync a node's stream data from peers.
+ * After a single-node purge, this triggers the node to re-download
+ * the missing stream items from its connected peers.
+ *
+ * @param string $nodeId The node to resync
+ * @return array{success: bool, message: string}
+ */
+ public function resyncNode(string $nodeId): array
+ {
+ try {
+ $nodes = config('multichain.nodes', []);
+ $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+
+ if (! $targetNode) {
+ return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
+ }
+
+ $nodeClient = new \App\Libraries\MultiChain\Client(
+ $targetNode['private_ip'],
+ $targetNode['rpc_port'],
+ config('multichain.rpc.username', 'multichainrpc'),
+ config('multichain.rpc.password'),
+ false
+ );
+ $nodeClient->setoption('chain_name', config('multichain.chain_name'));
+
+ // Resubscribe to all relevant streams to trigger resync
+ $streams = [
+ StreamEnums::FILE_METADATA->value,
+ StreamEnums::FILE_DATA->value,
+ StreamEnums::FILE_CHUNKS->value,
+ StreamEnums::PROCUREMENT_EVENTS->value,
+ StreamEnums::PROCUREMENT_STATUS->value,
+ ];
+
+ $resyncedStreams = 0;
+ foreach ($streams as $stream) {
+ try {
+ // Check if subscribed, then resubscribe to trigger resync
+ $info = $nodeClient->getstreaminfo($stream);
+ if (($info['subscribed'] ?? false)) {
+ // Unsubscribe and resubscribe to force resync from peers
+ $nodeClient->unsubscribe($stream);
+ $nodeClient->subscribe($stream);
+ $resyncedStreams++;
+ } else {
+ $nodeClient->subscribe($stream);
+ $resyncedStreams++;
+ }
+ } catch (Exception $streamEx) {
+ Log::warning("Could not resync stream {$stream} on node {$nodeId}: ".$streamEx->getMessage());
+ }
+ }
+
+ // Record resync event on-chain
+ $dataKey = 'node_'.$nodeId.'_resync';
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
+ 'json' => [
+ 'action' => 'node_resync',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'streams_resynced' => $resyncedStreams,
+ 'resynced_at' => now()->toIso8601String(),
+ ],
+ ]);
+
+ Log::info("Node {$nodeId} resync triggered", [
+ 'node_id' => $nodeId,
+ 'streams_resynced' => $resyncedStreams,
+ ]);
+
+ // Audit log for RA 12009 (NGPA) compliance
+ app(AuditLogger::class)->log(
+ action: 'node.resync',
+ subjectType: 'node',
+ subjectId: $nodeId,
+ newValues: [
+ 'action' => 'node_resync',
+ 'node_id' => $nodeId,
+ 'streams_resynced' => $resyncedStreams,
+ ],
+ );
+
+ return [
+ 'success' => true,
+ 'message' => "Resync triggered for {$targetNode['name']} ({$nodeId}) — {$resyncedStreams} streams will re-download from peers.",
+ ];
+ } catch (Exception $e) {
+ Log::error('Node resync failed', [
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
+ }
+ }
+
+ /**
+ * Get list of available nodes for the purge/resync UI
+ *
+ * @return array<int, array{id: string, name: string, role: string}>
+ */
+ public function getAvailableNodes(): array
+ {
+ return collect(config('multichain.nodes', []))
+ ->map(fn ($node) => [
+ 'id' => $node['id'],
+ 'name' => $node['name'],
+ 'role' => $node['role'],
+ ])
+ ->values()
+ ->all();
+ }
+
+ /**
+ * Get maximum file size supported for on-chain storage
+ *
+ * @return int Maximum file size in bytes
+ */
+ public function getMaxFileSize(): int
     {
         return $this->maxChunkSize;
     }

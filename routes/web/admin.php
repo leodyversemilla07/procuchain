@@ -97,5 +97,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
  Route::prefix('recoverable-data')->name('recoverable-data.')->group(function () {
  Route::get('/', [RecoverableDataController::class, 'index'])->name('index');
  Route::post('/restore', [RecoverableDataController::class, 'restore'])->name('restore');
+ Route::post('/delete-from-node', [RecoverableDataController::class, 'deleteFromNode'])->name('delete-from-node');
+ Route::post('/resync-node', [RecoverableDataController::class, 'resyncNode'])->name('resync-node');
  });
 });
