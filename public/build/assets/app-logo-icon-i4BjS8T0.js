@@ -1,0 +1,1 @@
+import{h as e}from"./dist-0PRlmvnN.js";var t=e();function n(e){return(0,t.jsx)(`img`,{...e,src:`/logo.png`,alt:`App Logo`})}export{n as t};
