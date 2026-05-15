@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Services\BlockchainStorageService;
-use App\Services\Manager;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,6 +23,9 @@ use Inertia\Response;
  * - Single-node purge removes local copy only; peers retain data
  * - Resync triggers the node to re-download from peers
  * - All actions are audit-logged per RA 12009 (NGPA)
+ *
+ * All mutations return RedirectResponse for Inertia compatibility
+ * (router.post auto-handles XSRF tokens, no manual CSRF needed).
  */
 class RecoverableDataController extends Controller
 {
@@ -33,7 +35,7 @@ class RecoverableDataController extends Controller
 
     /**
      * Display the Recoverable Data admin page.
-     * Shows all currently-deleted files that can be restored,
+     * Shows all currently-deleted files grouped by PR number,
      * plus available nodes for the purge/resync demo.
      */
     public function index(Request $request): Response
@@ -42,12 +44,17 @@ class RecoverableDataController extends Controller
 
         $files = collect($deletedFiles)->values()->map(fn (array $file) => [
             'file_key' => $file['file_key'],
+            'pr_number' => $file['pr_number'] ?? explode('/', $file['file_key'])[0],
             'reason' => $file['reason'],
             'deleted_at' => $file['deleted_at'],
         ]);
 
+        // Extract unique PR numbers for the dropdown
+        $prNumbers = $files->pluck('pr_number')->unique()->sort()->values()->all();
+
         return Inertia::render('admin/recoverable-data', [
             'deletedFiles' => $files,
+            'prNumbers' => $prNumbers,
             'nodes' => $this->storage->getAvailableNodes(),
         ]);
     }
@@ -56,7 +63,7 @@ class RecoverableDataController extends Controller
      * Restore a previously deleted file on blockchain.
      * Publishes a 'restored' action marker — the on-chain data was never removed.
      */
-    public function restore(Request $request): JsonResponse
+    public function restore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'file_key' => 'required|string',
@@ -69,16 +76,10 @@ class RecoverableDataController extends Controller
         $success = $this->storage->restoreFile($fileKey, $reason);
 
         if ($success) {
-            return response()->json([
-                'message' => 'File restored on blockchain. The restoration event is now on-chain and audit-logged.',
-                'file_key' => $fileKey,
-            ]);
+            return redirect()->back()->with('success', 'File restored on blockchain. The restoration event is now on-chain and audit-logged.');
         }
 
-        return response()->json([
-            'message' => 'Failed to restore file on blockchain.',
-            'file_key' => $fileKey,
-        ], 500);
+        return redirect()->back()->with('error', 'Failed to restore file on blockchain.');
     }
 
     /**
@@ -86,7 +87,7 @@ class RecoverableDataController extends Controller
      * The data remains on all other nodes and will be re-synced automatically.
      * Recorded on-chain as action: 'node_purge' for audit compliance.
      */
-    public function deleteFromNode(Request $request): JsonResponse
+    public function deleteFromNode(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'file_key' => 'required|string',
@@ -100,7 +101,11 @@ class RecoverableDataController extends Controller
             $validated['reason'] ?? 'Demo: single-node purge'
         );
 
-        return response()->json($result, $result['success'] ? 200 : 500);
+        if ($result['success']) {
+            return redirect()->back()->with('success', $result['message']);
+        }
+
+        return redirect()->back()->with('error', $result['message']);
     }
 
     /**
@@ -108,7 +113,7 @@ class RecoverableDataController extends Controller
      * After a single-node purge, this triggers the node to re-download
      * all missing stream items from connected nodes.
      */
-    public function resyncNode(Request $request): JsonResponse
+    public function resyncNode(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'node_id' => 'required|string',
@@ -116,6 +121,10 @@ class RecoverableDataController extends Controller
 
         $result = $this->storage->resyncNode($validated['node_id']);
 
-        return response()->json($result, $result['success'] ? 200 : 500);
+        if ($result['success']) {
+            return redirect()->back()->with('success', $result['message']);
+        }
+
+        return redirect()->back()->with('error', $result['message']);
     }
 }

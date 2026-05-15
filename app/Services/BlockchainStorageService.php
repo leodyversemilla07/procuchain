@@ -339,16 +339,20 @@ class BlockchainStorageService implements BlockchainStorageInterface
  ];
  }
 
- // Filter only those where latest action is 'deleted'
- foreach ($statusMap as $fileKey => $info) {
- if ($info['action'] === 'deleted') {
- $deletedFiles[$fileKey] = [
- 'file_key' => $info['file_key'],
- 'reason' => $info['reason'],
- 'deleted_at' => $info['timestamp'],
- ];
- }
- }
+        // Filter only those where latest action is 'deleted'
+        foreach ($statusMap as $fileKey => $info) {
+            if ($info['action'] === 'deleted') {
+                // Extract PR number from file key (format: PR-YYYY-NNN/phase/stage/...)
+                $prNumber = explode('/', $info['file_key'])[0];
+
+                $deletedFiles[$fileKey] = [
+                    'file_key' => $info['file_key'],
+                    'pr_number' => $prNumber,
+                    'reason' => $info['reason'],
+                    'deleted_at' => $info['timestamp'],
+                ];
+            }
+        }
 
  return $deletedFiles;
  } catch (Exception $e) {

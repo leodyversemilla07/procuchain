@@ -13,14 +13,15 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import adminRecoverableData from '@/routes/admin/recoverable-data';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
-import { ArchiveRestore, Database, Network, RotateCcw, ServerCrash, Shield, Trash2, Zap } from 'lucide-react';
-import { useState } from 'react';
+import { ArchiveRestore, Database, FileSearch, Network, RotateCcw, ServerCrash, Shield, Trash2, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface DeletedFile {
     file_key: string;
+    pr_number: string;
     reason: string;
     deleted_at: string;
 }
@@ -33,16 +34,18 @@ interface BlockchainNode {
 
 interface RecoverableDataPageProps {
     deletedFiles: DeletedFile[];
+    prNumbers: string[];
     nodes: BlockchainNode[];
+    flash?: { success?: string; error?: string };
 }
 
-export default function RecoverableDataPage({ deletedFiles, nodes }: RecoverableDataPageProps) {
+export default function RecoverableDataPage({ deletedFiles, prNumbers, nodes, flash }: RecoverableDataPageProps) {
     const [restoringKey, setRestoringKey] = useState<string | null>(null);
     const [reasons, setReasons] = useState<Record<string, string>>({});
 
-    // Delete-from-node state
+    // Delete-from-node state (procurement-centric)
     const [purgeNodeId, setPurgeNodeId] = useState<string>('');
-    const [purgeFileKey, setPurgeFileKey] = useState<string>('');
+    const [purgePrNumber, setPurgePrNumber] = useState<string>('');
     const [purgeReason, setPurgeReason] = useState<string>('');
     const [isPurging, setIsPurging] = useState(false);
 
@@ -50,116 +53,95 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
     const [resyncNodeId, setResyncNodeId] = useState<string>('');
     const [isResyncing, setIsResyncing] = useState(false);
 
-    // Result messages
-    const [purgeResult, setPurgeResult] = useState<{ success: boolean; message: string } | null>(null);
-    const [resyncResult, setResyncResult] = useState<{ success: boolean; message: string } | null>(null);
+    // Filter deleted files by selected PR number (for the purge card)
+    const filesForSelectedPr = useMemo(
+        () => deletedFiles.filter((f) => f.pr_number === purgePrNumber),
+        [deletedFiles, purgePrNumber],
+    );
 
-    const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+    // Handle flash messages from Inertia redirects
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
 
-    const handleRestore = async (fileKey: string) => {
-        setRestoringKey(fileKey);
+    const handleRestore = (fileKey: string) => {
         const reason = reasons[fileKey] || 'Restored by admin';
+        setRestoringKey(fileKey);
 
-        try {
-            const response = await fetch(adminRecoverableData.restore.url(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
+        router.post(
+            adminRecoverableData.restore.url(),
+            { file_key: fileKey, reason },
+            {
+                onSuccess: () => {
+                    toast.success('File restored on blockchain. The restoration event is now on-chain and audit-logged.');
                 },
-                body: JSON.stringify({ file_key: fileKey, reason }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success(data.message);
-                router.reload({ only: ['deletedFiles'] });
-            } else {
-                toast.error(data.message || 'Failed to restore file');
-            }
-        } catch {
-            toast.error('Network error — could not reach server');
-        } finally {
-            setRestoringKey(null);
-        }
+                onError: () => {
+                    toast.error('Failed to restore file on blockchain.');
+                },
+                onFinish: () => {
+                    setRestoringKey(null);
+                },
+            },
+        );
     };
 
-    const handleDeleteFromNode = async () => {
-        if (!purgeNodeId || !purgeFileKey) {
-            toast.error('Select a node and enter a file key');
+    const handleDeleteFromNode = () => {
+        if (!purgeNodeId || !purgePrNumber) {
+            toast.error('Select a procurement (PR number) and a target node');
             return;
         }
 
         setIsPurging(true);
-        setPurgeResult(null);
 
-        try {
-            const response = await fetch(adminRecoverableData.deleteFromNode.url(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    file_key: purgeFileKey,
-                    node_id: purgeNodeId,
-                    reason: purgeReason || 'Demo: single-node purge',
-                }),
+        // Purge all files for this PR from the selected node
+        const purgePromises = filesForSelectedPr.map((file) => {
+            return new Promise<void>((resolve) => {
+                router.post(
+                    adminRecoverableData.deleteFromNode.url(),
+                    {
+                        file_key: file.file_key,
+                        node_id: purgeNodeId,
+                        reason: purgeReason || `Single-node purge for ${purgePrNumber}`,
+                    },
+                    {
+                        onSuccess: () => resolve(),
+                        onError: () => resolve(), // Don't block others on failure
+                        onFinish: () => resolve(),
+                    },
+                );
             });
+        });
 
-            const data = await response.json();
-            setPurgeResult(data);
-
-            if (response.ok) {
-                toast.success(data.message);
-            } else {
-                toast.error(data.message);
-            }
-        } catch {
-            toast.error('Network error — could not reach server');
-            setPurgeResult({ success: false, message: 'Network error' });
-        } finally {
+        Promise.all(purgePromises).finally(() => {
             setIsPurging(false);
-        }
+            toast.success(`Purged ${filesForSelectedPr.length} file(s) for ${purgePrNumber} from ${nodes.find((n) => n.id === purgeNodeId)?.name || purgeNodeId}. Data survives on remaining nodes.`);
+        });
     };
 
-    const handleResyncNode = async () => {
+    const handleResyncNode = () => {
         if (!resyncNodeId) {
             toast.error('Select a node to resync');
             return;
         }
 
         setIsResyncing(true);
-        setResyncResult(null);
 
-        try {
-            const response = await fetch(adminRecoverableData.resyncNode.url(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
+        router.post(
+            adminRecoverableData.resyncNode.url(),
+            { node_id: resyncNodeId },
+            {
+                onSuccess: () => {
+                    toast.success('Node resync initiated. The node will re-download missing data from its peers.');
                 },
-                body: JSON.stringify({ node_id: resyncNodeId }),
-            });
-
-            const data = await response.json();
-            setResyncResult(data);
-
-            if (response.ok) {
-                toast.success(data.message);
-            } else {
-                toast.error(data.message);
-            }
-        } catch {
-            toast.error('Network error — could not reach server');
-            setResyncResult({ success: false, message: 'Network error' });
-        } finally {
-            setIsResyncing(false);
-        }
+                onError: () => {
+                    toast.error('Failed to initiate node resync.');
+                },
+                onFinish: () => {
+                    setIsResyncing(false);
+                },
+            },
+        );
     };
 
     return (
@@ -175,7 +157,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                 <HeroCard
                     icon={Database}
                     title="Recoverable Data"
-                    description="Deleted files are never permanently erased — they remain on the blockchain as immutable records. Every deletion and restoration is tracked on-chain and audit-logged per RA 12009 (NGPA)."
+                    description="Deleted procurement files are never permanently erased — they remain on the blockchain as immutable records. Every deletion and restoration is tracked on-chain and audit-logged per RA 12009 (NGPA)."
                     actions={
                         <div className="flex items-center gap-3">
                             <Badge className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
@@ -207,21 +189,46 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                     </CardContent>
                 </Card>
 
-                {/* ─── DEMO: Delete from Node ─── */}
+                {/* ─── DEMO: Delete from Node (by PR Number) ─── */}
                 <Card className="border-amber-500/20 bg-amber-500/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
                             <ServerCrash className="h-4 w-4 text-amber-600" />
-                            Demo: Delete Data from a Single Node
+                            Demo: Purge Procurement from a Single Node
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <FieldDescription>
-                            Purge a file's data from <strong className="text-foreground">one node only</strong>. The data survives on the remaining
-                            3 nodes and will be automatically re-synced. The purge is recorded on-chain as an audit event (RA 12009).
+                            Purge all files for a <strong className="text-foreground">specific procurement</strong> from one node only.
+                            The data survives on the remaining 3 nodes and will be automatically re-synced.
+                            The purge is recorded on-chain as an audit event (RA 12009).
                         </FieldDescription>
 
                         <div className="grid gap-4 sm:grid-cols-3">
+                            <Field>
+                                <FieldLabel htmlFor="purge-pr">Procurement (PR Number)</FieldLabel>
+                                <Select value={purgePrNumber} onValueChange={(v) => v && setPurgePrNumber(v)}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select PR number..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {prNumbers.length > 0 ? (
+                                                prNumbers.map((pr) => (
+                                                    <SelectItem key={pr} value={pr}>
+                                                        {pr}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="_none" disabled>
+                                                    No deleted procurements
+                                                </SelectItem>
+                                            )}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+
                             <Field>
                                 <FieldLabel htmlFor="purge-node">Target Node</FieldLabel>
                                 <Select value={purgeNodeId} onValueChange={(v) => v && setPurgeNodeId(v)}>
@@ -241,17 +248,6 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="purge-file-key">File Key</FieldLabel>
-                                <Input
-                                    id="purge-file-key"
-                                    type="text"
-                                    placeholder="e.g. phase-1/bac-resolution.pdf"
-                                    value={purgeFileKey}
-                                    onChange={(e) => setPurgeFileKey(e.target.value)}
-                                />
-                            </Field>
-
-                            <Field>
                                 <FieldLabel htmlFor="purge-reason">Reason (RA 12009 audit)</FieldLabel>
                                 <Input
                                     id="purge-reason"
@@ -263,6 +259,20 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                             </Field>
                         </div>
 
+                        {/* Show files that will be purged for the selected PR */}
+                        {purgePrNumber && filesForSelectedPr.length > 0 && (
+                            <div className="rounded-md bg-muted p-3 space-y-1 text-sm">
+                                <p className="text-muted-foreground font-medium text-xs uppercase">
+                                    Files to purge for {purgePrNumber}
+                                </p>
+                                {filesForSelectedPr.map((f) => (
+                                    <p key={f.file_key} className="font-mono text-xs">
+                                        {f.file_key}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-3">
                             <AlertDialog>
                                 <AlertDialogTrigger
@@ -270,7 +280,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                         <Button
                                             variant="destructive"
                                             className="gap-2"
-                                            disabled={isPurging || !purgeNodeId || !purgeFileKey}
+                                            disabled={isPurging || !purgeNodeId || !purgePrNumber || filesForSelectedPr.length === 0}
                                         />
                                     }
                                 >
@@ -284,14 +294,13 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                             Confirm Single-Node Purge
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This will remove the file's data from <strong>one node only</strong>. The data remains
-                                            on the other 3 nodes and will be re-synced automatically. This event is recorded on-chain.
+                                            This will remove <strong>{filesForSelectedPr.length} file(s)</strong> for procurement
+                                            <code className="mx-1 font-mono">{purgePrNumber}</code> from
+                                            <strong className="mx-1">{nodes.find((n) => n.id === purgeNodeId)?.name || purgeNodeId}</strong>.
+                                            The data remains on the other 3 nodes and will be re-synced automatically.
+                                            This event is recorded on-chain.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
-                                    <div className="rounded-md bg-muted p-3 space-y-1 text-sm">
-                                        <p><span className="text-muted-foreground font-medium">Node:</span> {nodes.find(n => n.id === purgeNodeId)?.name || purgeNodeId}</p>
-                                        <p><span className="text-muted-foreground font-medium">File:</span> <code className="font-mono">{purgeFileKey}</code></p>
-                                    </div>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction variant="destructive" onClick={handleDeleteFromNode}>
@@ -302,12 +311,6 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
-
-                        {purgeResult && (
-                            <div className={`rounded-md p-3 text-sm ${purgeResult.success ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-destructive/10 text-destructive'}`}>
-                                {purgeResult.message}
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
 
@@ -354,12 +357,6 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                 Resync from Peers
                             </Button>
                         </div>
-
-                        {resyncResult && (
-                            <div className={`rounded-md p-3 text-sm ${resyncResult.success ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-destructive/10 text-destructive'}`}>
-                                {resyncResult.message}
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
 
@@ -372,7 +369,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                         <EmptyHeader>
                             <EmptyTitle>No Deleted Files</EmptyTitle>
                             <EmptyDescription>
-                                All blockchain data is currently active. No files have been marked as deleted.
+                                All blockchain data is currently active. No procurement files have been marked as deleted.
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -381,14 +378,15 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Trash2 className="h-5 w-5 text-destructive" />
-                                Deleted Files — Pending Recovery
+                                Deleted Procurement Files — Pending Recovery
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>File Key</TableHead>
+                                        <TableHead>PR Number</TableHead>
+                                        <TableHead>File</TableHead>
                                         <TableHead>Reason</TableHead>
                                         <TableHead>Deleted At</TableHead>
                                         <TableHead>Status</TableHead>
@@ -398,8 +396,13 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                 <TableBody>
                                     {deletedFiles.map((file) => (
                                         <TableRow key={file.file_key}>
-                                            <TableCell className="font-mono text-sm">
-                                                {file.file_key}
+                                            <TableCell>
+                                                <Badge variant="secondary" className="font-mono">
+                                                    {file.pr_number}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="font-mono text-xs">
+                                                {file.file_key.replace(`${file.pr_number}/`, '')}
                                             </TableCell>
                                             <TableCell className="text-muted-foreground text-sm">
                                                 {file.reason || '—'}
@@ -429,7 +432,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle className="flex items-center gap-2">
                                                                 <RotateCcw className="h-5 w-5 text-emerald-600" />
-                                                                Restore File from Blockchain
+                                                                Restore Procurement File from Blockchain
                                                             </AlertDialogTitle>
                                                             <AlertDialogDescription>
                                                                 This will publish a restoration marker on the blockchain.
@@ -437,11 +440,14 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <div className="space-y-3 py-2">
-                                                            <div className="rounded-md bg-muted p-3">
+                                                            <div className="rounded-md bg-muted p-3 space-y-1">
                                                                 <FieldLabel className="text-muted-foreground text-xs uppercase">
-                                                                    File Key
+                                                                    Procurement
                                                                 </FieldLabel>
-                                                                <p className="font-mono text-sm">
+                                                                <Badge variant="secondary" className="font-mono">
+                                                                    {file.pr_number}
+                                                                </Badge>
+                                                                <p className="font-mono text-sm mt-1">
                                                                     {file.file_key}
                                                                 </p>
                                                             </div>
