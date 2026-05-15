@@ -43,11 +43,13 @@ class AuditLogController extends Controller
                 'distinctActions' => $distinctActions,
                 'filters' => $request->only(['action', 'user_id', 'date_from', 'date_to']),
             ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch audit logs', [
-                'admin_id' => $request->user()->id,
-                'error' => 'An error occurred loading audit log data.',
-            ]);
+    } catch (\Exception $e) {
+        Log::error('Failed to fetch audit logs', [
+            'admin_id' => $request->user()->id,
+            'error' => $e->getMessage(),
+            'exception' => get_class($e),
+            'trace' => $e->getTraceAsString(),
+        ]);
 
             return Inertia::render('admin/audit-log', [
                 'logs' => [
