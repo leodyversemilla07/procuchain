@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
@@ -214,49 +216,51 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p className="text-muted-foreground text-sm">
+                        <FieldDescription>
                             Purge a file's data from <strong className="text-foreground">one node only</strong>. The data survives on the remaining
                             3 nodes and will be automatically re-synced. The purge is recorded on-chain as an audit event (RA 12009).
-                        </p>
+                        </FieldDescription>
 
                         <div className="grid gap-4 sm:grid-cols-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium uppercase text-muted-foreground">Target Node</label>
+                            <Field>
+                                <FieldLabel htmlFor="purge-node">Target Node</FieldLabel>
                                 <Select value={purgeNodeId} onValueChange={(v) => v && setPurgeNodeId(v)}>
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select node..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {nodes.map((node) => (
-                                            <SelectItem key={node.id} value={node.id}>
-                                                {node.name} ({node.role})
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {nodes.map((node) => (
+                                                <SelectItem key={node.id} value={node.id}>
+                                                    {node.name} ({node.role})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </Field>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium uppercase text-muted-foreground">File Key</label>
-                                <input
+                            <Field>
+                                <FieldLabel htmlFor="purge-file-key">File Key</FieldLabel>
+                                <Input
+                                    id="purge-file-key"
                                     type="text"
-                                    className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
                                     placeholder="e.g. phase-1/bac-resolution.pdf"
                                     value={purgeFileKey}
                                     onChange={(e) => setPurgeFileKey(e.target.value)}
                                 />
-                            </div>
+                            </Field>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium uppercase text-muted-foreground">Reason (RA 12009 audit)</label>
-                                <input
+                            <Field>
+                                <FieldLabel htmlFor="purge-reason">Reason (RA 12009 audit)</FieldLabel>
+                                <Input
+                                    id="purge-reason"
                                     type="text"
-                                    className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
                                     placeholder="Reason for single-node purge..."
                                     value={purgeReason}
                                     onChange={(e) => setPurgeReason(e.target.value)}
                                 />
-                            </div>
+                            </Field>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -290,7 +294,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                     </div>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDeleteFromNode} className="bg-destructive hover:bg-destructive/90">
+                                        <AlertDialogAction variant="destructive" onClick={handleDeleteFromNode}>
                                             <ServerCrash className="mr-2 h-4 w-4" />
                                             Purge from Node
                                         </AlertDialogAction>
@@ -316,27 +320,29 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p className="text-muted-foreground text-sm">
+                        <FieldDescription>
                             After a single-node purge, trigger the node to <strong className="text-foreground">re-download all stream data</strong> from
                             its connected peers. The resync event is also recorded on-chain.
-                        </p>
+                        </FieldDescription>
 
                         <div className="flex items-end gap-4">
-                            <div className="space-y-1.5 flex-1">
-                                <label className="text-xs font-medium uppercase text-muted-foreground">Node to Resync</label>
+                            <Field className="flex-1">
+                                <FieldLabel htmlFor="resync-node">Node to Resync</FieldLabel>
                                 <Select value={resyncNodeId} onValueChange={(v) => v && setResyncNodeId(v)}>
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select node..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {nodes.map((node) => (
-                                            <SelectItem key={node.id} value={node.id}>
-                                                {node.name} ({node.role})
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            {nodes.map((node) => (
+                                                <SelectItem key={node.id} value={node.id}>
+                                                    {node.name} ({node.role})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </Field>
 
                             <Button
                                 variant="outline"
@@ -360,8 +366,8 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                 {/* ─── Deleted Files Table ─── */}
                 {deletedFiles.length === 0 ? (
                     <Empty>
-                        <EmptyMedia>
-                            <Shield className="h-16 w-16 text-emerald-500" />
+                        <EmptyMedia variant="icon">
+                            <Shield className="h-8 w-8 text-emerald-500" />
                         </EmptyMedia>
                         <EmptyHeader>
                             <EmptyTitle>No Deleted Files</EmptyTitle>
@@ -432,18 +438,19 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                                         </AlertDialogHeader>
                                                         <div className="space-y-3 py-2">
                                                             <div className="rounded-md bg-muted p-3">
-                                                                <p className="text-muted-foreground text-xs font-medium uppercase">
+                                                                <FieldLabel className="text-muted-foreground text-xs uppercase">
                                                                     File Key
-                                                                </p>
+                                                                </FieldLabel>
                                                                 <p className="font-mono text-sm">
                                                                     {file.file_key}
                                                                 </p>
                                                             </div>
-                                                            <div>
-                                                                <label className="text-muted-foreground mb-1 text-xs font-medium uppercase">
+                                                            <Field>
+                                                                <FieldLabel htmlFor={`restore-reason-${file.file_key}`}>
                                                                     Restoration Reason (RA 12009 audit)
-                                                                </label>
+                                                                </FieldLabel>
                                                                 <Textarea
+                                                                    id={`restore-reason-${file.file_key}`}
                                                                     placeholder="Reason for restoration..."
                                                                     value={reasons[file.file_key] || ''}
                                                                     onChange={(e) =>
@@ -452,16 +459,16 @@ export default function RecoverableDataPage({ deletedFiles, nodes }: Recoverable
                                                                             [file.file_key]: e.target.value,
                                                                         }))
                                                                     }
-                                                                    className="mt-1"
                                                                     rows={2}
                                                                 />
-                                                            </div>
+                                                            </Field>
                                                         </div>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                             <AlertDialogAction
+                                                                variant="outline"
                                                                 onClick={() => handleRestore(file.file_key)}
-                                                                className="bg-emerald-600 hover:bg-emerald-700"
+                                                                className="border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
                                                             >
                                                                 <RotateCcw className="mr-2 h-4 w-4" />
                                                                 Restore On-Chain
