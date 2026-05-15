@@ -435,12 +435,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
         ->andReturn(collect([
-            (object) ['stage' => 'procurement_initiation', 'documentType' => 'purchase_request'],
-            (object) ['stage' => 'procurement_initiation', 'documentType' => 'ppmp'],
-            (object) ['stage' => 'procurement_initiation', 'documentType' => 'app'],
-            (object) ['stage' => 'procurement_initiation', 'documentType' => 'certificate_of_funds'],
-            (object) ['stage' => 'procurement_initiation', 'documentType' => 'approved_budget_contract'],
-            (object) ['stage' => 'procurement_initiation', 'documentType' => 'technical_specifications'],
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'procurement_initiation_document'],
         ]));
     $this->app->instance(DocumentRepository::class, $documentRepo);
 
@@ -502,5 +497,5 @@ test('cannot mark procurement initiation stage as complete without required docu
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
     $response->assertStatus(422)
-        ->assertJson(['error' => 'Cannot mark stage as complete. Please upload all required documents first.']);
+        ->assertJson(['error' => 'Cannot mark stage as complete. Missing required documents: Procurement Initiation Document (PDF)']);
 });

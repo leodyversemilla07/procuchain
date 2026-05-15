@@ -20,6 +20,25 @@ beforeEach(function () {
     $this->service = new BlockchainStorageService($this->multichainMock);
 });
 
+/**
+ * Helper: Mock the isFileDeleted check that FileRetriever calls
+ * before every liststreamkeyitems metadata mock in retrieveFile tests.
+ *
+ * FileRetriever::retrieveFile() calls isFileDeleted() first,
+ * which calls liststreamkeyitems with a "{dataKey}_deleted" key.
+ * We mock it to return [] (not deleted) by default.
+ */
+function mockFileNotDeleted($mockService): void
+{
+    $mockService->shouldReceive('liststreamkeyitems')
+        ->once()
+        ->withArgs(function (string $stream, string $key) {
+            // Match deletion key pattern: "{dataKey}_deleted"
+            return str_ends_with($key, '_deleted');
+        })
+        ->andReturn([]); // Empty = file not deleted
+}
+
 describe('BlockchainStorageService - On-Chain Storage', function () {
     describe('uploadFile', function () {
         it('uploads file successfully to blockchain with hex encoding', function () {
@@ -72,8 +91,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->once()
                 ->with('file.data', Mockery::on(function ($items) use ($expectedHex) {
                     return count($items) === 2 && // data + metadata
-                           $items[0]['data'] === $expectedHex &&
-                           $items[0]['for'] === 'file.data';
+                        $items[0]['data'] === $expectedHex &&
+                        $items[0]['for'] === 'file.data';
                 }))
                 ->andReturn('batch_txid');
 
@@ -94,8 +113,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     'file.data',
                     Mockery::on(function ($items) {
                         return count($items) === 2 &&
-                               $items[1]['for'] === 'file.metadata' &&
-                               $items[1]['data']['json']['storage_method'] === 'on_chain';
+                            $items[1]['for'] === 'file.metadata' &&
+                            $items[1]['data']['json']['storage_method'] === 'on_chain';
                     })
                 )
                 ->andReturn('batch_txid');
@@ -130,8 +149,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     'file.data',
                     Mockery::on(function ($items) {
                         return count($items) === 2 &&
-                               $items[1]['data']['json']['pr_number'] === 'PROC-123' &&
-                               $items[1]['data']['json']['title'] === 'Bid Document';
+                            $items[1]['data']['json']['pr_number'] === 'PROC-123' &&
+                            $items[1]['data']['json']['title'] === 'Bid Document';
                     })
                 )
                 ->andReturn('batch_txid_with_context');
@@ -157,6 +176,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
             $fileHex = bin2hex($fileContent);
 
             $mockService = Mockery::mock(Manager::class);
+
+            // Mock deletion check (FileRetriever calls this first)
+            mockFileNotDeleted($mockService);
 
             // Mock metadata retrieval (returns empty)
             $mockService->shouldReceive('liststreamkeyitems')
@@ -188,6 +210,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $mockService = Mockery::mock(Manager::class);
 
+            // Mock deletion check (FileRetriever calls this first)
+            mockFileNotDeleted($mockService);
+
             // Mock metadata retrieval (returns empty)
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
@@ -214,6 +239,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
         it('throws exception for non-existent file', function () {
             $mockService = Mockery::mock(Manager::class);
+
+            // Mock deletion check (FileRetriever calls this first)
+            mockFileNotDeleted($mockService);
 
             // Mock metadata retrieval (returns empty)
             $mockService->shouldReceive('liststreamkeyitems')
@@ -250,6 +278,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                         'data_txid' => 'data_txid_123',
                     ]],
                 ]);
+
+            // Mock deletion check (FileRetriever calls this first)
+            mockFileNotDeleted($mockService);
 
             // Mock metadata list for retrieveFile (returns empty since txid provided)
             $mockService->shouldReceive('liststreamkeyitems')
@@ -290,6 +321,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                         'data_txid' => 'data_txid',
                     ]],
                 ]);
+
+            // Mock deletion check (FileRetriever calls this first)
+            mockFileNotDeleted($mockService);
 
             // Mock metadata list for retrieveFile
             $mockService->shouldReceive('liststreamkeyitems')
@@ -348,9 +382,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     Mockery::type('string'),
                     Mockery::on(function ($data) {
                         return $data['json']['action'] === 'deleted' &&
-                               isset($data['json']['deleted_at']) &&
-                               isset($data['json']['file_key']) &&
-                               isset($data['json']['data_key']);
+                            isset($data['json']['deleted_at']) &&
+                            isset($data['json']['file_key']) &&
+                            isset($data['json']['data_key']);
                     })
                 )
                 ->andReturn('delete_txid');
