@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle, ShieldBan } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useState } from 'react';
 
 interface BlockIpConfirmationDialogProps {

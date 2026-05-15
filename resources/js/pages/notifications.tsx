@@ -8,6 +8,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { User } from '@/types';
@@ -15,7 +16,6 @@ import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 import { Head, router, usePage, usePoll, WhenVisible } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, RotateCw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -299,9 +299,9 @@ export default function Notifications() {
                 variant="outline"
                 size="icon"
                 onClick={handleRefresh}
-className={cn('text-muted-foreground hover:text-foreground transition-all')}
->
- {refreshing ? <Spinner className="size-4" /> : <RotateCw className="h-4 w-4" />}
+                className={cn('text-muted-foreground hover:text-foreground transition-all')}
+            >
+                {refreshing ? <Spinner className="size-4" /> : <RotateCw className="h-4 w-4" />}
             </Button>
             {filteredNotifications.some((n: Notification) => !n.read_at) && (
                 <Button onClick={handleMarkAllAsRead} variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -427,8 +427,8 @@ className={cn('text-muted-foreground hover:text-foreground transition-all')}
                                         >
                                             {loadingMore ? (
                                                 <div className="flex items-center justify-center gap-2">
-<Spinner data-icon="inline-start" />
- Loading more...
+                                                    <Spinner data-icon="inline-start" />
+                                                    Loading more...
                                                 </div>
                                             ) : (
                                                 'Load more notifications'

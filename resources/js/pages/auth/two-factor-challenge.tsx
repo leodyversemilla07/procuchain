@@ -1,5 +1,5 @@
-import { Head, useForm } from '@inertiajs/react';
 import { Spinner } from '@/components/ui/spinner';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';

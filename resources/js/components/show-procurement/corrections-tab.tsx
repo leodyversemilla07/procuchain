@@ -1,5 +1,5 @@
-import { CheckCircle, Clock, Edit, FileText, RefreshCw } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
+import { CheckCircle, Clock, Edit, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -370,12 +370,12 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                     Cancel
                                 </Button>
                                 <Button onClick={handleSubmitCorrection} disabled={submitting}>
-{submitting ? (
- <>
- <Spinner data-icon="inline-start" />
- Submitting...
- </>
- ) : (
+                                    {submitting ? (
+                                        <>
+                                            <Spinner data-icon="inline-start" />
+                                            Submitting...
+                                        </>
+                                    ) : (
                                         <>
                                             <CheckCircle className="mr-2 h-4 w-4" />
                                             Submit Correction

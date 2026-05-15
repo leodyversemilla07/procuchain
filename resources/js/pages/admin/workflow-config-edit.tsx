@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, GitBranch, GripVertical, RotateCcw, Save } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -339,8 +339,14 @@ export default function WorkflowConfigEdit({
                                 </>
                             )}
                             <Button onClick={handleSave} disabled={!isModified || isSubmitting || processing} size="sm">
-<Save className="mr-2 h-4 w-4" />
- {isSubmitting ? <><Spinner data-icon="inline-start" /> Saving...</> : 'Save Changes'}
+                                <Save className="mr-2 h-4 w-4" />
+                                {isSubmitting ? (
+                                    <>
+                                        <Spinner data-icon="inline-start" /> Saving...
+                                    </>
+                                ) : (
+                                    'Save Changes'
+                                )}
                             </Button>
                         </>
                     }

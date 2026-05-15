@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, FileText } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -316,7 +316,13 @@ export function DocumentCorrectionSheet({
                         disabled={isSubmitting || !form.data.correction_reason || (form.data.correction_type === 'replace' && !correctedFile)}
                         className="w-full sm:w-auto"
                     >
-                        {isSubmitting ? <><Spinner data-icon="inline-start" /> Submitting...</> : 'Submit Correction'}
+                        {isSubmitting ? (
+                            <>
+                                <Spinner data-icon="inline-start" /> Submitting...
+                            </>
+                        ) : (
+                            'Submit Correction'
+                        )}
                     </Button>
                 </SheetFooter>
             </SheetContent>

@@ -25,9 +25,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Spinner } from '@/components/ui/spinner';
 import { IntegrityCheck, VerificationStatus, type VerificationStatusType } from '@/components/verification';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -852,8 +852,8 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
 
                     <div className="flex items-center justify-center py-8">
                         <div className="text-muted-foreground flex items-center gap-3">
-<Spinner className="size-5" />
- <span>Loading verification report...</span>
+                            <Spinner className="size-5" />
+                            <span>Loading verification report...</span>
                         </div>
                     </div>
                 </div>

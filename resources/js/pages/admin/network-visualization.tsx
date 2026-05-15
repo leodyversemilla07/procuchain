@@ -104,26 +104,26 @@ export default function NetworkVisualizationPage({ nodes, connections, overview 
         >
             <Head title="Blockchain Network" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
- <HeroCard
- icon={Share2}
- title="Blockchain Network"
- description={`Full mesh topology — ${overview.total_nodes} decentralized MultiChain nodes, actively replicating every transaction. All data survives any single node failure — deleted records remain on-chain and recoverable across ${overview.total_nodes} copies.`}
- actions={
- <div className="flex items-center gap-4">
- <div className="flex items-center gap-2">
- <div className={`h-3 w-3 rounded-full ${overview.all_connected ? 'animate-pulse bg-green-500' : 'bg-amber-500'}`} />
- <span className="text-sm font-medium">{overview.all_connected ? 'All Nodes Connected' : 'Partial Network'}</span>
- </div>
- <Badge variant="secondary" className="font-mono">
- Block #{overview.blocks}
- </Badge>
- <Badge className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
- <Share2 className="h-3 w-3" />
- {overview.connected_nodes}/{overview.total_nodes} Replicated
- </Badge>
- </div>
- }
- />
+                <HeroCard
+                    icon={Share2}
+                    title="Blockchain Network"
+                    description={`Full mesh topology — ${overview.total_nodes} decentralized MultiChain nodes, actively replicating every transaction. All data survives any single node failure — deleted records remain on-chain and recoverable across ${overview.total_nodes} copies.`}
+                    actions={
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <div className={`h-3 w-3 rounded-full ${overview.all_connected ? 'animate-pulse bg-green-500' : 'bg-amber-500'}`} />
+                                <span className="text-sm font-medium">{overview.all_connected ? 'All Nodes Connected' : 'Partial Network'}</span>
+                            </div>
+                            <Badge variant="secondary" className="font-mono">
+                                Block #{overview.blocks}
+                            </Badge>
+                            <Badge className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                <Share2 className="h-3 w-3" />
+                                {overview.connected_nodes}/{overview.total_nodes} Replicated
+                            </Badge>
+                        </div>
+                    }
+                />
 
                 <NetworkVisualization nodes={nodeInfos} connections={connectionLines} onRefresh={handleRefresh} isRefreshing={false} />
             </div>

@@ -2,13 +2,13 @@ import HeadingSmall from '@/components/heading-small';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { subscribe, unsubscribe } from '@/routes/settings/push-notification';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { AlertCircle, Bell, BellOff, CheckCircle2 } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -362,8 +362,8 @@ export default function PushNotification() {
                                 <Button type="button" onClick={handleRequestPermission} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
-<Spinner data-icon="inline-start" />
- Requesting...
+                                            <Spinner data-icon="inline-start" />
+                                            Requesting...
                                         </>
                                     ) : (
                                         <>
@@ -378,8 +378,8 @@ export default function PushNotification() {
                                 <Button type="button" onClick={handleSubscribe} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
-<Spinner data-icon="inline-start" />
- Subscribing...
+                                            <Spinner data-icon="inline-start" />
+                                            Subscribing...
                                         </>
                                     ) : (
                                         <>
@@ -394,8 +394,8 @@ export default function PushNotification() {
                                 <Button variant="destructive" type="button" onClick={handleUnsubscribe} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
-<Spinner data-icon="inline-start" />
- Disabling...
+                                            <Spinner data-icon="inline-start" />
+                                            Disabling...
                                         </>
                                     ) : (
                                         <>

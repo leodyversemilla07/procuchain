@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
+import { Search } from 'lucide-react';
 
 interface SearchBarProps {
     searchQuery: string;

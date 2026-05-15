@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, ArrowDownUp, Cpu, Database, GitBranch, Globe, HardDrive, Network, Server, Wifi } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -566,10 +566,8 @@ export function NetworkVisualization({ nodes, connections, onRefresh, isRefreshi
                         isRefreshing && 'opacity-50',
                     )}
                 >
-<Spinner
- className={cn('size-3.5', isRefreshing && 'opacity-50')}
- data-icon="inline-start" />
- {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                    <Spinner className={cn('size-3.5', isRefreshing && 'opacity-50')} data-icon="inline-start" />
+                    {isRefreshing ? 'Refreshing...' : 'Refresh'}
                 </button>
             </div>
         </div>

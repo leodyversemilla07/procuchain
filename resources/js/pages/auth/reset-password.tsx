@@ -1,5 +1,5 @@
-import { Form, Head } from '@inertiajs/react';
 import { Spinner } from '@/components/ui/spinner';
+import { Form, Head } from '@inertiajs/react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';

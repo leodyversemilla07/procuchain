@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,6 @@ import { dashboard } from '@/routes/admin';
 import loginLogs from '@/routes/admin/login-logs';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
-import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 import {
     Activity,
@@ -33,7 +33,7 @@ import {
     Eye,
     Filter,
     Globe,
- MapPin,
+    MapPin,
     Monitor,
     MoreVertical,
     QrCode,
@@ -658,14 +658,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="sm">
-{isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
- <span className="hidden sm:ml-2 sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+                                {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
+                                <span className="hidden sm:ml-2 sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                             </Button>
                             <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="sm">
                                 {autoRefresh ? (
                                     <>
-<Spinner className="size-4" />
- <span className="hidden sm:ml-2 sm:inline">Auto-refresh On</span>
+                                        <Spinner className="size-4" />
+                                        <span className="hidden sm:ml-2 sm:inline">Auto-refresh On</span>
                                     </>
                                 ) : (
                                     <>
@@ -682,8 +682,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             >
                                 {isExporting ? (
                                     <>
-<Spinner className="size-4" />
- <span className="hidden sm:ml-2 sm:inline">Exporting...</span>
+                                        <Spinner className="size-4" />
+                                        <span className="hidden sm:ml-2 sm:inline">Exporting...</span>
                                     </>
                                 ) : (
                                     <>

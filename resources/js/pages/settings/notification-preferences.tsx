@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Bell, BellOff, Mail, Smartphone } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -210,8 +210,8 @@ export default function NotificationPreferences() {
                         <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
                             {isSaving ? (
                                 <>
-<Spinner data-icon="inline-start" />
- Saving...
+                                    <Spinner data-icon="inline-start" />
+                                    Saving...
                                 </>
                             ) : (
                                 'Save preferences'

@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
@@ -29,23 +30,9 @@ import blockchain from '@/routes/admin/blockchain';
 import { PageProps } from '@inertiajs/core';
 import { Head, router, usePoll } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
-import {
- Activity,
- AlertCircle,
- Blocks,
- CheckCircle,
- ChevronRight,
- Database,
- RefreshCw,
-    Search,
-    Shield,
-    Users,
-    Wallet,
-    XCircle,
-} from 'lucide-react';
+import { Activity, AlertCircle, Blocks, CheckCircle, ChevronRight, Database, RefreshCw, Search, Shield, Users, Wallet, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Spinner } from '@/components/ui/spinner';
 
 interface BlockchainOverview {
     chain: string;
@@ -328,14 +315,14 @@ export default function BlockchainExplorer({
                     actions={
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing}>
-{isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCw className="mr-2 h-4 w-4" />}
- {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                                {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                {isRefreshing ? 'Refreshing...' : 'Refresh'}
                             </Button>
                             <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="default">
                                 {autoRefresh ? (
                                     <>
-<Spinner data-icon="inline-start" />
- Auto-refresh On
+                                        <Spinner data-icon="inline-start" />
+                                        Auto-refresh On
                                     </>
                                 ) : (
                                     'Enable Auto-refresh'

@@ -22,6 +22,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
@@ -30,7 +31,6 @@ import accounts from '@/routes/admin/accounts';
 import { User, type BreadcrumbItem } from '@/types';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
-import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 import {
     AlertTriangle,
