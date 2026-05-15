@@ -120,59 +120,58 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
         </div>
       )}
 
-      {/* PDF Content */}
-      <div className="flex-1 overflow-auto" style={{ height: `${containerHeight}px`, maxHeight: 'calc(100vh - 250px)' }}>
-        {loading && !error ? (
-          <div className="flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
-            <div className="text-center">
-              <Loader2 className="text-primary mx-auto mb-4 h-10 w-10 animate-spin sm:h-12 sm:w-12" />
-              <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
-              <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="bg-muted flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
-            <div className="max-w-md p-6 text-center sm:p-8">
-              <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16" />
-              <h3 className="text-primary mb-2 text-base font-semibold sm:text-lg">PDF Viewer Error</h3>
-              <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
-                Unable to display the PDF in the browser. You can view the document using the options below.
-              </p>
-              <div className="space-y-2 sm:space-y-3">
-                <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
-                  <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  Open PDF in New Tab
-                </Button>
-                <Button variant="outline" className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} download />}>
-                  <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  Download PDF
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-center py-4">
- <Document
- file={fileConfig}
- onLoadSuccess={onDocumentLoadSuccess}
- onLoadError={onDocumentLoadError}
- loading={
- <div className="flex items-center justify-center py-20">
- <Loader2 className="text-primary h-8 w-8 animate-spin" />
- </div>
- }
- >
-              <Page
-                pageNumber={pageNumber}
-                scale={scale}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                className="react-pdf__page"
-              />
-            </Document>
-          </div>
-        )}
+  {/* PDF Content */}
+  <div className="flex-1 overflow-auto" style={{ height: `${containerHeight}px`, maxHeight: 'calc(100vh - 250px)' }}>
+    {error ? (
+    <div className="bg-muted flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
+      <div className="max-w-md p-6 text-center sm:p-8">
+        <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16" />
+        <h3 className="text-primary mb-2 text-base font-semibold sm:text-lg">PDF Viewer Error</h3>
+        <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
+          Unable to display the PDF in the browser. You can view the document using the options below.
+        </p>
+        <div className="space-y-2 sm:space-y-3">
+          <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
+            <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            Open PDF in New Tab
+          </Button>
+          <Button variant="outline" className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} download />}>
+            <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            Download PDF
+          </Button>
+        </div>
       </div>
+    </div>
+    ) : (
+    <div className="flex justify-center py-4">
+      {loading && (
+      <div className="flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
+        <div className="text-center">
+          <Loader2 className="text-primary mx-auto mb-4 h-10 w-10 animate-spin sm:h-12 sm:w-12" />
+          <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
+          <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
+        </div>
+      </div>
+      )}
+      <Document
+        file={fileConfig}
+        onLoadSuccess={onDocumentLoadSuccess}
+        onLoadError={onDocumentLoadError}
+        loading=""
+      >
+        {!loading && (
+        <Page
+          pageNumber={pageNumber}
+          scale={scale}
+          renderTextLayer={true}
+          renderAnnotationLayer={true}
+          className="react-pdf__page"
+        />
+        )}
+      </Document>
+    </div>
+    )}
+  </div>
     </div>
   );
 }
