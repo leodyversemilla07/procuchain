@@ -83,7 +83,7 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                 if (!processing) onOpenChange(newOpen);
             }}
         >
-            <DialogContent className="max-h-[90vh] w-[90%] overflow-y-auto sm:max-w-[500px] md:max-w-[600px]" initialFocus={false}>
+            <DialogContent className="max-h-[90vh] w-[90%] overflow-y-auto sm:max-w-[500px] md:max-w-[600px]">
                 <DialogHeader className="space-y-3">
                     <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">Pre-Procurement Conference Decision</DialogTitle>
                     <DialogDescription className="text-sm leading-relaxed sm:text-base">

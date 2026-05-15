@@ -9,6 +9,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { update } from '@/routes/settings/profile';
@@ -125,7 +126,7 @@ export default function Profile() {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save</Button>
+                            <Button disabled={processing}>{processing ? <Spinner data-icon="inline-start" /> : null}Save</Button>
 
                             <Transition
                                 show={recentlySuccessful}

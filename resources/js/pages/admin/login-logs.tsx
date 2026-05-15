@@ -899,7 +899,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                             </div>
                                         </div>
                                         <Calendar
-                                            initialFocus
+                                            autoFocus
                                             mode="range"
                                             defaultMonth={dateRange?.from}
                                             selected={dateRange}
