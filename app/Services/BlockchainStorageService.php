@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\BlockchainStorageInterface;
 use App\Enums\StreamEnums;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\Blockchain\FileRetriever;
 use App\Services\Blockchain\FileUploader;
 use Exception;
@@ -85,19 +86,20 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $this->uploader->uploadFile($file, $prNumber, $stageId, $documentType, $metadata);
     }
 
-    /**
-     * Retrieve file from blockchain (handles both single and chunked storage)
-     *
-     * @param  string  $fileKey  The file key
-     * @param  string|null  $dataTxid  Optional data transaction ID for direct retrieval
-     * @return array File content and metadata
-     *
-     * @throws Exception If file not found
-     */
-    public function retrieveFile(string $fileKey, ?string $dataTxid = null): array
-    {
-        return $this->retriever->retrieveFile($fileKey, $dataTxid);
-    }
+ /**
+ * Retrieve file from blockchain (handles both single and chunked storage)
+ *
+ * @param string $fileKey The file key
+ * @param string|null $dataTxid Optional data transaction ID for direct retrieval
+ * @param bool $includeDeleted If true, returns file even if marked as deleted (for recovery)
+ * @return array File content and metadata
+ *
+ * @throws Exception If file not found
+ */
+ public function retrieveFile(string $fileKey, ?string $dataTxid = null, bool $includeDeleted = false): array
+ {
+ return $this->retriever->retrieveFile($fileKey, $dataTxid, $includeDeleted);
+ }
 
     /**
      * Verify file integrity against blockchain metadata
@@ -156,47 +158,207 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $metadataItem['data']['json'] ?? [];
     }
 
-    /**
-     * Mark a file as deleted on blockchain
-     * Note: File content remains on blockchain (immutable) but marked as deleted
-     *
-     * @param  string  $fileKey  The file key to mark as deleted
-     * @param  string  $reason  Reason for deletion
-     * @return bool Success status
-     */
-    public function deleteFile(string $fileKey, string $reason = ''): bool
-    {
-        try {
-            // Publish deletion record to blockchain
-            $dataKey = str_replace('/', '_', $fileKey);
-            $deletionKey = $dataKey.'_deleted';
+ /**
+ * Mark a file as deleted on blockchain
+ * Note: File content remains on blockchain (immutable) but marked as deleted
+ *
+ * @param string $fileKey The file key to mark as deleted
+ * @param string $reason Reason for deletion
+ * @return bool Success status
+ */
+ public function deleteFile(string $fileKey, string $reason = ''): bool
+ {
+ try {
+ // Publish deletion record to blockchain
+ $dataKey = str_replace('/', '_', $fileKey);
+ $deletionKey = $dataKey.'_deleted';
 
-            // Publish deletion marker to blockchain
-            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
-                'json' => [
-                    'file_key' => $fileKey,
-                    'data_key' => $dataKey,
-                    'action' => 'deleted',
-                    'reason' => $reason,
-                    'deleted_at' => now()->toIso8601String(),
-                ],
-            ]);
+ // Publish deletion marker to blockchain
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
+ 'json' => [
+ 'file_key' => $fileKey,
+ 'data_key' => $dataKey,
+ 'action' => 'deleted',
+ 'reason' => $reason,
+ 'deleted_at' => now()->toIso8601String(),
+ ],
+ ]);
 
-            Log::info('File marked as deleted on blockchain', [
-                'file_key' => $fileKey,
-                'reason' => $reason,
-            ]);
+ Log::info('File marked as deleted on blockchain', [
+ 'file_key' => $fileKey,
+ 'reason' => $reason,
+ ]);
 
-            return true;
-        } catch (Exception $e) {
-            Log::error('File deletion marking failed', [
-                'file_key' => $fileKey,
-                'error' => $e->getMessage(),
-            ]);
+ // Audit log for RA 12009 (NGPA) compliance
+ app(AuditLogger::class)->log(
+ action: 'file.deleted',
+ subjectType: 'file',
+ subjectId: $fileKey,
+ oldValues: ['file_key' => $fileKey, 'action' => 'deleted', 'reason' => $reason],
+ );
 
-            return false;
-        }
-    }
+ return true;
+ } catch (Exception $e) {
+ Log::error('File deletion marking failed', [
+ 'file_key' => $fileKey,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return false;
+ }
+ }
+
+ /**
+ * Restore a previously deleted file on blockchain
+ * Publishes a 'restored' action marker — the on-chain data was never removed.
+ *
+ * @param string $fileKey The file key to restore
+ * @param string $reason Reason for restoration
+ * @return bool Success status
+ */
+ public function restoreFile(string $fileKey, string $reason = ''): bool
+ {
+ try {
+ $dataKey = str_replace('/', '_', $fileKey);
+ $deletionKey = $dataKey.'_deleted';
+
+ // Publish restoration marker to blockchain
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
+ 'json' => [
+ 'file_key' => $fileKey,
+ 'data_key' => $dataKey,
+ 'action' => 'restored',
+ 'reason' => $reason,
+ 'restored_at' => now()->toIso8601String(),
+ ],
+ ]);
+
+ Log::info('File restored on blockchain', [
+ 'file_key' => $fileKey,
+ 'reason' => $reason,
+ ]);
+
+ // Audit log for RA 12009 (NGPA) compliance
+ app(AuditLogger::class)->log(
+ action: 'file.restored',
+ subjectType: 'file',
+ subjectId: $fileKey,
+ newValues: ['file_key' => $fileKey, 'action' => 'restored', 'reason' => $reason],
+ );
+
+ return true;
+ } catch (Exception $e) {
+ Log::error('File restoration failed', [
+ 'file_key' => $fileKey,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return false;
+ }
+ }
+
+ /**
+ * Check if a file is currently marked as deleted on blockchain
+ *
+ * @param string $fileKey The file key to check
+ * @return bool True if the latest action is 'deleted'
+ */
+ public function isFileDeleted(string $fileKey): bool
+ {
+ try {
+ $dataKey = str_replace('/', '_', $fileKey);
+ $deletionKey = $dataKey.'_deleted';
+
+ $items = $this->multichain->liststreamkeyitems(
+ StreamEnums::FILE_METADATA->value,
+ $deletionKey,
+ false,
+ 100,
+ 0,
+ false
+ );
+
+ if (empty($items)) {
+ return false;
+ }
+
+ $latestItem = collect($items)->last();
+ $action = $latestItem['data']['json']['action'] ?? 'restored';
+
+ return $action === 'deleted';
+ } catch (Exception $e) {
+ Log::error('File deletion status check failed', [
+ 'file_key' => $fileKey,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return false;
+ }
+ }
+
+ /**
+ * Get all currently deleted file keys from blockchain
+ * Returns an array of file keys where the latest action is 'deleted'
+ *
+ * @return array<string, array{file_key: string, reason: string, deleted_at: string}>
+ */
+ public function getDeletedFiles(): array
+ {
+ try {
+ $items = $this->multichain->liststreamitems(
+ StreamEnums::FILE_METADATA->value,
+ true,
+ 10000,
+ 0,
+ false
+ );
+
+ $deletedFiles = [];
+ $statusMap = [];
+
+ foreach ($items as $item) {
+ $data = $item['data']['json'] ?? null;
+ if (! $data) {
+ continue;
+ }
+
+ $action = $data['action'] ?? null;
+ $fileKey = $data['file_key'] ?? null;
+
+ // Only track deleted/restored action markers
+ if (! in_array($action, ['deleted', 'restored']) || ! $fileKey) {
+ continue;
+ }
+
+ // Track latest action per file key
+ $statusMap[$fileKey] = [
+ 'file_key' => $fileKey,
+ 'action' => $action,
+ 'reason' => $data['reason'] ?? '',
+ 'timestamp' => $data['deleted_at'] ?? $data['restored_at'] ?? now()->toIso8601String(),
+ ];
+ }
+
+ // Filter only those where latest action is 'deleted'
+ foreach ($statusMap as $fileKey => $info) {
+ if ($info['action'] === 'deleted') {
+ $deletedFiles[$fileKey] = [
+ 'file_key' => $info['file_key'],
+ 'reason' => $info['reason'],
+ 'deleted_at' => $info['timestamp'],
+ ];
+ }
+ }
+
+ return $deletedFiles;
+ } catch (Exception $e) {
+ Log::error('Failed to get deleted files', [
+ 'error' => $e->getMessage(),
+ ]);
+
+ return [];
+ }
+ }
 
     /**
      * Get maximum file size supported for on-chain storage

@@ -14,20 +14,26 @@ class FileRetriever
         private Manager $multichain,
     ) {}
 
-    /**
-     * Retrieve file from blockchain (handles both single and chunked storage)
-     *
-     * @param  string  $fileKey  The file key
-     * @param  string|null  $dataTxid  Optional data transaction ID for direct retrieval
-     * @return array File content and metadata
-     *
-     * @throws Exception If file not found
-     */
-    public function retrieveFile(string $fileKey, ?string $dataTxid = null): array
-    {
-        $dataKey = str_replace('/', '_', $fileKey);
+ /**
+ * Retrieve file from blockchain (handles both single and chunked storage)
+ *
+ * @param string $fileKey The file key
+ * @param string|null $dataTxid Optional data transaction ID for direct retrieval
+ * @param bool $includeDeleted If true, returns file even if marked as deleted (for recovery)
+ * @return array File content and metadata
+ *
+ * @throws Exception If file not found
+ */
+ public function retrieveFile(string $fileKey, ?string $dataTxid = null, bool $includeDeleted = false): array
+ {
+ $dataKey = str_replace('/', '_', $fileKey);
 
-        // Retrieve file metadata first to check storage method
+ // Check if file is marked as deleted (unless explicitly including deleted files)
+ if (! $includeDeleted && $this->isFileDeleted($dataKey)) {
+ throw new Exception('File has been deleted and is not available. Contact an administrator to restore it.');
+ }
+
+ // Retrieve file metadata first to check storage method
         $metadataItems = $this->multichain->liststreamkeyitems(StreamEnums::FILE_METADATA->value, $dataKey, false, 1);
         $fileMetadata = null;
         $metadataJson = null;
@@ -182,26 +188,65 @@ class FileRetriever
         ];
     }
 
-    /**
-     * Extract hex data from a blockchain data item
-     */
-    private function extractHexFromDataItem(array $dataItem): ?string
-    {
-        if (is_string($dataItem['data'] ?? null)) {
-            // Non-verbose mode - data is directly a hex string
-            return $dataItem['data'];
-        }
+ /**
+ * Extract hex data from a blockchain data item
+ */
+ private function extractHexFromDataItem(array $dataItem): ?string
+ {
+ if (is_string($dataItem['data'] ?? null)) {
+ // Non-verbose mode - data is directly a hex string
+ return $dataItem['data'];
+ }
 
-        if (is_array($dataItem['data'] ?? null)) {
-            // Verbose mode - need to use gettxoutdata to get raw hex
-            $txid = $dataItem['txid'] ?? $dataItem['data']['txid'] ?? null;
-            $vout = $dataItem['vout'] ?? $dataItem['data']['vout'] ?? 0;
+ if (is_array($dataItem['data'] ?? null)) {
+ // Verbose mode - need to use gettxoutdata to get raw hex
+ $txid = $dataItem['txid'] ?? $dataItem['data']['txid'] ?? null;
+ $vout = $dataItem['vout'] ?? $dataItem['data']['vout'] ?? 0;
 
-            if ($txid) {
-                return $this->multichain->gettxoutdata($txid, $vout);
-            }
-        }
+ if ($txid) {
+ return $this->multichain->gettxoutdata($txid, $vout);
+ }
+ }
 
-        return null;
-    }
+ return null;
+ }
+
+ /**
+ * Check if a file is currently marked as deleted on blockchain
+ *
+ * @param string $dataKey The data key (underscore-converted file key)
+ * @return bool True if the latest action is 'deleted'
+ */
+ private function isFileDeleted(string $dataKey): bool
+ {
+ try {
+ $deletionKey = $dataKey.'_deleted';
+
+ $items = $this->multichain->liststreamkeyitems(
+ StreamEnums::FILE_METADATA->value,
+ $deletionKey,
+ false,
+ 100,
+ 0,
+ false
+ );
+
+ if (empty($items)) {
+ return false;
+ }
+
+ $latestItem = collect($items)->last();
+ $action = $latestItem['data']['json']['action'] ?? 'restored';
+
+ return $action === 'deleted';
+ } catch (Exception $e) {
+ // If we can't check deletion status, assume not deleted
+ Log::warning('Could not check file deletion status', [
+ 'data_key' => $dataKey,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return false;
+ }
+ }
 }

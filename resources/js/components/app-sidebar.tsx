@@ -10,6 +10,7 @@ import adminAuditLog from '@/routes/admin/audit-log';
 import adminBlockchain from '@/routes/admin/blockchain';
 import { index as adminInvitations } from '@/routes/admin/invitations';
 import adminLoginLogs from '@/routes/admin/login-logs';
+import adminRecoverableData from '@/routes/admin/recoverable-data';
 import adminNetwork from '@/routes/admin/network';
 import { index as adminProcurementsList } from '@/routes/admin/procurements';
 import { index as stageDocumentsIndex } from '@/routes/admin/stage-documents';
@@ -27,11 +28,12 @@ import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart3,
-    Bell,
-    Blocks,
-    BookOpen,
-    Eye,
-    FileText,
+ Bell,
+ Blocks,
+ BookOpen,
+ Database,
+ Eye,
+ FileText,
     GitBranch,
     LayoutGrid,
     Mail,
@@ -217,11 +219,17 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
             icon: Blocks,
         });
 
-        items.push({
-            title: 'Network View',
-            href: adminNetwork.index.url(),
-            icon: Share2,
-        });
+ items.push({
+ title: 'Network View',
+ href: adminNetwork.index.url(),
+ icon: Share2,
+ });
+
+ items.push({
+ title: 'Recoverable Data',
+ href: adminRecoverableData.index.url(),
+ icon: Database,
+ });
 
         // Procurement Configuration (Workflow & Documents)
         items.push({

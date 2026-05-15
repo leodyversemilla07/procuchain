@@ -324,7 +324,7 @@ export default function BlockchainExplorer({
                 <HeroCard
                     icon={Blocks}
                     title="Blockchain Explorer"
-                    description="Browse blocks, transactions, streams, addresses and network peers on the ProcuChain blockchain network"
+                    description="Browse blocks, transactions, streams, addresses and network peers. Every transaction is replicated across all nodes — deleted data remains on-chain and recoverable."
                     actions={
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing}>

@@ -26,14 +26,18 @@ use Inertia\Response;
 class SharedLedgerController extends Controller
 {
     /** Streams to include in the shared ledger. */
-    private const LEDGER_STREAMS = [
-        'procurement.metadata',
-        'procurement.status',
-        'procurement.documents',
-        'procurement.corrections',
-        'procurement.metadata.corrections',
-        'procurement.archive',
-    ];
+ private const LEDGER_STREAMS = [
+ 'procurement.metadata',
+ 'procurement.status',
+ 'procurement.documents',
+ 'procurement.corrections',
+ 'procurement.metadata.corrections',
+ 'procurement.archive',
+ 'procurement.events',
+ 'file.data',
+ 'file.metadata',
+ 'file.chunks',
+ ];
 
     /** Items per page. */
     private const PER_PAGE = 50;
@@ -404,14 +408,18 @@ class SharedLedgerController extends Controller
      */
     private function getStreamDisplayName(string $stream): string
     {
-        return match ($stream) {
-            'procurement.metadata' => 'Metadata',
-            'procurement.status' => 'Status',
-            'procurement.documents' => 'Documents',
-            'procurement.corrections' => 'Document Corrections',
-            'procurement.metadata.corrections' => 'Metadata Corrections',
-            'procurement.archive' => 'Archive',
-            default => $stream,
-        };
+ return match ($stream) {
+ 'procurement.metadata' => 'Metadata',
+ 'procurement.status' => 'Status',
+ 'procurement.documents' => 'Documents',
+ 'procurement.corrections' => 'Document Corrections',
+ 'procurement.metadata.corrections' => 'Metadata Corrections',
+ 'procurement.archive' => 'Archive',
+ 'procurement.events' => 'Events',
+ 'file.data' => 'File Data',
+ 'file.metadata' => 'File Metadata',
+ 'file.chunks' => 'File Chunks',
+ default => $stream,
+ };
     }
 }

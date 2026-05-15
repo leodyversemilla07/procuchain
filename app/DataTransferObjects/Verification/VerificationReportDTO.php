@@ -142,7 +142,7 @@ final class VerificationReportDTO
             'documents_verified' => count($integrityResults),
             'completeness_percentage' => $completenessResult->completionPercentage,
             'cross_references_consistent' => $crossReferenceResult->isConsistent,
-            'ra_9184_compliant' => $complianceResult->isCompliant,
+            'ra_12009_compliant' => $complianceResult->isCompliant,
         ];
 
         return new self(

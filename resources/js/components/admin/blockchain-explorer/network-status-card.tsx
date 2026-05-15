@@ -18,13 +18,13 @@ export function NetworkStatusCard({ overview, autoRefresh }: NetworkStatusCardPr
                             <div className="h-3 w-3 rounded-full bg-emerald-500" />
                             <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-75" />
                         </div>
-                        <div>
-                            <p className="text-sm font-medium">Network Status: Online</p>
-                            <p className="text-muted-foreground text-xs">
-                                {overview?.connections || 0} active connections • Last updated{' '}
-                                {overview?.blocks ? formatDistanceToNow(new Date(), { addSuffix: true }) : 'N/A'}
-                            </p>
-                        </div>
+ <div>
+ <p className="text-sm font-medium">Network Status: Online</p>
+ <p className="text-muted-foreground text-xs">
+ {overview?.connections || 0} peer connections • 4 nodes replicating • Last updated{' '}
+ {overview?.blocks ? formatDistanceToNow(new Date(), { addSuffix: true }) : 'N/A'}
+ </p>
+ </div>
                     </div>
                     {autoRefresh && (
                         <Badge variant="secondary" className="self-start sm:self-auto">

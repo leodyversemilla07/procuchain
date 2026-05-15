@@ -24,23 +24,25 @@ import type { LedgerEntry, LedgerFilters, LedgerPagination, NodeOption, StreamOp
 import { Head, router } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import {
-    AlertTriangle,
-    Archive,
-    ArrowDownUp,
-    BookOpen,
-    BookOpenText,
-    CalendarIcon,
-    ChevronDown,
-    ClipboardCopy,
-    Download,
-    ExternalLink,
-    FileText,
-    FilterX,
-    GitBranch,
-    Pencil,
-    ScrollText,
-    Server,
-    Shield,
+ AlertTriangle,
+ Archive,
+ ArrowDownUp,
+ BookOpen,
+ BookOpenText,
+ CalendarIcon,
+ ChevronDown,
+ ClipboardCopy,
+ Download,
+ ExternalLink,
+ FileText,
+ FilterX,
+ GitBranch,
+ Pencil,
+ RotateCcw,
+ ScrollText,
+ Server,
+ Shield,
+ Trash2,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
@@ -85,6 +87,10 @@ const STREAM_CONFIG: Record<string, { label: string; color: string; icon: React.
         icon: Pencil,
     },
     'procurement.archive': { label: 'Archive', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: Archive },
+ 'procurement.events': { label: 'Event', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300', icon: ScrollText },
+ 'file.data': { label: 'File Data', color: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300', icon: FileText },
+ 'file.metadata': { label: 'File Meta', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300', icon: FileText },
+ 'file.chunks': { label: 'File Chunk', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300', icon: FileText },
 };
 
 const getStreamConfig = (stream: string) =>
@@ -221,7 +227,7 @@ export default function SharedLedger({
                 <HeroCard
                     icon={BookOpen}
                     title="Shared Ledger"
-                    description="Every blockchain transaction, in order. This is the immutable, shared record of every action ever taken in the procurement system — across all roles, all procurements, all time."
+                    description="Every blockchain transaction, in order. This is the immutable, shared record of every action ever taken — across all roles, all procurements, all time. Deleted data remains on-chain and recoverable."
                 >
                     <div className="mt-4 flex flex-wrap gap-4">
                         <div className="flex items-center gap-2 text-sm">
@@ -441,11 +447,23 @@ export default function SharedLedger({
                                                         {entry.formatted_timestamp}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Badge className={cn('gap-1 font-normal whitespace-nowrap', streamCfg.color)}>
-                                                            <StreamIcon className="h-3 w-3" />
-                                                            {entry.stream_display}
-                                                        </Badge>
-                                                    </TableCell>
+ <Badge className={cn('gap-1 font-normal whitespace-nowrap', streamCfg.color)}>
+ <StreamIcon className="h-3 w-3" />
+ {entry.stream_display}
+ </Badge>
+ {entry.action === 'deleted' && (
+ <Badge variant="destructive" className="gap-1 whitespace-nowrap text-xs">
+ <Trash2 className="h-3 w-3" />
+ Deleted
+ </Badge>
+ )}
+ {entry.action === 'restored' && (
+ <Badge className="gap-1 whitespace-nowrap bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+ <RotateCcw className="h-3 w-3" />
+ Restored
+ </Badge>
+ )}
+ </TableCell>
                                                     <TableCell>
                                                         {isSystem ? (
                                                             <Badge variant="secondary" className="font-mono text-xs">

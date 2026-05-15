@@ -136,7 +136,7 @@ interface VerificationReportData {
         documents_verified: number;
         completeness_percentage: number;
         cross_references_consistent: boolean;
-        ra_9184_compliant: boolean;
+        ra_12009_compliant: boolean;
         critical_issues: number;
         warnings: number;
     };
@@ -609,7 +609,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                     <div className="space-y-1">
                         <CardTitle className="flex items-center gap-2 text-lg">
                             <Scale className="text-muted-foreground h-5 w-5" />
-                            RA 9184/RA 12009 Compliance
+                            RA 12009 (NGPA) Compliance
                         </CardTitle>
                         <CardDescription>Stage: {result.stage_display_name}</CardDescription>
                     </div>
@@ -1020,10 +1020,10 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                             tooltipText="Validates PR numbers and amounts across all documents"
                         />
                         <SummaryCard
-                            title="RA 9184/12009"
-                            value={report.summary.ra_9184_compliant ? 'Compliant' : 'Issues'}
-                            subtitle={report.summary.ra_9184_compliant ? 'Meets requirements' : 'Review required'}
-                            isValid={report.summary.ra_9184_compliant}
+                            title="RA 12009"
+                            value={report.summary.ra_12009_compliant ? 'Compliant' : 'Issues'}
+                            subtitle={report.summary.ra_12009_compliant ? 'Meets NGPA requirements' : 'Review required'}
+                            isValid={report.summary.ra_12009_compliant}
                             icon={Scale}
                             tooltipText="Compliance with Philippine Government Procurement Reform Act"
                         />
@@ -1123,7 +1123,7 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                             >
                                 <div className="relative">
                                     <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                    {!report.summary.ra_9184_compliant && (
+                                    {!report.summary.ra_12009_compliant && (
                                         <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                                     )}
                                 </div>

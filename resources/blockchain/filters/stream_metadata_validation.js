@@ -3,7 +3,7 @@
  *
  * This Smart Filter validates procurement metadata published to the
  * procurement.metadata stream. It ensures all procurements have
- * proper metadata conforming to RA 9184 requirements.
+ * proper metadata conforming to RA 12009 (NGPA) requirements.
  *
  * Aligned with: App\DataTransferObjects\ProcurementData
  *
