@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Spinner } from '@/components/ui/spinner';
 
 // Dialog Components
 import BulkDeleteDialog from '@/components/admin/bulk-delete-dialog';
@@ -822,7 +823,7 @@ export default function AdminUserManagement() {
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm" className="h-9 gap-1 sm:h-8 sm:gap-2">
-                                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
                             <Button

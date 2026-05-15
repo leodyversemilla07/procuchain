@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
@@ -89,7 +89,7 @@ export default function TwoFactorChallenge() {
                 </Tabs>
 
                 <Button type="submit" className="w-full" disabled={processing}>
-                    {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                    {processing && <Spinner data-icon="inline-start" />}
                     Verify
                 </Button>
             </form>

@@ -14,7 +14,8 @@ import { User } from '@/types';
 import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 import { Head, router, usePage, usePoll, WhenVisible } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
-import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, Loader2, RotateCw } from 'lucide-react';
+import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, RotateCw } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -298,9 +299,9 @@ export default function Notifications() {
                 variant="outline"
                 size="icon"
                 onClick={handleRefresh}
-                className={cn('text-muted-foreground hover:text-foreground transition-all', refreshing && 'animate-spin')}
-            >
-                <RotateCw className="h-4 w-4" />
+className={cn('text-muted-foreground hover:text-foreground transition-all')}
+>
+ {refreshing ? <Spinner className="size-4" /> : <RotateCw className="h-4 w-4" />}
             </Button>
             {filteredNotifications.some((n: Notification) => !n.read_at) && (
                 <Button onClick={handleMarkAllAsRead} variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -416,7 +417,7 @@ export default function Notifications() {
                                     <WhenVisible
                                         fallback={
                                             <div className="flex items-center justify-center border-t py-6">
-                                                <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+                                                <Spinner className="text-muted-foreground size-6" />
                                             </div>
                                         }
                                     >
@@ -426,8 +427,8 @@ export default function Notifications() {
                                         >
                                             {loadingMore ? (
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Loading more...
+<Spinner data-icon="inline-start" />
+ Loading more...
                                                 </div>
                                             ) : (
                                                 'Load more notifications'

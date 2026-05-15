@@ -30,6 +30,7 @@ import accounts from '@/routes/admin/accounts';
 import { User, type BreadcrumbItem } from '@/types';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
+import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 import {
     AlertTriangle,
@@ -392,7 +393,7 @@ export default function AdminLockedAccounts() {
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" className="flex items-center gap-2">
-                                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
                             <Button

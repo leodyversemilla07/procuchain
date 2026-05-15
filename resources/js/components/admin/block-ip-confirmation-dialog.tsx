@@ -4,7 +4,8 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle, Loader2, ShieldBan } from 'lucide-react';
+import { AlertTriangle, ShieldBan } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useState } from 'react';
 
 interface BlockIpConfirmationDialogProps {
@@ -93,7 +94,7 @@ export default function BlockIpConfirmationDialog({ open, onOpenChange, ipAddres
                     <Button type="button" variant="destructive" onClick={handleConfirm} disabled={isBlocking}>
                         {isBlocking ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Spinner data-icon="inline-start" />
                                 Blocking...
                             </>
                         ) : (

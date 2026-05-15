@@ -7,7 +7,8 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { subscribe, unsubscribe } from '@/routes/settings/push-notification';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { AlertCircle, Bell, BellOff, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, Bell, BellOff, CheckCircle2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -361,8 +362,8 @@ export default function PushNotification() {
                                 <Button type="button" onClick={handleRequestPermission} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
-                                            <Loader2 className="animate-spin" />
-                                            Requesting...
+<Spinner data-icon="inline-start" />
+ Requesting...
                                         </>
                                     ) : (
                                         <>
@@ -377,8 +378,8 @@ export default function PushNotification() {
                                 <Button type="button" onClick={handleSubscribe} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
-                                            <Loader2 className="animate-spin" />
-                                            Subscribing...
+<Spinner data-icon="inline-start" />
+ Subscribing...
                                         </>
                                     ) : (
                                         <>
@@ -393,8 +394,8 @@ export default function PushNotification() {
                                 <Button variant="destructive" type="button" onClick={handleUnsubscribe} disabled={isLoading}>
                                     {isLoading ? (
                                         <>
-                                            <Loader2 className="animate-spin" />
-                                            Disabling...
+<Spinner data-icon="inline-start" />
+ Disabling...
                                         </>
                                     ) : (
                                         <>

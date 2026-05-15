@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Download, Eye, FileText, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, Eye, FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -147,7 +148,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
       {loading && (
       <div className="flex h-full items-center justify-center" style={{ minHeight: '500px' }}>
         <div className="text-center">
-          <Loader2 className="text-primary mx-auto mb-4 h-10 w-10 animate-spin sm:h-12 sm:w-12" />
+          <Spinner className="text-primary mx-auto mb-4 size-10 sm:size-12" />
           <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
           <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
         </div>

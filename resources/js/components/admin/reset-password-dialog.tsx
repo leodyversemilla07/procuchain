@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import admin from '@/routes/admin';
 import { router } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -105,7 +106,7 @@ export default function ResetPasswordDialog({ open, onOpenChange, user }: ResetP
                         Cancel
                     </Button>
                     <Button onClick={handleReset} disabled={isSubmitting || !reason.trim()} variant="default">
-                        {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                        {isSubmitting ? <><Spinner data-icon="inline-start" /> Sending...</> : 'Send Reset Link'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

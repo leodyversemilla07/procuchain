@@ -9,7 +9,8 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Bell, BellOff, Loader2, Mail, Smartphone } from 'lucide-react';
+import { Bell, BellOff, Mail, Smartphone } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -209,8 +210,8 @@ export default function NotificationPreferences() {
                         <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
                             {isSaving ? (
                                 <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Saving...
+<Spinner data-icon="inline-start" />
+ Saving...
                                 </>
                             ) : (
                                 'Save preferences'

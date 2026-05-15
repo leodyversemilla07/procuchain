@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { AlertTriangle, FileCheck, FileText, Plus, RotateCcw, Save, Search } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -239,8 +240,8 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                                 Reset to Defaults
                             </Button>
                             <Button onClick={handleSave} disabled={!isModified || isSubmitting} size="sm">
-                                <Save className="mr-2 h-4 w-4" />
-                                {isSubmitting ? 'Saving...' : 'Save Changes'}
+<Save className="mr-2 h-4 w-4" />
+ {isSubmitting ? <><Spinner data-icon="inline-start" /> Saving...</> : 'Save Changes'}
                             </Button>
                         </>
                     }

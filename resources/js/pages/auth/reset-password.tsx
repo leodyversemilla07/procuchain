@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                         </div>
 
                         <Button type="submit" className="mt-4 w-full" disabled={processing}>
-                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                            {processing && <Spinner data-icon="inline-start" />}
                             Reset password
                         </Button>
                     </div>

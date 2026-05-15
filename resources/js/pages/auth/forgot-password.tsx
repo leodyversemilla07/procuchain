@@ -1,6 +1,6 @@
 // Components
 import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -31,7 +31,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                             <div className="my-6 flex items-center justify-start">
                                 <Button className="w-full" type="submit" disabled={processing}>
-                                    {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                                    {processing && <Spinner data-icon="inline-start" />}
                                     Email password reset link
                                 </Button>
                             </div>

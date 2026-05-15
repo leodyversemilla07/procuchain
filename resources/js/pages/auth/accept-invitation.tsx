@@ -7,7 +7,8 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input';
 import AuthLayout from '@/layouts/auth-layout';
 import { Head, useForm } from '@inertiajs/react';
-import { CheckCircle2, Clock, Loader2, Mail, Shield, User } from 'lucide-react';
+import { CheckCircle2, Clock, Mail, Shield, User } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface Invitation {
     email: string;
@@ -154,7 +155,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                                 </Alert>
 
                                 <Button type="submit" className="w-full" disabled={processing}>
-                                    {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {processing && <Spinner data-icon="inline-start" />}
                                     Accept Invitation & Create Account
                                 </Button>
                             </div>

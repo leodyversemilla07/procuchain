@@ -433,8 +433,8 @@ class FileUploader
 private function getPhaseFromStage(int $stageId): string
 {
     return match (true) {
-        $stageId >= 1 && $stageId <= 3 => 'pre-procurement',
-        $stageId >= 4 && $stageId <= 11 => 'procurement',
+        $stageId >= 1 && $stageId <= 4 => 'pre-procurement',
+        $stageId >= 5 && $stageId <= 11 => 'procurement',
         $stageId >= 12 && $stageId <= 17 => 'post-procurement',
         default => 'unknown-phase',
     };

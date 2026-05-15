@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { Textarea } from '@/components/ui/textarea';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, FileText } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -315,7 +316,7 @@ export function DocumentCorrectionSheet({
                         disabled={isSubmitting || !form.data.correction_reason || (form.data.correction_type === 'replace' && !correctedFile)}
                         className="w-full sm:w-auto"
                     >
-                        {isSubmitting ? 'Submitting...' : 'Submit Correction'}
+                        {isSubmitting ? <><Spinner data-icon="inline-start" /> Submitting...</> : 'Submit Correction'}
                     </Button>
                 </SheetFooter>
             </SheetContent>

@@ -21,6 +21,7 @@ import { dashboard } from '@/routes/admin';
 import loginLogs from '@/routes/admin/login-logs';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
+import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 import {
     Activity,
@@ -32,8 +33,7 @@ import {
     Eye,
     Filter,
     Globe,
-    Loader2,
-    MapPin,
+ MapPin,
     Monitor,
     MoreVertical,
     QrCode,
@@ -658,14 +658,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="sm">
-                                <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
-                                <span className="hidden sm:ml-2 sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+{isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
+ <span className="hidden sm:ml-2 sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                             </Button>
                             <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="sm">
                                 {autoRefresh ? (
                                     <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="hidden sm:ml-2 sm:inline">Auto-refresh On</span>
+<Spinner className="size-4" />
+ <span className="hidden sm:ml-2 sm:inline">Auto-refresh On</span>
                                     </>
                                 ) : (
                                     <>
@@ -682,8 +682,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             >
                                 {isExporting ? (
                                     <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="hidden sm:ml-2 sm:inline">Exporting...</span>
+<Spinner className="size-4" />
+ <span className="hidden sm:ml-2 sm:inline">Exporting...</span>
                                     </>
                                 ) : (
                                     <>

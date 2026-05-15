@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface SearchBarProps {
     searchQuery: string;
@@ -29,7 +30,7 @@ export function SearchBar({ searchQuery, isSearching, onSearchQueryChange, onSea
                     <Button onClick={onSearch} disabled={isSearching} className="sm:w-auto">
                         {isSearching ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Spinner data-icon="inline-start" />
                                 Searching...
                             </>
                         ) : (

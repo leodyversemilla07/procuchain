@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useForm } from '@inertiajs/react';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface SendInvitationDialogProps {
     open: boolean;
@@ -112,7 +112,7 @@ export default function SendInvitationDialog({ open, onOpenChange, roles }: Send
                             Cancel
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {processing && <Spinner data-icon="inline-start" />}
                             Send Invitation
                         </Button>
                     </DialogFooter>

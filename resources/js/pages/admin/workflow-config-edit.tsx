@@ -11,6 +11,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, GitBranch, GripVertical, RotateCcw, Save } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -338,8 +339,8 @@ export default function WorkflowConfigEdit({
                                 </>
                             )}
                             <Button onClick={handleSave} disabled={!isModified || isSubmitting || processing} size="sm">
-                                <Save className="mr-2 h-4 w-4" />
-                                {isSubmitting ? 'Saving...' : 'Save Changes'}
+<Save className="mr-2 h-4 w-4" />
+ {isSubmitting ? <><Spinner data-icon="inline-start" /> Saving...</> : 'Save Changes'}
                             </Button>
                         </>
                     }

@@ -7,7 +7,8 @@ import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { confirm } from '@/routes/two-factor';
 import { Form } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { Check, Copy, Loader2, ScanLine } from 'lucide-react';
+import { Check, Copy, ScanLine } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AlertError from './alert-error';
 
@@ -64,7 +65,7 @@ function TwoFactorSetupStep({
                                         }}
                                     />
                                 ) : (
-                                    <Loader2 className="flex size-8 animate-spin text-gray-400" />
+                                    <Spinner className="size-8 text-gray-400" />
                                 )}
                             </div>
                         </div>
@@ -88,7 +89,7 @@ function TwoFactorSetupStep({
                         <div className="border-border flex w-full items-stretch overflow-hidden rounded-xl border">
                             {!manualSetupKey ? (
                                 <div className="bg-muted flex h-full w-full items-center justify-center p-3">
-                                    <Loader2 className="size-4 animate-spin" />
+                                    <Spinner className="size-4" />
                                 </div>
                             ) : (
                                 <>

@@ -4,6 +4,7 @@ import { RefreshCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 export type ProcurementFilterOption = {
@@ -133,7 +134,7 @@ export function ProcurementFiltersToolbar({
                         className="flex h-10 w-full items-center gap-2 sm:w-auto"
                         aria-label={isRefreshing ? 'Refreshing data' : 'Refresh procurement data'}
                     >
-                        <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : undefined)} aria-hidden="true" />
+                        {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
                         <span>Refresh</span>
                     </Button>
                 </div>

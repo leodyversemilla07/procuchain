@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { getXsrfToken } from '@/lib/csrf';
 import procurements from '@/routes/procurements';
 import { AlertCircle, Calendar, FileCheck, FileText, FileX, Hash, History, User } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useState } from 'react';
 
 interface CorrectionRecord {
@@ -135,10 +136,10 @@ export default function CorrectionDetailsSheet({ open, onOpenChange, correction,
                         <h3 className="text-lg font-semibold">{correction ? 'Correction Timeline' : 'All Corrections'}</h3>
 
                         {loading && (
-                            <div className="py-12 text-center">
-                                <div className="border-primary inline-block h-8 w-8 animate-spin rounded-full border-b-2"></div>
-                                <p className="text-muted-foreground mt-3 text-sm">Loading corrections from blockchain...</p>
-                            </div>
+<div className="py-12 text-center">
+ <Spinner className="mx-auto size-8 text-primary" />
+ <p className="text-muted-foreground mt-3 text-sm">Loading corrections from blockchain...</p>
+ </div>
                         )}
 
                         {error && (
