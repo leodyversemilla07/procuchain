@@ -144,7 +144,7 @@ enum StageEnums: string
     {
         return match ($this) {
             self::PROCUREMENT_INITIATION => [
- self::PRE_PROCUREMENT_CONFERENCE, // Optional per RA 12009 (NGPA)
+                self::PRE_PROCUREMENT_CONFERENCE, // Optional per RA 12009 (NGPA)
                 self::BIDDING_DOCUMENTS,           // Can skip to this (Competitive Bidding)
                 self::REQUEST_FOR_QUOTATION,       // For alternative modes
             ],
@@ -208,7 +208,7 @@ enum StageEnums: string
     public function canSkip(): bool
     {
         return match ($this) {
- self::PRE_PROCUREMENT_CONFERENCE => true, // Optional per RA 12009 (NGPA)
+            self::PRE_PROCUREMENT_CONFERENCE => true, // Optional per RA 12009 (NGPA)
             self::SUPPLEMENTAL_BID_BULLETIN => true,   // Optional
             default => false,
         };

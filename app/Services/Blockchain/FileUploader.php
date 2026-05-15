@@ -27,9 +27,9 @@ class FileUploader
      *
      * @param  UploadedFile  $file  The file to upload
      * @param  string  $prNumber  PR Number (e.g., PR-2025-001)
-     * @param int $stageId Stage ID (1-17, per RA 12009 NGPA)
-     * @param string $documentType Document type (e.g., "Purchase Request")
-     * @param array $metadata Additional metadata to store on blockchain
+     * @param  int  $stageId  Stage ID (1-17, per RA 12009 NGPA)
+     * @param  string  $documentType  Document type (e.g., "Purchase Request")
+     * @param  array  $metadata  Additional metadata to store on blockchain
      * @return array File storage information including file_key, data_txid and metadata_txid
      *
      * @throws Exception If storage fails
@@ -97,8 +97,8 @@ class FileUploader
      * @param  UploadedFile[]  $files
      * @param  array  $metadata  Metadata for each file
      * @param  string  $prNumber  PR Number
-     * @param int $stageId Stage ID (1-17, per RA 12009 NGPA)
-     * @param string $procurementTitle Procurement title
+     * @param  int  $stageId  Stage ID (1-17, per RA 12009 NGPA)
+     * @param  string  $procurementTitle  Procurement title
      * @return array Complete metadata array with blockchain transaction IDs
      */
     public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
@@ -397,46 +397,46 @@ class FileUploader
         );
     }
 
-/**
- * Get phase name based on stage ID
- *
- * Per RA 12009 (NGPA) IRR:
- *   Rule II (Sec 7-12): Strategic Procurement Planning & Preparation
- *   Rule V-IX (Sec 41-62): Bidding & Evaluation
- *   Rule X-XI (Sec 63-71): Post-Qualification, Award & Implementation
- *
- * Stage 1-3:  Pre-Procurement (Planning & Preparation)
- *   1 = Procurement Initiation (APP/PPMP per Sec 7)
- *   2 = Pre-Procurement Conference (optional, per Sec 49)
- *   3 = Bidding Documents / RFQ (Sec 47-48 for CB, or alternative modes per Rule IV)
- *
- * Stage 4-11: Procurement (Bidding & Evaluation)
- *   4  = Pre-Bid Conference (Sec 49-51)
- *   5  = Supplemental Bid Bulletin
- *   6  = Bid Opening (Sec 52-58)
- *   7  = Abstract of Quotations (alternative modes)
- *   8  = Bid Evaluation (Sec 59-62)
- *   9  = Post-Qualification (Sec 63-65)
- *   10 = BAC Resolution (Sec 66 — BAC recommends award)
- *   11 = Notice of Award (Sec 66 — HoPE issues NOA)
- *
- * Stage 12-17: Post-Procurement (Award & Implementation)
- *   12 = Performance Bond, Contract & PO (Sec 66.5, 68)
- *   13 = Notice to Proceed
- *   14 = Monitoring (Sec 71 — contract implementation)
- *   15 = Completion (Sec 71 — final acceptance)
- *   16 = Completion (certificate of final acceptance)
- *   17 = Completed
- *
- * Aligned with StageEnums::getPhase() per RA 12009 (NGPA).
- */
-private function getPhaseFromStage(int $stageId): string
-{
-    return match (true) {
-        $stageId >= 1 && $stageId <= 4 => 'pre-procurement',
-        $stageId >= 5 && $stageId <= 11 => 'procurement',
-        $stageId >= 12 && $stageId <= 17 => 'post-procurement',
-        default => 'unknown-phase',
-    };
-}
+    /**
+     * Get phase name based on stage ID
+     *
+     * Per RA 12009 (NGPA) IRR:
+     *   Rule II (Sec 7-12): Strategic Procurement Planning & Preparation
+     *   Rule V-IX (Sec 41-62): Bidding & Evaluation
+     *   Rule X-XI (Sec 63-71): Post-Qualification, Award & Implementation
+     *
+     * Stage 1-3:  Pre-Procurement (Planning & Preparation)
+     *   1 = Procurement Initiation (APP/PPMP per Sec 7)
+     *   2 = Pre-Procurement Conference (optional, per Sec 49)
+     *   3 = Bidding Documents / RFQ (Sec 47-48 for CB, or alternative modes per Rule IV)
+     *
+     * Stage 4-11: Procurement (Bidding & Evaluation)
+     *   4  = Pre-Bid Conference (Sec 49-51)
+     *   5  = Supplemental Bid Bulletin
+     *   6  = Bid Opening (Sec 52-58)
+     *   7  = Abstract of Quotations (alternative modes)
+     *   8  = Bid Evaluation (Sec 59-62)
+     *   9  = Post-Qualification (Sec 63-65)
+     *   10 = BAC Resolution (Sec 66 — BAC recommends award)
+     *   11 = Notice of Award (Sec 66 — HoPE issues NOA)
+     *
+     * Stage 12-17: Post-Procurement (Award & Implementation)
+     *   12 = Performance Bond, Contract & PO (Sec 66.5, 68)
+     *   13 = Notice to Proceed
+     *   14 = Monitoring (Sec 71 — contract implementation)
+     *   15 = Completion (Sec 71 — final acceptance)
+     *   16 = Completion (certificate of final acceptance)
+     *   17 = Completed
+     *
+     * Aligned with StageEnums::getPhase() per RA 12009 (NGPA).
+     */
+    private function getPhaseFromStage(int $stageId): string
+    {
+        return match (true) {
+            $stageId >= 1 && $stageId <= 4 => 'pre-procurement',
+            $stageId >= 5 && $stageId <= 11 => 'procurement',
+            $stageId >= 12 && $stageId <= 17 => 'post-procurement',
+            default => 'unknown-phase',
+        };
+    }
 }

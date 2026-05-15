@@ -62,13 +62,13 @@ class NewPasswordController extends Controller
                 // When password is reset, all existing sessions should be terminated
                 $this->invalidateAllSessions($user);
 
-            Log::info('User password reset - all sessions invalidated', [
-                'user_id' => $user->id,
-            ]);
+                Log::info('User password reset - all sessions invalidated', [
+                    'user_id' => $user->id,
+                ]);
 
-            $this->auditLogger->log('auth.password_reset', 'user', (string) $user->id);
+                $this->auditLogger->log('auth.password_reset', 'user', (string) $user->id);
 
-            event(new PasswordReset($user));
+                event(new PasswordReset($user));
             }
         );
 

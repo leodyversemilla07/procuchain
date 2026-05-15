@@ -50,17 +50,17 @@ class DocumentDownloadController extends BaseController
             try {
                 $fileData = $this->fileStorageService->retrieveFile($fileKey, $dataTxid);
 
-        $this->recordDocumentView($request, $fileKey, $documentData);
+                $this->recordDocumentView($request, $fileKey, $documentData);
 
-        $this->auditLogger->log(
-            'document.downloaded',
-            'document',
-            $fileKey,
-            [],
-            ['pr_number' => $documentData['pr_number'] ?? null, 'document_type' => $documentData['document_type'] ?? null],
-        );
+                $this->auditLogger->log(
+                    'document.downloaded',
+                    'document',
+                    $fileKey,
+                    [],
+                    ['pr_number' => $documentData['pr_number'] ?? null, 'document_type' => $documentData['document_type'] ?? null],
+                );
 
-        Log::info('Secure file access from blockchain', [
+                Log::info('Secure file access from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
                     'user_id' => $request->user()->id,
@@ -68,13 +68,13 @@ class DocumentDownloadController extends BaseController
                     'ip' => $request->ip(),
                 ]);
 
- return response($fileData['content'])
- ->header('Content-Type', 'application/pdf')
- ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
- ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
- ->header('Pragma', 'no-cache')
- ->header('Expires', '0')
- ->header('Accept-Ranges', 'bytes');
+                return response($fileData['content'])
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
+                    ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+                    ->header('Pragma', 'no-cache')
+                    ->header('Expires', '0')
+                    ->header('Accept-Ranges', 'bytes');
             } catch (Exception $blockchainError) {
                 report($blockchainError);
                 Log::error('Failed to retrieve file from blockchain', [
@@ -88,13 +88,13 @@ class DocumentDownloadController extends BaseController
 
                 $this->recordDocumentView($request, $fileKey, $documentData);
 
- return response($placeholderPdf)
- ->header('Content-Type', 'application/pdf')
- ->header('Content-Disposition', 'inline; filename="'.basename($fileKey).'"')
- ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
- ->header('Pragma', 'no-cache')
- ->header('Expires', '0')
- ->header('Accept-Ranges', 'bytes');
+                return response($placeholderPdf)
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'inline; filename="'.basename($fileKey).'"')
+                    ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+                    ->header('Pragma', 'no-cache')
+                    ->header('Expires', '0')
+                    ->header('Accept-Ranges', 'bytes');
             }
         } catch (Exception $e) {
             report($e);

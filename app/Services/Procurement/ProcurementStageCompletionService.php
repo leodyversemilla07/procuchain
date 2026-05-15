@@ -45,13 +45,14 @@ class ProcurementStageCompletionService
         if (! $completionCheck['can_complete']) {
             $missingDisplayNames = array_map(function (string $docValue): string {
                 $docEnum = DocumentTypeEnums::tryFrom($docValue);
+
                 return $docEnum ? $docEnum->getDisplayName() : $docValue;
             }, $completionCheck['missing_documents']);
 
             return [
                 'status' => 422,
                 'data' => [
-                    'error' => 'Cannot mark stage as complete. Missing required documents: ' . implode(', ', $missingDisplayNames),
+                    'error' => 'Cannot mark stage as complete. Missing required documents: '.implode(', ', $missingDisplayNames),
                     'missing_documents' => $completionCheck['missing_documents'],
                     'completion_percentage' => $completionCheck['completion_percentage'],
                 ],

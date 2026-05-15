@@ -120,15 +120,15 @@ describe('FileUploader', function () {
             $method = new ReflectionMethod(FileUploader::class, 'getPhaseFromStage');
             $method->setAccessible(true);
 
- expect($method->invoke($uploader, 1))->toBe('pre-procurement')
- ->and($method->invoke($uploader, 3))->toBe('pre-procurement')
- ->and($method->invoke($uploader, 4))->toBe('pre-procurement')
- ->and($method->invoke($uploader, 5))->toBe('procurement')
- ->and($method->invoke($uploader, 9))->toBe('procurement')
- ->and($method->invoke($uploader, 11))->toBe('procurement')
- ->and($method->invoke($uploader, 12))->toBe('post-procurement')
- ->and($method->invoke($uploader, 15))->toBe('post-procurement')
- ->and($method->invoke($uploader, 99))->toBe('unknown-phase');
+            expect($method->invoke($uploader, 1))->toBe('pre-procurement')
+                ->and($method->invoke($uploader, 3))->toBe('pre-procurement')
+                ->and($method->invoke($uploader, 4))->toBe('pre-procurement')
+                ->and($method->invoke($uploader, 5))->toBe('procurement')
+                ->and($method->invoke($uploader, 9))->toBe('procurement')
+                ->and($method->invoke($uploader, 11))->toBe('procurement')
+                ->and($method->invoke($uploader, 12))->toBe('post-procurement')
+                ->and($method->invoke($uploader, 15))->toBe('post-procurement')
+                ->and($method->invoke($uploader, 99))->toBe('unknown-phase');
         });
     });
 

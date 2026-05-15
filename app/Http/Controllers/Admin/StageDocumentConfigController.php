@@ -22,6 +22,7 @@ class StageDocumentConfigController extends Controller
         private readonly ProcurementWorkflowService $workflowService,
         private readonly AuditLogger $auditLogger,
     ) {}
+
     /**
      * Display a listing of stage document configurations.
      */

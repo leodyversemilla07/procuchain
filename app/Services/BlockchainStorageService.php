@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Contracts\BlockchainStorageInterface;
 use App\Enums\StreamEnums;
+use App\Libraries\MultiChain\Client;
 use App\Models\User;
-use App\Services\AuditLogger;
 use App\Services\Blockchain\FileRetriever;
 use App\Services\Blockchain\FileUploader;
 use Exception;
@@ -86,20 +86,20 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $this->uploader->uploadFile($file, $prNumber, $stageId, $documentType, $metadata);
     }
 
- /**
- * Retrieve file from blockchain (handles both single and chunked storage)
- *
- * @param string $fileKey The file key
- * @param string|null $dataTxid Optional data transaction ID for direct retrieval
- * @param bool $includeDeleted If true, returns file even if marked as deleted (for recovery)
- * @return array File content and metadata
- *
- * @throws Exception If file not found
- */
- public function retrieveFile(string $fileKey, ?string $dataTxid = null, bool $includeDeleted = false): array
- {
- return $this->retriever->retrieveFile($fileKey, $dataTxid, $includeDeleted);
- }
+    /**
+     * Retrieve file from blockchain (handles both single and chunked storage)
+     *
+     * @param  string  $fileKey  The file key
+     * @param  string|null  $dataTxid  Optional data transaction ID for direct retrieval
+     * @param  bool  $includeDeleted  If true, returns file even if marked as deleted (for recovery)
+     * @return array File content and metadata
+     *
+     * @throws Exception If file not found
+     */
+    public function retrieveFile(string $fileKey, ?string $dataTxid = null, bool $includeDeleted = false): array
+    {
+        return $this->retriever->retrieveFile($fileKey, $dataTxid, $includeDeleted);
+    }
 
     /**
      * Verify file integrity against blockchain metadata
@@ -158,461 +158,461 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $metadataItem['data']['json'] ?? [];
     }
 
- /**
- * Mark a file as deleted on blockchain
- * Note: File content remains on blockchain (immutable) but marked as deleted
- *
- * @param string $fileKey The file key to mark as deleted
- * @param string $reason Reason for deletion
- * @return bool Success status
- */
- public function deleteFile(string $fileKey, string $reason = ''): bool
- {
- try {
- // Publish deletion record to blockchain
- $dataKey = str_replace('/', '_', $fileKey);
- $deletionKey = $dataKey.'_deleted';
+    /**
+     * Mark a file as deleted on blockchain
+     * Note: File content remains on blockchain (immutable) but marked as deleted
+     *
+     * @param  string  $fileKey  The file key to mark as deleted
+     * @param  string  $reason  Reason for deletion
+     * @return bool Success status
+     */
+    public function deleteFile(string $fileKey, string $reason = ''): bool
+    {
+        try {
+            // Publish deletion record to blockchain
+            $dataKey = str_replace('/', '_', $fileKey);
+            $deletionKey = $dataKey.'_deleted';
 
- // Publish deletion marker to blockchain
- $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
- 'json' => [
- 'file_key' => $fileKey,
- 'data_key' => $dataKey,
- 'action' => 'deleted',
- 'reason' => $reason,
- 'deleted_at' => now()->toIso8601String(),
- ],
- ]);
+            // Publish deletion marker to blockchain
+            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
+                'json' => [
+                    'file_key' => $fileKey,
+                    'data_key' => $dataKey,
+                    'action' => 'deleted',
+                    'reason' => $reason,
+                    'deleted_at' => now()->toIso8601String(),
+                ],
+            ]);
 
- Log::info('File marked as deleted on blockchain', [
- 'file_key' => $fileKey,
- 'reason' => $reason,
- ]);
+            Log::info('File marked as deleted on blockchain', [
+                'file_key' => $fileKey,
+                'reason' => $reason,
+            ]);
 
- // Audit log for RA 12009 (NGPA) compliance
- app(AuditLogger::class)->log(
- action: 'file.deleted',
- subjectType: 'file',
- subjectId: $fileKey,
- oldValues: ['file_key' => $fileKey, 'action' => 'deleted', 'reason' => $reason],
- );
+            // Audit log for RA 12009 (NGPA) compliance
+            app(AuditLogger::class)->log(
+                action: 'file.deleted',
+                subjectType: 'file',
+                subjectId: $fileKey,
+                oldValues: ['file_key' => $fileKey, 'action' => 'deleted', 'reason' => $reason],
+            );
 
- return true;
- } catch (Exception $e) {
- Log::error('File deletion marking failed', [
- 'file_key' => $fileKey,
- 'error' => $e->getMessage(),
- ]);
+            return true;
+        } catch (Exception $e) {
+            Log::error('File deletion marking failed', [
+                'file_key' => $fileKey,
+                'error' => $e->getMessage(),
+            ]);
 
- return false;
- }
- }
+            return false;
+        }
+    }
 
- /**
- * Restore a previously deleted file on blockchain
- * Publishes a 'restored' action marker — the on-chain data was never removed.
- *
- * @param string $fileKey The file key to restore
- * @param string $reason Reason for restoration
- * @return bool Success status
- */
- public function restoreFile(string $fileKey, string $reason = ''): bool
- {
- try {
- $dataKey = str_replace('/', '_', $fileKey);
- $deletionKey = $dataKey.'_deleted';
+    /**
+     * Restore a previously deleted file on blockchain
+     * Publishes a 'restored' action marker — the on-chain data was never removed.
+     *
+     * @param  string  $fileKey  The file key to restore
+     * @param  string  $reason  Reason for restoration
+     * @return bool Success status
+     */
+    public function restoreFile(string $fileKey, string $reason = ''): bool
+    {
+        try {
+            $dataKey = str_replace('/', '_', $fileKey);
+            $deletionKey = $dataKey.'_deleted';
 
- // Publish restoration marker to blockchain
- $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
- 'json' => [
- 'file_key' => $fileKey,
- 'data_key' => $dataKey,
- 'action' => 'restored',
- 'reason' => $reason,
- 'restored_at' => now()->toIso8601String(),
- ],
- ]);
+            // Publish restoration marker to blockchain
+            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $deletionKey, [
+                'json' => [
+                    'file_key' => $fileKey,
+                    'data_key' => $dataKey,
+                    'action' => 'restored',
+                    'reason' => $reason,
+                    'restored_at' => now()->toIso8601String(),
+                ],
+            ]);
 
- Log::info('File restored on blockchain', [
- 'file_key' => $fileKey,
- 'reason' => $reason,
- ]);
+            Log::info('File restored on blockchain', [
+                'file_key' => $fileKey,
+                'reason' => $reason,
+            ]);
 
- // Audit log for RA 12009 (NGPA) compliance
- app(AuditLogger::class)->log(
- action: 'file.restored',
- subjectType: 'file',
- subjectId: $fileKey,
- newValues: ['file_key' => $fileKey, 'action' => 'restored', 'reason' => $reason],
- );
+            // Audit log for RA 12009 (NGPA) compliance
+            app(AuditLogger::class)->log(
+                action: 'file.restored',
+                subjectType: 'file',
+                subjectId: $fileKey,
+                newValues: ['file_key' => $fileKey, 'action' => 'restored', 'reason' => $reason],
+            );
 
- return true;
- } catch (Exception $e) {
- Log::error('File restoration failed', [
- 'file_key' => $fileKey,
- 'error' => $e->getMessage(),
- ]);
+            return true;
+        } catch (Exception $e) {
+            Log::error('File restoration failed', [
+                'file_key' => $fileKey,
+                'error' => $e->getMessage(),
+            ]);
 
- return false;
- }
- }
+            return false;
+        }
+    }
 
- /**
- * Check if a file is currently marked as deleted on blockchain
- *
- * @param string $fileKey The file key to check
- * @return bool True if the latest action is 'deleted'
- */
- public function isFileDeleted(string $fileKey): bool
- {
- try {
- $dataKey = str_replace('/', '_', $fileKey);
- $deletionKey = $dataKey.'_deleted';
+    /**
+     * Check if a file is currently marked as deleted on blockchain
+     *
+     * @param  string  $fileKey  The file key to check
+     * @return bool True if the latest action is 'deleted'
+     */
+    public function isFileDeleted(string $fileKey): bool
+    {
+        try {
+            $dataKey = str_replace('/', '_', $fileKey);
+            $deletionKey = $dataKey.'_deleted';
 
- $items = $this->multichain->liststreamkeyitems(
- StreamEnums::FILE_METADATA->value,
- $deletionKey,
- false,
- 100,
- 0,
- false
- );
+            $items = $this->multichain->liststreamkeyitems(
+                StreamEnums::FILE_METADATA->value,
+                $deletionKey,
+                false,
+                100,
+                0,
+                false
+            );
 
- if (empty($items)) {
- return false;
- }
+            if (empty($items)) {
+                return false;
+            }
 
- $latestItem = collect($items)->last();
- $action = $latestItem['data']['json']['action'] ?? 'restored';
+            $latestItem = collect($items)->last();
+            $action = $latestItem['data']['json']['action'] ?? 'restored';
 
- return $action === 'deleted';
- } catch (Exception $e) {
- Log::error('File deletion status check failed', [
- 'file_key' => $fileKey,
- 'error' => $e->getMessage(),
- ]);
+            return $action === 'deleted';
+        } catch (Exception $e) {
+            Log::error('File deletion status check failed', [
+                'file_key' => $fileKey,
+                'error' => $e->getMessage(),
+            ]);
 
- return false;
- }
- }
+            return false;
+        }
+    }
 
- /**
- * Get all currently deleted file keys from blockchain
- * Returns an array of file keys where the latest action is 'deleted'
- *
- * @return array<string, array{file_key: string, reason: string, deleted_at: string}>
- */
- public function getDeletedFiles(): array
- {
- try {
- $items = $this->multichain->liststreamitems(
- StreamEnums::FILE_METADATA->value,
- true,
- 10000,
- 0,
- false
- );
+    /**
+     * Get all currently deleted file keys from blockchain
+     * Returns an array of file keys where the latest action is 'deleted'
+     *
+     * @return array<string, array{file_key: string, reason: string, deleted_at: string}>
+     */
+    public function getDeletedFiles(): array
+    {
+        try {
+            $items = $this->multichain->liststreamitems(
+                StreamEnums::FILE_METADATA->value,
+                true,
+                10000,
+                0,
+                false
+            );
 
- $deletedFiles = [];
- $statusMap = [];
+            $deletedFiles = [];
+            $statusMap = [];
 
- foreach ($items as $item) {
- $data = $item['data']['json'] ?? null;
- if (! $data) {
- continue;
- }
+            foreach ($items as $item) {
+                $data = $item['data']['json'] ?? null;
+                if (! $data) {
+                    continue;
+                }
 
- $action = $data['action'] ?? null;
- $fileKey = $data['file_key'] ?? null;
+                $action = $data['action'] ?? null;
+                $fileKey = $data['file_key'] ?? null;
 
- // Only track deleted/restored action markers
- if (! in_array($action, ['deleted', 'restored']) || ! $fileKey) {
- continue;
- }
+                // Only track deleted/restored action markers
+                if (! in_array($action, ['deleted', 'restored']) || ! $fileKey) {
+                    continue;
+                }
 
- // Track latest action per file key
- $statusMap[$fileKey] = [
- 'file_key' => $fileKey,
- 'action' => $action,
- 'reason' => $data['reason'] ?? '',
- 'timestamp' => $data['deleted_at'] ?? $data['restored_at'] ?? now()->toIso8601String(),
- ];
- }
-
-        // Filter only those where latest action is 'deleted'
-        foreach ($statusMap as $fileKey => $info) {
-            if ($info['action'] === 'deleted') {
-                // Extract PR number from file key (format: PR-YYYY-NNN/phase/stage/...)
-                $prNumber = explode('/', $info['file_key'])[0];
-
-                $deletedFiles[$fileKey] = [
-                    'file_key' => $info['file_key'],
-                    'pr_number' => $prNumber,
-                    'reason' => $info['reason'],
-                    'deleted_at' => $info['timestamp'],
+                // Track latest action per file key
+                $statusMap[$fileKey] = [
+                    'file_key' => $fileKey,
+                    'action' => $action,
+                    'reason' => $data['reason'] ?? '',
+                    'timestamp' => $data['deleted_at'] ?? $data['restored_at'] ?? now()->toIso8601String(),
                 ];
             }
+
+            // Filter only those where latest action is 'deleted'
+            foreach ($statusMap as $fileKey => $info) {
+                if ($info['action'] === 'deleted') {
+                    // Extract PR number from file key (format: PR-YYYY-NNN/phase/stage/...)
+                    $prNumber = explode('/', $info['file_key'])[0];
+
+                    $deletedFiles[$fileKey] = [
+                        'file_key' => $info['file_key'],
+                        'pr_number' => $prNumber,
+                        'reason' => $info['reason'],
+                        'deleted_at' => $info['timestamp'],
+                    ];
+                }
+            }
+
+            return $deletedFiles;
+        } catch (Exception $e) {
+            Log::error('Failed to get deleted files', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
         }
+    }
 
- return $deletedFiles;
- } catch (Exception $e) {
- Log::error('Failed to get deleted files', [
- 'error' => $e->getMessage(),
- ]);
+    /**
+     * Delete a file's data from a single node's local storage.
+     * The data remains on other nodes and will be re-synced automatically.
+     * The deletion event is recorded on-chain for audit compliance (RA 12009).
+     *
+     * @param  string  $fileKey  The file key to delete from the node
+     * @param  string  $nodeId  The target node ID (e.g. 'admin', 'bac-secretariat')
+     * @param  string  $reason  Reason for single-node deletion
+     * @return array{success: bool, message: string}
+     */
+    public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
+    {
+        try {
+            $nodes = config('multichain.nodes', []);
+            $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
 
- return [];
- }
- }
+            if (! $targetNode) {
+                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
+            }
 
- /**
- * Delete a file's data from a single node's local storage.
- * The data remains on other nodes and will be re-synced automatically.
- * The deletion event is recorded on-chain for audit compliance (RA 12009).
- *
- * @param string $fileKey The file key to delete from the node
- * @param string $nodeId The target node ID (e.g. 'admin', 'bac-secretariat')
- * @param string $reason Reason for single-node deletion
- * @return array{success: bool, message: string}
- */
- public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
- {
- try {
- $nodes = config('multichain.nodes', []);
- $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+            $dataKey = str_replace('/', '_', $fileKey);
 
- if (! $targetNode) {
- return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
- }
+            // Connect to the specific node and remove its local stream data
+            $nodeClient = new Client(
+                $targetNode['private_ip'],
+                $targetNode['rpc_port'],
+                config('multichain.rpc.username', 'multichainrpc'),
+                config('multichain.rpc.password'),
+                false
+            );
+            $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- $dataKey = str_replace('/', '_', $fileKey);
+            // Remove stream items from this node only (local purge)
+            // MultiChain: liststreamkeyitems to get txids, then purge each
+            $items = $nodeClient->liststreamkeyitems(
+                StreamEnums::FILE_METADATA->value,
+                $dataKey,
+                false,
+                100,
+                0,
+                false
+            );
 
- // Connect to the specific node and remove its local stream data
- $nodeClient = new \App\Libraries\MultiChain\Client(
- $targetNode['private_ip'],
- $targetNode['rpc_port'],
- config('multichain.rpc.username', 'multichainrpc'),
- config('multichain.rpc.password'),
- false
- );
- $nodeClient->setoption('chain_name', config('multichain.chain_name'));
+            $purgedCount = 0;
+            foreach ($items as $item) {
+                try {
+                    $txid = $item['txid'] ?? null;
+                    if ($txid) {
+                        // Use MultiChain's purge function to remove from local node
+                        $nodeClient->__call('purge', [StreamEnums::FILE_METADATA->value, $txid]);
+                        $purgedCount++;
+                    }
+                } catch (Exception $purgeEx) {
+                    Log::warning("Could not purge txid from node {$nodeId}: ".$purgeEx->getMessage());
+                }
+            }
 
- // Remove stream items from this node only (local purge)
- // MultiChain: liststreamkeyitems to get txids, then purge each
- $items = $nodeClient->liststreamkeyitems(
- StreamEnums::FILE_METADATA->value,
- $dataKey,
- false,
- 100,
- 0,
- false
- );
+            // Also purge file data chunks from this node
+            $chunkItems = $nodeClient->liststreamkeyitems(
+                StreamEnums::FILE_DATA->value,
+                $dataKey,
+                false,
+                1000,
+                0,
+                false
+            );
 
- $purgedCount = 0;
- foreach ($items as $item) {
- try {
- $txid = $item['txid'] ?? null;
- if ($txid) {
- // Use MultiChain's purge function to remove from local node
- $nodeClient->__call('purge', [StreamEnums::FILE_METADATA->value, $txid]);
- $purgedCount++;
- }
- } catch (Exception $purgeEx) {
- Log::warning("Could not purge txid from node {$nodeId}: ".$purgeEx->getMessage());
- }
- }
+            foreach ($chunkItems as $item) {
+                try {
+                    $txid = $item['txid'] ?? null;
+                    if ($txid) {
+                        $nodeClient->__call('purge', [StreamEnums::FILE_DATA->value, $txid]);
+                        $purgedCount++;
+                    }
+                } catch (Exception $purgeEx) {
+                    Log::warning("Could not purge chunk txid from node {$nodeId}: ".$purgeEx->getMessage());
+                }
+            }
 
- // Also purge file data chunks from this node
- $chunkItems = $nodeClient->liststreamkeyitems(
- StreamEnums::FILE_DATA->value,
- $dataKey,
- false,
- 1000,
- 0,
- false
- );
+            // Record the single-node deletion on-chain (from the primary node)
+            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
+                'json' => [
+                    'file_key' => $fileKey,
+                    'data_key' => $dataKey,
+                    'action' => 'node_purge',
+                    'node_id' => $nodeId,
+                    'node_name' => $targetNode['name'] ?? $nodeId,
+                    'items_purged' => $purgedCount,
+                    'reason' => $reason,
+                    'purged_at' => now()->toIso8601String(),
+                ],
+            ]);
 
- foreach ($chunkItems as $item) {
- try {
- $txid = $item['txid'] ?? null;
- if ($txid) {
- $nodeClient->__call('purge', [StreamEnums::FILE_DATA->value, $txid]);
- $purgedCount++;
- }
- } catch (Exception $purgeEx) {
- Log::warning("Could not purge chunk txid from node {$nodeId}: ".$purgeEx->getMessage());
- }
- }
+            Log::info("File data purged from node {$nodeId}", [
+                'file_key' => $fileKey,
+                'node_id' => $nodeId,
+                'items_purged' => $purgedCount,
+            ]);
 
- // Record the single-node deletion on-chain (from the primary node)
- $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
- 'json' => [
- 'file_key' => $fileKey,
- 'data_key' => $dataKey,
- 'action' => 'node_purge',
- 'node_id' => $nodeId,
- 'node_name' => $targetNode['name'] ?? $nodeId,
- 'items_purged' => $purgedCount,
- 'reason' => $reason,
- 'purged_at' => now()->toIso8601String(),
- ],
- ]);
+            // Audit log for RA 12009 (NGPA) compliance
+            app(AuditLogger::class)->log(
+                action: 'file.node_purge',
+                subjectType: 'file',
+                subjectId: $fileKey,
+                oldValues: [
+                    'file_key' => $fileKey,
+                    'action' => 'node_purge',
+                    'node_id' => $nodeId,
+                    'items_purged' => $purgedCount,
+                    'reason' => $reason,
+                ],
+            );
 
- Log::info("File data purged from node {$nodeId}", [
- 'file_key' => $fileKey,
- 'node_id' => $nodeId,
- 'items_purged' => $purgedCount,
- ]);
+            return [
+                'success' => true,
+                'message' => "Purged {$purgedCount} items from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes and will resync automatically.",
+            ];
+        } catch (Exception $e) {
+            Log::error('Single-node file purge failed', [
+                'file_key' => $fileKey,
+                'node_id' => $nodeId,
+                'error' => $e->getMessage(),
+            ]);
 
- // Audit log for RA 12009 (NGPA) compliance
- app(AuditLogger::class)->log(
- action: 'file.node_purge',
- subjectType: 'file',
- subjectId: $fileKey,
- oldValues: [
- 'file_key' => $fileKey,
- 'action' => 'node_purge',
- 'node_id' => $nodeId,
- 'items_purged' => $purgedCount,
- 'reason' => $reason,
- ],
- );
+            return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
+        }
+    }
 
- return [
- 'success' => true,
- 'message' => "Purged {$purgedCount} items from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes and will resync automatically.",
- ];
- } catch (Exception $e) {
- Log::error('Single-node file purge failed', [
- 'file_key' => $fileKey,
- 'node_id' => $nodeId,
- 'error' => $e->getMessage(),
- ]);
+    /**
+     * Resync a node's stream data from peers.
+     * After a single-node purge, this triggers the node to re-download
+     * the missing stream items from its connected peers.
+     *
+     * @param  string  $nodeId  The node to resync
+     * @return array{success: bool, message: string}
+     */
+    public function resyncNode(string $nodeId): array
+    {
+        try {
+            $nodes = config('multichain.nodes', []);
+            $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
 
- return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
- }
- }
+            if (! $targetNode) {
+                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
+            }
 
- /**
- * Resync a node's stream data from peers.
- * After a single-node purge, this triggers the node to re-download
- * the missing stream items from its connected peers.
- *
- * @param string $nodeId The node to resync
- * @return array{success: bool, message: string}
- */
- public function resyncNode(string $nodeId): array
- {
- try {
- $nodes = config('multichain.nodes', []);
- $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+            $nodeClient = new Client(
+                $targetNode['private_ip'],
+                $targetNode['rpc_port'],
+                config('multichain.rpc.username', 'multichainrpc'),
+                config('multichain.rpc.password'),
+                false
+            );
+            $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- if (! $targetNode) {
- return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
- }
+            // Resubscribe to all relevant streams to trigger resync
+            $streams = [
+                StreamEnums::FILE_METADATA->value,
+                StreamEnums::FILE_DATA->value,
+                StreamEnums::FILE_CHUNKS->value,
+                StreamEnums::PROCUREMENT_EVENTS->value,
+                StreamEnums::PROCUREMENT_STATUS->value,
+            ];
 
- $nodeClient = new \App\Libraries\MultiChain\Client(
- $targetNode['private_ip'],
- $targetNode['rpc_port'],
- config('multichain.rpc.username', 'multichainrpc'),
- config('multichain.rpc.password'),
- false
- );
- $nodeClient->setoption('chain_name', config('multichain.chain_name'));
+            $resyncedStreams = 0;
+            foreach ($streams as $stream) {
+                try {
+                    // Check if subscribed, then resubscribe to trigger resync
+                    $info = $nodeClient->getstreaminfo($stream);
+                    if (($info['subscribed'] ?? false)) {
+                        // Unsubscribe and resubscribe to force resync from peers
+                        $nodeClient->unsubscribe($stream);
+                        $nodeClient->subscribe($stream);
+                        $resyncedStreams++;
+                    } else {
+                        $nodeClient->subscribe($stream);
+                        $resyncedStreams++;
+                    }
+                } catch (Exception $streamEx) {
+                    Log::warning("Could not resync stream {$stream} on node {$nodeId}: ".$streamEx->getMessage());
+                }
+            }
 
- // Resubscribe to all relevant streams to trigger resync
- $streams = [
- StreamEnums::FILE_METADATA->value,
- StreamEnums::FILE_DATA->value,
- StreamEnums::FILE_CHUNKS->value,
- StreamEnums::PROCUREMENT_EVENTS->value,
- StreamEnums::PROCUREMENT_STATUS->value,
- ];
+            // Record resync event on-chain
+            $dataKey = 'node_'.$nodeId.'_resync';
+            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
+                'json' => [
+                    'action' => 'node_resync',
+                    'node_id' => $nodeId,
+                    'node_name' => $targetNode['name'] ?? $nodeId,
+                    'streams_resynced' => $resyncedStreams,
+                    'resynced_at' => now()->toIso8601String(),
+                ],
+            ]);
 
- $resyncedStreams = 0;
- foreach ($streams as $stream) {
- try {
- // Check if subscribed, then resubscribe to trigger resync
- $info = $nodeClient->getstreaminfo($stream);
- if (($info['subscribed'] ?? false)) {
- // Unsubscribe and resubscribe to force resync from peers
- $nodeClient->unsubscribe($stream);
- $nodeClient->subscribe($stream);
- $resyncedStreams++;
- } else {
- $nodeClient->subscribe($stream);
- $resyncedStreams++;
- }
- } catch (Exception $streamEx) {
- Log::warning("Could not resync stream {$stream} on node {$nodeId}: ".$streamEx->getMessage());
- }
- }
+            Log::info("Node {$nodeId} resync triggered", [
+                'node_id' => $nodeId,
+                'streams_resynced' => $resyncedStreams,
+            ]);
 
- // Record resync event on-chain
- $dataKey = 'node_'.$nodeId.'_resync';
- $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
- 'json' => [
- 'action' => 'node_resync',
- 'node_id' => $nodeId,
- 'node_name' => $targetNode['name'] ?? $nodeId,
- 'streams_resynced' => $resyncedStreams,
- 'resynced_at' => now()->toIso8601String(),
- ],
- ]);
+            // Audit log for RA 12009 (NGPA) compliance
+            app(AuditLogger::class)->log(
+                action: 'node.resync',
+                subjectType: 'node',
+                subjectId: $nodeId,
+                newValues: [
+                    'action' => 'node_resync',
+                    'node_id' => $nodeId,
+                    'streams_resynced' => $resyncedStreams,
+                ],
+            );
 
- Log::info("Node {$nodeId} resync triggered", [
- 'node_id' => $nodeId,
- 'streams_resynced' => $resyncedStreams,
- ]);
+            return [
+                'success' => true,
+                'message' => "Resync triggered for {$targetNode['name']} ({$nodeId}) — {$resyncedStreams} streams will re-download from peers.",
+            ];
+        } catch (Exception $e) {
+            Log::error('Node resync failed', [
+                'node_id' => $nodeId,
+                'error' => $e->getMessage(),
+            ]);
 
- // Audit log for RA 12009 (NGPA) compliance
- app(AuditLogger::class)->log(
- action: 'node.resync',
- subjectType: 'node',
- subjectId: $nodeId,
- newValues: [
- 'action' => 'node_resync',
- 'node_id' => $nodeId,
- 'streams_resynced' => $resyncedStreams,
- ],
- );
+            return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
+        }
+    }
 
- return [
- 'success' => true,
- 'message' => "Resync triggered for {$targetNode['name']} ({$nodeId}) — {$resyncedStreams} streams will re-download from peers.",
- ];
- } catch (Exception $e) {
- Log::error('Node resync failed', [
- 'node_id' => $nodeId,
- 'error' => $e->getMessage(),
- ]);
+    /**
+     * Get list of available nodes for the purge/resync UI
+     *
+     * @return array<int, array{id: string, name: string, role: string}>
+     */
+    public function getAvailableNodes(): array
+    {
+        return collect(config('multichain.nodes', []))
+            ->map(fn ($node) => [
+                'id' => $node['id'],
+                'name' => $node['name'],
+                'role' => $node['role'],
+            ])
+            ->values()
+            ->all();
+    }
 
- return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
- }
- }
-
- /**
- * Get list of available nodes for the purge/resync UI
- *
- * @return array<int, array{id: string, name: string, role: string}>
- */
- public function getAvailableNodes(): array
- {
- return collect(config('multichain.nodes', []))
- ->map(fn ($node) => [
- 'id' => $node['id'],
- 'name' => $node['name'],
- 'role' => $node['role'],
- ])
- ->values()
- ->all();
- }
-
- /**
- * Get maximum file size supported for on-chain storage
- *
- * @return int Maximum file size in bytes
- */
- public function getMaxFileSize(): int
+    /**
+     * Get maximum file size supported for on-chain storage
+     *
+     * @return int Maximum file size in bytes
+     */
+    public function getMaxFileSize(): int
     {
         return $this->maxChunkSize;
     }

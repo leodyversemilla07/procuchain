@@ -66,15 +66,15 @@ class SecurityHeaders
             }
         }
 
- $csp = implode('; ', [
- ...$directives,
- "object-src 'self' blob:",
- "frame-src 'self' blob:",
- "frame-ancestors 'self'",
- "base-uri 'self'",
- "form-action 'self'",
- ]);
- $response->headers->set('Content-Security-Policy', $csp);
+        $csp = implode('; ', [
+            ...$directives,
+            "object-src 'self' blob:",
+            "frame-src 'self' blob:",
+            "frame-ancestors 'self'",
+            "base-uri 'self'",
+            "form-action 'self'",
+        ]);
+        $response->headers->set('Content-Security-Policy', $csp);
 
         // Permissions Policy - restrict powerful browser features
         $permissionsPolicy = implode(', ', [

@@ -14,10 +14,10 @@ use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
+use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementStageCompletionService;
 use App\Services\Procurement\ProcurementStagePageService;
 use App\Services\Procurement\ProcurementStageUploadService;
-use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementSupportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -270,18 +270,18 @@ class ProcurementInitiationController extends BaseController
 
         $stage = StageEnums::PROCUREMENT_INITIATION;
 
-    try {
-        $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
+        try {
+            $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
 
-        $this->auditLogger->log(
-            'procurement.stage_completed',
-            'procurement',
-            $pr_number,
-            [],
-            ['stage' => $stage->value],
-        );
+            $this->auditLogger->log(
+                'procurement.stage_completed',
+                'procurement',
+                $pr_number,
+                [],
+                ['stage' => $stage->value],
+            );
 
-        return response()->json($response['data'], $response['status']);
+            return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,

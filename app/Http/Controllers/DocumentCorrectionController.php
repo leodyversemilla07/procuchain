@@ -74,18 +74,18 @@ class DocumentCorrectionController extends Controller
                 $jobData['mime_type'] = $corrFile->getMimeType() ?? 'application/octet-stream';
             }
 
-        $jobId = Str::uuid()->toString();
-        BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
+            $jobId = Str::uuid()->toString();
+            BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
 
-        $this->auditLogger->log(
-            'document.corrected',
-            'document',
-            $txid,
-            [],
-            ['pr_number' => $pr_number, 'correction_type' => $correctionType, 'reason' => $validated['correction_reason']],
-        );
+            $this->auditLogger->log(
+                'document.corrected',
+                'document',
+                $txid,
+                [],
+                ['pr_number' => $pr_number, 'correction_type' => $correctionType, 'reason' => $validated['correction_reason']],
+            );
 
-        return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
+            return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
         } catch (\Exception $e) {
             Log::error('Failed to submit document correction', [
                 'txid' => $txid,
