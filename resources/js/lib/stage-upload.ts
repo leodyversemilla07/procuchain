@@ -8,6 +8,14 @@ export function getUploadedRequiredCount(documentGuide: DocumentGuide | undefine
     return documentGuide.required_documents.filter((document) => uploadedDocuments.includes(document.value)).length;
 }
 
+export function getUploadedOptionalCount(documentGuide: DocumentGuide | undefined, uploadedDocuments: string[]): number {
+    if (!documentGuide) {
+        return 0;
+    }
+
+    return documentGuide.optional_documents.filter((document) => uploadedDocuments.includes(document.value)).length;
+}
+
 export function getStageCompletionPercentage(documentGuide: DocumentGuide | undefined, uploadedRequiredCount: number): number {
     if (!documentGuide || documentGuide.counts.required_count === 0) {
         return 100;

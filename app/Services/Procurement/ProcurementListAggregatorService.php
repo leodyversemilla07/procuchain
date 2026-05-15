@@ -153,10 +153,18 @@ final class ProcurementListAggregatorService
             $documentDtos = [];
         }
 
-        $documentCountMap = [];
+        // Count unique document types per procurement (not raw record count)
+        // to avoid inflating counts from duplicates or re-uploads
+        $documentTypeMap = [];
         foreach ($documentDtos as $doc) {
             $prNumber = $doc->prNumber;
-            $documentCountMap[$prNumber] = ($documentCountMap[$prNumber] ?? 0) + 1;
+            $documentType = $doc->documentType;
+            $documentTypeMap[$prNumber][$documentType] = true;
+        }
+
+        $documentCountMap = [];
+        foreach ($documentTypeMap as $prNumber => $types) {
+            $documentCountMap[$prNumber] = count($types);
         }
 
         return $documentCountMap;

@@ -62,6 +62,7 @@ interface CompletenessResult {
     document_counts: {
         required: number;
         uploaded: number;
+        uploaded_optional: number;
         missing: number;
     };
     can_complete_stage: boolean;
@@ -312,6 +313,14 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                                 {result.document_counts.uploaded}
                             </span>
                         </div>
+                        {result.document_counts.uploaded_optional > 0 && (
+                            <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-blue-800 dark:bg-blue-950/50">
+                                <span className="text-xs text-blue-600/70 dark:text-blue-400/70">Optional:</span>
+                                <span className="text-xs font-semibold text-blue-600 tabular-nums sm:text-sm dark:text-blue-400">
+                                    {result.document_counts.uploaded_optional}
+                                </span>
+                            </div>
+                        )}
                         {result.document_counts.missing > 0 && (
                             <div className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-red-800 dark:bg-red-950/50">
                                 <span className="text-xs text-red-600/70 dark:text-red-400/70">Missing:</span>

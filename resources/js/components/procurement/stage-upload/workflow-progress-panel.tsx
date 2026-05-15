@@ -12,6 +12,7 @@ interface WorkflowProgressPanelProps extends StageUploadWorkflowProps {
     documentGuide?: DocumentGuide;
     completionPercentage: number;
     uploadedRequiredCount: number;
+    uploadedOptionalCount: number;
     children?: ReactNode;
 }
 
@@ -21,6 +22,7 @@ export function WorkflowProgressPanel({
     documentGuide,
     completionPercentage,
     uploadedRequiredCount,
+    uploadedOptionalCount,
     children,
 }: WorkflowProgressPanelProps) {
     return (
@@ -81,7 +83,13 @@ export function WorkflowProgressPanel({
                                 </div>
                                 <Progress value={completionPercentage} className="h-2 rounded-full" />
                                 <p className="text-muted-foreground text-[10px] italic">
-                                    {uploadedRequiredCount} of {documentGuide.counts.required_count} required documents uploaded
+                                    {uploadedRequiredCount} of {documentGuide.counts.required_count} required
+                                    {documentGuide.counts.optional_count > 0 && (
+                                        <>
+                                            {' '}
+                                            &middot; {uploadedOptionalCount} of {documentGuide.counts.optional_count} optional
+                                        </>
+                                    )}
                                 </p>
                             </div>
                         )}

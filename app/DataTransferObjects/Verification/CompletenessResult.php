@@ -44,7 +44,7 @@ final class CompletenessResult
     }
 
     /**
-     * Get count of uploaded documents
+     * Get count of uploaded documents (all types including optional)
      */
     public function getUploadedCount(): int
     {
@@ -57,6 +57,26 @@ final class CompletenessResult
     public function getRequiredCount(): int
     {
         return count($this->requiredDocuments);
+    }
+
+    /**
+     * Count uploaded documents that match required types only
+     */
+    public function getUploadedRequiredCount(): int
+    {
+        $requiredValues = array_flip($this->requiredDocuments);
+
+        return count(array_filter($this->uploadedDocuments, fn (string $doc): bool => isset($requiredValues[$doc])));
+    }
+
+    /**
+     * Count uploaded documents that match optional types only
+     */
+    public function getUploadedOptionalCount(): int
+    {
+        $requiredValues = array_flip($this->requiredDocuments);
+
+        return count(array_filter($this->uploadedDocuments, fn (string $doc): bool => ! isset($requiredValues[$doc])));
     }
 
     /**
@@ -75,7 +95,8 @@ final class CompletenessResult
             'missing_documents' => $this->missingDocuments,
             'document_counts' => [
                 'required' => $this->getRequiredCount(),
-                'uploaded' => $this->getUploadedCount(),
+                'uploaded' => $this->getUploadedRequiredCount(),
+                'uploaded_optional' => $this->getUploadedOptionalCount(),
                 'missing' => $this->getMissingCount(),
             ],
             'can_complete_stage' => $this->canCompleteStage(),

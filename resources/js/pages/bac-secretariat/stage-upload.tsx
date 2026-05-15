@@ -10,7 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { useBlockchainJob } from '@/hooks/use-blockchain-job';
 import { useStageActions } from '@/hooks/use-stage-actions';
 import AppLayout from '@/layouts/app-layout';
-import { getStageCompletionPercentage, getUploadedRequiredCount, hasUploadedAllRequiredDocuments } from '@/lib/stage-upload';
+import {
+    getStageCompletionPercentage,
+    getUploadedOptionalCount,
+    getUploadedRequiredCount,
+    hasUploadedAllRequiredDocuments,
+} from '@/lib/stage-upload';
 import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
@@ -179,6 +184,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
     }, []);
 
     const uploadedRequiredCount = getUploadedRequiredCount(documentGuide, uploadedDocuments);
+    const uploadedOptionalCount = getUploadedOptionalCount(documentGuide, uploadedDocuments);
     const calculatedPercentage = getStageCompletionPercentage(documentGuide, uploadedRequiredCount);
     const allRequiredUploaded = hasUploadedAllRequiredDocuments(documentGuide, uploadedRequiredCount);
 
@@ -213,6 +219,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
                         documentGuide={documentGuide}
                         completionPercentage={calculatedPercentage}
                         uploadedRequiredCount={uploadedRequiredCount}
+                        uploadedOptionalCount={uploadedOptionalCount}
                     >
                         {procurement.stage_value === 'notice_to_proceed' && (
                             <DeliveryDetailsPanel
