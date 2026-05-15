@@ -769,7 +769,7 @@ enum DocumentTypeEnums: string
     public function getRequirementSummary(): string
     {
         if ($this->isMandatory()) {
-            return 'Required for all procurements per RA 9184';
+            return 'Required for all procurements per RA 12009 (NGPA)';
         }
 
         $categories = [];

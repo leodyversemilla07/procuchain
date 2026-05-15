@@ -72,7 +72,7 @@ class InitiateProcurementRequest extends FormRequest
     }
 
     /**
-     * Validate that all mandatory documents are provided per RA 9184
+     * Validate that all mandatory documents are provided per RA 12009 (NGPA)
      * Note: Only validates if files are provided (supports progressive upload)
      */
     protected function validateMandatoryDocuments($validator): void

@@ -11,7 +11,7 @@ use Carbon\Carbon;
 /**
  * Compliance Result DTO
  *
- * Represents the result of RA 9184/RA 12009 compliance verification
+ * Represents the result of RA 12009 (NGPA) compliance verification
  */
 final class ComplianceResult
 {

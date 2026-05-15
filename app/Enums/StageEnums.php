@@ -144,7 +144,7 @@ enum StageEnums: string
     {
         return match ($this) {
             self::PROCUREMENT_INITIATION => [
-                self::PRE_PROCUREMENT_CONFERENCE,  // Optional per RA 9184
+ self::PRE_PROCUREMENT_CONFERENCE, // Optional per RA 12009 (NGPA)
                 self::BIDDING_DOCUMENTS,           // Can skip to this (Competitive Bidding)
                 self::REQUEST_FOR_QUOTATION,       // For alternative modes
             ],
@@ -203,12 +203,12 @@ enum StageEnums: string
 
     /**
      * Check if this stage can be skipped (Issue #8 fix)
-     * Per RA 9184, some stages are optional
+     * Per RA 12009 (NGPA), some stages are optional
      */
     public function canSkip(): bool
     {
         return match ($this) {
-            self::PRE_PROCUREMENT_CONFERENCE => true,  // Optional per RA 9184
+ self::PRE_PROCUREMENT_CONFERENCE => true, // Optional per RA 12009 (NGPA)
             self::SUPPLEMENTAL_BID_BULLETIN => true,   // Optional
             default => false,
         };
@@ -281,8 +281,12 @@ enum StageEnums: string
     }
 
     /**
-     * Get the procurement phase this stage belongs to (Issue #11 fix)
-     * BAC_RESOLUTION moved to procurement phase per RA 9184
+     * Get the procurement phase this stage belongs to per RA 12009 (NGPA)
+     *
+     * NGPA IRR structure:
+     *   Pre-Procurement: Rule II (Sec 7-12) — Planning & Preparation
+     *   Procurement:     Rule V-X (Sec 41-65) — Bidding, Evaluation, Post-Qual
+     *   Post-Procurement: Rule XI (Sec 66-71) — Award & Implementation
      *
      * @return string 'pre_procurement', 'procurement', or 'post_procurement'
      */
@@ -300,7 +304,7 @@ enum StageEnums: string
             self::ABSTRACT_OF_QUOTATIONS,
             self::BID_EVALUATION,
             self::POST_QUALIFICATION,
-            self::BAC_RESOLUTION => 'procurement',  // Fixed: BAC Resolution comes after evaluation
+            self::BAC_RESOLUTION => 'procurement', // BAC Resolution (Sec 66) recommends award — still procurement phase
 
             self::NOTICE_OF_AWARD,
             self::PERFORMANCE_BOND_CONTRACT_AND_PO,

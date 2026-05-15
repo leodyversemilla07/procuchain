@@ -26,7 +26,7 @@ final class ProcurementData
         // PHASE 1: PRE-PROCUREMENT - Procurement Initiation Stage
         // ═══════════════════════════════════════════════════════════════════
         // Created at: StageEnums::PROCUREMENT_INITIATION
-        // Required fields per RA 9184 IRR-A Section 7
+        // Required fields per RA 12009 (NGPA) IRR-A Section 7
         public readonly string $prNumber,
         public readonly ?string $appReference,
         public readonly string $title,
@@ -48,7 +48,7 @@ final class ProcurementData
         // PHASE 1: PRE-PROCUREMENT - BAC Resolution Stage
         // ═══════════════════════════════════════════════════════════════════
         // Populated at: StageEnums::BAC_RESOLUTION
-        // Required for certain procurement modes per RA 9184
+        // Required for certain procurement modes per RA 12009 (NGPA)
         public readonly ?string $bacResolutionNumber,
         public readonly ?Carbon $bacResolutionDate,
 
@@ -56,7 +56,7 @@ final class ProcurementData
         // PHASE 1: PRE-PROCUREMENT - Bidding Documents Stage
         // ═══════════════════════════════════════════════════════════════════
         // Populated at: StageEnums::BIDDING_DOCUMENTS
-        // PhilGEPS posting required for Public Bidding per RA 9184
+        // PhilGEPS posting required for Public Bidding per RA 12009 (NGPA)
         public readonly ?string $philgepsReference,
         public readonly ?Carbon $philgepsPostingDate,
 
@@ -199,7 +199,7 @@ final class ProcurementData
     /**
      * Check if this procurement requires PhilGEPS posting.
      *
-     * Delegates to the procurement mode's requirements per RA 9184.
+     * Delegates to the procurement mode's requirements per RA 12009 (NGPA).
      *
      * @return bool True if PhilGEPS posting is required for this procurement mode
      */
@@ -211,7 +211,7 @@ final class ProcurementData
     /**
      * Check if this procurement requires BAC (Bids and Awards Committee) resolution.
      *
-     * Delegates to the procurement mode's requirements per RA 9184.
+     * Delegates to the procurement mode's requirements per RA 12009 (NGPA).
      *
      * @return bool True if BAC resolution is required for this procurement mode
      */

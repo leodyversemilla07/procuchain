@@ -9,7 +9,7 @@ use App\Enums\StageEnums;
  * Stage Document Requirements Service
  *
  * Maps required and optional documents to each procurement stage
- * Based on RA 9184 & RA 12009 requirements
+ * Based on RA 12009 (NGPA) requirements
  */
 class StageDocumentRequirements
 {

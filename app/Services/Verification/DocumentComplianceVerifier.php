@@ -21,7 +21,7 @@ final class DocumentComplianceVerifier
     ) {}
 
     /**
-     * Verify compliance with RA 9184/RA 12009 requirements.
+     * Verify compliance with RA 12009 (NGPA) requirements.
      */
     public function verify(string $prNumber, StageEnums $stage, ?iterable $documents = null): ComplianceResult
     {
@@ -67,7 +67,7 @@ final class DocumentComplianceVerifier
             foreach ($stageDocuments as $doc) {
                 if ($doc->mimeType !== 'application/pdf') {
                     $errors[] = sprintf(
-                        'Document %s has invalid format: %s. Only PDF files are allowed per RA 9184.',
+                        'Document %s has invalid format: %s. Only PDF files are allowed per RA 12009 (NGPA).',
                         $doc->documentType,
                         $doc->mimeType
                     );
@@ -79,7 +79,7 @@ final class DocumentComplianceVerifier
                     'check_type' => 'posting_period',
                     'stage' => $stage->value,
                     'compliant' => true,
-                    'note' => 'Per RA 9184, minimum posting period of 7 calendar days required',
+                    'note' => 'Per RA 12009 (NGPA), minimum posting period of 7 calendar days required',
                 ];
             }
 
