@@ -2,6 +2,7 @@
 
 namespace App\Services\Procurement;
 
+use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
@@ -23,16 +24,37 @@ class ProcurementStageCompletionService
      */
     public function queueStageCompletion(string $prNumber, StageEnums $stage, User $user): array
     {
-        $uploadedDocuments = $this->procurementSupport->getUploadedDocumentTypes($prNumber, $stage);
-        $documentGuide = $this->modeAwareDocumentValidationService->getStageDocumentGuide(
+        // Convert uploaded document type strings to enums
+        $uploadedDocumentStrings = $this->procurementSupport->getUploadedDocumentTypes($prNumber, $stage);
+        $uploadedDocumentEnums = array_values(array_filter(
+            array_map(
+                fn (string $documentType): ?DocumentTypeEnums => DocumentTypeEnums::tryFrom($documentType),
+                $uploadedDocumentStrings,
+            ),
+        ));
+
+        // Use validateStageCompletion() which checks each specific required document type
+        // instead of just comparing raw counts (which allows wrong doc types to pass)
+        $mode = $this->procurementSupport->getProcurementMode($prNumber);
+        $completionCheck = $this->modeAwareDocumentValidationService->validateStageCompletion(
             $stage,
-            $this->procurementSupport->getProcurementMode($prNumber),
+            $uploadedDocumentEnums,
+            $mode,
         );
 
-        if (count($uploadedDocuments) < $documentGuide['counts']['required_count']) {
+        if (! $completionCheck['can_complete']) {
+            $missingDisplayNames = array_map(function (string $docValue): string {
+                $docEnum = DocumentTypeEnums::tryFrom($docValue);
+                return $docEnum ? $docEnum->getDisplayName() : $docValue;
+            }, $completionCheck['missing_documents']);
+
             return [
                 'status' => 422,
-                'data' => ['error' => 'Cannot mark stage as complete. Please upload all required documents first.'],
+                'data' => [
+                    'error' => 'Cannot mark stage as complete. Missing required documents: ' . implode(', ', $missingDisplayNames),
+                    'missing_documents' => $completionCheck['missing_documents'],
+                    'completion_percentage' => $completionCheck['completion_percentage'],
+                ],
             ];
         }
 
@@ -63,7 +85,7 @@ class ProcurementStageCompletionService
                 'current_stage' => $stage->value,
                 'next_stage' => $nextStage?->value,
                 'next_stage_status' => $nextStage ? $this->procurementSupport->getInitialStatusForStage($prNumber, $nextStage)->value : null,
-                'document_count' => count($uploadedDocuments),
+                'document_count' => count($uploadedDocumentEnums),
             ], $jobId, $user->id);
 
             return [
@@ -90,7 +112,7 @@ class ProcurementStageCompletionService
             'next_stage' => $nextStage?->value,
             'next_stage_status' => $nextStage ? $this->procurementSupport->getInitialStatusForStage($prNumber, $nextStage)->value : null,
             'procurement_mode' => $procurement->procurementMode->value,
-            'document_count' => count($uploadedDocuments),
+            'document_count' => count($uploadedDocumentEnums),
             'is_pre_procurement' => $stage->isPreProcurement(),
         ], $jobId, $user->id);
 
