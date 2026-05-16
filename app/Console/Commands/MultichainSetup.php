@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
+use App\Libraries\MultiChain\Client;
 use App\Models\User;
 use App\Services\BlockchainStorageService;
 use App\Services\Manager;
@@ -118,6 +119,9 @@ class MultichainSetup extends Command
 
             // 6. Update database with addresses (idempotent: only update if changed)
             $this->updateAddresses($addresses);
+
+            // 7. Subscribe peer nodes to all streams (idempotent: skip already subscribed)
+            $this->subscribePeerNodes();
 
             $this->newLine();
             $this->info('MultiChain setup completed successfully!');
@@ -476,6 +480,95 @@ class MultichainSetup extends Command
 
             if (str_contains($e->getMessage(), 'exceeds maximum')) {
                 $this->warn('Tip: On-chain storage is best for files under 8 MB');
+            }
+        }
+    }
+
+    /**
+     * Subscribe all configured peer nodes to procurement streams.
+     * Idempotent — subscribe() on an already-subscribed stream is a no-op.
+     * Uses liststreamitems to verify subscription (getstreaminfo 'subscribed'
+     * field is unreliable in MultiChain CE).
+     */
+    private function subscribePeerNodes(): void
+    {
+        $nodes = config('multichain.nodes', []);
+
+        if (empty($nodes)) {
+            $this->line('No peer nodes configured — skipping peer subscription');
+
+            return;
+        }
+
+        $this->info('Subscribing peer nodes to all procurement streams...');
+        $streams = array_merge(self::STREAMS, collect(self::FILE_STORAGE_STREAMS)->pluck('name')->toArray());
+        $rpcUser = config('multichain.rpc.username', 'multichainrpc');
+        $rpcPass = config('multichain.rpc.password');
+        $chainName = config('multichain.chain_name');
+
+        foreach ($nodes as $node) {
+            $nodeId = $node['id'] ?? 'unknown';
+            $nodeName = $node['name'] ?? $nodeId;
+            $nodeIp = $node['private_ip'] ?? '';
+            $nodePort = $node['rpc_port'] ?? 6834;
+
+            if (empty($nodeIp)) {
+                $this->warn("  Skipping {$nodeName} — no private_ip configured");
+
+                continue;
+            }
+
+            try {
+                $client = new Client(
+                    $nodeIp,
+                    $nodePort,
+                    $rpcUser,
+                    $rpcPass,
+                    false
+                );
+                $client->setoption('chain_name', $chainName);
+                $client->setTimeout(10);
+
+                // Verify the node is reachable
+                $client->getinfo();
+
+                if (! $client->success()) {
+                    $this->warn("  {$nodeName} ({$nodeIp}) — unreachable, skipping");
+
+                    continue;
+                }
+
+                $subscribed = 0;
+                $alreadySubscribed = 0;
+
+                foreach ($streams as $stream) {
+                    // Check if already subscribed by attempting liststreamitems
+                    $client->liststreamitems($stream, false, 1, 0, false);
+
+                    if ($client->success()) {
+                        $alreadySubscribed++;
+
+                        continue;
+                    }
+
+                    // Not subscribed (likely -703) — subscribe with rescan
+                    $client->subscribe($stream, true);
+
+                    if ($client->success()) {
+                        $subscribed++;
+                        $this->line("  {$nodeName} — subscribed to {$stream} (rescan=true)");
+                    } else {
+                        $this->warn("  {$nodeName} — failed to subscribe to {$stream}: [{$client->errorcode()}] {$client->errormessage()}");
+                    }
+                }
+
+                if ($subscribed > 0) {
+                    $this->info("  ✓ {$nodeName} — subscribed to {$subscribed} new stream(s), {$alreadySubscribed} already active");
+                } else {
+                    $this->line("  {$nodeName} — all {$alreadySubscribed} streams already subscribed");
+                }
+            } catch (Exception $e) {
+                $this->warn("  {$nodeName} ({$nodeIp}) — error: {$e->getMessage()}");
             }
         }
     }

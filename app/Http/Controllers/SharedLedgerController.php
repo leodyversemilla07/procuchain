@@ -391,15 +391,22 @@ class SharedLedgerController extends Controller
     private function ensureSubscribed(Client $client): void
     {
         foreach (self::LEDGER_STREAMS as $stream) {
-            $info = $client->getstreaminfo($stream);
+            // Use liststreamitems to check subscription — getstreaminfo['subscribed']
+            // is unreliable in MultiChain CE (field often missing).
+            $client->liststreamitems($stream, false, 1, 0, false);
 
-            if ($client->success() && isset($info['subscribed']) && $info['subscribed'] === false) {
-                $client->subscribe($stream, true);
+            if ($client->success()) {
+                // Already subscribed — skip
+                continue;
+            }
+
+            // Not subscribed (likely -703) — subscribe with rescan
+            $client->subscribe($stream, true);
+
+            if ($client->success()) {
                 Log::info("SharedLedger: Auto-subscribed node to stream {$stream} with rescan");
-            } elseif (! $client->success()) {
-                // Stream may not exist on this node yet — try subscribing anyway
-                $client->subscribe($stream, true);
-                Log::info("SharedLedger: Attempted subscribe to stream {$stream} (getstreaminfo failed)");
+            } else {
+                Log::warning("SharedLedger: Failed to auto-subscribe to stream {$stream}: [{$client->errorcode()}] {$client->errormessage()}");
             }
         }
     }

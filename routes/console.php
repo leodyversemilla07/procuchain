@@ -9,3 +9,8 @@ Artisan::command('inspire', function () {
 
 // Removed manual multichain:setup command wrapper to allow the
 // dedicated Command class signature options to be registered.
+
+// Scheduled node health check — auto-repairs unsubscribed nodes every 6 hours
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('multichain:node-health --fix --notify')->everySixHours()->withoutOverlapping();

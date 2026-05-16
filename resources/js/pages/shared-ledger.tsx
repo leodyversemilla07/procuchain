@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,7 @@ import {
     Shield,
     Trash2,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
@@ -147,6 +148,12 @@ export default function SharedLedger({
     });
 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+ const [isFiltering, setIsFiltering] = useState(false);
+
+ // Clear filtering state when Inertia re-renders with new data
+ useEffect(() => {
+ setIsFiltering(false);
+ }, [entries, pagination]);
 
     const hasActiveFilters = !!(
         filters.pr_number ||
@@ -179,8 +186,9 @@ export default function SharedLedger({
             });
     };
 
-    const applyFilters = () => {
-        router.get(
+ const applyFilters = () => {
+ setIsFiltering(true);
+ router.get(
             basePath,
             {
                 ...(prNumber ? { pr_number: prNumber } : {}),
@@ -193,12 +201,13 @@ export default function SharedLedger({
         );
     };
 
-    const clearFilters = () => {
-        setPrNumber('');
-        setStream('');
-        setNode('all');
-        setDateRange(undefined);
-        router.get(basePath, {}, { preserveState: false, replace: true });
+ const clearFilters = () => {
+ setPrNumber('');
+ setStream('');
+ setNode('all');
+ setDateRange(undefined);
+ setIsFiltering(true);
+ router.get(basePath, {}, { preserveState: false, replace: true });
     };
 
     const selectedStreamLabel = stream && stream !== 'all' ? (STREAM_CONFIG[stream]?.label ?? stream) : 'All streams';
@@ -328,15 +337,16 @@ export default function SharedLedger({
                                 value={node || 'all'}
                                 onValueChange={(value) => {
                                     if (!value) return;
-                                    setNode(value);
-                                    // Auto-apply: immediately navigate with the new node
-                                    const params = new URLSearchParams();
-                                    if (prNumber) params.set('pr_number', prNumber);
-                                    if (stream && stream !== 'all') params.set('stream', stream);
-                                    if (value !== 'all') params.set('node', value);
-                                    if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
-                                    if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
-                                    router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
+ setNode(value);
+ // Auto-apply: immediately navigate with the new node
+ setIsFiltering(true);
+ const params = new URLSearchParams();
+ if (prNumber) params.set('pr_number', prNumber);
+ if (stream && stream !== 'all') params.set('stream', stream);
+ if (value !== 'all') params.set('node', value);
+ if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
+ if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
+ router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
                                 }}
                             >
                                 <SelectTrigger className="w-full">
@@ -368,9 +378,10 @@ export default function SharedLedger({
                                 value={stream || 'all'}
                                 onValueChange={(value) => {
                                     if (!value) return;
-                                    setStream(value);
-                                    // Auto-apply: immediately navigate with the new stream
-                                    const params = new URLSearchParams();
+ setStream(value);
+ // Auto-apply: immediately navigate with the new stream
+ setIsFiltering(true);
+ const params = new URLSearchParams();
                                     if (prNumber) params.set('pr_number', prNumber);
                                     if (value !== 'all') params.set('stream', value);
                                     if (node && node !== 'all') params.set('node', node);
@@ -474,8 +485,12 @@ export default function SharedLedger({
                             {hasActiveFilters && <Badge variant="secondary">Filtered</Badge>}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
-                        {entries.length === 0 ? (
+<CardContent className="p-0">
+{isFiltering ? (
+ <div className="flex items-center justify-center py-16">
+ <Spinner className="h-8 w-8" />
+ </div>
+) : entries.length === 0 ? (
                             <Empty className="py-16">
                                 <EmptyMedia>
                                     <BookOpen className="h-12 w-12" />
@@ -698,10 +713,11 @@ export default function SharedLedger({
                                                     e.preventDefault();
                                                     return;
                                                 }
-                                                e.preventDefault();
-                                                const params = new URLSearchParams(window.location.search);
-                                                params.set('page', String(pagination.current_page - 1));
-                                                router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
+ e.preventDefault();
+ setIsFiltering(true);
+ const params = new URLSearchParams(window.location.search);
+ params.set('page', String(pagination.current_page - 1));
+ router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
                                             }}
                                             className={pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
                                         />
@@ -716,11 +732,12 @@ export default function SharedLedger({
                                                 <PaginationLink
                                                     isActive={pagination.current_page === page}
                                                     href={`?page=${page}`}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const params = new URLSearchParams(window.location.search);
-                                                        params.set('page', String(page));
-                                                        router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
+ onClick={(e) => {
+ e.preventDefault();
+ setIsFiltering(true);
+ const params = new URLSearchParams(window.location.search);
+ params.set('page', String(page));
+ router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
                                                     }}
                                                 >
                                                     {page}
@@ -736,10 +753,11 @@ export default function SharedLedger({
                                                     e.preventDefault();
                                                     return;
                                                 }
-                                                e.preventDefault();
-                                                const params = new URLSearchParams(window.location.search);
-                                                params.set('page', String(pagination.current_page + 1));
-                                                router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
+ e.preventDefault();
+ setIsFiltering(true);
+ const params = new URLSearchParams(window.location.search);
+ params.set('page', String(pagination.current_page + 1));
+ router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
                                             }}
                                             className={pagination.current_page >= pagination.last_page ? 'pointer-events-none opacity-50' : ''}
                                         />
