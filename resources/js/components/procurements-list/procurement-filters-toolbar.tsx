@@ -122,7 +122,7 @@ export function ProcurementFiltersToolbar({
                         </Button>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 sm:justify-end">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                     {lastRefreshed && (
                         <span className="text-muted-foreground text-xs" role="status" aria-live="polite">
                             Updated {formatTimeAgo(lastRefreshed)}
@@ -132,11 +132,11 @@ export function ProcurementFiltersToolbar({
                         onClick={onRefresh}
                         disabled={refreshDisabled}
                         variant="outline"
-                        size="default"
-                        className="flex h-10 w-full items-center gap-2 sm:w-auto"
+                        size="sm"
+                        className="flex h-9 w-full items-center justify-center gap-2 sm:w-auto"
                         aria-label={isRefreshing ? 'Refreshing data' : 'Refresh procurement data'}
                     >
-                        {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
+                        {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="size-4" />}
                         <span>Refresh</span>
                     </Button>
                 </div>

@@ -268,46 +268,31 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                 />
 
                 <Tabs defaultValue="details" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 gap-1 sm:gap-0 lg:inline-grid lg:w-auto">
-                        <TabsTrigger
-                            value="details"
-                            className="gap-1.5 text-xs transition-all duration-200 sm:gap-2 sm:text-sm"
-                            aria-label="Details tab"
-                        >
-                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                    <TabsList className="w-full sm:w-auto">
+                        <TabsTrigger value="details" aria-label="Details tab">
+                            <FileText className="size-4" aria-hidden="true" />
                             <span>Details</span>
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="documents"
-                            className="gap-1.5 text-xs transition-all duration-200 sm:gap-2 sm:text-sm"
-                            aria-label={`Documents tab, ${totalDocuments} documents`}
-                        >
-                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                        <TabsTrigger value="documents" aria-label={`Documents tab, ${totalDocuments} documents`}>
+                            <FileText className="size-4" aria-hidden="true" />
                             <span className="hidden sm:inline">Documents</span>
                             <span className="sm:hidden">Docs</span>
-                            <Badge variant="secondary" className="ml-1 text-xs transition-all duration-200 sm:ml-2">
+                            <Badge variant="secondary" className="ml-1 text-[10px] sm:ml-2 sm:text-xs">
                                 {totalDocuments}
                             </Badge>
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="corrections"
-                            className="gap-1.5 text-xs transition-all duration-200 sm:gap-2 sm:text-sm"
-                            aria-label="Corrections tab"
-                        >
-                            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-                            <span>Corrections</span>
+                        <TabsTrigger value="corrections" aria-label="Corrections tab">
+                            <Edit className="size-4" aria-hidden="true" />
+                            <span className="hidden sm:inline">Corrections</span>
+                            <span className="sm:hidden">Fixes</span>
                             {procurement.has_corrections && (
-                                <Badge variant="secondary" className="ml-1 text-xs transition-all duration-200 sm:ml-2">
+                                <Badge variant="secondary" className="ml-1 text-[10px] sm:ml-2 sm:text-xs">
                                     ✓
                                 </Badge>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="timeline"
-                            className="gap-1.5 text-xs transition-all duration-200 sm:gap-2 sm:text-sm"
-                            aria-label="Timeline tab"
-                        >
-                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                        <TabsTrigger value="timeline" aria-label="Timeline tab">
+                            <Clock className="size-4" aria-hidden="true" />
                             <span>Timeline</span>
                         </TabsTrigger>
                     </TabsList>
