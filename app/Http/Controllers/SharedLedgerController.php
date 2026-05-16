@@ -25,22 +25,22 @@ use Inertia\Response;
  */
 class SharedLedgerController extends Controller
 {
- /** Streams to include in the shared ledger. */
- private const LEDGER_STREAMS = [
- 'procurement.metadata',
- 'procurement.status',
- 'procurement.documents',
- 'procurement.corrections',
- 'procurement.metadata.corrections',
- 'procurement.archive',
- 'procurement.events',
- 'file.data',
- 'file.metadata',
- 'file.chunks',
- ];
+    /** Streams to include in the shared ledger. */
+    private const LEDGER_STREAMS = [
+        'procurement.metadata',
+        'procurement.status',
+        'procurement.documents',
+        'procurement.corrections',
+        'procurement.metadata.corrections',
+        'procurement.archive',
+        'procurement.events',
+        'file.data',
+        'file.metadata',
+        'file.chunks',
+    ];
 
- /** @var array{is_purged: bool, partially_purged: bool, unsubscribed_streams: string[]}|null */
- private ?array $nodePurgeState = null;
+    /** @var array{is_purged: bool, partially_purged: bool, unsubscribed_streams: string[]}|null */
+    private ?array $nodePurgeState = null;
 
     /** Items per page. */
     private const PER_PAGE = 50;
@@ -177,21 +177,21 @@ class SharedLedgerController extends Controller
                 'role' => $node['role'],
             ])->values()->toArray();
 
-        return Inertia::render('shared-ledger', [
-            'entries' => $mapped,
-            'pagination' => [
-                'current_page' => $page,
-                'last_page' => max(1, (int) ceil($total / self::PER_PAGE)),
-                'per_page' => self::PER_PAGE,
-                'total' => $total,
-            ],
-            'available_streams' => $availableStreams,
-            'stream_totals' => $streamTotals,
-            'available_nodes' => $availableNodes,
-            'selected_node' => $selectedNode,
-            'node_purge_state' => $this->nodePurgeState,
-            'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
-        ]);
+            return Inertia::render('shared-ledger', [
+                'entries' => $mapped,
+                'pagination' => [
+                    'current_page' => $page,
+                    'last_page' => max(1, (int) ceil($total / self::PER_PAGE)),
+                    'per_page' => self::PER_PAGE,
+                    'total' => $total,
+                ],
+                'available_streams' => $availableStreams,
+                'stream_totals' => $streamTotals,
+                'available_nodes' => $availableNodes,
+                'selected_node' => $selectedNode,
+                'node_purge_state' => $this->nodePurgeState,
+                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
+            ]);
         } catch (Exception $e) {
             report($e);
             Log::error('SharedLedger: Failed to fetch ledger entries', [
@@ -214,9 +214,9 @@ class SharedLedgerController extends Controller
                     'name' => $node['name'],
                     'role' => $node['role'],
                 ])->values()->toArray(),
-        'selected_node' => 'all',
-        'node_purge_state' => null,
-        'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
+                'selected_node' => 'all',
+                'node_purge_state' => null,
+                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
                 'error' => 'Failed to load the shared ledger. The blockchain node may be unavailable. Please try again.',
             ]);
         }
@@ -230,7 +230,7 @@ class SharedLedgerController extends Controller
      */
     private function fetchLedgerEntries(string $nodeId = 'all'): array
     {
-        Log::info("SharedLedger: fetchLedgerEntries called", ['node_id' => $nodeId]);
+        Log::info('SharedLedger: fetchLedgerEntries called', ['node_id' => $nodeId]);
 
         if ($nodeId === 'all') {
             return $this->fetchFromAllNodes();
@@ -246,12 +246,12 @@ class SharedLedgerController extends Controller
      */
     private function fetchFromNode(string $nodeId): array
     {
-        Log::info("SharedLedger: fetchFromNode called", ['node_id' => $nodeId]);
+        Log::info('SharedLedger: fetchFromNode called', ['node_id' => $nodeId]);
 
         $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
 
         if ($nodeConfig === null) {
-            Log::warning("SharedLedger: Node not found in config, falling back to default", ['node_id' => $nodeId]);
+            Log::warning('SharedLedger: Node not found in config, falling back to default', ['node_id' => $nodeId]);
 
             return $this->fetchFromDefaultClient();
         }
@@ -282,7 +282,7 @@ class SharedLedgerController extends Controller
                 $errorCode = $client->errorcode();
                 $success = $client->success();
 
-                Log::info("SharedLedger: liststreamitems result", [
+                Log::info('SharedLedger: liststreamitems result', [
                     'node' => $nodeId,
                     'stream' => $stream,
                     'success' => $success,
@@ -293,6 +293,7 @@ class SharedLedgerController extends Controller
                 if (! $success && $errorCode === -703) {
                     // Stream is unsubscribed (purged) on this node
                     $unsubscribedStreams[] = $stream;
+
                     continue;
                 }
 
@@ -313,61 +314,61 @@ class SharedLedgerController extends Controller
                 }
             }
 
-        // Determine purge state
-        $allUnsubscribed = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
-        $partiallyPurged = ! $allUnsubscribed && count($unsubscribedStreams) > 0;
+            // Determine purge state
+            $allUnsubscribed = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
+            $partiallyPurged = ! $allUnsubscribed && count($unsubscribedStreams) > 0;
 
-        // Distinguish "was purged" from "never subscribed" by checking
-        // if a full_node_purge event exists on-chain for this node.
-        // If all streams return -703 but no purge event exists, the node
-        // was likely never populated (not purged).
-        $wasExplicitlyPurged = false;
-        $purgeReason = null;
-        $purgeTimestamp = null;
+            // Distinguish "was purged" from "never subscribed" by checking
+            // if a full_node_purge event exists on-chain for this node.
+            // If all streams return -703 but no purge event exists, the node
+            // was likely never populated (not purged).
+            $wasExplicitlyPurged = false;
+            $purgeReason = null;
+            $purgeTimestamp = null;
 
-        if ($allUnsubscribed) {
-            try {
-                $purgeKey = 'node_'.$nodeId.'_full_purge';
-                $purgeItems = $this->multichain->liststreamkeyitems(
-                    'file.metadata',
-                    $purgeKey,
-                    false,
-                    1,
-                    0,
-                    false
-                );
+            if ($allUnsubscribed) {
+                try {
+                    $purgeKey = 'node_'.$nodeId.'_full_purge';
+                    $purgeItems = $this->multichain->liststreamkeyitems(
+                        'file.metadata',
+                        $purgeKey,
+                        false,
+                        1,
+                        0,
+                        false
+                    );
 
-                if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
-                    $wasExplicitlyPurged = true;
-                    $purgeData = $purgeItems[0]['data']['json'] ?? [];
-                    $purgeReason = $purgeData['reason'] ?? null;
-                    $purgeTimestamp = $purgeItems[0]['blocktime'] ?? $purgeData['purged_at'] ?? null;
+                    if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                        $wasExplicitlyPurged = true;
+                        $purgeData = $purgeItems[0]['data']['json'] ?? [];
+                        $purgeReason = $purgeData['reason'] ?? null;
+                        $purgeTimestamp = $purgeItems[0]['blocktime'] ?? $purgeData['purged_at'] ?? null;
+                    }
+                } catch (Exception $e) {
+                    Log::warning('SharedLedger: Failed to check purge event', [
+                        'node' => $nodeId,
+                        'error' => 'An error occurred loading the shared ledger.',
+                    ]);
                 }
-            } catch (Exception $e) {
-                Log::warning('SharedLedger: Failed to check purge event', [
-                    'node' => $nodeId,
-                    'error' => 'An error occurred loading the shared ledger.',
-                ]);
             }
-        }
 
-        Log::info("SharedLedger: Node purge state determined", [
-            'node' => $nodeId,
-            'is_purged' => $allUnsubscribed,
-            'was_explicitly_purged' => $wasExplicitlyPurged,
-            'partially_purged' => $partiallyPurged,
-            'unsubscribed_count' => count($unsubscribedStreams),
-            'entries_count' => count($entries),
-        ]);
+            Log::info('SharedLedger: Node purge state determined', [
+                'node' => $nodeId,
+                'is_purged' => $allUnsubscribed,
+                'was_explicitly_purged' => $wasExplicitlyPurged,
+                'partially_purged' => $partiallyPurged,
+                'unsubscribed_count' => count($unsubscribedStreams),
+                'entries_count' => count($entries),
+            ]);
 
-        $this->nodePurgeState = [
-            'is_purged' => $allUnsubscribed,
-            'was_explicitly_purged' => $wasExplicitlyPurged,
-            'partially_purged' => $partiallyPurged,
-            'unsubscribed_streams' => $unsubscribedStreams,
-            'purge_reason' => $purgeReason,
-            'purge_timestamp' => $purgeTimestamp,
-        ];
+            $this->nodePurgeState = [
+                'is_purged' => $allUnsubscribed,
+                'was_explicitly_purged' => $wasExplicitlyPurged,
+                'partially_purged' => $partiallyPurged,
+                'unsubscribed_streams' => $unsubscribedStreams,
+                'purge_reason' => $purgeReason,
+                'purge_timestamp' => $purgeTimestamp,
+            ];
 
             return $entries;
         } catch (Exception $e) {
@@ -380,28 +381,28 @@ class SharedLedgerController extends Controller
         }
     }
 
- /**
- * Ensure the client's node is subscribed to all ledger streams.
- *
- * If a node is not subscribed, liststreamitems returns an error.
- * We subscribe with rescan=true to ensure off-chain data is available.
- * This is idempotent — subscribing to an already-subscribed stream is a no-op.
- */
- private function ensureSubscribed(Client $client): void
- {
- foreach (self::LEDGER_STREAMS as $stream) {
- $info = $client->getstreaminfo($stream);
+    /**
+     * Ensure the client's node is subscribed to all ledger streams.
+     *
+     * If a node is not subscribed, liststreamitems returns an error.
+     * We subscribe with rescan=true to ensure off-chain data is available.
+     * This is idempotent — subscribing to an already-subscribed stream is a no-op.
+     */
+    private function ensureSubscribed(Client $client): void
+    {
+        foreach (self::LEDGER_STREAMS as $stream) {
+            $info = $client->getstreaminfo($stream);
 
- if ($client->success() && isset($info['subscribed']) && $info['subscribed'] === false) {
- $client->subscribe($stream, true);
- Log::info("SharedLedger: Auto-subscribed node to stream {$stream} with rescan");
- } elseif (! $client->success()) {
- // Stream may not exist on this node yet — try subscribing anyway
- $client->subscribe($stream, true);
- Log::info("SharedLedger: Attempted subscribe to stream {$stream} (getstreaminfo failed)");
- }
- }
- }
+            if ($client->success() && isset($info['subscribed']) && $info['subscribed'] === false) {
+                $client->subscribe($stream, true);
+                Log::info("SharedLedger: Auto-subscribed node to stream {$stream} with rescan");
+            } elseif (! $client->success()) {
+                // Stream may not exist on this node yet — try subscribing anyway
+                $client->subscribe($stream, true);
+                Log::info("SharedLedger: Attempted subscribe to stream {$stream} (getstreaminfo failed)");
+            }
+        }
+    }
 
     /**
      * Fetch from all nodes and merge, deduplicating by txid.
@@ -413,24 +414,24 @@ class SharedLedgerController extends Controller
         $allEntries = [];
         $seenTxids = [];
 
- foreach ($this->getNodes() as $nodeConfig) {
- try {
- $client = new Client(
- $nodeConfig['private_ip'],
- $nodeConfig['rpc_port'],
- $this->getRpcUser(),
- $this->getRpcPassword(),
- false
- );
- $client->setoption('chain_name', config('multichain.chain_name'));
- $client->setoption('use_curl', true);
- $client->setoption('verify_ssl', false);
- $client->setTimeout(15);
+        foreach ($this->getNodes() as $nodeConfig) {
+            try {
+                $client = new Client(
+                    $nodeConfig['private_ip'],
+                    $nodeConfig['rpc_port'],
+                    $this->getRpcUser(),
+                    $this->getRpcPassword(),
+                    false
+                );
+                $client->setoption('chain_name', config('multichain.chain_name'));
+                $client->setoption('use_curl', true);
+                $client->setoption('verify_ssl', false);
+                $client->setTimeout(15);
 
- // Ensure this node is subscribed before listing
- $this->ensureSubscribed($client);
+                // Ensure this node is subscribed before listing
+                $this->ensureSubscribed($client);
 
- $nodeEntries = $this->fetchEntriesFromClient($client);
+                $nodeEntries = $this->fetchEntriesFromClient($client);
 
                 foreach ($nodeEntries as $entry) {
                     if (! isset($seenTxids[$entry->txid])) {

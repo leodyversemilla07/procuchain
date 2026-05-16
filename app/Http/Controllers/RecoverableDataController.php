@@ -52,10 +52,10 @@ class RecoverableDataController extends Controller
         // Extract unique PR numbers for the dropdown
         $prNumbers = $files->pluck('pr_number')->unique()->sort()->values()->all();
 
- return Inertia::render('admin/recoverable-data', [
- 'deletedFiles' => $files,
- 'nodes' => $this->storage->getAvailableNodes(),
- ]);
+        return Inertia::render('admin/recoverable-data', [
+            'deletedFiles' => $files,
+            'nodes' => $this->storage->getAvailableNodes(),
+        ]);
     }
 
     /**
@@ -107,48 +107,48 @@ class RecoverableDataController extends Controller
         return redirect()->back()->with('error', $result['message']);
     }
 
- /**
- * Resync a node's stream data from its peers.
- * After a single-node purge, this triggers the node to re-download
- * all missing stream items from its connected peers.
- */
- public function resyncNode(Request $request): RedirectResponse
- {
- $validated = $request->validate([
- 'node_id' => 'required|string',
- ]);
+    /**
+     * Resync a node's stream data from its peers.
+     * After a single-node purge, this triggers the node to re-download
+     * all missing stream items from its connected peers.
+     */
+    public function resyncNode(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'node_id' => 'required|string',
+        ]);
 
- $result = $this->storage->resyncNode($validated['node_id']);
+        $result = $this->storage->resyncNode($validated['node_id']);
 
- if ($result['success']) {
- return redirect()->back()->with('success', $result['message']);
- }
+        if ($result['success']) {
+            return redirect()->back()->with('success', $result['message']);
+        }
 
- return redirect()->back()->with('error', $result['message']);
- }
+        return redirect()->back()->with('error', $result['message']);
+    }
 
- /**
- * Purge ALL data from a single node's local storage.
- * Simulates catastrophic node data loss for the demo.
- * Data survives on remaining nodes — resync to fully restore.
- * Recorded on-chain as action: 'full_node_purge' per RA 12009.
- */
- public function purgeAllFromNode(Request $request): RedirectResponse
- {
- $validated = $request->validate([
- 'node_id' => 'required|string',
- 'reason' => 'nullable|string|max:500',
- ]);
+    /**
+     * Purge ALL data from a single node's local storage.
+     * Simulates catastrophic node data loss for the demo.
+     * Data survives on remaining nodes — resync to fully restore.
+     * Recorded on-chain as action: 'full_node_purge' per RA 12009.
+     */
+    public function purgeAllFromNode(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'node_id' => 'required|string',
+            'reason' => 'nullable|string|max:500',
+        ]);
 
- $result = $this->storage->purgeAllFromNode(
- $validated['node_id'],
- $validated['reason'] ?? 'Demo: full node purge'
- );
+        $result = $this->storage->purgeAllFromNode(
+            $validated['node_id'],
+            $validated['reason'] ?? 'Demo: full node purge'
+        );
 
- if ($result['success']) {
- return redirect()->back()->with('success', $result['message']);
- }
+        if ($result['success']) {
+            return redirect()->back()->with('success', $result['message']);
+        }
 
- return redirect()->back()->with('error', $result['message']);
- }
+        return redirect()->back()->with('error', $result['message']);
+    }
 }

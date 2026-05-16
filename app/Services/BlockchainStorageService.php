@@ -396,47 +396,47 @@ class BlockchainStorageService implements BlockchainStorageInterface
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- // Community Edition compatible per-key purge:
- // We can't purge specific keys in Community Edition, so we:
- // 1. Count items matching this key (for audit reporting)
- // 2. Unsubscribe from relevant streams with purge=true
- // 3. Immediately re-subscribe with rescan=true
- // This effectively clears and rebuilds the local data cache.
- // For a true per-key purge, MultiChain Enterprise is required.
- $items = $nodeClient->liststreamkeyitems(
- StreamEnums::FILE_METADATA->value,
- $dataKey,
- false,
- 100,
- 0,
- false
- );
+            // Community Edition compatible per-key purge:
+            // We can't purge specific keys in Community Edition, so we:
+            // 1. Count items matching this key (for audit reporting)
+            // 2. Unsubscribe from relevant streams with purge=true
+            // 3. Immediately re-subscribe with rescan=true
+            // This effectively clears and rebuilds the local data cache.
+            // For a true per-key purge, MultiChain Enterprise is required.
+            $items = $nodeClient->liststreamkeyitems(
+                StreamEnums::FILE_METADATA->value,
+                $dataKey,
+                false,
+                100,
+                0,
+                false
+            );
 
- $purgedCount = count($items);
+            $purgedCount = count($items);
 
- $chunkItems = $nodeClient->liststreamkeyitems(
- StreamEnums::FILE_DATA->value,
- $dataKey,
- false,
- 1000,
- 0,
- false
- );
- $purgedCount += count($chunkItems);
+            $chunkItems = $nodeClient->liststreamkeyitems(
+                StreamEnums::FILE_DATA->value,
+                $dataKey,
+                false,
+                1000,
+                0,
+                false
+            );
+            $purgedCount += count($chunkItems);
 
- if ($purgedCount > 0) {
- // Unsubscribe + purge from relevant streams, then resubscribe
- foreach ([StreamEnums::FILE_METADATA, StreamEnums::FILE_DATA] as $streamEnum) {
- try {
- $nodeClient->unsubscribe($streamEnum->value, true);
- $nodeClient->subscribe($streamEnum->value, true);
- } catch (Exception $subEx) {
- Log::warning("Could not unsubscribe/resubscribe {$streamEnum->value}: ".$subEx->getMessage());
- }
- }
- }
+            if ($purgedCount > 0) {
+                // Unsubscribe + purge from relevant streams, then resubscribe
+                foreach ([StreamEnums::FILE_METADATA, StreamEnums::FILE_DATA] as $streamEnum) {
+                    try {
+                        $nodeClient->unsubscribe($streamEnum->value, true);
+                        $nodeClient->subscribe($streamEnum->value, true);
+                    } catch (Exception $subEx) {
+                        Log::warning("Could not unsubscribe/resubscribe {$streamEnum->value}: ".$subEx->getMessage());
+                    }
+                }
+            }
 
- // Record the single-node deletion on-chain (from the primary node)
+            // Record the single-node deletion on-chain (from the primary node)
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
                 'json' => [
                     'file_key' => $fileKey,
@@ -512,85 +512,87 @@ class BlockchainStorageService implements BlockchainStorageInterface
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- // Resync using Community Edition compatible approach:
- // subscribe(stream, rescan=true) re-downloads all off-chain items from peers.
- // This works because unsubscribe(purge=true) removed the local data,
- // and subscribe with rescan rebuilds indexes and re-fetches everything.
- $streams = StreamEnums::cases();
+            // Resync using Community Edition compatible approach:
+            // subscribe(stream, rescan=true) re-downloads all off-chain items from peers.
+            // This works because unsubscribe(purge=true) removed the local data,
+            // and subscribe with rescan rebuilds indexes and re-fetches everything.
+            $streams = StreamEnums::cases();
 
- $resyncedStreams = 0;
- $totalRetrieved = 0;
- foreach ($streams as $streamEnum) {
- try {
- // Re-subscribe with rescan to re-download all items
- $nodeClient->subscribe($streamEnum->value, true);
+            $resyncedStreams = 0;
+            $totalRetrieved = 0;
+            foreach ($streams as $streamEnum) {
+                try {
+                    // Re-subscribe with rescan to re-download all items
+                    $nodeClient->subscribe($streamEnum->value, true);
 
- if (! $nodeClient->success()) {
- Log::warning("subscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
- continue;
- }
+                    if (! $nodeClient->success()) {
+                        Log::warning("subscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
 
- // After resubscribe, count items now available
- $info = $nodeClient->getstreaminfo($streamEnum->value);
+                        continue;
+                    }
 
- if (! $nodeClient->success()) {
- Log::warning("getstreaminfo failed after resubscribe for {$streamEnum->value} on node {$nodeId}");
- continue;
- }
+                    // After resubscribe, count items now available
+                    $info = $nodeClient->getstreaminfo($streamEnum->value);
 
- $itemsAfter = $info['items'] ?? 0;
+                    if (! $nodeClient->success()) {
+                        Log::warning("getstreaminfo failed after resubscribe for {$streamEnum->value} on node {$nodeId}");
 
- // Also get the authoritative count from the primary node
- // (the target node may still be indexing after rescan)
- $adminInfo = $this->multichain->getstreaminfo($streamEnum->value);
- $adminItemCount = $adminInfo['items'] ?? 0;
- $reportedItems = max($itemsAfter, $adminItemCount);
+                        continue;
+                    }
 
- if ($reportedItems > 0) {
- $resyncedStreams++;
- $totalRetrieved += $reportedItems;
- Log::info("Resynced {$reportedItems} items from {$streamEnum->value} on node {$nodeId} (local={$itemsAfter}, chain={$adminItemCount})");
- }
- } catch (Exception $streamEx) {
- Log::warning("Could not resubscribe to stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
- }
- }
+                    $itemsAfter = $info['items'] ?? 0;
+
+                    // Also get the authoritative count from the primary node
+                    // (the target node may still be indexing after rescan)
+                    $adminInfo = $this->multichain->getstreaminfo($streamEnum->value);
+                    $adminItemCount = $adminInfo['items'] ?? 0;
+                    $reportedItems = max($itemsAfter, $adminItemCount);
+
+                    if ($reportedItems > 0) {
+                        $resyncedStreams++;
+                        $totalRetrieved += $reportedItems;
+                        Log::info("Resynced {$reportedItems} items from {$streamEnum->value} on node {$nodeId} (local={$itemsAfter}, chain={$adminItemCount})");
+                    }
+                } catch (Exception $streamEx) {
+                    Log::warning("Could not resubscribe to stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
+                }
+            }
 
             // Record resync event on-chain
             $dataKey = 'node_'.$nodeId.'_resync';
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
                 'json' => [
- 'action' => 'node_resync',
- 'node_id' => $nodeId,
- 'node_name' => $targetNode['name'] ?? $nodeId,
- 'streams_resynced' => $resyncedStreams,
- 'items_retrieved' => $totalRetrieved,
- 'resynced_at' => now()->toIso8601String(),
+                    'action' => 'node_resync',
+                    'node_id' => $nodeId,
+                    'node_name' => $targetNode['name'] ?? $nodeId,
+                    'streams_resynced' => $resyncedStreams,
+                    'items_retrieved' => $totalRetrieved,
+                    'resynced_at' => now()->toIso8601String(),
                 ],
             ]);
 
- Log::info("Node {$nodeId} resync completed", [
- 'node_id' => $nodeId,
- 'streams_resynced' => $resyncedStreams,
- 'items_retrieved' => $totalRetrieved,
- ]);
+            Log::info("Node {$nodeId} resync completed", [
+                'node_id' => $nodeId,
+                'streams_resynced' => $resyncedStreams,
+                'items_retrieved' => $totalRetrieved,
+            ]);
 
- // Audit log for RA 12009 (NGPA) compliance
- app(AuditLogger::class)->log(
- action: 'node.resync',
- subjectType: 'node',
- subjectId: $nodeId,
- newValues: [
- 'action' => 'node_resync',
- 'node_id' => $nodeId,
- 'streams_resynced' => $resyncedStreams,
- 'items_retrieved' => $totalRetrieved,
- ],
- );
+            // Audit log for RA 12009 (NGPA) compliance
+            app(AuditLogger::class)->log(
+                action: 'node.resync',
+                subjectType: 'node',
+                subjectId: $nodeId,
+                newValues: [
+                    'action' => 'node_resync',
+                    'node_id' => $nodeId,
+                    'streams_resynced' => $resyncedStreams,
+                    'items_retrieved' => $totalRetrieved,
+                ],
+            );
 
- return [
- 'success' => true,
- 'message' => "Resynced {$targetNode['name']} ({$nodeId}) — {$totalRetrieved} items retrieved across {$resyncedStreams} streams from peers.",
+            return [
+                'success' => true,
+                'message' => "Resynced {$targetNode['name']} ({$nodeId}) — {$totalRetrieved} items retrieved across {$resyncedStreams} streams from peers.",
             ];
         } catch (Exception $e) {
             Log::error('Node resync failed', [
@@ -602,149 +604,150 @@ class BlockchainStorageService implements BlockchainStorageInterface
         }
     }
 
- /**
- * Purge ALL stream data from a single node's local storage.
- *
- * Unlike deleteFromNode() which targets a specific file key,
- * this iterates every stream and purges all items — simulating
- * a catastrophic node data loss for the demo.
- *
- * The data survives on the remaining 3+ nodes and can be
- * fully restored by resyncNode(). The purge is recorded on-chain
- * as action: 'full_node_purge' for RA 12009 audit compliance.
- *
- * @param string $nodeId The target node ID (e.g. 'admin', 'bac-secretariat')
- * @param string $reason Reason for full-node purge
- * @return array{success: bool, message: string, items_purged: int}
- */
- public function purgeAllFromNode(string $nodeId, string $reason = ''): array
- {
- try {
- $nodes = config('multichain.nodes', []);
- $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+    /**
+     * Purge ALL stream data from a single node's local storage.
+     *
+     * Unlike deleteFromNode() which targets a specific file key,
+     * this iterates every stream and purges all items — simulating
+     * a catastrophic node data loss for the demo.
+     *
+     * The data survives on the remaining 3+ nodes and can be
+     * fully restored by resyncNode(). The purge is recorded on-chain
+     * as action: 'full_node_purge' for RA 12009 audit compliance.
+     *
+     * @param  string  $nodeId  The target node ID (e.g. 'admin', 'bac-secretariat')
+     * @param  string  $reason  Reason for full-node purge
+     * @return array{success: bool, message: string, items_purged: int}
+     */
+    public function purgeAllFromNode(string $nodeId, string $reason = ''): array
+    {
+        try {
+            $nodes = config('multichain.nodes', []);
+            $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
 
- if (! $targetNode) {
- return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry", 'items_purged' => 0];
- }
+            if (! $targetNode) {
+                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry", 'items_purged' => 0];
+            }
 
- $nodeClient = new Client(
- $targetNode['private_ip'],
- $targetNode['rpc_port'],
- config('multichain.rpc.username', 'multichainrpc'),
- config('multichain.rpc.password'),
- false
- );
- $nodeClient->setoption('chain_name', config('multichain.chain_name'));
+            $nodeClient = new Client(
+                $targetNode['private_ip'],
+                $targetNode['rpc_port'],
+                config('multichain.rpc.username', 'multichainrpc'),
+                config('multichain.rpc.password'),
+                false
+            );
+            $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- // Verify RPC connection to the target node
- $nodeInfo = $nodeClient->getinfo();
- if (! $nodeClient->success()) {
- Log::error("Cannot connect to node {$nodeId} at {$targetNode['private_ip']}:{$targetNode['rpc_port']}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
- return ['success' => false, 'message' => "Cannot connect to node '{$nodeId}' — RPC connection failed: {$nodeClient->errormessage()}", 'items_purged' => 0];
- }
+            // Verify RPC connection to the target node
+            $nodeInfo = $nodeClient->getinfo();
+            if (! $nodeClient->success()) {
+                Log::error("Cannot connect to node {$nodeId} at {$targetNode['private_ip']}:{$targetNode['rpc_port']}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
 
- Log::info("Connected to node {$nodeId}", ['version' => $nodeInfo['version'] ?? 'unknown', 'blocks' => $nodeInfo['blocks'] ?? 0]);
+                return ['success' => false, 'message' => "Cannot connect to node '{$nodeId}' — RPC connection failed: {$nodeClient->errormessage()}", 'items_purged' => 0];
+            }
 
- // Community Edition compatible purge: unsubscribe(purge=true) + resubscribe
- // In MultiChain Community, unsubscribe(stream, true) purges off-chain data.
- // subscribe(stream, rescan=true) re-downloads all items from peers.
- // This simulates a full node wipe while staying on Community Edition.
- $streams = StreamEnums::cases();
- $totalPurged = 0;
- $streamStats = [];
+            Log::info("Connected to node {$nodeId}", ['version' => $nodeInfo['version'] ?? 'unknown', 'blocks' => $nodeInfo['blocks'] ?? 0]);
 
-        foreach ($streams as $streamEnum) {
-            try {
-                // Count items from the target node BEFORE purging.
-                // We must subscribe first (if not already) so liststreamitems works,
-                // then count, then unsubscribe+purge.
-                $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
-                $nodeItemCount = 0;
+            // Community Edition compatible purge: unsubscribe(purge=true) + resubscribe
+            // In MultiChain Community, unsubscribe(stream, true) purges off-chain data.
+            // subscribe(stream, rescan=true) re-downloads all items from peers.
+            // This simulates a full node wipe while staying on Community Edition.
+            $streams = StreamEnums::cases();
+            $totalPurged = 0;
+            $streamStats = [];
 
-                if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
-                    $nodeItemCount = $streamInfo['items'] ?? 0;
-                } else {
-                    // Node isn't subscribed — subscribe with rescan to get accurate count
-                    $nodeClient->subscribe($streamEnum->value, true);
-                    if ($nodeClient->success()) {
-                        $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
+            foreach ($streams as $streamEnum) {
+                try {
+                    // Count items from the target node BEFORE purging.
+                    // We must subscribe first (if not already) so liststreamitems works,
+                    // then count, then unsubscribe+purge.
+                    $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
+                    $nodeItemCount = 0;
+
+                    if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
                         $nodeItemCount = $streamInfo['items'] ?? 0;
+                    } else {
+                        // Node isn't subscribed — subscribe with rescan to get accurate count
+                        $nodeClient->subscribe($streamEnum->value, true);
+                        if ($nodeClient->success()) {
+                            $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
+                            $nodeItemCount = $streamInfo['items'] ?? 0;
+                        }
                     }
+
+                    // Unsubscribe with purge=true to remove off-chain data.
+                    $nodeClient->unsubscribe($streamEnum->value, true);
+
+                    $purgeOk = $nodeClient->success();
+                    if (! $purgeOk) {
+                        Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
+                    }
+
+                    $totalPurged += $nodeItemCount;
+                    $streamStats[$streamEnum->value] = [
+                        'items_purged' => $nodeItemCount,
+                        'purged' => $purgeOk,
+                    ];
+                } catch (Exception $streamEx) {
+                    Log::warning("Could not unsubscribe/purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
                 }
+            }
 
-                // Unsubscribe with purge=true to remove off-chain data.
-                $nodeClient->unsubscribe($streamEnum->value, true);
+            // Record the full-node purge event on-chain (from the primary node)
+            $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
+                'json' => [
+                    'action' => 'full_node_purge',
+                    'node_id' => $nodeId,
+                    'node_name' => $targetNode['name'] ?? $nodeId,
+                    'items_purged' => $totalPurged,
+                    'streams_affected' => array_keys(array_filter($streamStats, fn ($s) => $s['items_purged'] > 0)),
+                    'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
+                    'purged_at' => now()->toIso8601String(),
+                ],
+            ]);
 
-                $purgeOk = $nodeClient->success();
-                if (! $purgeOk) {
-                    Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
-                }
-
-                $totalPurged += $nodeItemCount;
-                $streamStats[$streamEnum->value] = [
-                    'items_purged' => $nodeItemCount,
-                    'purged' => $purgeOk,
-                ];
- } catch (Exception $streamEx) {
- Log::warning("Could not unsubscribe/purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
- }
- }
-
- // Record the full-node purge event on-chain (from the primary node)
- $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
- 'json' => [
- 'action' => 'full_node_purge',
- 'node_id' => $nodeId,
- 'node_name' => $targetNode['name'] ?? $nodeId,
+            Log::info('Full node purge completed', [
+                'node_id' => $nodeId,
                 'items_purged' => $totalPurged,
-                'streams_affected' => array_keys(array_filter($streamStats, fn ($s) => $s['items_purged'] > 0)),
- 'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
- 'purged_at' => now()->toIso8601String(),
- ],
- ]);
+                'streams_affected' => count($streamStats),
+            ]);
 
- Log::info('Full node purge completed', [
- 'node_id' => $nodeId,
- 'items_purged' => $totalPurged,
- 'streams_affected' => count($streamStats),
- ]);
+            // Audit log for RA 12009 (NGPA) compliance
+            app(AuditLogger::class)->log(
+                action: 'node.full_purge',
+                subjectType: 'node',
+                subjectId: $nodeId,
+                oldValues: [
+                    'action' => 'full_node_purge',
+                    'node_id' => $nodeId,
+                    'items_purged' => $totalPurged,
+                    'streams_affected' => array_keys($streamStats),
+                    'reason' => $reason,
+                ],
+            );
 
- // Audit log for RA 12009 (NGPA) compliance
- app(AuditLogger::class)->log(
- action: 'node.full_purge',
- subjectType: 'node',
- subjectId: $nodeId,
- oldValues: [
- 'action' => 'full_node_purge',
- 'node_id' => $nodeId,
- 'items_purged' => $totalPurged,
- 'streams_affected' => array_keys($streamStats),
- 'reason' => $reason,
- ],
- );
+            return [
+                'success' => true,
+                'message' => "Purged all data ({$totalPurged} items across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
+                'items_purged' => $totalPurged,
+            ];
+        } catch (Exception $e) {
+            Log::error('Full node purge failed', [
+                'node_id' => $nodeId,
+                'error' => $e->getMessage(),
+            ]);
 
- return [
- 'success' => true,
- 'message' => "Purged all data ({$totalPurged} items across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
- 'items_purged' => $totalPurged,
- ];
- } catch (Exception $e) {
- Log::error('Full node purge failed', [
- 'node_id' => $nodeId,
- 'error' => $e->getMessage(),
- ]);
+            return ['success' => false, 'message' => 'Failed: '.$e->getMessage(), 'items_purged' => 0];
+        }
+    }
 
- return ['success' => false, 'message' => 'Failed: '.$e->getMessage(), 'items_purged' => 0];
- }
- }
-
- /**
- * Get list of available nodes for the purge/resync UI
- *
- * @return array<int, array{id: string, name: string, role: string}>
- */
- public function getAvailableNodes(): array
- {
+    /**
+     * Get list of available nodes for the purge/resync UI
+     *
+     * @return array<int, array{id: string, name: string, role: string}>
+     */
+    public function getAvailableNodes(): array
+    {
         return collect(config('multichain.nodes', []))
             ->map(fn ($node) => [
                 'id' => $node['id'],

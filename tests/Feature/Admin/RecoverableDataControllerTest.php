@@ -3,7 +3,6 @@
 use App\Models\User;
 use App\Services\BlockchainStorageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);

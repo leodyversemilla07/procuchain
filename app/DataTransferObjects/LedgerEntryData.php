@@ -135,12 +135,12 @@ final readonly class LedgerEntryData
     /**
      * Format timestamp for display.
      */
- public function getFormattedTimestamp(): string
- {
- return Carbon::parse($this->timestamp)
- ->setTimezone(config('app.timezone', 'Asia/Manila'))
- ->format('M j, Y, g:i A');
- }
+    public function getFormattedTimestamp(): string
+    {
+        return Carbon::parse($this->timestamp)
+            ->setTimezone(config('app.timezone', 'Asia/Manila'))
+            ->format('M j, Y, g:i A');
+    }
 
     /**
      * Get the sortable timestamp as a Unix timestamp.

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\StreamEnums;
 use App\Libraries\MultiChain\Client;
 use Illuminate\Console\Command;
 
@@ -52,10 +53,10 @@ class DebugNodeRpcCommand extends Command
             return 1;
         }
 
-        $this->info("Version: ".($info['version'] ?? 'unknown'));
-        $this->info("Blocks: ".($info['blocks'] ?? 0));
-        $this->info("Connections: ".($info['connections'] ?? 0));
-        $this->info("Chain: ".($info['chainname'] ?? 'unknown'));
+        $this->info('Version: '.($info['version'] ?? 'unknown'));
+        $this->info('Blocks: '.($info['blocks'] ?? 0));
+        $this->info('Connections: '.($info['connections'] ?? 0));
+        $this->info('Chain: '.($info['chainname'] ?? 'unknown'));
 
         // Test 2: liststreams
         $this->newLine();
@@ -72,7 +73,7 @@ class DebugNodeRpcCommand extends Command
         // Test 3: getstreaminfo for each enum stream
         $this->newLine();
         $this->info('=== getstreaminfo (app streams) ===');
-        $appStreams = \App\Enums\StreamEnums::cases();
+        $appStreams = StreamEnums::cases();
         foreach ($appStreams as $streamEnum) {
             $streamInfo = $client->getstreaminfo($streamEnum->value);
             if (! $client->success()) {
