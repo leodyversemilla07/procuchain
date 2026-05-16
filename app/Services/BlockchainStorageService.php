@@ -525,8 +525,19 @@ class BlockchainStorageService implements BlockchainStorageInterface
  // Re-subscribe with rescan to re-download all items
  $nodeClient->subscribe($streamEnum->value, true);
 
+ if (! $nodeClient->success()) {
+ Log::warning("subscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
+ continue;
+ }
+
  // After resubscribe, count items now available
  $info = $nodeClient->getstreaminfo($streamEnum->value);
+
+ if (! $nodeClient->success()) {
+ Log::warning("getstreaminfo failed after resubscribe for {$streamEnum->value} on node {$nodeId}");
+ continue;
+ }
+
  $itemsAfter = $info['items'] ?? 0;
 
  if ($itemsAfter > 0) {
@@ -619,6 +630,15 @@ class BlockchainStorageService implements BlockchainStorageInterface
  );
  $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
+ // Verify RPC connection to the target node
+ $nodeInfo = $nodeClient->getinfo();
+ if (! $nodeClient->success()) {
+ Log::error("Cannot connect to node {$nodeId} at {$targetNode['private_ip']}:{$targetNode['rpc_port']}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
+ return ['success' => false, 'message' => "Cannot connect to node '{$nodeId}' — RPC connection failed: {$nodeClient->errormessage()}", 'items_purged' => 0];
+ }
+
+ Log::info("Connected to node {$nodeId}", ['version' => $nodeInfo['version'] ?? 'unknown', 'blocks' => $nodeInfo['blocks'] ?? 0]);
+
  // Community Edition compatible purge: unsubscribe(purge=true) + resubscribe
  // In MultiChain Community, unsubscribe(stream, true) purges off-chain data.
  // subscribe(stream, rescan=true) re-downloads all items from peers.
@@ -631,6 +651,12 @@ class BlockchainStorageService implements BlockchainStorageInterface
  try {
  // Get current item count before purging (for reporting)
  $info = $nodeClient->getstreaminfo($streamEnum->value);
+
+ if (! $nodeClient->success()) {
+ Log::warning("getstreaminfo failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
+ continue;
+ }
+
  $itemsBefore = $info['items'] ?? 0;
 
  if ($itemsBefore === 0) {
@@ -640,13 +666,17 @@ class BlockchainStorageService implements BlockchainStorageInterface
  // Unsubscribe with purge=true to remove off-chain data
  $nodeClient->unsubscribe($streamEnum->value, true);
 
+ if (! $nodeClient->success()) {
+ Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
+ // Still count the items as "affected" even if unsubscribe failed
+ }
+
  $totalPurged += $itemsBefore;
  $streamStats[$streamEnum->value] = [
  'items_before' => $itemsBefore,
- 'purged' => true,
+ 'purged' => $nodeClient->success(),
  ];
  } catch (Exception $streamEx) {
- // Stream might not exist or already unsubscribed — that's fine
  Log::warning("Could not unsubscribe/purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
  }
  }
