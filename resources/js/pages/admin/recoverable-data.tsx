@@ -26,7 +26,7 @@ import adminRecoverableData from '@/routes/admin/recoverable-data';
 import { Head, router } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import { ArchiveRestore, Database, Network, RotateCcw, ServerCrash, Shield, Trash2, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface DeletedFile {
@@ -44,27 +44,22 @@ interface BlockchainNode {
 
 interface RecoverableDataPageProps {
     deletedFiles: DeletedFile[];
-    prNumbers: string[];
     nodes: BlockchainNode[];
     flash?: { success?: string; error?: string };
 }
 
-export default function RecoverableDataPage({ deletedFiles, prNumbers, nodes, flash }: RecoverableDataPageProps) {
+export default function RecoverableDataPage({ deletedFiles, nodes, flash }: RecoverableDataPageProps) {
     const [restoringKey, setRestoringKey] = useState<string | null>(null);
     const [reasons, setReasons] = useState<Record<string, string>>({});
 
-    // Delete-from-node state (procurement-centric)
-    const [purgeNodeId, setPurgeNodeId] = useState<string>('');
-    const [purgePrNumber, setPurgePrNumber] = useState<string>('');
-    const [purgeReason, setPurgeReason] = useState<string>('');
-    const [isPurging, setIsPurging] = useState(false);
+    // Full-node purge state (demo: wipe all data from one node)
+    const [fullPurgeNodeId, setFullPurgeNodeId] = useState<string>('');
+    const [fullPurgeReason, setFullPurgeReason] = useState<string>('');
+    const [isFullPurging, setIsFullPurging] = useState(false);
 
     // Resync state
     const [resyncNodeId, setResyncNodeId] = useState<string>('');
     const [isResyncing, setIsResyncing] = useState(false);
-
-    // Filter deleted files by selected PR number (for the purge card)
-    const filesForSelectedPr = useMemo(() => deletedFiles.filter((f) => f.pr_number === purgePrNumber), [deletedFiles, purgePrNumber]);
 
     // Handle flash messages from Inertia redirects
     useEffect(() => {
@@ -93,39 +88,35 @@ export default function RecoverableDataPage({ deletedFiles, prNumbers, nodes, fl
         );
     };
 
-    const handleDeleteFromNode = () => {
-        if (!purgeNodeId || !purgePrNumber) {
-            toast.error('Select a procurement (PR number) and a target node');
+    const handleFullPurgeFromNode = () => {
+        if (!fullPurgeNodeId) {
+            toast.error('Select a target node to purge');
             return;
         }
 
-        setIsPurging(true);
+        setIsFullPurging(true);
 
-        // Purge all files for this PR from the selected node
-        const purgePromises = filesForSelectedPr.map((file) => {
-            return new Promise<void>((resolve) => {
-                router.post(
-                    adminRecoverableData.deleteFromNode.url(),
-                    {
-                        file_key: file.file_key,
-                        node_id: purgeNodeId,
-                        reason: purgeReason || `Single-node purge for ${purgePrNumber}`,
-                    },
-                    {
-                        onSuccess: () => resolve(),
-                        onError: () => resolve(), // Don't block others on failure
-                        onFinish: () => resolve(),
-                    },
-                );
-            });
-        });
-
-        Promise.all(purgePromises).finally(() => {
-            setIsPurging(false);
-            toast.success(
-                `Purged ${filesForSelectedPr.length} file(s) for ${purgePrNumber} from ${nodes.find((n) => n.id === purgeNodeId)?.name || purgeNodeId}. Data survives on remaining nodes.`,
-            );
-        });
+        router.post(
+            adminRecoverableData.purgeAllFromNode.url(),
+            {
+                node_id: fullPurgeNodeId,
+                reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
+            },
+            {
+                onSuccess: () => {
+                    setIsFullPurging(false);
+                    setFullPurgeNodeId('');
+                    setFullPurgeReason('');
+                    toast.success(
+                        `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. Check Blockchain Explorer for the audit event, then resync to restore.`,
+                    );
+                },
+                onError: () => {
+                    setIsFullPurging(false);
+                    toast.error('Failed to purge node. Check server logs.');
+                },
+            },
+        );
     };
 
     const handleResyncNode = () => {
@@ -205,51 +196,49 @@ export default function RecoverableDataPage({ deletedFiles, prNumbers, nodes, fl
                     </CardContent>
                 </Card>
 
-                {/* ─── DEMO: Delete from Node (by PR Number) ─── */}
+                {/* ─── DEMO: Purge All Data from Node ─── */}
                 <Card className="border-amber-500/20 bg-amber-500/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
                             <ServerCrash className="h-4 w-4 text-amber-600" />
-                            Demo: Purge Procurement from a Single Node
+                            Demo: Purge All Data from a Single Node
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <FieldDescription>
-                            Purge all files for a <strong className="text-foreground">specific procurement</strong> from one node only. The data
-                            survives on the remaining 3 nodes and will be automatically re-synced. The purge is recorded on-chain as an audit event
-                            (RA 12009).
+                            Simulate <strong className="text-foreground">catastrophic data loss</strong> on a single node by purging{' '}
+                            <strong className="text-foreground">all stream data</strong> from its local storage. The data survives on the remaining 3
+                            nodes and can be fully restored via resync. Every purge is recorded on-chain as an audit event (RA 12009 NGPA).
                         </FieldDescription>
 
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <Field>
-                                <FieldLabel htmlFor="purge-pr">Procurement (PR Number)</FieldLabel>
-                                <Select value={purgePrNumber} onValueChange={(v) => v && setPurgePrNumber(v)}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select PR number..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {prNumbers.length > 0 ? (
-                                                prNumbers.map((pr) => (
-                                                    <SelectItem key={pr} value={pr}>
-                                                        {pr}
-                                                    </SelectItem>
-                                                ))
-                                            ) : (
-                                                <SelectItem value="_none" disabled>
-                                                    No deleted procurements
-                                                </SelectItem>
-                                            )}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
+                        {/* Step-by-step demo flow */}
+                        <div className="bg-muted/50 space-y-2 rounded-md p-3 text-sm">
+                            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Demo Flow</p>
+                            <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-sm">
+                                <li>
+                                    <strong className="text-foreground">Purge</strong> — Wipe all blockchain data from one node (e.g.{' '}
+                                    <code className="font-mono text-xs">hope</code>)
+                                </li>
+                                <li>
+                                    <strong className="text-foreground">Verify</strong> — Check the Blockchain Explorer to see the purge event
+                                    recorded on-chain
+                                </li>
+                                <li>
+                                    <strong className="text-foreground">Resync</strong> — Trigger the purged node to re-download all data from its
+                                    peers
+                                </li>
+                                <li>
+                                    <strong className="text-foreground">Confirm</strong> — Data is fully restored, proving blockchain recoverability
+                                </li>
+                            </ol>
+                        </div>
 
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <Field>
-                                <FieldLabel htmlFor="purge-node">Target Node</FieldLabel>
-                                <Select value={purgeNodeId} onValueChange={(v) => v && setPurgeNodeId(v)}>
+                                <FieldLabel htmlFor="full-purge-node">Target Node</FieldLabel>
+                                <Select value={fullPurgeNodeId} onValueChange={(v) => v && setFullPurgeNodeId(v)}>
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select node..." />
+                                        <SelectValue placeholder="Select node to purge..." />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -264,61 +253,44 @@ export default function RecoverableDataPage({ deletedFiles, prNumbers, nodes, fl
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="purge-reason">Reason (RA 12009 audit)</FieldLabel>
+                                <FieldLabel htmlFor="full-purge-reason">Reason (RA 12009 audit)</FieldLabel>
                                 <Input
-                                    id="purge-reason"
+                                    id="full-purge-reason"
                                     type="text"
-                                    placeholder="Reason for single-node purge..."
-                                    value={purgeReason}
-                                    onChange={(e) => setPurgeReason(e.target.value)}
+                                    placeholder="Reason for full node purge..."
+                                    value={fullPurgeReason}
+                                    onChange={(e) => setFullPurgeReason(e.target.value)}
                                 />
                             </Field>
                         </div>
 
-                        {/* Show files that will be purged for the selected PR */}
-                        {purgePrNumber && filesForSelectedPr.length > 0 && (
-                            <div className="bg-muted space-y-1 rounded-md p-3 text-sm">
-                                <p className="text-muted-foreground text-xs font-medium uppercase">Files to purge for {purgePrNumber}</p>
-                                {filesForSelectedPr.map((f) => (
-                                    <p key={f.file_key} className="font-mono text-xs">
-                                        {f.file_key}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-
                         <div className="flex items-center gap-3">
                             <AlertDialog>
                                 <AlertDialogTrigger
-                                    render={
-                                        <Button
-                                            variant="destructive"
-                                            className="gap-2"
-                                            disabled={isPurging || !purgeNodeId || !purgePrNumber || filesForSelectedPr.length === 0}
-                                        />
-                                    }
+                                    render={<Button variant="destructive" className="gap-2" disabled={isFullPurging || !fullPurgeNodeId} />}
                                 >
-                                    {isPurging ? <Spinner className="h-4 w-4" /> : <ServerCrash className="h-4 w-4" />}
-                                    Delete from Node
+                                    {isFullPurging ? <Spinner className="h-4 w-4" /> : <ServerCrash className="h-4 w-4" />}
+                                    Purge All from Node
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="flex items-center gap-2">
                                             <ServerCrash className="text-destructive h-5 w-5" />
-                                            Confirm Single-Node Purge
+                                            Confirm Full Node Purge
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This will remove <strong>{filesForSelectedPr.length} file(s)</strong> for procurement
-                                            <code className="mx-1 font-mono">{purgePrNumber}</code> from
-                                            <strong className="mx-1">{nodes.find((n) => n.id === purgeNodeId)?.name || purgeNodeId}</strong>. The data
-                                            remains on the other 3 nodes and will be re-synced automatically. This event is recorded on-chain.
+                                            This will remove <strong>ALL blockchain data</strong> from{' '}
+                                            <strong className="mx-1">{nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}</strong>.
+                                            Every stream item (metadata, files, events, status changes) will be purged from this node&apos;s local
+                                            storage. The data remains on the other 3 nodes and can be restored by resyncing. This event is recorded
+                                            on-chain for audit compliance.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction variant="destructive" onClick={handleDeleteFromNode}>
+                                        <AlertDialogAction variant="destructive" onClick={handleFullPurgeFromNode}>
                                             <ServerCrash className="mr-2 h-4 w-4" />
-                                            Purge from Node
+                                            Purge All Data
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>

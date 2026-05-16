@@ -590,13 +590,132 @@ class BlockchainStorageService implements BlockchainStorageInterface
         }
     }
 
-    /**
-     * Get list of available nodes for the purge/resync UI
-     *
-     * @return array<int, array{id: string, name: string, role: string}>
-     */
-    public function getAvailableNodes(): array
-    {
+ /**
+ * Purge ALL stream data from a single node's local storage.
+ *
+ * Unlike deleteFromNode() which targets a specific file key,
+ * this iterates every stream and purges all items — simulating
+ * a catastrophic node data loss for the demo.
+ *
+ * The data survives on the remaining 3+ nodes and can be
+ * fully restored by resyncNode(). The purge is recorded on-chain
+ * as action: 'full_node_purge' for RA 12009 audit compliance.
+ *
+ * @param string $nodeId The target node ID (e.g. 'admin', 'bac-secretariat')
+ * @param string $reason Reason for full-node purge
+ * @return array{success: bool, message: string, items_purged: int}
+ */
+ public function purgeAllFromNode(string $nodeId, string $reason = ''): array
+ {
+ try {
+ $nodes = config('multichain.nodes', []);
+ $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+
+ if (! $targetNode) {
+ return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry", 'items_purged' => 0];
+ }
+
+ $nodeClient = new Client(
+ $targetNode['private_ip'],
+ $targetNode['rpc_port'],
+ config('multichain.rpc.username', 'multichainrpc'),
+ config('multichain.rpc.password'),
+ false
+ );
+ $nodeClient->setoption('chain_name', config('multichain.chain_name'));
+
+ // Purge all items from every stream on this node
+ $streams = StreamEnums::cases();
+ $totalPurged = 0;
+ $streamStats = [];
+
+ foreach ($streams as $streamEnum) {
+ try {
+ $items = $nodeClient->liststreamitems(
+ $streamEnum->value,
+ false,
+ 10000,
+ 0,
+ false
+ );
+
+ $streamPurged = 0;
+ foreach ($items as $item) {
+ try {
+ $txid = $item['txid'] ?? null;
+ if ($txid) {
+ $nodeClient->__call('purge', [$streamEnum->value, $txid]);
+ $streamPurged++;
+ }
+ } catch (Exception $purgeEx) {
+ Log::warning("Could not purge txid from {$streamEnum->value} on node {$nodeId}: ".$purgeEx->getMessage());
+ }
+ }
+
+ $totalPurged += $streamPurged;
+ if ($streamPurged > 0) {
+ $streamStats[$streamEnum->value] = $streamPurged;
+ }
+ } catch (Exception $streamEx) {
+ Log::warning("Could not iterate stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
+ }
+ }
+
+ // Record the full-node purge event on-chain (from the primary node)
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
+ 'json' => [
+ 'action' => 'full_node_purge',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'items_purged' => $totalPurged,
+ 'streams_affected' => $streamStats,
+ 'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
+ 'purged_at' => now()->toIso8601String(),
+ ],
+ ]);
+
+ Log::info('Full node purge completed', [
+ 'node_id' => $nodeId,
+ 'items_purged' => $totalPurged,
+ 'streams_affected' => count($streamStats),
+ ]);
+
+ // Audit log for RA 12009 (NGPA) compliance
+ app(AuditLogger::class)->log(
+ action: 'node.full_purge',
+ subjectType: 'node',
+ subjectId: $nodeId,
+ oldValues: [
+ 'action' => 'full_node_purge',
+ 'node_id' => $nodeId,
+ 'items_purged' => $totalPurged,
+ 'streams_affected' => $streamStats,
+ 'reason' => $reason,
+ ],
+ );
+
+ return [
+ 'success' => true,
+ 'message' => "Purged all data ({$totalPurged} items across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
+ 'items_purged' => $totalPurged,
+ ];
+ } catch (Exception $e) {
+ Log::error('Full node purge failed', [
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+
+ return ['success' => false, 'message' => 'Failed: '.$e->getMessage(), 'items_purged' => 0];
+ }
+ }
+
+ /**
+ * Get list of available nodes for the purge/resync UI
+ *
+ * @return array<int, array{id: string, name: string, role: string}>
+ */
+ public function getAvailableNodes(): array
+ {
         return collect(config('multichain.nodes', []))
             ->map(fn ($node) => [
                 'id' => $node['id'],
