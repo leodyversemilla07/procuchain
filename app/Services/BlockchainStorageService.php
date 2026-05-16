@@ -540,10 +540,16 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
  $itemsAfter = $info['items'] ?? 0;
 
- if ($itemsAfter > 0) {
+ // Also get the authoritative count from the primary node
+ // (the target node may still be indexing after rescan)
+ $adminInfo = $this->multichain->getstreaminfo($streamEnum->value);
+ $adminItemCount = $adminInfo['items'] ?? 0;
+ $reportedItems = max($itemsAfter, $adminItemCount);
+
+ if ($reportedItems > 0) {
  $resyncedStreams++;
- $totalRetrieved += $itemsAfter;
- Log::info("Resynced {$itemsAfter} items from {$streamEnum->value} on node {$nodeId}");
+ $totalRetrieved += $reportedItems;
+ Log::info("Resynced {$reportedItems} items from {$streamEnum->value} on node {$nodeId} (local={$itemsAfter}, chain={$adminItemCount})");
  }
  } catch (Exception $streamEx) {
  Log::warning("Could not resubscribe to stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
@@ -649,32 +655,27 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
  foreach ($streams as $streamEnum) {
  try {
- // Get current item count before purging (for reporting)
- $info = $nodeClient->getstreaminfo($streamEnum->value);
-
- if (! $nodeClient->success()) {
- Log::warning("getstreaminfo failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
- continue;
- }
-
- $itemsBefore = $info['items'] ?? 0;
-
- if ($itemsBefore === 0) {
- continue; // Skip empty streams
- }
-
- // Unsubscribe with purge=true to remove off-chain data
+ // Unsubscribe with purge=true to remove off-chain data.
+ // We do NOT check items before purging because:
+ // - Unsubscribed nodes return getstreaminfo WITHOUT the 'items' field
+ // - The stream still exists on-chain; we purge what the node has locally
+ // - If the node isn't subscribed, unsubscribe succeeds harmlessly
  $nodeClient->unsubscribe($streamEnum->value, true);
 
- if (! $nodeClient->success()) {
+ $purgeOk = $nodeClient->success();
+ if (! $purgeOk) {
  Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
- // Still count the items as "affected" even if unsubscribe failed
  }
 
- $totalPurged += $itemsBefore;
+ // Get item count from the PRIMARY node for reporting (not the target node,
+ // which may not be subscribed and thus won't have item counts)
+ $adminInfo = $this->multichain->getstreaminfo($streamEnum->value);
+ $adminItemCount = $adminInfo['items'] ?? 0;
+
+ $totalPurged += $adminItemCount;
  $streamStats[$streamEnum->value] = [
- 'items_before' => $itemsBefore,
- 'purged' => $nodeClient->success(),
+ 'items_on_chain' => $adminItemCount,
+ 'purged' => $purgeOk,
  ];
  } catch (Exception $streamEx) {
  Log::warning("Could not unsubscribe/purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
@@ -688,7 +689,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
  'node_id' => $nodeId,
  'node_name' => $targetNode['name'] ?? $nodeId,
  'items_purged' => $totalPurged,
- 'streams_affected' => array_keys($streamStats),
+ 'streams_affected' => array_keys(array_filter($streamStats, fn ($s) => $s['items_on_chain'] > 0)),
  'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
  'purged_at' => now()->toIso8601String(),
  ],
