@@ -179,7 +179,7 @@ final class ProcurementData
             status: $data['status'] ?? 'draft',
             userId: (string) $userId,
             userAddress: $data['user_address'] ?? null,
-            createdAt: Carbon::parse($data['created_at'] ?? now()),
+            createdAt: Carbon::parse($data['created_at'] ?? now())->setTimezone(config('app.timezone', 'Asia/Manila')),
         );
     }
 

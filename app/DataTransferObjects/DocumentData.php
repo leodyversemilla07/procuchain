@@ -83,7 +83,7 @@ final class DocumentData
                 dataTxid: $data['data_txid'] ?? '',
                 metadataTxid: $data['metadata_txid'] ?? '',
                 uploadedBy: (string) $uploadedBy,
-                timestamp: isset($data['timestamp']) ? Carbon::parse($data['timestamp']) : Carbon::now(),
+                timestamp: isset($data['timestamp']) ? Carbon::parse($data['timestamp'])->setTimezone(config('app.timezone', 'Asia/Manila')) : Carbon::now(),
                 description: $data['description'] ?? null,
                 stageMetadata: $data['stage_metadata'] ?? null,
             );

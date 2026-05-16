@@ -59,7 +59,7 @@ final class EventData
             details: $data['details'],
             documentCount: (int) ($data['document_count'] ?? 0),
             userAddress: $data['user_address'],
-            timestamp: Carbon::parse($data['timestamp']),
+            timestamp: Carbon::parse($data['timestamp'])->setTimezone(config('app.timezone', 'Asia/Manila')),
             metadata: $data['metadata'] ?? null,
         );
     }
