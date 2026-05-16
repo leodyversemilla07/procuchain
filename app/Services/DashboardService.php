@@ -205,17 +205,17 @@ class DashboardService
                         $event->details
                     );
 
- return [
- 'id' => $event->prNumber,
- 'title' => $event->procurementTitle,
- 'action' => $actionLabel,
- 'details' => $event->details,
- 'raw_event_type' => $event->eventType,
- 'stage' => $event->stage,
- 'date' => $event->timestamp->toIso8601String(),
- 'user' => $this->getUserName($event->userAddress),
- 'timestamp' => $event->timestamp->timestamp,
- ];
+                    return [
+                        'id' => $event->prNumber,
+                        'title' => $event->procurementTitle,
+                        'action' => $actionLabel,
+                        'details' => $event->details,
+                        'raw_event_type' => $event->eventType,
+                        'stage' => $event->stage,
+                        'date' => $event->timestamp->toIso8601String(),
+                        'user' => $this->getUserName($event->userAddress),
+                        'timestamp' => $event->timestamp->timestamp,
+                    ];
                 })
                 ->sortByDesc('timestamp')
                 ->take($limit)
