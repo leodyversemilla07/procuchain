@@ -25,19 +25,22 @@ use Inertia\Response;
  */
 class SharedLedgerController extends Controller
 {
-    /** Streams to include in the shared ledger. */
-    private const LEDGER_STREAMS = [
-        'procurement.metadata',
-        'procurement.status',
-        'procurement.documents',
-        'procurement.corrections',
-        'procurement.metadata.corrections',
-        'procurement.archive',
-        'procurement.events',
-        'file.data',
-        'file.metadata',
-        'file.chunks',
-    ];
+ /** Streams to include in the shared ledger. */
+ private const LEDGER_STREAMS = [
+ 'procurement.metadata',
+ 'procurement.status',
+ 'procurement.documents',
+ 'procurement.corrections',
+ 'procurement.metadata.corrections',
+ 'procurement.archive',
+ 'procurement.events',
+ 'file.data',
+ 'file.metadata',
+ 'file.chunks',
+ ];
+
+ /** @var array{is_purged: bool, partially_purged: bool, unsubscribed_streams: string[]}|null */
+ private ?array $nodePurgeState = null;
 
     /** Items per page. */
     private const PER_PAGE = 50;
@@ -74,6 +77,9 @@ class SharedLedgerController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('view-shared-ledger');
+
+        // Reset purge state for each request
+        $this->nodePurgeState = null;
 
         try {
             $selectedNode = $request->string('node', 'all')->toString();
@@ -171,20 +177,21 @@ class SharedLedgerController extends Controller
                 'role' => $node['role'],
             ])->values()->toArray();
 
-            return Inertia::render('shared-ledger', [
-                'entries' => $mapped,
-                'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => max(1, (int) ceil($total / self::PER_PAGE)),
-                    'per_page' => self::PER_PAGE,
-                    'total' => $total,
-                ],
-                'available_streams' => $availableStreams,
-                'stream_totals' => $streamTotals,
-                'available_nodes' => $availableNodes,
-                'selected_node' => $selectedNode,
-                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
-            ]);
+        return Inertia::render('shared-ledger', [
+            'entries' => $mapped,
+            'pagination' => [
+                'current_page' => $page,
+                'last_page' => max(1, (int) ceil($total / self::PER_PAGE)),
+                'per_page' => self::PER_PAGE,
+                'total' => $total,
+            ],
+            'available_streams' => $availableStreams,
+            'stream_totals' => $streamTotals,
+            'available_nodes' => $availableNodes,
+            'selected_node' => $selectedNode,
+            'node_purge_state' => $this->nodePurgeState,
+            'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
+        ]);
         } catch (Exception $e) {
             report($e);
             Log::error('SharedLedger: Failed to fetch ledger entries', [
@@ -207,8 +214,9 @@ class SharedLedgerController extends Controller
                     'name' => $node['name'],
                     'role' => $node['role'],
                 ])->values()->toArray(),
-                'selected_node' => 'all',
-                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
+        'selected_node' => 'all',
+        'node_purge_state' => null,
+        'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
                 'error' => 'Failed to load the shared ledger. The blockchain node may be unavailable. Please try again.',
             ]);
         }
@@ -234,44 +242,67 @@ class SharedLedgerController extends Controller
      *
      * @return LedgerEntryData[]
      */
- private function fetchFromNode(string $nodeId): array
- {
- $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
+    private function fetchFromNode(string $nodeId): array
+    {
+        $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
 
- if ($nodeConfig === null) {
- // Fallback to the default Manager connection
- return $this->fetchFromDefaultClient();
- }
+        if ($nodeConfig === null) {
+            // Fallback to the default Manager connection
+            return $this->fetchFromDefaultClient();
+        }
 
- try {
- $client = new Client(
- $nodeConfig['private_ip'],
- $nodeConfig['rpc_port'],
- $this->getRpcUser(),
- $this->getRpcPassword(),
- false
- );
- $client->setoption('chain_name', config('multichain.chain_name'));
- $client->setoption('use_curl', true);
- $client->setoption('verify_ssl', false);
- $client->setTimeout(15);
+        try {
+            $client = new Client(
+                $nodeConfig['private_ip'],
+                $nodeConfig['rpc_port'],
+                $this->getRpcUser(),
+                $this->getRpcPassword(),
+                false
+            );
+            $client->setoption('chain_name', config('multichain.chain_name'));
+            $client->setoption('use_curl', true);
+            $client->setoption('verify_ssl', false);
+            $client->setTimeout(15);
 
- // Ensure the node is subscribed to all ledger streams.
- // Unsubscribed nodes cannot list stream items — they return
- // an RPC error. Auto-subscribing (with rescan) makes the node
- // fetch any missing off-chain data so liststreamitems works.
- $this->ensureSubscribed($client);
+            // Do NOT auto-subscribe when viewing a specific node.
+            // If the node was purged (unsubscribed), we want to show that
+            // reality — fewer or zero entries. Auto-subscribing would
+            // immediately undo the purge by rescanning all data back.
+            // Only "All nodes" mode auto-subscribes for completeness.
 
- return $this->fetchEntriesFromClient($client);
- } catch (Exception $e) {
- report($e);
- Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
- 'error' => 'An error occurred loading the shared ledger.',
- ]);
+            // Check subscription status to inform the frontend
+            $unsubscribedStreams = [];
+            foreach (self::LEDGER_STREAMS as $stream) {
+                $info = $client->getstreaminfo($stream);
+                if (! $client->success() || ($info['subscribed'] ?? true) === false) {
+                    $unsubscribedStreams[] = $stream;
+                }
+            }
 
- return $this->fetchFromDefaultClient();
- }
- }
+            // If ALL streams are unsubscribed, this node has been purged
+            $isPurged = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
+            $partiallyPurged = ! $isPurged && count($unsubscribedStreams) > 0;
+
+            $entries = $this->fetchEntriesFromClient($client);
+
+            // Store purge state in a static so index() can pass it to Inertia
+            // (We'll use a class property instead)
+            $this->nodePurgeState = [
+                'is_purged' => $isPurged,
+                'partially_purged' => $partiallyPurged,
+                'unsubscribed_streams' => $unsubscribedStreams,
+            ];
+
+            return $entries;
+        } catch (Exception $e) {
+            report($e);
+            Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
+                'error' => 'An error occurred loading the shared ledger.',
+            ]);
+
+            return $this->fetchFromDefaultClient();
+        }
+    }
 
  /**
  * Ensure the client's node is subscribed to all ledger streams.

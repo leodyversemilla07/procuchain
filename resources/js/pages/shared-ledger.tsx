@@ -48,15 +48,22 @@ import React, { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
+interface NodePurgeState {
+  is_purged: boolean;
+  partially_purged: boolean;
+  unsubscribed_streams: string[];
+}
+
 interface SharedLedgerPageProps {
-    entries: LedgerEntry[];
-    pagination: LedgerPagination;
-    available_streams: StreamOption[];
-    available_nodes: NodeOption[];
-    stream_totals: Record<string, number>;
-    selected_node: string;
-    filters: LedgerFilters;
-    error?: string;
+  entries: LedgerEntry[];
+  pagination: LedgerPagination;
+  available_streams: StreamOption[];
+  available_nodes: NodeOption[];
+  stream_totals: Record<string, number>;
+  selected_node: string;
+  node_purge_state: NodePurgeState | null;
+  filters: LedgerFilters;
+  error?: string;
 }
 
 const basePath = window.location.pathname;
@@ -118,14 +125,15 @@ function computeDiff(oldValues: Record<string, unknown>, newValues: Record<strin
 }
 
 export default function SharedLedger({
-    entries,
-    pagination,
-    available_streams,
-    available_nodes,
-    stream_totals,
-    selected_node,
-    filters,
-    error,
+ entries,
+ pagination,
+ available_streams,
+ available_nodes,
+ stream_totals,
+ selected_node,
+ node_purge_state,
+ filters,
+ error,
 }: SharedLedgerPageProps) {
     const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
     const [stream, setStream] = useState(filters.stream ?? '');
@@ -253,6 +261,30 @@ export default function SharedLedger({
                 </HeroCard>
 
                 {error && <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">{error}</div>}
+
+      {/* Purge State Warning */}
+      {node_purge_state?.is_purged && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 rounded-lg border px-4 py-3 text-sm">
+          <p className="text-amber-800 dark:text-amber-300 flex items-center gap-2 font-medium">
+            <AlertTriangle className="h-4 w-4" />
+            This node has been purged — all stream subscriptions removed
+          </p>
+          <p className="text-amber-700 dark:text-amber-400 mt-1">
+            Data on this node was wiped via <strong>unsubscribe(purge=true)</strong>. The blockchain data still exists on other nodes — use <strong>Recoverable Data → Resync</strong> to restore this node's local copy.
+          </p>
+        </div>
+      )}
+      {node_purge_state?.partially_purged && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 rounded-lg border px-4 py-3 text-sm">
+          <p className="text-amber-800 dark:text-amber-300 flex items-center gap-2 font-medium">
+            <AlertTriangle className="h-4 w-4" />
+            Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
+          </p>
+          <p className="text-amber-700 dark:text-amber-400 mt-1">
+            Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}
+          </p>
+        </div>
+      )}
 
                 {/* Filters */}
                 <Card>
