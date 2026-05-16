@@ -8,6 +8,7 @@ import { FormEventHandler, useRef } from 'react';
 
 import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { update } from '@/routes/settings/password';
@@ -109,7 +110,10 @@ export default function Password() {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save password</Button>
+                            <Button disabled={processing} className="gap-2">
+ {processing && <Spinner className="size-4" />}
+ Save password
+ </Button>
 
                             <Transition
                                 show={recentlySuccessful}
