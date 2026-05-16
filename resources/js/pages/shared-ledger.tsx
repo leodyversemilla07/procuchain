@@ -50,8 +50,11 @@ import { toast } from 'sonner';
 
 interface NodePurgeState {
   is_purged: boolean;
+  was_explicitly_purged: boolean;
   partially_purged: boolean;
   unsubscribed_streams: string[];
+  purge_reason?: string | null;
+  purge_timestamp?: number | null;
 }
 
 interface SharedLedgerPageProps {
@@ -263,7 +266,7 @@ export default function SharedLedger({
                 {error && <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">{error}</div>}
 
       {/* Purge State Warning */}
-      {node_purge_state?.is_purged && (
+      {node_purge_state?.is_purged && node_purge_state.was_explicitly_purged && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 rounded-lg border px-4 py-3 text-sm">
           <p className="text-amber-800 dark:text-amber-300 flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
@@ -271,6 +274,22 @@ export default function SharedLedger({
           </p>
           <p className="text-amber-700 dark:text-amber-400 mt-1">
             Data on this node was wiped via <strong>unsubscribe(purge=true)</strong>. The blockchain data still exists on other nodes — use <strong>Recoverable Data → Resync</strong> to restore this node's local copy.
+          </p>
+          {node_purge_state.purge_reason && (
+            <p className="text-amber-600 dark:text-amber-500 mt-1 text-xs">
+              Reason: {node_purge_state.purge_reason}
+            </p>
+          )}
+        </div>
+      )}
+      {node_purge_state?.is_purged && !node_purge_state.was_explicitly_purged && (
+        <div className="bg-slate-50 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800 rounded-lg border px-4 py-3 text-sm">
+          <p className="text-slate-700 dark:text-slate-300 flex items-center gap-2 font-medium">
+            <Server className="h-4 w-4" />
+            This node has no local blockchain data
+          </p>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            This node is not subscribed to any procurement streams. It may have never been populated, or its subscriptions were removed without an on-chain record. Use <strong>Recoverable Data → Resync</strong> to subscribe and download the blockchain data.
           </p>
         </div>
       )}

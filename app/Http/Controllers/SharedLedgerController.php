@@ -313,24 +313,61 @@ class SharedLedgerController extends Controller
                 }
             }
 
-            // Determine purge state
-            $isPurged = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
-            $partiallyPurged = ! $isPurged && count($unsubscribedStreams) > 0;
+        // Determine purge state
+        $allUnsubscribed = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
+        $partiallyPurged = ! $allUnsubscribed && count($unsubscribedStreams) > 0;
 
-            Log::info("SharedLedger: Node purge state determined", [
-                'node' => $nodeId,
-                'is_purged' => $isPurged,
-                'partially_purged' => $partiallyPurged,
-                'unsubscribed_count' => count($unsubscribedStreams),
-                'unsubscribed_streams' => $unsubscribedStreams,
-                'entries_count' => count($entries),
-            ]);
+        // Distinguish "was purged" from "never subscribed" by checking
+        // if a full_node_purge event exists on-chain for this node.
+        // If all streams return -703 but no purge event exists, the node
+        // was likely never populated (not purged).
+        $wasExplicitlyPurged = false;
+        $purgeReason = null;
+        $purgeTimestamp = null;
 
-            $this->nodePurgeState = [
-                'is_purged' => $isPurged,
-                'partially_purged' => $partiallyPurged,
-                'unsubscribed_streams' => $unsubscribedStreams,
-            ];
+        if ($allUnsubscribed) {
+            try {
+                $purgeKey = 'node_'.$nodeId.'_full_purge';
+                $purgeItems = $this->multichain->liststreamkeyitems(
+                    'file.metadata',
+                    $purgeKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+
+                if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                    $wasExplicitlyPurged = true;
+                    $purgeData = $purgeItems[0]['data']['json'] ?? [];
+                    $purgeReason = $purgeData['reason'] ?? null;
+                    $purgeTimestamp = $purgeItems[0]['blocktime'] ?? $purgeData['purged_at'] ?? null;
+                }
+            } catch (Exception $e) {
+                Log::warning('SharedLedger: Failed to check purge event', [
+                    'node' => $nodeId,
+                    'error' => 'An error occurred loading the shared ledger.',
+                ]);
+            }
+        }
+
+        Log::info("SharedLedger: Node purge state determined", [
+            'node' => $nodeId,
+            'is_purged' => $allUnsubscribed,
+            'was_explicitly_purged' => $wasExplicitlyPurged,
+            'partially_purged' => $partiallyPurged,
+            'unsubscribed_count' => count($unsubscribedStreams),
+            'entries_count' => count($entries),
+        ]);
+
+        $this->nodePurgeState = [
+            'is_purged' => $allUnsubscribed,
+            'was_explicitly_purged' => $wasExplicitlyPurged,
+            'partially_purged' => $partiallyPurged,
+            'unsubscribed_streams' => $unsubscribedStreams,
+            'purge_reason' => $purgeReason,
+            'purge_timestamp' => $purgeTimestamp,
+        ];
 
             return $entries;
         } catch (Exception $e) {
