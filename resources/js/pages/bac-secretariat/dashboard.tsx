@@ -206,11 +206,11 @@ export default function BACSecretariatDashboard() {
 
                 <StatsGrid items={statsItems} userRole={userRole} />
 
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-5">
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="shadow-sm xl:col-span-3">
+                            <Card className="shadow-sm lg:col-span-3">
                                 <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
@@ -218,7 +218,7 @@ export default function BACSecretariatDashboard() {
                         }
                     >
                         <ProcurementDistributionCard
-                            className="xl:col-span-3"
+                            className="lg:col-span-3"
                             data={procurementDistribution}
                             title="Procurement Distribution"
                             description="Distribution of procurements across stages and statuses"
@@ -228,7 +228,7 @@ export default function BACSecretariatDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="shadow-sm xl:col-span-2">
+                            <Card className="shadow-sm lg:col-span-2">
                                 <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
@@ -236,7 +236,7 @@ export default function BACSecretariatDashboard() {
                         }
                     >
                         <StageDistributionCard
-                            className="xl:col-span-2"
+                            className="lg:col-span-2"
                             stageDistribution={stageDistribution}
                             errorState={buildErrorState('Unable to load stage distribution')}
                         />
@@ -283,7 +283,7 @@ export default function BACSecretariatDashboard() {
                     </Deferred>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 xl:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
                     <Deferred
                         data="priorityActions"
                         fallback={

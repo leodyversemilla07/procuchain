@@ -122,16 +122,16 @@ export const RecentActivitiesList = ({
                                     key={`${activity.id}-${index}`}
                                     className={cn('group transition-all duration-200 hover:translate-x-1', !isLast && 'border-b pb-3')}
                                 >
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-start justify-between gap-2 sm:items-center">
                                         <Link
                                             href={getActivityHref(activity)}
-                                            className="text-primary group-hover:text-primary/80 max-w-[70%] truncate text-sm font-medium transition-colors duration-200 hover:underline"
+                                            className="text-primary group-hover:text-primary/80 min-w-0 flex-1 truncate text-sm font-medium transition-colors duration-200 hover:underline"
                                         >
                                             {activity.title || `Procurement #${activity.id}`}
                                         </Link>
-                                        <span className="text-muted-foreground text-xs">{formatRelativeDate(activity.date)}</span>
+                                        <span className="text-muted-foreground shrink-0 text-xs">{formatRelativeDate(activity.date)}</span>
                                     </div>
-                                    <div className="mt-1.5 flex items-center justify-between">
+                                    <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center">
                                             <Badge
                                                 variant="secondary"

@@ -99,60 +99,107 @@ export const RecentProcurementsTable = ({
                         <EmptyDescription>{emptyStateDescription}</EmptyDescription>
                     </Empty>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-xs whitespace-nowrap sm:text-sm">ID</TableHead>
-                                    <TableHead className="text-xs whitespace-nowrap sm:text-sm">Title</TableHead>
-                                    <TableHead className="text-xs whitespace-nowrap sm:text-sm">Stage</TableHead>
-                                    <TableHead className="text-xs whitespace-nowrap sm:text-sm">Status</TableHead>
-                                    <TableHead className="text-right text-xs whitespace-nowrap sm:text-sm">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {safeProcurements.map((procurement) => (
-                                    <TableRow key={procurement.id} className="hover:bg-muted/50 transition-colors duration-200">
-                                        <TableCell className="font-medium">{procurement.id}</TableCell>
-                                        <TableCell className="max-w-[140px] truncate" title={procurement.title}>
-                                            {procurement.title}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={stageBadgeVariant} className="transition-all duration-200 hover:shadow-sm">
+                    <>
+                        {/* Mobile card layout */}
+                        <div className="space-y-3 sm:hidden">
+                            {safeProcurements.map((procurement) => (
+                                <div
+                                    key={procurement.id}
+                                    className="bg-muted/30 hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors duration-200"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-muted-foreground text-xs font-medium">{procurement.id}</span>
+                                            <span className="max-w-[160px] truncate text-sm font-medium" title={procurement.title}>
+                                                {procurement.title}
+                                            </span>
+                                        </div>
+                                        <div className="mt-1.5 flex items-center gap-1.5">
+                                            <Badge variant={stageBadgeVariant} className="text-[10px] transition-all duration-200 hover:shadow-sm">
                                                 {procurement.stage}
                                             </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={statusBadgeVariant} className="transition-all duration-200 hover:shadow-sm">
+                                            <Badge variant={statusBadgeVariant} className="text-[10px] transition-all duration-200 hover:shadow-sm">
                                                 {procurement.status}
                                             </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Tooltip>
-                                                <TooltipTrigger
-                                                    render={
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-8 px-2 transition-all duration-200 hover:scale-110"
-                                                            render={
-                                                                <Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m" />
-                                                            }
-                                                        />
-                                                    }
-                                                >
-                                                    <EyeIcon className="h-4 w-4" />
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>{actionTooltip}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TableCell>
+                                        </div>
+                                    </div>
+                                    <Tooltip>
+                                        <TooltipTrigger
+                                            render={
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 transition-all duration-200 hover:scale-110"
+                                                    render={<Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m" />}
+                                                />
+                                            }
+                                        >
+                                            <EyeIcon className="h-4 w-4" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{actionTooltip}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop table layout */}
+                        <div className="hidden overflow-x-auto sm:block">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="text-xs whitespace-nowrap sm:text-sm">ID</TableHead>
+                                        <TableHead className="text-xs whitespace-nowrap sm:text-sm">Title</TableHead>
+                                        <TableHead className="text-xs whitespace-nowrap sm:text-sm">Stage</TableHead>
+                                        <TableHead className="text-xs whitespace-nowrap sm:text-sm">Status</TableHead>
+                                        <TableHead className="text-right text-xs whitespace-nowrap sm:text-sm">Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                </TableHeader>
+                                <TableBody>
+                                    {safeProcurements.map((procurement) => (
+                                        <TableRow key={procurement.id} className="hover:bg-muted/50 transition-colors duration-200">
+                                            <TableCell className="font-medium">{procurement.id}</TableCell>
+                                            <TableCell className="max-w-[140px] truncate" title={procurement.title}>
+                                                {procurement.title}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={stageBadgeVariant} className="transition-all duration-200 hover:shadow-sm">
+                                                    {procurement.stage}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={statusBadgeVariant} className="transition-all duration-200 hover:shadow-sm">
+                                                    {procurement.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Tooltip>
+                                                    <TooltipTrigger
+                                                        render={
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 px-2 transition-all duration-200 hover:scale-110"
+                                                                render={
+                                                                    <Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m" />
+                                                                }
+                                                            />
+                                                        }
+                                                    >
+                                                        <EyeIcon className="h-4 w-4" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{actionTooltip}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </>
                 )}
             </CardContent>
         </Card>

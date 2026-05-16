@@ -146,7 +146,8 @@ export const ProcurementDistributionCard = ({
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
-                            tickFormatter={(value: string) => (value.length > 15 ? `${value.slice(0, 15)}...` : value)}
+                            minTickGap={20}
+                            tickFormatter={(value: string) => (value.length > 12 ? `${value.slice(0, 12)}...` : value)}
                         />
                         <YAxis />
                         <ChartTooltip

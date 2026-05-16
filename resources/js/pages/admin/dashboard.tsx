@@ -295,11 +295,11 @@ export default function AdminDashboard() {
 
                 <StatsGrid items={statsItems} />
 
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-5">
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="shadow-sm xl:col-span-3">
+                            <Card className="shadow-sm lg:col-span-3">
                                 <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
                         }
                     >
                         <ProcurementDistributionCard
-                            className="xl:col-span-3"
+                            className="lg:col-span-3"
                             data={procurementDistribution}
                             title="Procurement Distribution"
                             description="Distribution of procurements across stages and statuses"
@@ -317,7 +317,7 @@ export default function AdminDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="shadow-sm xl:col-span-2">
+                            <Card className="shadow-sm lg:col-span-2">
                                 <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
@@ -325,14 +325,14 @@ export default function AdminDashboard() {
                         }
                     >
                         <StageDistributionCard
-                            className="xl:col-span-2"
+                            className="lg:col-span-2"
                             stageDistribution={stageDistribution}
                             errorState={buildErrorState('Unable to load stage distribution')}
                         />
                     </Deferred>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 xl:grid-cols-1">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
                     <Deferred
                         data="recentActivities"
                         fallback={
@@ -356,7 +356,7 @@ export default function AdminDashboard() {
                     <Deferred
                         data="recentProcurements"
                         fallback={
-                            <Card className="shadow-sm lg:col-span-2 xl:col-span-1">
+                            <Card className="shadow-sm">
                                 <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
@@ -364,7 +364,6 @@ export default function AdminDashboard() {
                         }
                     >
                         <RecentProcurementsTable
-                            className="lg:col-span-2 xl:col-span-1"
                             procurements={recentProcurementItems}
                             getViewProcurementHref={(procurement) => {
                                 if (!procurement) {
@@ -485,7 +484,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {userActivityAnalytics && (
-                            <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 <Card>
                                     <CardHeader className="pb-2 sm:pb-3 md:pb-4">
                                         <CardTitle className="text-sm sm:text-base md:text-lg">Login Statistics</CardTitle>
@@ -566,8 +565,9 @@ export default function AdminDashboard() {
                                                     tickLine={false}
                                                     axisLine={false}
                                                     tickMargin={8}
-                                                    tickFormatter={(value) => (value.length > 10 ? value.substring(0, 10) + '...' : value)}
-                                                    fontSize={12}
+                                                    minTickGap={20}
+                                                    tickFormatter={(value) => (value.length > 8 ? value.substring(0, 8) + '...' : value)}
+                                                    fontSize={11}
                                                 />
                                                 <YAxis hide />
                                                 <ChartTooltip
@@ -620,6 +620,7 @@ export default function AdminDashboard() {
                                                 tickLine={false}
                                                 axisLine={false}
                                                 tickMargin={8}
+                                                minTickGap={32}
                                                 tickFormatter={(value) => {
                                                     const date = new Date(value);
                                                     return date.toLocaleDateString('en-US', {
