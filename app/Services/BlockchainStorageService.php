@@ -407,43 +407,42 @@ class BlockchainStorageService implements BlockchainStorageInterface
                 false
             );
 
-            $purgedCount = 0;
-            foreach ($items as $item) {
-                try {
-                    $txid = $item['txid'] ?? null;
-                    if ($txid) {
-                        // Use MultiChain's purge function to remove from local node
-                        $nodeClient->__call('purge', [StreamEnums::FILE_METADATA->value, $txid]);
-                        $purgedCount++;
-                    }
-                } catch (Exception $purgeEx) {
-                    Log::warning("Could not purge txid from node {$nodeId}: ".$purgeEx->getMessage());
-                }
-            }
+ $purgedCount = 0;
 
-            // Also purge file data chunks from this node
-            $chunkItems = $nodeClient->liststreamkeyitems(
-                StreamEnums::FILE_DATA->value,
-                $dataKey,
-                false,
-                1000,
-                0,
-                false
-            );
+ // Purge retrieved items matching this key from FILE_METADATA stream
+ $nodeClient->__call('purgestreamitems', [
+ StreamEnums::FILE_METADATA->value,
+ ['key' => $dataKey],
+ ]);
 
-            foreach ($chunkItems as $item) {
-                try {
-                    $txid = $item['txid'] ?? null;
-                    if ($txid) {
-                        $nodeClient->__call('purge', [StreamEnums::FILE_DATA->value, $txid]);
-                        $purgedCount++;
-                    }
-                } catch (Exception $purgeEx) {
-                    Log::warning("Could not purge chunk txid from node {$nodeId}: ".$purgeEx->getMessage());
-                }
-            }
+ // Also purge file data chunks from this node
+ $nodeClient->__call('purgestreamitems', [
+ StreamEnums::FILE_DATA->value,
+ ['key' => $dataKey],
+ ]);
 
-            // Record the single-node deletion on-chain (from the primary node)
+ // Count items for reporting
+ $items = $nodeClient->liststreamkeyitems(
+ StreamEnums::FILE_METADATA->value,
+ $dataKey,
+ false,
+ 100,
+ 0,
+ false
+ );
+ $purgedCount = count($items);
+
+ $chunkItems = $nodeClient->liststreamkeyitems(
+ StreamEnums::FILE_DATA->value,
+ $dataKey,
+ false,
+ 1000,
+ 0,
+ false
+ );
+ $purgedCount += count($chunkItems);
+
+ // Record the single-node deletion on-chain (from the primary node)
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
                 'json' => [
                     'file_key' => $fileKey,
@@ -519,66 +518,68 @@ class BlockchainStorageService implements BlockchainStorageInterface
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
-            // Resubscribe to all relevant streams to trigger resync
-            $streams = [
-                StreamEnums::FILE_METADATA->value,
-                StreamEnums::FILE_DATA->value,
-                StreamEnums::FILE_CHUNKS->value,
-                StreamEnums::PROCUREMENT_EVENTS->value,
-                StreamEnums::PROCUREMENT_STATUS->value,
-            ];
+ // Resync using MultiChain Enterprise retrievestreamitems API
+ // This queues off-chain items for retrieval from the network,
+ // including items that were previously purged.
+ $streams = StreamEnums::cases();
 
-            $resyncedStreams = 0;
-            foreach ($streams as $stream) {
-                try {
-                    // Check if subscribed, then resubscribe to trigger resync
-                    $info = $nodeClient->getstreaminfo($stream);
-                    if (($info['subscribed'] ?? false)) {
-                        // Unsubscribe and resubscribe to force resync from peers
-                        $nodeClient->unsubscribe($stream);
-                        $nodeClient->subscribe($stream);
-                        $resyncedStreams++;
-                    } else {
-                        $nodeClient->subscribe($stream);
-                        $resyncedStreams++;
-                    }
-                } catch (Exception $streamEx) {
-                    Log::warning("Could not resync stream {$stream} on node {$nodeId}: ".$streamEx->getMessage());
-                }
-            }
+ $resyncedStreams = 0;
+ $totalRetrieved = 0;
+ foreach ($streams as $streamEnum) {
+ try {
+ $result = $nodeClient->__call('retrievestreamitems', [
+ $streamEnum->value,
+ 'all',
+ ]);
+
+ $itemsMatched = $result['items'] ?? 0;
+ $chunksMatched = $result['chunks'] ?? 0;
+ $totalRetrieved += $itemsMatched;
+
+ if ($itemsMatched > 0) {
+ $resyncedStreams++;
+ Log::info("Retrieved {$itemsMatched} items ({$chunksMatched} chunks) from {$streamEnum->value} on node {$nodeId}");
+ }
+ } catch (Exception $streamEx) {
+ Log::warning("Could not retrieve stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
+ }
+ }
 
             // Record resync event on-chain
             $dataKey = 'node_'.$nodeId.'_resync';
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
                 'json' => [
-                    'action' => 'node_resync',
-                    'node_id' => $nodeId,
-                    'node_name' => $targetNode['name'] ?? $nodeId,
-                    'streams_resynced' => $resyncedStreams,
-                    'resynced_at' => now()->toIso8601String(),
+ 'action' => 'node_resync',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'streams_resynced' => $resyncedStreams,
+ 'items_retrieved' => $totalRetrieved,
+ 'resynced_at' => now()->toIso8601String(),
                 ],
             ]);
 
-            Log::info("Node {$nodeId} resync triggered", [
-                'node_id' => $nodeId,
-                'streams_resynced' => $resyncedStreams,
-            ]);
+ Log::info("Node {$nodeId} resync completed", [
+ 'node_id' => $nodeId,
+ 'streams_resynced' => $resyncedStreams,
+ 'items_retrieved' => $totalRetrieved,
+ ]);
 
-            // Audit log for RA 12009 (NGPA) compliance
-            app(AuditLogger::class)->log(
-                action: 'node.resync',
-                subjectType: 'node',
-                subjectId: $nodeId,
-                newValues: [
-                    'action' => 'node_resync',
-                    'node_id' => $nodeId,
-                    'streams_resynced' => $resyncedStreams,
-                ],
-            );
+ // Audit log for RA 12009 (NGPA) compliance
+ app(AuditLogger::class)->log(
+ action: 'node.resync',
+ subjectType: 'node',
+ subjectId: $nodeId,
+ newValues: [
+ 'action' => 'node_resync',
+ 'node_id' => $nodeId,
+ 'streams_resynced' => $resyncedStreams,
+ 'items_retrieved' => $totalRetrieved,
+ ],
+ );
 
-            return [
-                'success' => true,
-                'message' => "Resync triggered for {$targetNode['name']} ({$nodeId}) — {$resyncedStreams} streams will re-download from peers.",
+ return [
+ 'success' => true,
+ 'message' => "Resynced {$targetNode['name']} ({$nodeId}) — {$totalRetrieved} items retrieved across {$resyncedStreams} streams from peers.",
             ];
         } catch (Exception $e) {
             Log::error('Node resync failed', [
@@ -624,41 +625,55 @@ class BlockchainStorageService implements BlockchainStorageInterface
  );
  $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- // Purge all items from every stream on this node
+ // Use MultiChain Enterprise purge commands:
+ // - purgestreamitems: purges items RETRIEVED from the network (downloaded from peers)
+ //   Takes stream name + items filter (e.g. "all")
+ // - purgepublisheditems: purges items PUBLISHED by this node (created here)
+ //   Takes only items filter (no stream param — operates across all streams)
  $streams = StreamEnums::cases();
- $totalPurged = 0;
+ $totalItems = 0;
+ $totalChunks = 0;
  $streamStats = [];
 
  foreach ($streams as $streamEnum) {
  try {
- $items = $nodeClient->liststreamitems(
+ // Purge all items this node retrieved from peers in this stream
+ $retrievedResult = $nodeClient->__call('purgestreamitems', [
  $streamEnum->value,
- false,
- 10000,
- 0,
- false
- );
+ 'all',
+ ]);
 
- $streamPurged = 0;
- foreach ($items as $item) {
- try {
- $txid = $item['txid'] ?? null;
- if ($txid) {
- $nodeClient->__call('purge', [$streamEnum->value, $txid]);
- $streamPurged++;
- }
- } catch (Exception $purgeEx) {
- Log::warning("Could not purge txid from {$streamEnum->value} on node {$nodeId}: ".$purgeEx->getMessage());
- }
- }
+ $itemsMatched = $retrievedResult['items'] ?? 0;
+ $chunksPurged = $retrievedResult['chunks'] ?? 0;
 
- $totalPurged += $streamPurged;
- if ($streamPurged > 0) {
- $streamStats[$streamEnum->value] = $streamPurged;
+ $totalItems += $itemsMatched;
+ $totalChunks += $chunksPurged;
+ if ($itemsMatched > 0 || $chunksPurged > 0) {
+ $streamStats[$streamEnum->value] = [
+ 'items_matched' => $itemsMatched,
+ 'chunks_purged' => $chunksPurged,
+ ];
  }
  } catch (Exception $streamEx) {
- Log::warning("Could not iterate stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
+ Log::warning("Could not purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
  }
+ }
+
+ // Purge all items this node originally published (across ALL streams)
+ try {
+ $publishedResult = $nodeClient->__call('purgepublisheditems', ['all']);
+ $pubItems = $publishedResult['items'] ?? 0;
+ $pubChunks = $publishedResult['chunks'] ?? 0;
+ $totalItems += $pubItems;
+ $totalChunks += $pubChunks;
+ if ($pubItems > 0 || $pubChunks > 0) {
+ $streamStats['_published'] = [
+ 'items_matched' => $pubItems,
+ 'chunks_purged' => $pubChunks,
+ ];
+ }
+ } catch (Exception $pubEx) {
+ Log::warning("Could not purge published items on node {$nodeId}: ".$pubEx->getMessage());
  }
 
  // Record the full-node purge event on-chain (from the primary node)
@@ -667,7 +682,8 @@ class BlockchainStorageService implements BlockchainStorageInterface
  'action' => 'full_node_purge',
  'node_id' => $nodeId,
  'node_name' => $targetNode['name'] ?? $nodeId,
- 'items_purged' => $totalPurged,
+ 'items_matched' => $totalItems,
+ 'chunks_purged' => $totalChunks,
  'streams_affected' => $streamStats,
  'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
  'purged_at' => now()->toIso8601String(),
@@ -676,7 +692,8 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
  Log::info('Full node purge completed', [
  'node_id' => $nodeId,
- 'items_purged' => $totalPurged,
+ 'items_matched' => $totalItems,
+ 'chunks_purged' => $totalChunks,
  'streams_affected' => count($streamStats),
  ]);
 
@@ -688,7 +705,8 @@ class BlockchainStorageService implements BlockchainStorageInterface
  oldValues: [
  'action' => 'full_node_purge',
  'node_id' => $nodeId,
- 'items_purged' => $totalPurged,
+ 'items_matched' => $totalItems,
+ 'chunks_purged' => $totalChunks,
  'streams_affected' => $streamStats,
  'reason' => $reason,
  ],
@@ -696,8 +714,8 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
  return [
  'success' => true,
- 'message' => "Purged all data ({$totalPurged} items across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
- 'items_purged' => $totalPurged,
+ 'message' => "Purged all data ({$totalItems} items, {$totalChunks} chunks across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
+ 'items_purged' => $totalItems,
  ];
  } catch (Exception $e) {
  Log::error('Full node purge failed', [
