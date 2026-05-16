@@ -396,32 +396,13 @@ class BlockchainStorageService implements BlockchainStorageInterface
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
-            // Remove stream items from this node only (local purge)
-            // MultiChain: liststreamkeyitems to get txids, then purge each
-            $items = $nodeClient->liststreamkeyitems(
-                StreamEnums::FILE_METADATA->value,
-                $dataKey,
-                false,
-                100,
-                0,
-                false
-            );
-
- $purgedCount = 0;
-
- // Purge retrieved items matching this key from FILE_METADATA stream
- $nodeClient->__call('purgestreamitems', [
- StreamEnums::FILE_METADATA->value,
- ['key' => $dataKey],
- ]);
-
- // Also purge file data chunks from this node
- $nodeClient->__call('purgestreamitems', [
- StreamEnums::FILE_DATA->value,
- ['key' => $dataKey],
- ]);
-
- // Count items for reporting
+ // Community Edition compatible per-key purge:
+ // We can't purge specific keys in Community Edition, so we:
+ // 1. Count items matching this key (for audit reporting)
+ // 2. Unsubscribe from relevant streams with purge=true
+ // 3. Immediately re-subscribe with rescan=true
+ // This effectively clears and rebuilds the local data cache.
+ // For a true per-key purge, MultiChain Enterprise is required.
  $items = $nodeClient->liststreamkeyitems(
  StreamEnums::FILE_METADATA->value,
  $dataKey,
@@ -430,6 +411,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
  0,
  false
  );
+
  $purgedCount = count($items);
 
  $chunkItems = $nodeClient->liststreamkeyitems(
@@ -441,6 +423,18 @@ class BlockchainStorageService implements BlockchainStorageInterface
  false
  );
  $purgedCount += count($chunkItems);
+
+ if ($purgedCount > 0) {
+ // Unsubscribe + purge from relevant streams, then resubscribe
+ foreach ([StreamEnums::FILE_METADATA, StreamEnums::FILE_DATA] as $streamEnum) {
+ try {
+ $nodeClient->unsubscribe($streamEnum->value, true);
+ $nodeClient->subscribe($streamEnum->value, true);
+ } catch (Exception $subEx) {
+ Log::warning("Could not unsubscribe/resubscribe {$streamEnum->value}: ".$subEx->getMessage());
+ }
+ }
+ }
 
  // Record the single-node deletion on-chain (from the primary node)
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
@@ -518,30 +512,30 @@ class BlockchainStorageService implements BlockchainStorageInterface
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- // Resync using MultiChain Enterprise retrievestreamitems API
- // This queues off-chain items for retrieval from the network,
- // including items that were previously purged.
+ // Resync using Community Edition compatible approach:
+ // subscribe(stream, rescan=true) re-downloads all off-chain items from peers.
+ // This works because unsubscribe(purge=true) removed the local data,
+ // and subscribe with rescan rebuilds indexes and re-fetches everything.
  $streams = StreamEnums::cases();
 
  $resyncedStreams = 0;
  $totalRetrieved = 0;
  foreach ($streams as $streamEnum) {
  try {
- $result = $nodeClient->__call('retrievestreamitems', [
- $streamEnum->value,
- 'all',
- ]);
+ // Re-subscribe with rescan to re-download all items
+ $nodeClient->subscribe($streamEnum->value, true);
 
- $itemsMatched = $result['items'] ?? 0;
- $chunksMatched = $result['chunks'] ?? 0;
- $totalRetrieved += $itemsMatched;
+ // After resubscribe, count items now available
+ $info = $nodeClient->getstreaminfo($streamEnum->value);
+ $itemsAfter = $info['items'] ?? 0;
 
- if ($itemsMatched > 0) {
+ if ($itemsAfter > 0) {
  $resyncedStreams++;
- Log::info("Retrieved {$itemsMatched} items ({$chunksMatched} chunks) from {$streamEnum->value} on node {$nodeId}");
+ $totalRetrieved += $itemsAfter;
+ Log::info("Resynced {$itemsAfter} items from {$streamEnum->value} on node {$nodeId}");
  }
  } catch (Exception $streamEx) {
- Log::warning("Could not retrieve stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
+ Log::warning("Could not resubscribe to stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
  }
  }
 
@@ -625,55 +619,36 @@ class BlockchainStorageService implements BlockchainStorageInterface
  );
  $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
- // Use MultiChain Enterprise purge commands:
- // - purgestreamitems: purges items RETRIEVED from the network (downloaded from peers)
- //   Takes stream name + items filter (e.g. "all")
- // - purgepublisheditems: purges items PUBLISHED by this node (created here)
- //   Takes only items filter (no stream param — operates across all streams)
+ // Community Edition compatible purge: unsubscribe(purge=true) + resubscribe
+ // In MultiChain Community, unsubscribe(stream, true) purges off-chain data.
+ // subscribe(stream, rescan=true) re-downloads all items from peers.
+ // This simulates a full node wipe while staying on Community Edition.
  $streams = StreamEnums::cases();
- $totalItems = 0;
- $totalChunks = 0;
+ $totalPurged = 0;
  $streamStats = [];
 
  foreach ($streams as $streamEnum) {
  try {
- // Purge all items this node retrieved from peers in this stream
- $retrievedResult = $nodeClient->__call('purgestreamitems', [
- $streamEnum->value,
- 'all',
- ]);
+ // Get current item count before purging (for reporting)
+ $info = $nodeClient->getstreaminfo($streamEnum->value);
+ $itemsBefore = $info['items'] ?? 0;
 
- $itemsMatched = $retrievedResult['items'] ?? 0;
- $chunksPurged = $retrievedResult['chunks'] ?? 0;
+ if ($itemsBefore === 0) {
+ continue; // Skip empty streams
+ }
 
- $totalItems += $itemsMatched;
- $totalChunks += $chunksPurged;
- if ($itemsMatched > 0 || $chunksPurged > 0) {
+ // Unsubscribe with purge=true to remove off-chain data
+ $nodeClient->unsubscribe($streamEnum->value, true);
+
+ $totalPurged += $itemsBefore;
  $streamStats[$streamEnum->value] = [
- 'items_matched' => $itemsMatched,
- 'chunks_purged' => $chunksPurged,
+ 'items_before' => $itemsBefore,
+ 'purged' => true,
  ];
- }
  } catch (Exception $streamEx) {
- Log::warning("Could not purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
+ // Stream might not exist or already unsubscribed — that's fine
+ Log::warning("Could not unsubscribe/purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
  }
- }
-
- // Purge all items this node originally published (across ALL streams)
- try {
- $publishedResult = $nodeClient->__call('purgepublisheditems', ['all']);
- $pubItems = $publishedResult['items'] ?? 0;
- $pubChunks = $publishedResult['chunks'] ?? 0;
- $totalItems += $pubItems;
- $totalChunks += $pubChunks;
- if ($pubItems > 0 || $pubChunks > 0) {
- $streamStats['_published'] = [
- 'items_matched' => $pubItems,
- 'chunks_purged' => $pubChunks,
- ];
- }
- } catch (Exception $pubEx) {
- Log::warning("Could not purge published items on node {$nodeId}: ".$pubEx->getMessage());
  }
 
  // Record the full-node purge event on-chain (from the primary node)
@@ -682,9 +657,8 @@ class BlockchainStorageService implements BlockchainStorageInterface
  'action' => 'full_node_purge',
  'node_id' => $nodeId,
  'node_name' => $targetNode['name'] ?? $nodeId,
- 'items_matched' => $totalItems,
- 'chunks_purged' => $totalChunks,
- 'streams_affected' => $streamStats,
+ 'items_purged' => $totalPurged,
+ 'streams_affected' => array_keys($streamStats),
  'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
  'purged_at' => now()->toIso8601String(),
  ],
@@ -692,8 +666,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
  Log::info('Full node purge completed', [
  'node_id' => $nodeId,
- 'items_matched' => $totalItems,
- 'chunks_purged' => $totalChunks,
+ 'items_purged' => $totalPurged,
  'streams_affected' => count($streamStats),
  ]);
 
@@ -705,17 +678,16 @@ class BlockchainStorageService implements BlockchainStorageInterface
  oldValues: [
  'action' => 'full_node_purge',
  'node_id' => $nodeId,
- 'items_matched' => $totalItems,
- 'chunks_purged' => $totalChunks,
- 'streams_affected' => $streamStats,
+ 'items_purged' => $totalPurged,
+ 'streams_affected' => array_keys($streamStats),
  'reason' => $reason,
  ],
  );
 
  return [
  'success' => true,
- 'message' => "Purged all data ({$totalItems} items, {$totalChunks} chunks across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
- 'items_purged' => $totalItems,
+ 'message' => "Purged all data ({$totalPurged} items across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
+ 'items_purged' => $totalPurged,
  ];
  } catch (Exception $e) {
  Log::error('Full node purge failed', [
