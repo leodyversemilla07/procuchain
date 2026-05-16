@@ -3,6 +3,7 @@ import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -11,7 +12,6 @@ import { disable, enable } from '@/routes/two-factor';
 import { type BreadcrumbItem } from '@/types';
 import { Form, Head } from '@inertiajs/react';
 import { ShieldBan, ShieldCheck } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { useState } from 'react';
 
 interface TwoFactorProps {
@@ -50,10 +50,10 @@ export default function TwoFactor({ requiresConfirmation = false, twoFactorEnabl
                             <div className="relative inline">
                                 <Form action={disable()}>
                                     {({ processing }) => (
- <Button variant="destructive" type="submit" disabled={processing} className="gap-2">
- {processing ? <Spinner className="size-4" /> : <ShieldBan className="size-4" />}
- Disable 2FA
- </Button>
+                                        <Button variant="destructive" type="submit" disabled={processing} className="gap-2">
+                                            {processing ? <Spinner className="size-4" /> : <ShieldBan className="size-4" />}
+                                            Disable 2FA
+                                        </Button>
                                     )}
                                 </Form>
                             </div>
@@ -75,10 +75,10 @@ export default function TwoFactor({ requiresConfirmation = false, twoFactorEnabl
                                 ) : (
                                     <Form action={enable()} onSuccess={() => setShowSetupModal(true)}>
                                         {({ processing }) => (
- <Button type="submit" disabled={processing} className="gap-2">
- {processing ? <Spinner className="size-4" /> : <ShieldCheck className="size-4" />}
- Enable 2FA
- </Button>
+                                            <Button type="submit" disabled={processing} className="gap-2">
+                                                {processing ? <Spinner className="size-4" /> : <ShieldCheck className="size-4" />}
+                                                Enable 2FA
+                                            </Button>
                                         )}
                                     </Form>
                                 )}

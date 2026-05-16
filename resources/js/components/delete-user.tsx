@@ -3,9 +3,9 @@ import { FormEventHandler, useRef } from 'react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 
 import HeadingSmall from '@/components/heading-small';
 
@@ -83,10 +83,10 @@ export default function DeleteUser() {
                             <DialogFooter className="gap-2">
                                 <DialogClose render={<Button variant="secondary" onClick={closeModal} />}>Cancel</DialogClose>
 
- <Button variant="destructive" disabled={processing} type="submit" className="gap-2">
- {processing && <Spinner className="size-4" />}
- Delete account
- </Button>
+                                <Button variant="destructive" disabled={processing} type="submit" className="gap-2">
+                                    {processing && <Spinner className="size-4" />}
+                                    Delete account
+                                </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>

@@ -61,8 +61,8 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
     const [resyncNodeId, setResyncNodeId] = useState<string>('');
     const [isResyncing, setIsResyncing] = useState(false);
 
- // Dialog open states
- const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
+    // Dialog open states
+    const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
 
     // Handle flash messages from Inertia redirects
     useEffect(() => {
@@ -106,19 +106,19 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
             },
             {
- onSuccess: () => {
- setIsFullPurging(false);
- setFullPurgeNodeId('');
- setFullPurgeReason('');
- setPurgeDialogOpen(false);
- toast.success(
+                onSuccess: () => {
+                    setIsFullPurging(false);
+                    setFullPurgeNodeId('');
+                    setFullPurgeReason('');
+                    setPurgeDialogOpen(false);
+                    toast.success(
                         `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. Check Blockchain Explorer for the audit event, then resync to restore.`,
                     );
                 },
- onError: () => {
- setIsFullPurging(false);
- setPurgeDialogOpen(false);
- toast.error('Failed to purge node. Check server logs.');
+                onError: () => {
+                    setIsFullPurging(false);
+                    setPurgeDialogOpen(false);
+                    toast.error('Failed to purge node. Check server logs.');
                 },
             },
         );
@@ -269,9 +269,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                             </Field>
                         </div>
 
- <div className="flex items-center gap-3">
- <AlertDialog open={purgeDialogOpen} onOpenChange={setPurgeDialogOpen}>
- <AlertDialogTrigger
+                        <div className="flex items-center gap-3">
+                            <AlertDialog open={purgeDialogOpen} onOpenChange={setPurgeDialogOpen}>
+                                <AlertDialogTrigger
                                     render={<Button variant="destructive" className="gap-2" disabled={isFullPurging || !fullPurgeNodeId} />}
                                 >
                                     {isFullPurging ? <Spinner className="h-4 w-4" /> : <ServerCrash className="h-4 w-4" />}

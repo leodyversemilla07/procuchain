@@ -49,24 +49,24 @@ import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
 interface NodePurgeState {
-  is_purged: boolean;
-  was_explicitly_purged: boolean;
-  partially_purged: boolean;
-  unsubscribed_streams: string[];
-  purge_reason?: string | null;
-  purge_timestamp?: number | null;
+    is_purged: boolean;
+    was_explicitly_purged: boolean;
+    partially_purged: boolean;
+    unsubscribed_streams: string[];
+    purge_reason?: string | null;
+    purge_timestamp?: number | null;
 }
 
 interface SharedLedgerPageProps {
-  entries: LedgerEntry[];
-  pagination: LedgerPagination;
-  available_streams: StreamOption[];
-  available_nodes: NodeOption[];
-  stream_totals: Record<string, number>;
-  selected_node: string;
-  node_purge_state: NodePurgeState | null;
-  filters: LedgerFilters;
-  error?: string;
+    entries: LedgerEntry[];
+    pagination: LedgerPagination;
+    available_streams: StreamOption[];
+    available_nodes: NodeOption[];
+    stream_totals: Record<string, number>;
+    selected_node: string;
+    node_purge_state: NodePurgeState | null;
+    filters: LedgerFilters;
+    error?: string;
 }
 
 const basePath = window.location.pathname;
@@ -128,15 +128,15 @@ function computeDiff(oldValues: Record<string, unknown>, newValues: Record<strin
 }
 
 export default function SharedLedger({
- entries,
- pagination,
- available_streams,
- available_nodes,
- stream_totals,
- selected_node,
- node_purge_state,
- filters,
- error,
+    entries,
+    pagination,
+    available_streams,
+    available_nodes,
+    stream_totals,
+    selected_node,
+    node_purge_state,
+    filters,
+    error,
 }: SharedLedgerPageProps) {
     const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
     const [stream, setStream] = useState(filters.stream ?? '');
@@ -265,45 +265,44 @@ export default function SharedLedger({
 
                 {error && <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">{error}</div>}
 
-      {/* Purge State Warning */}
-      {node_purge_state?.is_purged && node_purge_state.was_explicitly_purged && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 rounded-lg border px-4 py-3 text-sm">
-          <p className="text-amber-800 dark:text-amber-300 flex items-center gap-2 font-medium">
-            <AlertTriangle className="h-4 w-4" />
-            This node has been purged — all stream subscriptions removed
-          </p>
-          <p className="text-amber-700 dark:text-amber-400 mt-1">
-            Data on this node was wiped via <strong>unsubscribe(purge=true)</strong>. The blockchain data still exists on other nodes — use <strong>Recoverable Data → Resync</strong> to restore this node's local copy.
-          </p>
-          {node_purge_state.purge_reason && (
-            <p className="text-amber-600 dark:text-amber-500 mt-1 text-xs">
-              Reason: {node_purge_state.purge_reason}
-            </p>
-          )}
-        </div>
-      )}
-      {node_purge_state?.is_purged && !node_purge_state.was_explicitly_purged && (
-        <div className="bg-slate-50 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800 rounded-lg border px-4 py-3 text-sm">
-          <p className="text-slate-700 dark:text-slate-300 flex items-center gap-2 font-medium">
-            <Server className="h-4 w-4" />
-            This node has no local blockchain data
-          </p>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            This node is not subscribed to any procurement streams. It may have never been populated, or its subscriptions were removed without an on-chain record. Use <strong>Recoverable Data → Resync</strong> to subscribe and download the blockchain data.
-          </p>
-        </div>
-      )}
-      {node_purge_state?.partially_purged && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 rounded-lg border px-4 py-3 text-sm">
-          <p className="text-amber-800 dark:text-amber-300 flex items-center gap-2 font-medium">
-            <AlertTriangle className="h-4 w-4" />
-            Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
-          </p>
-          <p className="text-amber-700 dark:text-amber-400 mt-1">
-            Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}
-          </p>
-        </div>
-      )}
+                {/* Purge State Warning */}
+                {node_purge_state?.is_purged && node_purge_state.was_explicitly_purged && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20">
+                        <p className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300">
+                            <AlertTriangle className="h-4 w-4" />
+                            This node has been purged — all stream subscriptions removed
+                        </p>
+                        <p className="mt-1 text-amber-700 dark:text-amber-400">
+                            Data on this node was wiped via <strong>unsubscribe(purge=true)</strong>. The blockchain data still exists on other nodes
+                            — use <strong>Recoverable Data → Resync</strong> to restore this node's local copy.
+                        </p>
+                        {node_purge_state.purge_reason && (
+                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">Reason: {node_purge_state.purge_reason}</p>
+                        )}
+                    </div>
+                )}
+                {node_purge_state?.is_purged && !node_purge_state.was_explicitly_purged && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/20">
+                        <p className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
+                            <Server className="h-4 w-4" />
+                            This node has no local blockchain data
+                        </p>
+                        <p className="mt-1 text-slate-600 dark:text-slate-400">
+                            This node is not subscribed to any procurement streams. It may have never been populated, or its subscriptions were
+                            removed without an on-chain record. Use <strong>Recoverable Data → Resync</strong> to subscribe and download the
+                            blockchain data.
+                        </p>
+                    </div>
+                )}
+                {node_purge_state?.partially_purged && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20">
+                        <p className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300">
+                            <AlertTriangle className="h-4 w-4" />
+                            Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
+                        </p>
+                        <p className="mt-1 text-amber-700 dark:text-amber-400">Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}</p>
+                    </div>
+                )}
 
                 {/* Filters */}
                 <Card>
@@ -316,27 +315,30 @@ export default function SharedLedger({
                     <CardContent>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <Input
- type="text"
- placeholder="PR Number (e.g. PR-2026-001)"
- value={prNumber}
- onChange={(e) => setPrNumber(e.target.value)}
- onKeyDown={(e) => {
-   if (e.key === 'Enter') applyFilters();
- }}
- />
+                                type="text"
+                                placeholder="PR Number (e.g. PR-2026-001)"
+                                value={prNumber}
+                                onChange={(e) => setPrNumber(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') applyFilters();
+                                }}
+                            />
 
-                            <Select value={node || 'all'} onValueChange={(value) => {
-   if (!value) return;
-   setNode(value);
-   // Auto-apply: immediately navigate with the new node
-   const params = new URLSearchParams();
-   if (prNumber) params.set('pr_number', prNumber);
-   if (stream && stream !== 'all') params.set('stream', stream);
-   if (value !== 'all') params.set('node', value);
-   if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
-   if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
-   router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
- }}>
+                            <Select
+                                value={node || 'all'}
+                                onValueChange={(value) => {
+                                    if (!value) return;
+                                    setNode(value);
+                                    // Auto-apply: immediately navigate with the new node
+                                    const params = new URLSearchParams();
+                                    if (prNumber) params.set('pr_number', prNumber);
+                                    if (stream && stream !== 'all') params.set('stream', stream);
+                                    if (value !== 'all') params.set('node', value);
+                                    if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
+                                    if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
+                                    router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
+                                }}
+                            >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All nodes">
                                         {() => (node && node !== 'all' ? (available_nodes.find((n) => n.id === node)?.name ?? node) : 'All nodes')}
@@ -362,18 +364,21 @@ export default function SharedLedger({
                                 </SelectContent>
                             </Select>
 
-                            <Select value={stream || 'all'} onValueChange={(value) => {
-   if (!value) return;
-   setStream(value);
-   // Auto-apply: immediately navigate with the new stream
-   const params = new URLSearchParams();
-   if (prNumber) params.set('pr_number', prNumber);
-   if (value !== 'all') params.set('stream', value);
-   if (node && node !== 'all') params.set('node', node);
-   if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
-   if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
-   router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
- }}>
+                            <Select
+                                value={stream || 'all'}
+                                onValueChange={(value) => {
+                                    if (!value) return;
+                                    setStream(value);
+                                    // Auto-apply: immediately navigate with the new stream
+                                    const params = new URLSearchParams();
+                                    if (prNumber) params.set('pr_number', prNumber);
+                                    if (value !== 'all') params.set('stream', value);
+                                    if (node && node !== 'all') params.set('node', node);
+                                    if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
+                                    if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
+                                    router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
+                                }}
+                            >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
                                 </SelectTrigger>
@@ -427,37 +432,37 @@ export default function SharedLedger({
                             </Popover>
                         </div>
                     </CardContent>
- <CardFooter className="flex gap-2">
- {hasActiveFilters && (
- <Button variant="outline" onClick={clearFilters}>
- <FilterX className="mr-2 h-4 w-4" />
- Clear
- </Button>
- )}
- <div className="ml-auto">
- <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
- <Download className="mr-2 h-4 w-4" />
- Export CSV
- </Button>
- </div>
- </CardFooter>
+                    <CardFooter className="flex gap-2">
+                        {hasActiveFilters && (
+                            <Button variant="outline" onClick={clearFilters}>
+                                <FilterX className="mr-2 h-4 w-4" />
+                                Clear
+                            </Button>
+                        )}
+                        <div className="ml-auto">
+                            <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
+                        </div>
+                    </CardFooter>
                 </Card>
 
- {/* Immutability Notice */}
- <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
- <p className="text-primary flex items-center gap-2 font-medium">
- <Shield className="h-4 w-4" />
- {node && node !== 'all'
- ? `Viewing from ${available_nodes.find((n) => n.id === node)?.name ?? node} — Same blockchain, this node's RPC connection`
- : 'Immutable & Shared — Every entry is a verified MultiChain transaction'}
- </p>
- <p className="text-muted-foreground mt-1">
- {node && node !== 'all'
- ? `This node queries the blockchain directly. All subscribed nodes see the same on-chain data — the difference appears after a purge (node shows empty) or during resync (data streams back in). Select "All nodes" to merge perspectives.`
- : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
- Expand any row to see what changed and the raw blockchain data.
- </p>
- </div>
+                {/* Immutability Notice */}
+                <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
+                    <p className="text-primary flex items-center gap-2 font-medium">
+                        <Shield className="h-4 w-4" />
+                        {node && node !== 'all'
+                            ? `Viewing from ${available_nodes.find((n) => n.id === node)?.name ?? node} — Same blockchain, this node's RPC connection`
+                            : 'Immutable & Shared — Every entry is a verified MultiChain transaction'}
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                        {node && node !== 'all'
+                            ? `This node queries the blockchain directly. All subscribed nodes see the same on-chain data — the difference appears after a purge (node shows empty) or during resync (data streams back in). Select "All nodes" to merge perspectives.`
+                            : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
+                        Expand any row to see what changed and the raw blockchain data.
+                    </p>
+                </div>
 
                 {/* Ledger Entries Table */}
                 <Card>

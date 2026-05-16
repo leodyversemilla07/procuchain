@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { regenerateRecoveryCodes } from '@/routes/two-factor';
 import { Form } from '@inertiajs/react';
 import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
@@ -64,10 +64,16 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
                     {canRegenerateCodes && (
                         <Form action={regenerateRecoveryCodes()} options={{ preserveScroll: true }} onSuccess={fetchRecoveryCodes}>
                             {({ processing }) => (
- <Button variant="secondary" type="submit" disabled={processing} aria-describedby="regenerate-warning" className="gap-2">
- {processing ? <Spinner className="size-4" /> : <RefreshCw className="size-4" />}
- Regenerate Codes
- </Button>
+                                <Button
+                                    variant="secondary"
+                                    type="submit"
+                                    disabled={processing}
+                                    aria-describedby="regenerate-warning"
+                                    className="gap-2"
+                                >
+                                    {processing ? <Spinner className="size-4" /> : <RefreshCw className="size-4" />}
+                                    Regenerate Codes
+                                </Button>
                             )}
                         </Form>
                     )}
