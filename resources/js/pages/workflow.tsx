@@ -427,16 +427,14 @@ export default function Workflow({ workflows }: WorkflowProps) {
                             <h2 className="mb-6 text-center text-2xl font-bold sm:mb-8 sm:text-3xl">Select Procurement Mode</h2>
 
                             <Tabs defaultValue="competitive" className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
-                                <TabsList className="mx-auto grid w-full max-w-xl grid-cols-2">
-                                    <TabsTrigger value="competitive" className="gap-2">
+                                <TabsList className="mx-auto w-full max-w-xl">
+                                    <TabsTrigger value="competitive">
                                         <Scale data-icon="inline-start" />
-                                        <span className="xs:inline hidden">Competitive</span>
-                                        <span className="xs:hidden">Competitive</span>
+                                        Competitive
                                     </TabsTrigger>
-                                    <TabsTrigger value="alternative" className="gap-2">
+                                    <TabsTrigger value="alternative">
                                         <Layers data-icon="inline-start" />
-                                        <span className="xs:inline hidden">Alternative</span>
-                                        <span className="xs:hidden">Alternative</span>
+                                        Alternative
                                     </TabsTrigger>
                                 </TabsList>
 

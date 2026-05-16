@@ -45,7 +45,7 @@ export default function TwoFactorChallenge() {
                         reset();
                     }}
                 >
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="w-full">
                         <TabsTrigger value="code">Authentication Code</TabsTrigger>
                         <TabsTrigger value="recovery">Recovery Code</TabsTrigger>
                     </TabsList>

@@ -1089,49 +1089,37 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
 
                     {/* Detailed Results Tabs */}
                     <Tabs defaultValue="integrity" className="w-full">
-                        <TabsList className="grid h-auto w-full grid-cols-4 gap-0.5 p-0.5 sm:gap-1 sm:p-1">
-                            <TabsTrigger
-                                value="integrity"
-                                className="data-[state=active]:bg-background flex items-center gap-1 px-1.5 py-2 text-xs sm:gap-1.5 sm:px-3 sm:py-2.5 sm:text-sm"
-                            >
+                        <TabsList variant="line" className="w-full">
+                            <TabsTrigger value="integrity">
                                 <div className="relative">
-                                    <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <FileCheck className="size-4" />
                                     {!report.summary.integrity_valid && (
                                         <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-red-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                                     )}
                                 </div>
                                 <span className="hidden sm:inline">Integrity</span>
                             </TabsTrigger>
-                            <TabsTrigger
-                                value="completeness"
-                                className="data-[state=active]:bg-background flex items-center gap-1 px-1.5 py-2 text-xs sm:gap-1.5 sm:px-3 sm:py-2.5 sm:text-sm"
-                            >
+                            <TabsTrigger value="completeness">
                                 <div className="relative">
-                                    <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <FileText className="size-4" />
                                     {!report.completeness_result.is_complete && (
                                         <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                                     )}
                                 </div>
                                 <span className="hidden sm:inline">Completeness</span>
                             </TabsTrigger>
-                            <TabsTrigger
-                                value="crossref"
-                                className="data-[state=active]:bg-background flex items-center gap-1 px-1.5 py-2 text-xs sm:gap-1.5 sm:px-3 sm:py-2.5 sm:text-sm"
-                            >
+                            <TabsTrigger value="crossref">
                                 <div className="relative">
-                                    <Link2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <Link2 className="size-4" />
                                     {!report.summary.cross_references_consistent && (
                                         <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-red-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                                     )}
                                 </div>
                                 <span className="hidden sm:inline">Cross-Ref</span>
                             </TabsTrigger>
-                            <TabsTrigger
-                                value="compliance"
-                                className="data-[state=active]:bg-background flex items-center gap-1 px-1.5 py-2 text-xs sm:gap-1.5 sm:px-3 sm:py-2.5 sm:text-sm"
-                            >
+                            <TabsTrigger value="compliance">
                                 <div className="relative">
-                                    <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <Scale className="size-4" />
                                     {!report.summary.ra_12009_compliant && (
                                         <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                                     )}
@@ -1140,19 +1128,19 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="integrity" className="mt-4 focus-visible:ring-0 focus-visible:outline-none">
+                        <TabsContent value="integrity" className="mt-4">
                             <IntegrityTab results={report.integrity_results} />
                         </TabsContent>
 
-                        <TabsContent value="completeness" className="mt-4 focus-visible:ring-0 focus-visible:outline-none">
+                        <TabsContent value="completeness" className="mt-4">
                             <CompletenessTab result={report.completeness_result} />
                         </TabsContent>
 
-                        <TabsContent value="crossref" className="mt-4 focus-visible:ring-0 focus-visible:outline-none">
+                        <TabsContent value="crossref" className="mt-4">
                             <CrossReferenceTab result={report.cross_reference_result} />
                         </TabsContent>
 
-                        <TabsContent value="compliance" className="mt-4 focus-visible:ring-0 focus-visible:outline-none">
+                        <TabsContent value="compliance" className="mt-4">
                             <ComplianceTab result={report.compliance_result} />
                         </TabsContent>
                     </Tabs>
