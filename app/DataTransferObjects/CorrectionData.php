@@ -67,7 +67,7 @@ final class CorrectionData
             reason: $data['reason'] ?? '',
             correctedBy: (string) $correctedBy,
             userAddress: $data['user_address'] ?? '',
-            timestamp: Carbon::parse($data['timestamp'] ?? now())->setTimezone(config('app.timezone', 'Asia/Manila')),
+            timestamp: Carbon::parse($data['timestamp'] ?? now())->setTimezone('Asia/Manila'),
             correctedMetadata: $data['corrected_metadata'] ?? null,
         );
     }

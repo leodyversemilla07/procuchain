@@ -75,7 +75,7 @@ final class FileMetadata
             size: (int) $data['size'],
             hash: $data['hash'],
             storageMethod: $data['storage_method'],
-            storedAt: Carbon::parse($data['stored_at'])->setTimezone(config('app.timezone', 'Asia/Manila')),
+            storedAt: Carbon::parse($data['stored_at'])->setTimezone('Asia/Manila'),
             additionalMetadata: ! empty($additionalMetadata) ? $additionalMetadata : null,
         );
     }

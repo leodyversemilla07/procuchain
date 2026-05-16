@@ -138,7 +138,7 @@ final readonly class LedgerEntryData
     public function getFormattedTimestamp(): string
     {
         return Carbon::parse($this->timestamp)
-            ->setTimezone(config('app.timezone', 'Asia/Manila'))
+            ->setTimezone('Asia/Manila')
             ->format('M j, Y, g:i A');
     }
 

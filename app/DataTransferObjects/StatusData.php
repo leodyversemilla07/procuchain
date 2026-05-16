@@ -46,7 +46,7 @@ final class StatusData
             stage: $data['stage'],
             currentStatus: $data['current_status'],
             userAddress: $data['user_address'] ?? '',
-            timestamp: Carbon::parse($data['timestamp'])->setTimezone(config('app.timezone', 'Asia/Manila')),
+            timestamp: Carbon::parse($data['timestamp'])->setTimezone('Asia/Manila'),
             previousStatus: $data['previous_status'] ?? null,
             metadata: $data['metadata'] ?? null,
         );
