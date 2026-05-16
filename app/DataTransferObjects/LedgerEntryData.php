@@ -89,10 +89,34 @@ final readonly class LedgerEntryData
             default => $data['details'] ?? json_encode($data),
         };
 
-        $timestamp = $data['timestamp'] ?? $data['stored_at'] ?? $data['archived_at'] ?? $data['created_at'] ?? now()->toIso8601String();
+        // Prefer the blockchain's blocktime (authoritative, always present on stream items).
+        // Fall back to JSON data fields, then blocktime as Unix epoch.
+        // NEVER fall back to now() — that makes every entry show "page load time".
+        $timestamp = $item['blocktime'] ?? null;
+
+        if ($timestamp !== null) {
+            // blocktime is a Unix epoch — convert to ISO 8601
+            $timestamp = Carbon::createFromTimestamp((int) $timestamp)->toIso8601String();
+        } else {
+            // Try data-level timestamp fields in priority order
+            $timestamp = $data['timestamp']
+                ?? $data['purged_at']
+                ?? $data['resynced_at']
+                ?? $data['stored_at']
+                ?? $data['deleted_at']
+                ?? $data['restored_at']
+                ?? $data['archived_at']
+                ?? $data['created_at']
+                ?? null;
+        }
+
+        // Final fallback: use the item's block time from the confirm field (MultiChain v2+)
+        if ($timestamp === null && isset($item['confirm'])) {
+            $timestamp = Carbon::now()->toIso8601String(); // truly no timestamp available
+        }
 
         return new self(
-            timestamp: $timestamp,
+            timestamp: $timestamp ?? Carbon::now()->toIso8601String(),
             stream: $stream,
             key: $key,
             prNumber: $prNumber,

@@ -371,19 +371,21 @@ export default function SharedLedger({
                     </CardFooter>
                 </Card>
 
-                {/* Immutability Notice */}
-                <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
-                    <p className="text-primary flex items-center gap-2 font-medium">
-                        <Shield className="h-4 w-4" />
-                        Immutable & Shared — Every entry is a verified MultiChain transaction
-                    </p>
-                    <p className="text-muted-foreground mt-1">
-                        {node && node !== 'all'
-                            ? `Showing data from the ${available_nodes.find((n) => n.id === node)?.name ?? node} node's perspective. Each entry has a TX ID that cryptographically proves it exists on the blockchain.`
-                            : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
-                        Expand any row to see what changed and the raw blockchain data.
-                    </p>
-                </div>
+ {/* Immutability Notice */}
+ <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
+ <p className="text-primary flex items-center gap-2 font-medium">
+ <Shield className="h-4 w-4" />
+ {node && node !== 'all'
+ ? `Viewing from ${available_nodes.find((n) => n.id === node)?.name ?? node} — Same blockchain, this node's RPC connection`
+ : 'Immutable & Shared — Every entry is a verified MultiChain transaction'}
+ </p>
+ <p className="text-muted-foreground mt-1">
+ {node && node !== 'all'
+ ? `This node queries the blockchain directly. All subscribed nodes see the same on-chain data — the difference appears after a purge (node shows empty) or during resync (data streams back in). Select "All nodes" to merge perspectives.`
+ : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
+ Expand any row to see what changed and the raw blockchain data.
+ </p>
+ </div>
 
                 {/* Ledger Entries Table */}
                 <Card>
