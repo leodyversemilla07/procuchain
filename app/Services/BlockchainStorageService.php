@@ -532,15 +532,23 @@ class BlockchainStorageService implements BlockchainStorageInterface
                     }
 
                     // After resubscribe, count items now available
+                    // Note: getstreaminfo may not include 'items' field in some
+                    // MultiChain versions, so use liststreamitems as fallback.
                     $info = $nodeClient->getstreaminfo($streamEnum->value);
+                    $itemsAfter = 0;
 
-                    if (! $nodeClient->success()) {
-                        Log::warning("getstreaminfo failed after resubscribe for {$streamEnum->value} on node {$nodeId}");
-
-                        continue;
+                    if ($nodeClient->success() && isset($info['items'])) {
+                        $itemsAfter = $info['items'];
+                    } else {
+                        // Fallback: count by attempting liststreamitems
+                        $sampleItems = $nodeClient->liststreamitems($streamEnum->value, false, 1, 0, false);
+                        if ($nodeClient->success() && is_array($sampleItems)) {
+                            // Get total from getinfo if available, otherwise just
+                            // mark as resynced if we got at least 1 item back
+                            $info2 = $nodeClient->getstreaminfo($streamEnum->value);
+                            $itemsAfter = $info2['items'] ?? (count($sampleItems) > 0 ? 1 : 0);
+                        }
                     }
-
-                    $itemsAfter = $info['items'] ?? 0;
 
                     // Also get the authoritative count from the primary node
                     // (the target node may still be indexing after rescan)
