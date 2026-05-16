@@ -230,6 +230,8 @@ class SharedLedgerController extends Controller
      */
     private function fetchLedgerEntries(string $nodeId = 'all'): array
     {
+        Log::info("SharedLedger: fetchLedgerEntries called", ['node_id' => $nodeId]);
+
         if ($nodeId === 'all') {
             return $this->fetchFromAllNodes();
         }
@@ -244,10 +246,13 @@ class SharedLedgerController extends Controller
      */
     private function fetchFromNode(string $nodeId): array
     {
+        Log::info("SharedLedger: fetchFromNode called", ['node_id' => $nodeId]);
+
         $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
 
         if ($nodeConfig === null) {
-            // Fallback to the default Manager connection
+            Log::warning("SharedLedger: Node not found in config, falling back to default", ['node_id' => $nodeId]);
+
             return $this->fetchFromDefaultClient();
         }
 
@@ -264,12 +269,6 @@ class SharedLedgerController extends Controller
             $client->setoption('verify_ssl', false);
             $client->setTimeout(15);
 
-            // Do NOT auto-subscribe when viewing a specific node.
-            // If the node was purged (unsubscribed), we want to show that
-            // reality — fewer or zero entries. Auto-subscribing would
-            // immediately undo the purge by rescanning all data back.
-            // Only "All nodes" mode auto-subscribes for completeness.
-
             // Detect purge state by probing each stream.
             // MultiChain's getstreaminfo may NOT include a 'subscribed' field
             // on unsubscribed nodes (it's simply omitted, not set to false).
@@ -280,8 +279,18 @@ class SharedLedgerController extends Controller
 
             foreach (self::LEDGER_STREAMS as $stream) {
                 $items = $client->liststreamitems($stream, true, 5000, 0, false);
+                $errorCode = $client->errorcode();
+                $success = $client->success();
 
-                if (! $client->success() && $client->errorcode() === -703) {
+                Log::info("SharedLedger: liststreamitems result", [
+                    'node' => $nodeId,
+                    'stream' => $stream,
+                    'success' => $success,
+                    'error_code' => $errorCode,
+                    'items_count' => is_array($items) ? count($items) : 'null',
+                ]);
+
+                if (! $success && $errorCode === -703) {
                     // Stream is unsubscribed (purged) on this node
                     $unsubscribedStreams[] = $stream;
                     continue;
@@ -300,11 +309,6 @@ class SharedLedgerController extends Controller
                         $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
                     } catch (Exception $e) {
                         report($e);
-                        Log::warning('SharedLedger: Skipping invalid stream item', [
-                            'stream' => $stream,
-                            'node' => $nodeId,
-                            'error' => 'An error occurred loading the shared ledger.',
-                        ]);
                     }
                 }
             }
@@ -312,6 +316,15 @@ class SharedLedgerController extends Controller
             // Determine purge state
             $isPurged = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
             $partiallyPurged = ! $isPurged && count($unsubscribedStreams) > 0;
+
+            Log::info("SharedLedger: Node purge state determined", [
+                'node' => $nodeId,
+                'is_purged' => $isPurged,
+                'partially_purged' => $partiallyPurged,
+                'unsubscribed_count' => count($unsubscribedStreams),
+                'unsubscribed_streams' => $unsubscribedStreams,
+                'entries_count' => count($entries),
+            ]);
 
             $this->nodePurgeState = [
                 'is_purged' => $isPurged,
