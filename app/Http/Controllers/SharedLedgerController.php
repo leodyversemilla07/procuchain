@@ -234,38 +234,67 @@ class SharedLedgerController extends Controller
      *
      * @return LedgerEntryData[]
      */
-    private function fetchFromNode(string $nodeId): array
-    {
-        $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
+ private function fetchFromNode(string $nodeId): array
+ {
+ $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
 
-        if ($nodeConfig === null) {
-            // Fallback to the default Manager connection
-            return $this->fetchFromDefaultClient();
-        }
+ if ($nodeConfig === null) {
+ // Fallback to the default Manager connection
+ return $this->fetchFromDefaultClient();
+ }
 
-        try {
-            $client = new Client(
-                $nodeConfig['private_ip'],
-                $nodeConfig['rpc_port'],
-                $this->getRpcUser(),
-                $this->getRpcPassword(),
-                false
-            );
-            $client->setoption('chain_name', config('multichain.chain_name'));
-            $client->setoption('use_curl', true);
-            $client->setoption('verify_ssl', false);
-            $client->setTimeout(15);
+ try {
+ $client = new Client(
+ $nodeConfig['private_ip'],
+ $nodeConfig['rpc_port'],
+ $this->getRpcUser(),
+ $this->getRpcPassword(),
+ false
+ );
+ $client->setoption('chain_name', config('multichain.chain_name'));
+ $client->setoption('use_curl', true);
+ $client->setoption('verify_ssl', false);
+ $client->setTimeout(15);
 
-            return $this->fetchEntriesFromClient($client);
-        } catch (Exception $e) {
-            report($e);
-            Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
-                'error' => 'An error occurred loading the shared ledger.',
-            ]);
+ // Ensure the node is subscribed to all ledger streams.
+ // Unsubscribed nodes cannot list stream items — they return
+ // an RPC error. Auto-subscribing (with rescan) makes the node
+ // fetch any missing off-chain data so liststreamitems works.
+ $this->ensureSubscribed($client);
 
-            return $this->fetchFromDefaultClient();
-        }
-    }
+ return $this->fetchEntriesFromClient($client);
+ } catch (Exception $e) {
+ report($e);
+ Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
+ 'error' => 'An error occurred loading the shared ledger.',
+ ]);
+
+ return $this->fetchFromDefaultClient();
+ }
+ }
+
+ /**
+ * Ensure the client's node is subscribed to all ledger streams.
+ *
+ * If a node is not subscribed, liststreamitems returns an error.
+ * We subscribe with rescan=true to ensure off-chain data is available.
+ * This is idempotent — subscribing to an already-subscribed stream is a no-op.
+ */
+ private function ensureSubscribed(Client $client): void
+ {
+ foreach (self::LEDGER_STREAMS as $stream) {
+ $info = $client->getstreaminfo($stream);
+
+ if ($client->success() && isset($info['subscribed']) && $info['subscribed'] === false) {
+ $client->subscribe($stream, true);
+ Log::info("SharedLedger: Auto-subscribed node to stream {$stream} with rescan");
+ } elseif (! $client->success()) {
+ // Stream may not exist on this node yet — try subscribing anyway
+ $client->subscribe($stream, true);
+ Log::info("SharedLedger: Attempted subscribe to stream {$stream} (getstreaminfo failed)");
+ }
+ }
+ }
 
     /**
      * Fetch from all nodes and merge, deduplicating by txid.
@@ -277,21 +306,24 @@ class SharedLedgerController extends Controller
         $allEntries = [];
         $seenTxids = [];
 
-        foreach ($this->getNodes() as $nodeConfig) {
-            try {
-                $client = new Client(
-                    $nodeConfig['private_ip'],
-                    $nodeConfig['rpc_port'],
-                    $this->getRpcUser(),
-                    $this->getRpcPassword(),
-                    false
-                );
-                $client->setoption('chain_name', config('multichain.chain_name'));
-                $client->setoption('use_curl', true);
-                $client->setoption('verify_ssl', false);
-                $client->setTimeout(15);
+ foreach ($this->getNodes() as $nodeConfig) {
+ try {
+ $client = new Client(
+ $nodeConfig['private_ip'],
+ $nodeConfig['rpc_port'],
+ $this->getRpcUser(),
+ $this->getRpcPassword(),
+ false
+ );
+ $client->setoption('chain_name', config('multichain.chain_name'));
+ $client->setoption('use_curl', true);
+ $client->setoption('verify_ssl', false);
+ $client->setTimeout(15);
 
-                $nodeEntries = $this->fetchEntriesFromClient($client);
+ // Ensure this node is subscribed before listing
+ $this->ensureSubscribed($client);
+
+ $nodeEntries = $this->fetchEntriesFromClient($client);
 
                 foreach ($nodeEntries as $entry) {
                     if (! isset($seenTxids[$entry->txid])) {
