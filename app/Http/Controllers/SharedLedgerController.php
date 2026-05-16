@@ -270,23 +270,49 @@ class SharedLedgerController extends Controller
             // immediately undo the purge by rescanning all data back.
             // Only "All nodes" mode auto-subscribes for completeness.
 
-            // Check subscription status to inform the frontend
+            // Detect purge state by probing each stream.
+            // MultiChain's getstreaminfo may NOT include a 'subscribed' field
+            // on unsubscribed nodes (it's simply omitted, not set to false).
+            // The reliable check is to try liststreamitems — error -703
+            // means "Not subscribed to this stream".
             $unsubscribedStreams = [];
+            $entries = [];
+
             foreach (self::LEDGER_STREAMS as $stream) {
-                $info = $client->getstreaminfo($stream);
-                if (! $client->success() || ($info['subscribed'] ?? true) === false) {
+                $items = $client->liststreamitems($stream, true, 5000, 0, false);
+
+                if (! $client->success() && $client->errorcode() === -703) {
+                    // Stream is unsubscribed (purged) on this node
                     $unsubscribedStreams[] = $stream;
+                    continue;
+                }
+
+                if (! $items || ! is_array($items)) {
+                    continue;
+                }
+
+                foreach ($items as $item) {
+                    if (! isset($item['data']['json'])) {
+                        continue;
+                    }
+
+                    try {
+                        $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
+                    } catch (Exception $e) {
+                        report($e);
+                        Log::warning('SharedLedger: Skipping invalid stream item', [
+                            'stream' => $stream,
+                            'node' => $nodeId,
+                            'error' => 'An error occurred loading the shared ledger.',
+                        ]);
+                    }
                 }
             }
 
-            // If ALL streams are unsubscribed, this node has been purged
+            // Determine purge state
             $isPurged = count($unsubscribedStreams) === count(self::LEDGER_STREAMS);
             $partiallyPurged = ! $isPurged && count($unsubscribedStreams) > 0;
 
-            $entries = $this->fetchEntriesFromClient($client);
-
-            // Store purge state in a static so index() can pass it to Inertia
-            // (We'll use a class property instead)
             $this->nodePurgeState = [
                 'is_purged' => $isPurged,
                 'partially_purged' => $partiallyPurged,
