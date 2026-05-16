@@ -57,23 +57,25 @@ export function ProcurementFiltersToolbar({
     const selectedStageLabel = stageOptions.find((option) => option.value === stageValue)?.label ?? stageOptions[0]?.label ?? 'Select stage';
 
     return (
-        <div className={cn('flex flex-col gap-4 pb-4', className)}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative max-w-md flex-1">
-                        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
-                        <Input
-                            id="procurement-search"
-                            name="search"
-                            type="text"
-                            placeholder="Search procurements..."
-                            value={searchValue}
-                            onChange={(event) => onSearchChange(event.target.value)}
-                            className="h-10 pl-10"
-                            autoComplete="off"
-                        />
-                    </div>
+        <div className={cn('flex flex-col gap-3 pb-4 sm:gap-4', className)}>
+            {/* Search row */}
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative max-w-md flex-1">
+                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
+                    <Input
+                        id="procurement-search"
+                        name="search"
+                        type="text"
+                        placeholder="Search procurements..."
+                        value={searchValue}
+                        onChange={(event) => onSearchChange(event.target.value)}
+                        className="h-10 pl-10"
+                        autoComplete="off"
+                    />
                 </div>
+            </div>
+            {/* Filter controls row: stage + archive + refresh */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <Select value={stageValue} onValueChange={(value) => value && onStageChange(value)}>
                         <SelectTrigger className="h-10 w-full sm:w-45">
@@ -120,7 +122,7 @@ export function ProcurementFiltersToolbar({
                         </Button>
                     </div>
                 </div>
-                <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-end">
+                <div className="flex items-center gap-2 sm:justify-end">
                     {lastRefreshed && (
                         <span className="text-muted-foreground text-xs" role="status" aria-live="polite">
                             Updated {formatTimeAgo(lastRefreshed)}

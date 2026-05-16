@@ -85,7 +85,7 @@ export const createColumns = ({
         cell: ({ row }) => <StageCell stage={row.getValue('stage')} />,
         filterFn: (row, id, value) => Array.isArray(value) && value.includes(row.getValue(id)),
         meta: {
-            className: 'hidden lg:table-cell',
+            className: 'hidden md:table-cell',
         },
         size: 150,
     },
@@ -95,7 +95,7 @@ export const createColumns = ({
         cell: ({ row }) => <ModeCell mode={row.original.procurement_mode} modeLabel={row.original.procurement_mode_label} />,
         filterFn: (row, id, value) => Array.isArray(value) && value.includes(row.getValue(id)),
         meta: {
-            className: 'hidden xl:table-cell',
+            className: 'hidden lg:table-cell',
         },
         size: 80,
     },
@@ -129,7 +129,7 @@ export const createColumns = ({
             return an === bn ? 0 : an > bn ? 1 : -1;
         },
         meta: {
-            className: 'hidden lg:table-cell',
+            className: 'hidden md:table-cell',
         },
         size: 140,
     },

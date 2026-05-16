@@ -2,9 +2,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const LoadingSkeleton = () => (
     <div className="mt-0 space-y-4">
-        <div className="flex justify-between">
-            <Skeleton className="h-10 w-[250px] dark:bg-gray-800" />
-            <Skeleton className="h-10 w-[120px] dark:bg-gray-800" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <Skeleton className="h-10 w-full max-w-[250px] dark:bg-gray-800" />
+            <Skeleton className="h-10 w-full max-w-[120px] sm:w-[120px] dark:bg-gray-800" />
         </div>
         <Skeleton className="h-[400px] w-full dark:bg-gray-800" />
         <Skeleton className="h-10 w-full dark:bg-gray-800" />

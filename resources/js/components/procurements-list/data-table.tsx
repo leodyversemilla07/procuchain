@@ -268,6 +268,21 @@ export function ProcurementsDataTable({
 
             {/* Mobile Card View (visible on small screens) */}
             <div className="space-y-3 md:hidden">
+                {/* Mobile Filters */}
+                {searchValue !== undefined && onSearchChange && stageValue !== undefined && onStageChange && stageOptions && onRefresh && (
+                    <ProcurementFiltersToolbar
+                        searchValue={searchValue}
+                        onSearchChange={onSearchChange}
+                        stageValue={stageValue}
+                        onStageChange={onStageChange}
+                        stageOptions={stageOptions}
+                        onRefresh={onRefresh}
+                        refreshDisabled={refreshDisabled}
+                        isRefreshing={isRefreshing}
+                        lastRefreshed={lastRefreshed}
+                        isArchived={isArchived}
+                    />
+                )}
                 {table.getRowModel().rows.map((row) => (
                     <MobileCardView
                         key={row.id}

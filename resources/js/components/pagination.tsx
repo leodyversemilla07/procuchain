@@ -57,12 +57,20 @@ export const Pagination: React.FC<PaginationProps> = ({
             <div className="text-muted-foreground w-full text-center text-sm lg:w-auto lg:text-left">
                 {totalItems > 0 ? (
                     <>
-                        Showing <span className="text-foreground font-medium">{startEntry}</span> to{' '}
-                        <span className="text-foreground font-medium">{endEntry}</span> of{' '}
-                        <span className="text-foreground font-medium">{totalItems}</span> entries
+                        <span className="lg:hidden">
+                            <span className="text-foreground font-medium">
+                                {startEntry}–{endEntry}
+                            </span>{' '}
+                            / <span className="text-foreground font-medium">{totalItems}</span>
+                        </span>
+                        <span className="hidden lg:inline">
+                            Showing <span className="text-foreground font-medium">{startEntry}</span> to{' '}
+                            <span className="text-foreground font-medium">{endEntry}</span> of{' '}
+                            <span className="text-foreground font-medium">{totalItems}</span> entries
+                        </span>
                     </>
                 ) : (
-                    <>No entries to show</>
+                    <>No entries</>
                 )}
             </div>
             <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:gap-4 lg:w-auto">
