@@ -55,7 +55,9 @@ export function validateFile(file: File | null): { isValid: boolean; errorMessag
 }
 
 export const formatRelativeDate = (dateString: string): string => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
