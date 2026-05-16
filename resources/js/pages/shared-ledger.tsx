@@ -297,13 +297,27 @@ export default function SharedLedger({
                     <CardContent>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <Input
-                                type="text"
-                                placeholder="PR Number (e.g. PR-2026-001)"
-                                value={prNumber}
-                                onChange={(e) => setPrNumber(e.target.value)}
-                            />
+ type="text"
+ placeholder="PR Number (e.g. PR-2026-001)"
+ value={prNumber}
+ onChange={(e) => setPrNumber(e.target.value)}
+ onKeyDown={(e) => {
+   if (e.key === 'Enter') applyFilters();
+ }}
+ />
 
-                            <Select value={node || 'all'} onValueChange={(value) => value && setNode(value)}>
+                            <Select value={node || 'all'} onValueChange={(value) => {
+   if (!value) return;
+   setNode(value);
+   // Auto-apply: immediately navigate with the new node
+   const params = new URLSearchParams();
+   if (prNumber) params.set('pr_number', prNumber);
+   if (stream && stream !== 'all') params.set('stream', stream);
+   if (value !== 'all') params.set('node', value);
+   if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
+   if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
+   router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
+ }}>
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All nodes">
                                         {() => (node && node !== 'all' ? (available_nodes.find((n) => n.id === node)?.name ?? node) : 'All nodes')}
@@ -329,7 +343,18 @@ export default function SharedLedger({
                                 </SelectContent>
                             </Select>
 
-                            <Select value={stream || 'all'} onValueChange={(value) => value && setStream(value)}>
+                            <Select value={stream || 'all'} onValueChange={(value) => {
+   if (!value) return;
+   setStream(value);
+   // Auto-apply: immediately navigate with the new stream
+   const params = new URLSearchParams();
+   if (prNumber) params.set('pr_number', prNumber);
+   if (value !== 'all') params.set('stream', value);
+   if (node && node !== 'all') params.set('node', node);
+   if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
+   if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
+   router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
+ }}>
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
                                 </SelectTrigger>
@@ -383,24 +408,20 @@ export default function SharedLedger({
                             </Popover>
                         </div>
                     </CardContent>
-                    <CardFooter className="flex gap-2">
-                        <Button onClick={applyFilters}>
-                            <ArrowDownUp className="mr-2 h-4 w-4" />
-                            Apply Filters
-                        </Button>
-                        {hasActiveFilters && (
-                            <Button variant="outline" onClick={clearFilters}>
-                                <FilterX className="mr-2 h-4 w-4" />
-                                Clear
-                            </Button>
-                        )}
-                        <div className="ml-auto">
-                            <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export CSV
-                            </Button>
-                        </div>
-                    </CardFooter>
+ <CardFooter className="flex gap-2">
+ {hasActiveFilters && (
+ <Button variant="outline" onClick={clearFilters}>
+ <FilterX className="mr-2 h-4 w-4" />
+ Clear
+ </Button>
+ )}
+ <div className="ml-auto">
+ <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
+ <Download className="mr-2 h-4 w-4" />
+ Export CSV
+ </Button>
+ </div>
+ </CardFooter>
                 </Card>
 
  {/* Immutability Notice */}
