@@ -156,22 +156,24 @@ class Manager
                     continue;
                 }
 
-                // Verify the node can read streams (not purged/unsubscribed)
-                $testClient->liststreamitems(
-                    config('multichain.chain_name').'.status',
-                    false,
-                    1,
-                    0,
-                    false
-                );
+            // Verify the node can read streams (not purged/unsubscribed)
+            // Use the procurement.status stream (actual stream from StreamEnums)
+            $testClient->liststreamitems(
+                'procurement.status',
+                false,
+                1,
+                0,
+                false
+            );
 
-                if (! $testClient->success()) {
-                    $errCode = $testClient->errorcode();
-                    Log::warning("MultiChain failover: node '{$nodeId}' liststreamitems failed (code {$errCode}) — skipping");
+            if (! $testClient->success()) {
+                $errCode = $testClient->errorcode();
+                Log::warning("MultiChain failover: node '{$nodeId}' liststreamitems failed (code {$errCode}) — skipping");
 
-                    // RPC -703 = not subscribed, meaning this node is also purged
-                    continue;
-                }
+                // RPC -703 = not subscribed, meaning this node is also purged
+                // RPC -708 = stream not found (may need rescan)
+                continue;
+            }
 
                 // This node works — switch to it
                 $this->client = $testClient;
@@ -233,14 +235,15 @@ class Manager
                 return;
             }
 
-            // Primary is alive — verify it can read streams
-            $testClient->liststreamitems(
-                config('multichain.chain_name').'.status',
-                false,
-                1,
-                0,
-                false
-            );
+        // Primary is alive — verify it can read streams
+        // Use the procurement.status stream (actual stream from StreamEnums)
+        $testClient->liststreamitems(
+            'procurement.status',
+            false,
+            1,
+            0,
+            false
+        );
 
             if (! $testClient->success()) {
                 // Primary is alive but not yet subscribed (still purged)
