@@ -13,19 +13,10 @@ output "rds_address" {
   value       = aws_db_instance.main.address
 }
 
-output "app_public_ip" {
-  description = "Public IP of the Laravel application server"
-  value       = aws_eip.app.public_ip
-}
-
-output "app_private_ip" {
-  description = "Private IP of the Laravel application server"
-  value       = aws_instance.app.private_ip
-}
-
+# App server is managed by Elastic Beanstalk — use the EB CNAME instead
 output "app_url" {
-  description = "Laravel application URL"
-  value       = "http://${aws_eip.app.public_ip}"
+  description = "Laravel application URL (Elastic Beanstalk)"
+  value       = "http://procuchain-prod.eba-vujm352s.us-east-1.elasticbeanstalk.com"
 }
 
 output "app_security_group_id" {
@@ -52,16 +43,12 @@ output "multichain_connection_string" {
 # Other Nodes Outputs
 output "node_public_ips" {
   description = "Map of node names to public IPs"
-  value = {
-    for k, v in aws_instance.node : k => v.public_ip
-  }
+  value       = { for k, v in aws_instance.node : k => v.public_ip }
 }
 
 output "node_private_ips" {
   description = "Map of node names to private IPs"
-  value = {
-    for k, v in aws_instance.node : k => v.private_ip
-  }
+  value       = { for k, v in aws_instance.node : k => v.private_ip }
 }
 
 output "multichain_rpc_url" {

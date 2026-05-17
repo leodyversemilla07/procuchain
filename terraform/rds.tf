@@ -20,15 +20,18 @@ resource "aws_db_instance" "main" {
   username = var.rds_master_username
   password = var.rds_master_password
 
-  allocated_storage     = 20
+  allocated_storage = 20
   max_allocated_storage = 0
-  storage_type          = "gp3"
-  storage_encrypted     = true
+  storage_type = "gp3"
+  storage_encrypted = true
+
+  # Multi-AZ disabled — not supported on AWS free tier (enable when off free tier)
+  multi_az = false
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.main.id]
 
-  # Backups — 1 day for free tier compatibility (7-day needs paid plan)
+  # Backups — max 1 day on AWS free tier (upgrade to 7+ when off free tier)
   backup_retention_period = 1
   backup_window           = "08:25-08:55"
   maintenance_window      = "sun:04:00-sun:05:00"

@@ -47,9 +47,9 @@ variable "ssh_key_name" {
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed for SSH access — restrict in production!"
-  type        = string
-  default     = "0.0.0.0/0"
+ description = "CIDR block allowed for SSH access — override with your IP in secrets.tfvars. Default: VPC-only (use SSM Session Manager for external access)"
+ type = string
+ default = "172.31.0.0/16"
 }
 
 variable "rds_master_username" {
