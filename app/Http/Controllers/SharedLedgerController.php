@@ -26,18 +26,19 @@ use Inertia\Response;
 class SharedLedgerController extends Controller
 {
     /** Streams to include in the shared ledger. */
-    private const LEDGER_STREAMS = [
-        'procurement.metadata',
-        'procurement.status',
-        'procurement.documents',
-        'procurement.corrections',
-        'procurement.metadata.corrections',
-        'procurement.archive',
-        'procurement.events',
-        'file.data',
-        'file.metadata',
-        'file.chunks',
-    ];
+ private const LEDGER_STREAMS = [
+ 'procurement.metadata',
+ 'procurement.data',
+ 'procurement.status',
+ 'procurement.documents',
+ 'procurement.corrections',
+ 'procurement.metadata.corrections',
+ 'procurement.archive',
+ 'procurement.events',
+ 'file.data',
+ 'file.metadata',
+ 'file.chunks',
+ ];
 
     /** @var array{is_purged: bool, partially_purged: bool, unsubscribed_streams: string[]}|null */
     private ?array $nodePurgeState = null;
@@ -290,12 +291,22 @@ class SharedLedgerController extends Controller
                     'items_count' => is_array($items) ? count($items) : 'null',
                 ]);
 
-                if (! $success && $errorCode === -703) {
-                    // Stream is unsubscribed (purged) on this node
-                    $unsubscribedStreams[] = $stream;
+ if (! $success && $errorCode === -703) {
+ // Stream is unsubscribed (purged) on this node
+ $unsubscribedStreams[] = $stream;
 
-                    continue;
-                }
+ continue;
+ }
+
+ if (! $success && $errorCode === -708) {
+ // Stream does not exist on this node — skip without marking as purged
+ Log::info('SharedLedger: Stream not found on node, skipping', [
+ 'node' => $nodeId,
+ 'stream' => $stream,
+ ]);
+
+ continue;
+ }
 
                 if (! $items || ! is_array($items)) {
                     continue;
