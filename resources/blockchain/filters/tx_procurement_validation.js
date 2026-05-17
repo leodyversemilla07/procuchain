@@ -59,17 +59,32 @@ function validateStreamItem(streamName, dataItem) {
         return validateStatusItem(dataItem);
     }
 
-    // Procurement metadata stream validation
-    if (streamName === 'procurement.metadata') {
-        return validateMetadataItem(dataItem);
-    }
+ // Procurement metadata stream validation
+ if (streamName === 'procurement.metadata') {
+ return validateMetadataItem(dataItem);
+ }
 
-    // Procurement events stream validation
-    if (streamName === 'procurement.events') {
-        return validateEventItem(dataItem);
-    }
+ // Procurement archive stream validation
+ if (streamName === 'procurement.archive') {
+ return validateArchiveItem(dataItem);
+ }
 
-    // File data stream validation
+ // Procurement events stream validation
+ if (streamName === 'procurement.events') {
+ return validateEventItem(dataItem);
+ }
+
+ // Procurement corrections stream validation
+ if (streamName === 'procurement.corrections') {
+ return validateCorrectionsItem(dataItem);
+ }
+
+ // Procurement metadata corrections stream validation
+ if (streamName === 'procurement.metadata.corrections') {
+ return validateMetadataCorrectionsItem(dataItem);
+ }
+
+ // File data stream validation
     if (streamName === 'file.data') {
         return validateFileDataItem(dataItem);
     }
@@ -335,9 +350,92 @@ function validateFileMetadataItem(dataItem) {
     }
 
     // Validate file size is positive
-    if (typeof data.size !== 'number' || data.size <= 0) {
-        return 'File size must be a positive number';
-    }
+ if (typeof data.size !== 'number' || data.size <= 0) {
+ return 'File size must be a positive number';
+ }
 
-    return;
+ return;
+}
+
+/**
+ * Validate an archive item for the procurement.archive stream
+ * Requires: pr_number, action (archived|restored)
+ */
+function validateArchiveItem(data) {
+ if (!data.pr_number) {
+ return 'Archive item missing required field: pr_number';
+ }
+
+ if (!/^PR-\d{4}-\d{4}-\d{4}$/.test(data.pr_number)) {
+ return 'Invalid PR number format. Expected: PR-YYYY-XXXX-NNNN';
+ }
+
+ if (data.action !== 'archived' && data.action !== 'restored') {
+ return 'Archive action must be "archived" or "restored"';
+ }
+
+ return;
+}
+
+/**
+ * Validate a corrections item for the procurement.corrections stream
+ * Requires: pr_number, correction_type, original_txid, action, reason
+ */
+function validateCorrectionsItem(data) {
+ if (!data.pr_number) {
+ return 'Corrections item missing required field: pr_number';
+ }
+
+ if (!/^PR-\d{4}-\d{3,4}(-\d{4})?$/.test(data.pr_number)) {
+ return 'Invalid PR number format. Expected: PR-YYYY-NNN or PR-YYYY-XXXX-NNNN';
+ }
+
+ if (!data.correction_type) {
+ return 'Corrections item missing required field: correction_type';
+ }
+
+ var validCorrectionTypes = ['document_correction', 'metadata_correction', 'status_correction', 'hash_correction'];
+ if (validCorrectionTypes.indexOf(data.correction_type) === -1) {
+ return 'Invalid correction_type. Must be: ' + validCorrectionTypes.join(', ');
+ }
+
+ if (!data.action) {
+ return 'Corrections item missing required field: action';
+ }
+
+ var validActions = ['replace', 'invalidate'];
+ if (validActions.indexOf(data.action) === -1) {
+ return 'Invalid action. Must be: ' + validActions.join(', ');
+ }
+
+ return;
+}
+
+/**
+ * Validate a metadata corrections item for the procurement.metadata.corrections stream
+ * Requires: pr_number, correction_type, reason, corrected_by
+ */
+function validateMetadataCorrectionsItem(data) {
+ if (!data.pr_number) {
+ return 'Metadata corrections item missing required field: pr_number';
+ }
+
+ if (!/^PR-\d{4}-\d{3,4}(-\d{4})?$/.test(data.pr_number)) {
+ return 'Invalid PR number format. Expected: PR-YYYY-NNN or PR-YYYY-XXXX-NNNN';
+ }
+
+ if (!data.correction_type) {
+ return 'Metadata corrections item missing required field: correction_type';
+ }
+
+ var validCorrectionTypes = ['metadata', 'financial', 'dates', 'approval'];
+ if (validCorrectionTypes.indexOf(data.correction_type) === -1) {
+ return 'Invalid correction_type. Must be: ' + validCorrectionTypes.join(', ');
+ }
+
+ if (!data.reason) {
+ return 'Metadata corrections item missing required field: reason';
+ }
+
+ return;
 }

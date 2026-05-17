@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\DataTransferObjects\LedgerEntryData;
+use App\Enums\StreamEnums;
 use App\Libraries\MultiChain\Client;
 use App\Services\Manager;
 use Exception;
@@ -27,17 +28,16 @@ class SharedLedgerController extends Controller
 {
     /** Streams to include in the shared ledger. */
  private const LEDGER_STREAMS = [
- 'procurement.metadata',
- 'procurement.data',
- 'procurement.status',
- 'procurement.documents',
- 'procurement.corrections',
- 'procurement.metadata.corrections',
- 'procurement.archive',
- 'procurement.events',
- 'file.data',
- 'file.metadata',
- 'file.chunks',
+ StreamEnums::METADATA->value,
+ StreamEnums::STATUS->value,
+ StreamEnums::DOCUMENTS->value,
+ StreamEnums::CORRECTIONS->value,
+ StreamEnums::PROCUREMENTS_CORRECTIONS->value,
+ StreamEnums::ARCHIVE->value,
+ StreamEnums::EVENTS->value,
+ StreamEnums::FILE_DATA->value,
+ StreamEnums::FILE_METADATA->value,
+ StreamEnums::FILE_CHUNKS->value,
  ];
 
     /** @var array{is_purged: bool, partially_purged: bool, unsubscribed_streams: string[]}|null */

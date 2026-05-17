@@ -107,7 +107,7 @@ echo "Current blocks: $${BLOCKS}"
 # CREATE PROCUCHAIN STREAMS
 # These are the data stores the Laravel app uses
 # ============================================
-for stream in procurement.data procurement.documents procurement.status procurement.events procurement.corrections file.data file.chunks file.metadata; do
+for stream in procurement.metadata procurement.documents procurement.status procurement.events procurement.corrections procurement.metadata.corrections procurement.archive file.data file.chunks file.metadata; do
     /usr/local/bin/multichain-cli "$${CHAIN_NAME}" create stream "$${stream}" true 2>/dev/null || \
         echo "Stream '$${stream}' already exists or will auto-subscribe."
 done

@@ -31,15 +31,15 @@ class MultichainSetup extends Command
     /**
      * Procurement streams to create
      */
-    private const STREAMS = [
-        StreamEnums::DOCUMENTS->value,
-        StreamEnums::STATUS->value,
-        StreamEnums::EVENTS->value,
-        StreamEnums::CORRECTIONS->value,
-        StreamEnums::METADATA->value,
-        StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-        StreamEnums::ARCHIVE->value,
-    ];
+ private const STREAMS = [
+ StreamEnums::METADATA->value,
+ StreamEnums::DOCUMENTS->value,
+ StreamEnums::STATUS->value,
+ StreamEnums::EVENTS->value,
+ StreamEnums::CORRECTIONS->value,
+ StreamEnums::PROCUREMENTS_CORRECTIONS->value,
+ StreamEnums::ARCHIVE->value,
+ ];
 
     /**
      * File storage streams for on-chain file storage
