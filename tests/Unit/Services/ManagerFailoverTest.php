@@ -219,7 +219,7 @@ it('throws exception when all nodes are down', function () {
 
     // The Manager tries to call getinfo on the primary,
     // which will fail in test env (no real MultiChain node)
-    $this->expectException(\Exception::class);
+    $this->expectException(Exception::class);
 
     $manager->getinfo();
 });

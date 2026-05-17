@@ -142,10 +142,10 @@ return [
     // Web-request specific caps to avoid hitting PHP's 60s max execution time
     // Increased from 3s to 15s to handle large procurement list fetches
     'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 15),
- // Increased from 1 to 2 retries to handle temporary network issues
- 'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 2),
+    // Increased from 1 to 2 retries to handle temporary network issues
+    'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 2),
 
- /*
+    /*
  |--------------------------------------------------------------------------
  | Failover Configuration
  |--------------------------------------------------------------------------
@@ -157,9 +157,9 @@ return [
  | node has recovered (to switch back automatically).
  |
  */
- 'primary_recheck_interval' => env('MULTICHAIN_PRIMARY_RECHECK_INTERVAL', 60),
+    'primary_recheck_interval' => env('MULTICHAIN_PRIMARY_RECHECK_INTERVAL', 60),
 
- /*
+    /*
     |--------------------------------------------------------------------------
     | Permission Matrix (Roles)
     |--------------------------------------------------------------------------
