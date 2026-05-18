@@ -37,9 +37,12 @@ interface DeletedFile {
 }
 
 interface BlockchainNode {
-    id: string;
-    name: string;
-    role: string;
+  id: string;
+  name: string;
+  role: string;
+  is_purged: boolean;
+  purged_at: string | null;
+  items: number;
 }
 
 interface RecoverableDataPageProps {
@@ -106,15 +109,16 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
             },
             {
-                onSuccess: () => {
-                    setIsFullPurging(false);
-                    setFullPurgeNodeId('');
-                    setFullPurgeReason('');
-                    setPurgeDialogOpen(false);
-                    toast.success(
-                        `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. Check Blockchain Explorer for the audit event, then resync to restore.`,
-                    );
-                },
+          onSuccess: () => {
+            setIsFullPurging(false);
+            setFullPurgeNodeId('');
+            setFullPurgeReason('');
+            setPurgeDialogOpen(false);
+            toast.success(
+              `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. The node now shows 0 items. Resync to restore.`,
+            );
+            router.reload({ only: ['nodes'] });
+          },
                 onError: () => {
                     setIsFullPurging(false);
                     setPurgeDialogOpen(false);
@@ -136,9 +140,10 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
             adminRecoverableData.resyncNode.url(),
             { node_id: resyncNodeId },
             {
-                onSuccess: () => {
-                    toast.success('Node resync initiated. The node will re-download missing data from its peers.');
-                },
+          onSuccess: () => {
+            toast.success('Node resync complete. Data has been re-downloaded from peers. The node status should now show Healthy.');
+            router.reload({ only: ['nodes'] });
+          },
                 onError: () => {
                     toast.error('Failed to initiate node resync.');
                 },
@@ -198,10 +203,69 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                             </li>
                             <li>• Data survives any single node failure — replicated across the full mesh</li>
                         </ul>
-                    </CardContent>
-                </Card>
+      </CardContent>
+      </Card>
 
-                {/* ─── DEMO: Purge All Data from Node ─── */}
+      {/* ─── Node Status Grid ─── */}
+      <Card className="border-slate-500/20 bg-slate-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <Network className="h-4 w-4" />
+            Node Status — Live
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {nodes.map((node) => (
+              <div
+                key={node.id}
+                className={`rounded-lg border p-3 transition-colors ${
+                  node.is_purged
+                    ? 'border-red-500/30 bg-red-500/5'
+                    : 'border-emerald-500/30 bg-emerald-500/5'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">{node.name}</span>
+                  {node.is_purged ? (
+                    <Badge variant="destructive" className="gap-1 text-[10px]">
+                      <ServerCrash className="h-3 w-3" />
+                      Purged
+                    </Badge>
+                  ) : (
+                    <Badge className="gap-1 bg-emerald-100 text-emerald-800 text-[10px] dark:bg-emerald-900/40 dark:text-emerald-300">
+                      <Shield className="h-3 w-3" />
+                      Healthy
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-muted-foreground mt-1 text-xs">{node.role}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="font-mono text-xs">
+                    {node.is_purged ? (
+                      <span className="text-red-600 dark:text-red-400">0 items</span>
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        {node.items.toLocaleString()} items
+                      </span>
+                    )}
+                  </span>
+                  {node.purged_at && (
+                    <span className="text-muted-foreground text-[10px]">
+                      {format(parseISO(node.purged_at), 'HH:mm')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-muted-foreground mt-3 text-xs">
+            Purged nodes show <strong className="text-foreground">0 items</strong> because their local data was wiped. Data survives on remaining nodes — resync to restore.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* ─── DEMO: Purge All Data from Node ─── */}
                 <Card className="border-amber-500/20 bg-amber-500/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
@@ -240,21 +304,21 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field>
-                                <FieldLabel htmlFor="full-purge-node">Target Node</FieldLabel>
-                                <Select value={fullPurgeNodeId} onValueChange={(v) => v && setFullPurgeNodeId(v)}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select node to purge..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {nodes.map((node) => (
-                                                <SelectItem key={node.id} value={node.id}>
-                                                    {node.name} ({node.role})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
+              <FieldLabel htmlFor="full-purge-node">Target Node</FieldLabel>
+              <Select value={fullPurgeNodeId} onValueChange={(v) => v && setFullPurgeNodeId(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select node to purge..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {nodes.map((node) => (
+                      <SelectItem key={node.id} value={node.id} disabled={node.is_purged}>
+                        {node.name} ({node.role}){node.is_purged ? ' — 🔴 Purged' : ` — ${node.items.toLocaleString()} items`}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
                             </Field>
 
                             <Field>
@@ -320,21 +384,21 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
 
                         <div className="flex items-end gap-4">
                             <Field className="flex-1">
-                                <FieldLabel htmlFor="resync-node">Node to Resync</FieldLabel>
-                                <Select value={resyncNodeId} onValueChange={(v) => v && setResyncNodeId(v)}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select node..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {nodes.map((node) => (
-                                                <SelectItem key={node.id} value={node.id}>
-                                                    {node.name} ({node.role})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
+              <FieldLabel htmlFor="resync-node">Node to Resync</FieldLabel>
+              <Select value={resyncNodeId} onValueChange={(v) => v && setResyncNodeId(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select node..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {nodes.map((node) => (
+                      <SelectItem key={node.id} value={node.id}>
+                        {node.name} ({node.role}){node.is_purged ? ' — 🔴 Needs Resync' : ` — ${node.items.toLocaleString()} items`}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
                             </Field>
 
                             <Button

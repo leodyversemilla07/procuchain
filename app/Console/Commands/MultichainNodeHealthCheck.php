@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
 use App\Libraries\MultiChain\Client;
+use App\Services\Manager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -39,12 +40,17 @@ class MultichainNodeHealthCheck extends Command
         $rpcPass = config('multichain.rpc.password');
         $chainName = config('multichain.chain_name');
 
+        /** @var Manager $manager */
+        $manager = app(Manager::class);
+
         $healthyNodes = 0;
         $repairedNodes = 0;
         $unhealthyNodes = 0;
+        $skippedPurgedNodes = 0;
 
         foreach ($nodes as $node) {
             $nodeName = $node['name'] ?? ($node['id'] ?? 'unknown');
+            $nodeId = $node['id'] ?? '';
             $nodeIp = $node['private_ip'] ?? '';
             $nodePort = $node['rpc_port'] ?? 6834;
 
@@ -85,7 +91,24 @@ class MultichainNodeHealthCheck extends Command
                     continue;
                 }
 
-                // Node has unsubscribed streams
+                // Node has unsubscribed streams — check if this was an intentional
+                // demo purge before auto-repairing. If a full_node_purge event exists
+                // on-chain (and no newer resync event), skip this node entirely.
+                if ($this->isNodePurged($manager, $nodeId)) {
+                    $skippedPurgedNodes++;
+                    $this->line(" {$nodeName} — intentionally purged, skipping auto-repair");
+
+                    if ($notify) {
+                        Log::info("MultichainNodeHealth: {$nodeName} is intentionally purged — skipping auto-subscribe", [
+                            'node_id' => $nodeId,
+                            'missing_streams' => count($unsubscribedStreams),
+                            'tip' => 'Use Recoverable Data → Resync in the UI to restore when ready',
+                        ]);
+                    }
+
+                    continue;
+                }
+
                 if ($fix) {
                     $fixedCount = 0;
 
@@ -123,8 +146,66 @@ class MultichainNodeHealthCheck extends Command
             }
         }
 
-        $this->info("Health check complete: {$healthyNodes} healthy, {$repairedNodes} repaired, {$unhealthyNodes} unhealthy");
+        $summary = "Health check complete: {$healthyNodes} healthy, {$repairedNodes} repaired, {$unhealthyNodes} unhealthy";
+        if ($skippedPurgedNodes > 0) {
+            $summary .= ", {$skippedPurgedNodes} purged (skipped)";
+        }
+        $this->info($summary);
 
         return $unhealthyNodes > 0 && ! $fix ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Check if a node has been intentionally purged by looking for a
+     * full_node_purge event on-chain. Returns true if a purge event
+     * exists and no newer resync event has been recorded.
+     *
+     * This prevents the health check from auto-repairing (re-subscribing)
+     * a node that was intentionally purged via the demo purge page.
+     */
+    private function isNodePurged(Manager $manager, string $nodeId): bool
+    {
+        if (empty($nodeId)) {
+            return false;
+        }
+
+        try {
+            $purgeKey = 'node_'.$nodeId.'_full_purge';
+            $purgeItems = $manager->liststreamkeyitems(
+                'file.metadata',
+                $purgeKey,
+                false,
+                1,
+                0,
+                false
+            );
+
+            if ($manager->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                // Check for a newer resync event
+                $resyncKey = 'node_'.$nodeId.'_resync';
+                $resyncItems = $manager->liststreamkeyitems(
+                    'file.metadata',
+                    $resyncKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+
+                if ($manager->success() && is_array($resyncItems) && count($resyncItems) > 0) {
+                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+                    $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
+
+                    // Purged if purge event is newer than or equal to resync
+                    return $purgeBlock >= $resyncBlock;
+                }
+
+                return true;
+            }
+        } catch (\Exception $e) {
+            $this->warn("Could not check purge status for {$nodeId}: {$e->getMessage()}");
+        }
+
+        return false;
     }
 }

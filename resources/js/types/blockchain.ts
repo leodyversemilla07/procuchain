@@ -71,9 +71,10 @@ export interface StreamOption {
 }
 
 export interface NodeOption {
-    id: string;
-    name: string;
-    role: string;
+  id: string;
+  name: string;
+  role: string;
+  is_purged?: boolean;
 }
 
 export interface LedgerFilters {

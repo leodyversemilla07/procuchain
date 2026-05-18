@@ -6,6 +6,7 @@ use App\Contracts\BlockchainStorageInterface;
 use App\Enums\StreamEnums;
 use App\Libraries\MultiChain\Client;
 use App\Models\User;
+use App\Services\Manager;
 use App\Services\Blockchain\FileRetriever;
 use App\Services\Blockchain\FileUploader;
 use Exception;
@@ -568,16 +569,17 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
             // Record resync event on-chain
             $dataKey = 'node_'.$nodeId.'_resync';
-            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
-                'json' => [
-                    'action' => 'node_resync',
-                    'node_id' => $nodeId,
-                    'node_name' => $targetNode['name'] ?? $nodeId,
-                    'streams_resynced' => $resyncedStreams,
-                    'items_retrieved' => $totalRetrieved,
-                    'resynced_at' => now()->toIso8601String(),
-                ],
-            ]);
+        $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
+            'json' => [
+                'action' => 'node_resync',
+                'node_id' => $nodeId,
+                'node_name' => $targetNode['name'] ?? $nodeId,
+                'streams_resynced' => $resyncedStreams,
+                'items_retrieved' => $totalRetrieved,
+                'resynced_at' => now()->toIso8601String(),
+                'performed_by' => auth()->user()?->name ?? 'system',
+            ],
+        ]);
 
             Log::info("Node {$nodeId} resync completed", [
                 'node_id' => $nodeId,
@@ -585,18 +587,33 @@ class BlockchainStorageService implements BlockchainStorageInterface
                 'items_retrieved' => $totalRetrieved,
             ]);
 
-            // Audit log for RA 12009 (NGPA) compliance
-            app(AuditLogger::class)->log(
-                action: 'node.resync',
-                subjectType: 'node',
-                subjectId: $nodeId,
-                newValues: [
-                    'action' => 'node_resync',
-                    'node_id' => $nodeId,
-                    'streams_resynced' => $resyncedStreams,
-                    'items_retrieved' => $totalRetrieved,
-                ],
-            );
+        // Audit log for RA 12009 (NGPA) compliance
+        app(AuditLogger::class)->log(
+            action: 'node.resync',
+            subjectType: 'node',
+            subjectId: $nodeId,
+            newValues: [
+                'action' => 'node_resync',
+                'node_id' => $nodeId,
+                'streams_resynced' => $resyncedStreams,
+                'items_retrieved' => $totalRetrieved,
+            ],
+        );
+
+        // If this was the primary node being resynced, clear the purge flag
+        // so the Manager can detect recovery and switch back to primary.
+        if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
+            $primaryHost = config('multichain.rpc.host');
+            $primaryPort = config('multichain.rpc.port');
+
+            // Check if the resynced node IS the primary
+            $isPrimary = ($targetNode['private_ip'] ?? '') === $primaryHost
+                && ($targetNode['rpc_port'] ?? 6834) === $primaryPort;
+
+            if ($isPrimary) {
+                $this->multichain->resetByResync();
+            }
+        }
 
             return [
                 'success' => true,
@@ -664,27 +681,26 @@ class BlockchainStorageService implements BlockchainStorageInterface
             $totalPurged = 0;
             $streamStats = [];
 
-            foreach ($streams as $streamEnum) {
-                try {
-                    // Count items from the target node BEFORE purging.
-                    // We must subscribe first (if not already) so liststreamitems works,
-                    // then count, then unsubscribe+purge.
-                    $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
-                    $nodeItemCount = 0;
+        foreach ($streams as $streamEnum) {
+            try {
+                // Count items from the target node BEFORE purging.
+                // Only count if already subscribed — if not subscribed, there's
+                // nothing to purge (no off-chain data exists). Subscribing with
+                // rescan just to count would download all data before purging,
+                // which is wasteful and slow on large streams.
+                $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
+                $nodeItemCount = 0;
+                $wasSubscribed = false;
 
-                    if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
-                        $nodeItemCount = $streamInfo['items'] ?? 0;
-                    } else {
-                        // Node isn't subscribed — subscribe with rescan to get accurate count
-                        $nodeClient->subscribe($streamEnum->value, true);
-                        if ($nodeClient->success()) {
-                            $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
-                            $nodeItemCount = $streamInfo['items'] ?? 0;
-                        }
-                    }
+                if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
+                    $nodeItemCount = $streamInfo['items'] ?? 0;
+                    $wasSubscribed = true;
+                }
+                // If not subscribed, skip — no off-chain data to purge.
 
-                    // Unsubscribe with purge=true to remove off-chain data.
-                    $nodeClient->unsubscribe($streamEnum->value, true);
+                // Unsubscribe with purge=true to remove off-chain data.
+                // This is a no-op if the node wasn't subscribed (harmless).
+                $nodeClient->unsubscribe($streamEnum->value, true);
 
                     $purgeOk = $nodeClient->success();
                     if (! $purgeOk) {
@@ -702,17 +718,18 @@ class BlockchainStorageService implements BlockchainStorageInterface
             }
 
             // Record the full-node purge event on-chain (from the primary node)
-            $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
-                'json' => [
-                    'action' => 'full_node_purge',
-                    'node_id' => $nodeId,
-                    'node_name' => $targetNode['name'] ?? $nodeId,
-                    'items_purged' => $totalPurged,
-                    'streams_affected' => array_keys(array_filter($streamStats, fn ($s) => $s['items_purged'] > 0)),
-                    'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
-                    'purged_at' => now()->toIso8601String(),
-                ],
-            ]);
+        $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
+            'json' => [
+                'action' => 'full_node_purge',
+                'node_id' => $nodeId,
+                'node_name' => $targetNode['name'] ?? $nodeId,
+                'items_purged' => $totalPurged,
+                'streams_affected' => array_keys(array_filter($streamStats, fn ($s) => $s['items_purged'] > 0)),
+                'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
+                'purged_at' => now()->toIso8601String(),
+                'performed_by' => auth()->user()?->name ?? 'system',
+            ],
+        ]);
 
             Log::info('Full node purge completed', [
                 'node_id' => $nodeId,
@@ -750,20 +767,96 @@ class BlockchainStorageService implements BlockchainStorageInterface
     }
 
     /**
-     * Get list of available nodes for the purge/resync UI
+     * Get list of available nodes for the purge/resync UI,
+     * including real-time health status and item counts.
      *
-     * @return array<int, array{id: string, name: string, role: string}>
+     * @return array<int, array{id: string, name: string, role: string, is_purged: bool, purged_at: string|null, items: int}>
      */
     public function getAvailableNodes(): array
     {
-        return collect(config('multichain.nodes', []))
-            ->map(fn ($node) => [
+        $nodes = config('multichain.nodes', []);
+        $rpcUser = config('multichain.rpc.username', 'multichainrpc');
+        $rpcPass = config('multichain.rpc.password');
+        $chainName = config('multichain.chain_name');
+        $streams = collect(StreamEnums::cases())->map->value->toArray();
+
+        return collect($nodes)->map(function ($node) use ($streams, $rpcUser, $rpcPass, $chainName) {
+            $nodeId = $node['id'] ?? '';
+            $nodeIp = $node['private_ip'] ?? '';
+            $nodePort = $node['rpc_port'] ?? 6834;
+
+            $isPurged = false;
+            $purgedAt = null;
+            $totalItems = 0;
+
+            // Check on-chain purge state (from file.metadata stream)
+            try {
+                $purgeKey = 'node_'.$nodeId.'_full_purge';
+                $purgeItems = $this->multichain->liststreamkeyitems(
+                    StreamEnums::FILE_METADATA->value,
+                    $purgeKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+
+                if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                    // Check for a newer resync event
+                    $resyncKey = 'node_'.$nodeId.'_resync';
+                    $resyncItems = $this->multichain->liststreamkeyitems(
+                        StreamEnums::FILE_METADATA->value,
+                        $resyncKey,
+                        false,
+                        1,
+                        0,
+                        false
+                    );
+
+                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+                    $resyncBlock = 0;
+
+                    if ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0) {
+                        $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
+                    }
+
+                    // Purged if purge is newer than or equal to resync
+                    if ($purgeBlock >= $resyncBlock) {
+                        $isPurged = true;
+                        $purgedAt = date('c', $purgeBlock);
+                    }
+                }
+            } catch (\Exception $e) {
+                // If we can't check purge state, leave as false
+            }
+
+            // Get live item count from the node
+            if (! $isPurged && ! empty($nodeIp)) {
+                try {
+                    $client = new Client($nodeIp, $nodePort, $rpcUser, $rpcPass, false);
+                    $client->setoption('chain_name', $chainName);
+                    $client->setTimeout(5);
+
+                    foreach ($streams as $stream) {
+                        $info = $client->getstreaminfo($stream);
+                        if ($client->success() && ($info['subscribed'] ?? false)) {
+                            $totalItems += $info['items'] ?? 0;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Node unreachable — items unknown, still show node
+                }
+            }
+
+            return [
                 'id' => $node['id'],
                 'name' => $node['name'],
                 'role' => $node['role'],
-            ])
-            ->values()
-            ->all();
+                'is_purged' => $isPurged,
+                'purged_at' => $purgedAt,
+                'items' => $totalItems,
+            ];
+        })->values()->all();
     }
 
     /**

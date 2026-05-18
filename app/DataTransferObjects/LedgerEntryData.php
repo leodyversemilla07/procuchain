@@ -39,21 +39,52 @@ final readonly class LedgerEntryData
         $txid = $item['txid'] ?? '';
         $key = $item['keys'][0] ?? '';
 
-        $prNumber = $data['pr_number'] ?? $key;
-        $procurementTitle = $data['procurement_title'] ?? $data['title'] ?? null;
-        $actorAddress = $data['user_address'] ?? $data['uploaded_by'] ?? $data['archived_by'] ?? $data['corrected_by'] ?? '';
-        $oldValues = (array) ($data['metadata']['old_values'] ?? $data['old_values'] ?? []);
-        $newValues = (array) ($data['metadata']['new_values'] ?? $data['new_values'] ?? []);
-        $originalTxid = $data['original_txid'] ?? $data['metadata']['original_txid'] ?? null;
+        // Detect system-level purge/resync events (node_{id}_full_purge / node_{id}_resync)
+        $isNodePurgeEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_full_purge');
+        $isNodeResyncEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_resync');
 
-        // Extract a meaningful action/summary per stream
-        $action = $data['event_type']
-            ?? $data['current_status']
-            ?? $data['correction_type']
-            ?? $data['action']
-            ?? 'published';
+        if ($isNodePurgeEvent) {
+            $prNumber = 'system';
+            $procurementTitle = null;
+            $action = 'node_purged';
+            $actorAddress = $data['performed_by'] ?? '';
+            $oldValues = [];
+            $newValues = ['node_id' => $data['node_id'] ?? $key, 'reason' => $data['reason'] ?? ''];
+            $originalTxid = null;
+            $summary = sprintf(
+                'Node %s purged — all data removed%s',
+                $data['node_name'] ?? $data['node_id'] ?? $key,
+                ! empty($data['reason']) ? ': '.$data['reason'] : ''
+            );
+        } elseif ($isNodeResyncEvent) {
+            $prNumber = 'system';
+            $procurementTitle = null;
+            $action = 'node_resynced';
+            $actorAddress = $data['performed_by'] ?? '';
+            $oldValues = [];
+            $newValues = ['node_id' => $data['node_id'] ?? $key];
+            $originalTxid = null;
+            $summary = sprintf(
+                'Node %s resynced — data restored from peers',
+                $data['node_name'] ?? $data['node_id'] ?? $key
+            );
+        } else {
+            $prNumber = $data['pr_number'] ?? $key;
+            $procurementTitle = $data['procurement_title'] ?? $data['title'] ?? null;
+            $actorAddress = $data['user_address'] ?? $data['uploaded_by'] ?? $data['archived_by'] ?? $data['corrected_by'] ?? '';
+            $oldValues = (array) ($data['metadata']['old_values'] ?? $data['old_values'] ?? []);
+            $newValues = (array) ($data['metadata']['new_values'] ?? $data['new_values'] ?? []);
+            $originalTxid = $data['original_txid'] ?? $data['metadata']['original_txid'] ?? null;
 
-        $summary = match ($stream) {
+            // Extract a meaningful action/summary per stream
+            $action = $data['event_type']
+                ?? $data['current_status']
+                ?? $data['correction_type']
+                ?? $data['action']
+                ?? 'published';
+        }
+
+        $summary ??= match ($stream) {
             'procurement.events' => $data['details'] ?? match ($data['event_type'] ?? '') {
                 'document_upload' => 'Document uploaded to procurement',
                 'phase_transition', 'stage_transition' => 'Stage transition occurred',

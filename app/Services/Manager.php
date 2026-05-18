@@ -46,6 +46,10 @@ class Manager
     /** @var bool Whether we've failed over away from the primary node */
     private bool $failedOver = false;
 
+    /** @var bool Whether the primary node was detected as intentionally purged (-703 on stream read).
+     *           When true, tryPromotePrimaryBack stops retrying until resetByResync() is called. */
+    private bool $primaryPurged = false;
+
     public function __construct()
     {
         $isConsole = app()->runningInConsole();
@@ -206,6 +210,12 @@ class Manager
             return;
         }
 
+        // If the primary was intentionally purged, stop retrying until a
+        // resync explicitly clears this flag via resetByResync().
+        if ($this->primaryPurged) {
+            return;
+        }
+
         // Throttle: don't recheck more often than the configured interval
         if ((time() - $this->activeNodeVerifiedAt) < $this->primaryRecheckInterval) {
             return;
@@ -235,18 +245,31 @@ class Manager
                 return;
             }
 
-        // Primary is alive — verify it can read streams
-        // Use the procurement.status stream (actual stream from StreamEnums)
-        $testClient->liststreamitems(
-            'procurement.status',
-            false,
-            1,
-            0,
-            false
-        );
+            // Primary is alive — verify it can read streams
+            // Use the procurement.status stream (actual stream from StreamEnums)
+            $testClient->liststreamitems(
+                'procurement.status',
+                false,
+                1,
+                0,
+                false
+            );
 
             if (! $testClient->success()) {
-                // Primary is alive but not yet subscribed (still purged)
+                $errCode = $testClient->errorcode();
+
+                // RPC -703 = not subscribed — primary was intentionally purged.
+                // Stop retrying to avoid hammering a purged node forever.
+                if ($errCode === -703) {
+                    $this->primaryPurged = true;
+                    $this->activeNodeVerifiedAt = time();
+
+                    Log::info('MultiChain failover: primary node detected as purged (RPC -703) — stopping primary recheck until resync');
+
+                    return;
+                }
+
+                // Other error — primary is alive but stream has issues, keep retrying
                 $this->activeNodeVerifiedAt = time();
 
                 return;
@@ -428,6 +451,29 @@ class Manager
     public function isFailedOver(): bool
     {
         return $this->failedOver;
+    }
+
+    /**
+     * Whether the primary node was detected as intentionally purged.
+     * When true, tryPromotePrimaryBack stops retrying until resetByResync().
+     */
+    public function isPrimaryPurged(): bool
+    {
+        return $this->primaryPurged;
+    }
+
+    /**
+     * Clear the primaryPurged flag after a resync operation.
+     * This re-enables tryPromotePrimaryBack so the Manager can
+     * detect when the primary has recovered and switch back.
+     */
+    public function resetByResync(): void
+    {
+        $this->primaryPurged = false;
+        $this->activeNodeVerifiedAt = 0;
+        $this->failedOver = false;
+
+        Log::info('MultiChain failover: primary purge flag cleared by resync — primary recheck re-enabled');
     }
 
     /**

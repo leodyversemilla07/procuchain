@@ -171,12 +171,50 @@ class SharedLedgerController extends Controller
                 $streamTotals[$e->stream] = ($streamTotals[$e->stream] ?? 0) + 1;
             }
 
-            // Build available nodes list
-            $availableNodes = collect($this->getNodes())->map(fn ($node) => [
+        // Build available nodes list with purge status
+        $availableNodes = collect($this->getNodes())->map(function ($node) {
+            $isPurged = false;
+
+            try {
+                $purgeKey = 'node_'.$node['id'].'_full_purge';
+                $purgeItems = $this->multichain->liststreamkeyitems(
+                    StreamEnums::FILE_METADATA->value,
+                    $purgeKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+
+                if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                    $resyncKey = 'node_'.$node['id'].'_resync';
+                    $resyncItems = $this->multichain->liststreamkeyitems(
+                        StreamEnums::FILE_METADATA->value,
+                        $resyncKey,
+                        false,
+                        1,
+                        0,
+                        false
+                    );
+
+                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+                    $resyncBlock = ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0)
+                        ? ($resyncItems[0]['blocktime'] ?? 0)
+                        : 0;
+
+                    $isPurged = $purgeBlock >= $resyncBlock;
+                }
+            } catch (\Exception $e) {
+                // Leave as not purged if check fails
+            }
+
+            return [
                 'id' => $node['id'],
                 'name' => $node['name'],
                 'role' => $node['role'],
-            ])->values()->toArray();
+                'is_purged' => $isPurged,
+            ];
+        })->values()->toArray();
 
             return Inertia::render('shared-ledger', [
                 'entries' => $mapped,
@@ -398,9 +436,24 @@ class SharedLedgerController extends Controller
      * If a node is not subscribed, liststreamitems returns an error.
      * We subscribe with rescan=true to ensure off-chain data is available.
      * This is idempotent — subscribing to an already-subscribed stream is a no-op.
+     *
+     * IMPORTANT: This should NOT be called on a node that was intentionally
+     * purged (via the demo purge page). Auto-subscribing would undo the purge
+     * by re-downloading all data from peers. The purge state is checked first
+     * in fetchFromAllNodes() to skip purged nodes entirely.
      */
-    private function ensureSubscribed(Client $client): void
+    private function ensureSubscribed(Client $client, string $nodeId = ''): void
     {
+        // Skip auto-subscribe for nodes that have been explicitly purged.
+        // This preserves the demo purge state — without this check, visiting
+        // the Shared Ledger with "All nodes" selected would silently resubscribe
+        // and re-download all data, making the purge invisible.
+        if ($nodeId && $this->isNodePurged($nodeId)) {
+            Log::info("SharedLedger: Skipping ensureSubscribed for purged node '{$nodeId}'");
+
+            return;
+        }
+
         foreach (self::LEDGER_STREAMS as $stream) {
             // Use liststreamitems to check subscription — getstreaminfo['subscribed']
             // is unreliable in MultiChain CE (field often missing).
@@ -420,6 +473,57 @@ class SharedLedgerController extends Controller
                 Log::warning("SharedLedger: Failed to auto-subscribe to stream {$stream}: [{$client->errorcode()}] {$client->errormessage()}");
             }
         }
+    }
+
+    /**
+     * Check if a node has been explicitly purged by looking for a
+     * full_node_purge event on-chain. This prevents ensureSubscribed()
+     * from silently undoing a demo purge.
+     */
+    private function isNodePurged(string $nodeId): bool
+    {
+        try {
+            $purgeKey = 'node_'.$nodeId.'_full_purge';
+            $purgeItems = $this->multichain->liststreamkeyitems(
+                'file.metadata',
+                $purgeKey,
+                false,
+                1,
+                0,
+                false
+            );
+
+            if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                // Check if there's a corresponding resync event after the purge.
+                // If the node was resynced, the purge is no longer active.
+                $resyncKey = 'node_'.$nodeId.'_resync';
+                $resyncItems = $this->multichain->liststreamkeyitems(
+                    'file.metadata',
+                    $resyncKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+
+                if ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0) {
+                    // Both purge and resync exist — compare block times.
+                    // If resync came after purge, the node has been restored.
+                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+                    $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
+
+                    return $purgeBlock >= $resyncBlock;
+                }
+
+                return true;
+            }
+        } catch (Exception $e) {
+            Log::warning("SharedLedger: Failed to check purge status for node {$nodeId}", [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return false;
     }
 
     /**
@@ -446,8 +550,9 @@ class SharedLedgerController extends Controller
                 $client->setoption('verify_ssl', false);
                 $client->setTimeout(15);
 
-                // Ensure this node is subscribed before listing
-                $this->ensureSubscribed($client);
+            // Ensure this node is subscribed before listing
+            // Pass nodeId so ensureSubscribed can skip purged nodes
+            $this->ensureSubscribed($client, $nodeConfig['id']);
 
                 $nodeEntries = $this->fetchEntriesFromClient($client);
 

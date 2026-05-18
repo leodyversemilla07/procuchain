@@ -40,9 +40,10 @@ import {
     GitBranch,
     Pencil,
     RotateCcw,
-    ScrollText,
-    Server,
-    Shield,
+  ScrollText,
+  Server,
+  ServerCrash,
+  Shield,
     Trash2,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -355,22 +356,31 @@ export default function SharedLedger({
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="all">
-                                            <div className="flex items-center gap-2">
-                                                <Server className="h-3.5 w-3.5" />
-                                                All nodes (shared)
-                                            </div>
-                                        </SelectItem>
-                                        {available_nodes.map((n) => (
-                                            <SelectItem key={n.id} value={n.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <Server className="h-3.5 w-3.5" />
-                                                    {n.name}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
+              <SelectGroup>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-3.5 w-3.5" />
+                    All nodes (shared)
+                  </div>
+                </SelectItem>
+                {available_nodes.map((n) => (
+                  <SelectItem key={n.id} value={n.id}>
+                    <div className="flex items-center gap-2">
+                      {n.is_purged ? (
+                        <ServerCrash className="h-3.5 w-3.5 text-red-500" />
+                      ) : (
+                        <Server className="h-3.5 w-3.5" />
+                      )}
+                      {n.name}
+                      {n.is_purged && (
+                        <Badge variant="destructive" className="ml-1 gap-0.5 px-1 py-0 text-[9px]">
+                          Purged
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
                                 </SelectContent>
                             </Select>
 
@@ -551,12 +561,24 @@ export default function SharedLedger({
                                                                 Deleted
                                                             </Badge>
                                                         )}
-                                                        {entry.action === 'restored' && (
-                                                            <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                                                <RotateCcw className="h-3 w-3" />
-                                                                Restored
-                                                            </Badge>
-                                                        )}
+                        {entry.action === 'restored' && (
+                          <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            <RotateCcw className="h-3 w-3" />
+                            Restored
+                          </Badge>
+                        )}
+                        {entry.action === 'node_purged' && (
+                          <Badge variant="destructive" className="gap-1 text-xs whitespace-nowrap">
+                            <ServerCrash className="h-3 w-3" />
+                            Node Purged
+                          </Badge>
+                        )}
+                        {entry.action === 'node_resynced' && (
+                          <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            <RotateCcw className="h-3 w-3" />
+                            Node Resynced
+                          </Badge>
+                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         {isSystem ? (
