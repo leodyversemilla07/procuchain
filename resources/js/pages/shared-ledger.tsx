@@ -40,10 +40,10 @@ import {
     GitBranch,
     Pencil,
     RotateCcw,
-  ScrollText,
-  Server,
-  ServerCrash,
-  Shield,
+    ScrollText,
+    Server,
+    ServerCrash,
+    Shield,
     Trash2,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -77,32 +77,32 @@ const breadcrumbs = [{ title: 'Shared Ledger', href: basePath }];
 
 /** Stream badge configuration */
 const STREAM_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
- 'procurement.metadata': {
- label: 'Created / Updated',
- color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
- icon: BookOpenText,
- },
- 'procurement.status': {
- label: 'Status Change',
- color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
- icon: GitBranch,
- },
- 'procurement.documents': { label: 'Document', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300', icon: FileText },
- 'procurement.corrections': {
- label: 'Document Correction',
- color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
- icon: AlertTriangle,
- },
- 'procurement.metadata.corrections': {
- label: 'Metadata Correction',
- color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
- icon: Pencil,
- },
- 'procurement.archive': { label: 'Archive', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: Archive },
- 'procurement.events': { label: 'Event', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300', icon: ScrollText },
- 'file.data': { label: 'File Data', color: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300', icon: FileText },
- 'file.metadata': { label: 'File Meta', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300', icon: FileText },
- 'file.chunks': { label: 'File Chunk', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300', icon: FileText },
+    'procurement.metadata': {
+        label: 'Created / Updated',
+        color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+        icon: BookOpenText,
+    },
+    'procurement.status': {
+        label: 'Status Change',
+        color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+        icon: GitBranch,
+    },
+    'procurement.documents': { label: 'Document', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300', icon: FileText },
+    'procurement.corrections': {
+        label: 'Document Correction',
+        color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+        icon: AlertTriangle,
+    },
+    'procurement.metadata.corrections': {
+        label: 'Metadata Correction',
+        color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+        icon: Pencil,
+    },
+    'procurement.archive': { label: 'Archive', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: Archive },
+    'procurement.events': { label: 'Event', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300', icon: ScrollText },
+    'file.data': { label: 'File Data', color: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300', icon: FileText },
+    'file.metadata': { label: 'File Meta', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300', icon: FileText },
+    'file.chunks': { label: 'File Chunk', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300', icon: FileText },
 };
 
 const getStreamConfig = (stream: string) =>
@@ -356,31 +356,31 @@ export default function SharedLedger({
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    <Server className="h-3.5 w-3.5" />
-                    All nodes (shared)
-                  </div>
-                </SelectItem>
-                {available_nodes.map((n) => (
-                  <SelectItem key={n.id} value={n.id}>
-                    <div className="flex items-center gap-2">
-                      {n.is_purged ? (
-                        <ServerCrash className="h-3.5 w-3.5 text-red-500" />
-                      ) : (
-                        <Server className="h-3.5 w-3.5" />
-                      )}
-                      {n.name}
-                      {n.is_purged && (
-                        <Badge variant="destructive" className="ml-1 gap-0.5 px-1 py-0 text-[9px]">
-                          Purged
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectGroup>
+                                    <SelectGroup>
+                                        <SelectItem value="all">
+                                            <div className="flex items-center gap-2">
+                                                <Server className="h-3.5 w-3.5" />
+                                                All nodes (shared)
+                                            </div>
+                                        </SelectItem>
+                                        {available_nodes.map((n) => (
+                                            <SelectItem key={n.id} value={n.id}>
+                                                <div className="flex items-center gap-2">
+                                                    {n.is_purged ? (
+                                                        <ServerCrash className="h-3.5 w-3.5 text-red-500" />
+                                                    ) : (
+                                                        <Server className="h-3.5 w-3.5" />
+                                                    )}
+                                                    {n.name}
+                                                    {n.is_purged && (
+                                                        <Badge variant="destructive" className="ml-1 gap-0.5 px-1 py-0 text-[9px]">
+                                                            Purged
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
 
@@ -561,24 +561,24 @@ export default function SharedLedger({
                                                                 Deleted
                                                             </Badge>
                                                         )}
-                        {entry.action === 'restored' && (
-                          <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                            <RotateCcw className="h-3 w-3" />
-                            Restored
-                          </Badge>
-                        )}
-                        {entry.action === 'node_purged' && (
-                          <Badge variant="destructive" className="gap-1 text-xs whitespace-nowrap">
-                            <ServerCrash className="h-3 w-3" />
-                            Node Purged
-                          </Badge>
-                        )}
-                        {entry.action === 'node_resynced' && (
-                          <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                            <RotateCcw className="h-3 w-3" />
-                            Node Resynced
-                          </Badge>
-                        )}
+                                                        {entry.action === 'restored' && (
+                                                            <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                                <RotateCcw className="h-3 w-3" />
+                                                                Restored
+                                                            </Badge>
+                                                        )}
+                                                        {entry.action === 'node_purged' && (
+                                                            <Badge variant="destructive" className="gap-1 text-xs whitespace-nowrap">
+                                                                <ServerCrash className="h-3 w-3" />
+                                                                Node Purged
+                                                            </Badge>
+                                                        )}
+                                                        {entry.action === 'node_resynced' && (
+                                                            <Badge className="gap-1 bg-emerald-100 whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                                <RotateCcw className="h-3 w-3" />
+                                                                Node Resynced
+                                                            </Badge>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         {isSystem ? (
