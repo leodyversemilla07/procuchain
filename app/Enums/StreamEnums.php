@@ -10,34 +10,34 @@ namespace App\Enums;
  */
 enum StreamEnums: string
 {
- case METADATA = 'procurement.metadata';
- case DOCUMENTS = 'procurement.documents';
- case STATUS = 'procurement.status';
- case EVENTS = 'procurement.events';
- case CORRECTIONS = 'procurement.corrections';
- case PROCUREMENTS_CORRECTIONS = 'procurement.metadata.corrections';
- case FILE_DATA = 'file.data';
- case FILE_METADATA = 'file.metadata';
- case FILE_CHUNKS = 'file.chunks';
- case ARCHIVE = 'procurement.archive';
+    case METADATA = 'procurement.metadata';
+    case DOCUMENTS = 'procurement.documents';
+    case STATUS = 'procurement.status';
+    case EVENTS = 'procurement.events';
+    case CORRECTIONS = 'procurement.corrections';
+    case PROCUREMENTS_CORRECTIONS = 'procurement.metadata.corrections';
+    case FILE_DATA = 'file.data';
+    case FILE_METADATA = 'file.metadata';
+    case FILE_CHUNKS = 'file.chunks';
+    case ARCHIVE = 'procurement.archive';
 
     /**
      * Get the user-friendly display name for the stream
      */
     public function getDisplayName(): string
     {
- return match ($this) {
- self::METADATA => 'Procurement Metadata',
- self::DOCUMENTS => 'Procurement Documents',
- self::STATUS => 'Procurement Status',
- self::EVENTS => 'Procurement Events',
- self::CORRECTIONS => 'Procurement Corrections',
- self::PROCUREMENTS_CORRECTIONS => 'Procurement Metadata Corrections',
- self::FILE_DATA => 'File Data',
- self::FILE_METADATA => 'File Metadata',
- self::FILE_CHUNKS => 'File Chunks',
- self::ARCHIVE => 'Procurement Archive',
- };
+        return match ($this) {
+            self::METADATA => 'Procurement Metadata',
+            self::DOCUMENTS => 'Procurement Documents',
+            self::STATUS => 'Procurement Status',
+            self::EVENTS => 'Procurement Events',
+            self::CORRECTIONS => 'Procurement Corrections',
+            self::PROCUREMENTS_CORRECTIONS => 'Procurement Metadata Corrections',
+            self::FILE_DATA => 'File Data',
+            self::FILE_METADATA => 'File Metadata',
+            self::FILE_CHUNKS => 'File Chunks',
+            self::ARCHIVE => 'Procurement Archive',
+        };
     }
 
     /**
@@ -45,18 +45,18 @@ enum StreamEnums: string
      */
     public function getDescription(): string
     {
- return match ($this) {
- self::METADATA => 'Stores core procurement metadata and details',
- self::DOCUMENTS => 'Stores procurement documents and their metadata',
- self::STATUS => 'Tracks status changes throughout the procurement process',
- self::EVENTS => 'Records procurement events and activities',
- self::CORRECTIONS => 'Maintains correction records and amendments',
- self::PROCUREMENTS_CORRECTIONS => 'Maintains corrections to procurement metadata',
- self::FILE_DATA => 'Stores raw file data and binary content',
- self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
- self::FILE_CHUNKS => 'Stores chunked file data for large files',
- self::ARCHIVE => 'Tracks archived status of procurements',
- };
+        return match ($this) {
+            self::METADATA => 'Stores core procurement metadata and details',
+            self::DOCUMENTS => 'Stores procurement documents and their metadata',
+            self::STATUS => 'Tracks status changes throughout the procurement process',
+            self::EVENTS => 'Records procurement events and activities',
+            self::CORRECTIONS => 'Maintains correction records and amendments',
+            self::PROCUREMENTS_CORRECTIONS => 'Maintains corrections to procurement metadata',
+            self::FILE_DATA => 'Stores raw file data and binary content',
+            self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
+            self::FILE_CHUNKS => 'Stores chunked file data for large files',
+            self::ARCHIVE => 'Tracks archived status of procurements',
+        };
     }
 
     /**
@@ -64,15 +64,15 @@ enum StreamEnums: string
      */
     public function isProcurementStream(): bool
     {
- return in_array($this, [
- self::METADATA,
- self::DOCUMENTS,
- self::STATUS,
- self::EVENTS,
- self::CORRECTIONS,
- self::PROCUREMENTS_CORRECTIONS,
- self::ARCHIVE,
- ]);
+        return in_array($this, [
+            self::METADATA,
+            self::DOCUMENTS,
+            self::STATUS,
+            self::EVENTS,
+            self::CORRECTIONS,
+            self::PROCUREMENTS_CORRECTIONS,
+            self::ARCHIVE,
+        ]);
     }
 
     /**

@@ -30,19 +30,19 @@ class SmartContractSetup extends Command
      * Note: Only one filter per stream should be activated at a time.
      * The primary filters are recommended for production use.
      */
- private const STREAM_FILTERS = [
- // Primary validation filters (recommended for production)
- ['name' => 'sf_metadata_validation', 'file' => 'stream_metadata_validation.js', 'stream' => 'METADATA'],
- ['name' => 'sf_document_validation', 'file' => 'stream_document_validation.js', 'stream' => 'DOCUMENTS'],
- ['name' => 'sf_status_validation', 'file' => 'stream_status_validation.js', 'stream' => 'STATUS'],
- ['name' => 'sf_file_metadata_validation', 'file' => 'stream_file_metadata_validation.js', 'stream' => 'FILE_METADATA'],
- ['name' => 'sf_event_validation', 'file' => 'stream_event_validation.js', 'stream' => 'EVENTS'],
- ['name' => 'sf_corrections_validation', 'file' => 'corrections_filter_v1_standalone.js', 'stream' => 'CORRECTIONS'],
- ['name' => 'sf_proc_corr_validation', 'file' => 'stream_procurement_corrections_validation.js', 'stream' => 'PROCUREMENTS_CORRECTIONS'],
- ['name' => 'sf_archive_validation', 'file' => 'stream_archive_validation.js', 'stream' => 'ARCHIVE'],
- ['name' => 'sf_file_data_validation', 'file' => 'stream_file_data_validation.js', 'stream' => 'FILE_DATA'],
- ['name' => 'sf_file_chunks_validation', 'file' => 'stream_file_chunks_validation.js', 'stream' => 'FILE_CHUNKS'],
- ];
+    private const STREAM_FILTERS = [
+        // Primary validation filters (recommended for production)
+        ['name' => 'sf_metadata_validation', 'file' => 'stream_metadata_validation.js', 'stream' => 'METADATA'],
+        ['name' => 'sf_document_validation', 'file' => 'stream_document_validation.js', 'stream' => 'DOCUMENTS'],
+        ['name' => 'sf_status_validation', 'file' => 'stream_status_validation.js', 'stream' => 'STATUS'],
+        ['name' => 'sf_file_metadata_validation', 'file' => 'stream_file_metadata_validation.js', 'stream' => 'FILE_METADATA'],
+        ['name' => 'sf_event_validation', 'file' => 'stream_event_validation.js', 'stream' => 'EVENTS'],
+        ['name' => 'sf_corrections_validation', 'file' => 'corrections_filter_v1_standalone.js', 'stream' => 'CORRECTIONS'],
+        ['name' => 'sf_proc_corr_validation', 'file' => 'stream_procurement_corrections_validation.js', 'stream' => 'PROCUREMENTS_CORRECTIONS'],
+        ['name' => 'sf_archive_validation', 'file' => 'stream_archive_validation.js', 'stream' => 'ARCHIVE'],
+        ['name' => 'sf_file_data_validation', 'file' => 'stream_file_data_validation.js', 'stream' => 'FILE_DATA'],
+        ['name' => 'sf_file_chunks_validation', 'file' => 'stream_file_chunks_validation.js', 'stream' => 'FILE_CHUNKS'],
+    ];
 
     /**
      * Transaction filters - validated before transactions are accepted
