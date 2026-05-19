@@ -4,7 +4,7 @@ set -e
 
 APP_DIR="/var/app/current"
 BUILD_DIR="$APP_DIR/public/build"
-MANIFEST="$BUILD_DIR/.vite/manifest.json"
+MANIFEST="$BUILD_DIR/manifest.json"
 
 # If manifest already exists, skip build
 if [ -f "$MANIFEST" ]; then
