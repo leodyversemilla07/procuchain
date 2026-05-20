@@ -2,6 +2,7 @@ import { Activity, AlertCircle, ArrowUpCircle, FileCheck, FileText } from 'lucid
 import type { FC, JSX } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { TruncateBadge } from '@/components/truncate-badge';
 import { cn } from '@/lib/utils';
 import type { Event, TimelineItem } from '@/types';
 
@@ -45,9 +46,9 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
  <div className="flex min-w-0 flex-col gap-1">
  <div className="flex min-w-0 flex-wrap items-center gap-2">
  <span className="text-foreground shrink-0 text-sm font-semibold">Stage Update</span>
- <Badge variant="default" className="hover:bg-primary text-xs">
+ <TruncateBadge variant="default" className="hover:bg-primary text-xs" maxChars={20}>
  {stageItem.stage_formatted || stageItem.stage}
- </Badge>
+ </TruncateBadge>
  </div>
  <p className="text-muted-foreground min-w-0 text-sm">
  Status: <span className="text-foreground/80 truncate font-medium">{stageItem.status_formatted || stageItem.status}</span>
@@ -79,11 +80,11 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
  <span className="text-foreground shrink-0 text-sm font-semibold">
  {eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}
  </span>
-                    {eventItem.category && eventItem.category !== 'stage_transition' && (
-                        <Badge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]">
-                            {eventItem.category_formatted || eventItem.category}
-                        </Badge>
-                    )}
+ {eventItem.category && eventItem.category !== 'stage_transition' && (
+ <TruncateBadge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]" maxChars={18}>
+ {eventItem.category_formatted || eventItem.category}
+ </TruncateBadge>
+ )}
                 </div>
                 <div className="text-muted-foreground text-sm">{eventDetails}</div>
             </div>

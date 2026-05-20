@@ -1,5 +1,6 @@
 import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
 import { Badge } from '@/components/ui/badge';
+import { TruncateBadge } from '@/components/truncate-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -64,31 +65,30 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                             <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             Document Type:
                         </span>
-                        <Badge variant="secondary" className="text-xs font-medium">
-                            {document.document_type_display}
-                        </Badge>
-                    </div>
+ <TruncateBadge variant="secondary" className="text-xs font-medium" maxChars={18}>
+ {document.document_type_display}
+ </TruncateBadge>
+ </div>
 
-                    <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
-                            <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Current Stage:
-                        </span>
-                        <Badge variant="outline" className="flex items-center gap-1 text-xs sm:gap-1.5">
-                            {React.createElement(getStageIcon(document.stage), { className: 'h-3 w-3 sm:h-3.5 sm:w-3.5' })}
-                            <span className="max-w-[100px] truncate sm:max-w-none">{document.stage_display}</span>
-                        </Badge>
-                    </div>
+ <div className="flex items-center justify-between gap-2">
+ <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
+ <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+ Current Stage:
+ </span>
+ <TruncateBadge variant="outline" icon={React.createElement(getStageIcon(document.stage), { className: 'h-3 w-3 sm:h-3.5 sm:w-3.5' })} className="flex items-center gap-1 text-xs sm:gap-1.5" maxChars={20}>
+ {document.stage_display}
+ </TruncateBadge>
+ </div>
 
-                    {document.phase && (
-                        <div className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
-                                <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                Current Phase:
-                            </span>
-                            <Badge variant="secondary" className="text-xs font-medium">
-                                {document.phase_display_name}
-                            </Badge>
+ {document.phase && (
+ <div className="flex items-center justify-between gap-2">
+ <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
+ <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+ Current Phase:
+ </span>
+ <TruncateBadge variant="secondary" className="text-xs font-medium" maxChars={20}>
+ {document.phase_display_name}
+ </TruncateBadge>
                         </div>
                     )}
 

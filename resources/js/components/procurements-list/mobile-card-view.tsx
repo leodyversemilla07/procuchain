@@ -1,5 +1,6 @@
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
 import { Badge } from '@/components/ui/badge';
+import { TruncateBadge } from '@/components/truncate-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -127,21 +128,23 @@ export const MobileCardView = ({
  <div className="min-w-0 space-y-2">
  <div className="flex min-w-0 items-center gap-2">
  <span className="text-muted-foreground shrink-0 text-xs font-medium">Stage:</span>
- <Badge
+ <TruncateBadge
  variant="outline"
  className={cn(getStageBadgeStyle(procurement.stage as Stage), 'border text-xs font-medium shadow-sm')}
+ maxChars={20}
  >
  {formatLabel(procurement.stage)}
- </Badge>
+ </TruncateBadge>
  </div>
  <div className="flex min-w-0 items-center gap-2">
  <span className="text-muted-foreground shrink-0 text-xs font-medium">Status:</span>
- <Badge
+ <TruncateBadge
  variant="outline"
  className={cn(getStatusBadgeStyle(procurement.current_status as Status), 'border text-xs font-medium shadow-sm')}
+ maxChars={16}
  >
  {formatLabel(procurement.current_status)}
- </Badge>
+ </TruncateBadge>
  </div>
  {procurement.procurement_mode_label && (
  <div className="flex min-w-0 items-center gap-2">

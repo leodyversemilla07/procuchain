@@ -3,6 +3,7 @@ import { type FC } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
+import { TruncateBadge } from '@/components/truncate-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -114,8 +115,8 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <DetailItem label="ABC Amount" value={details.abc_amount_formatted} className="text-primary text-lg font-bold" />
                                 <DetailItem label="Funding Source" value={details.funding_source} />
-                                <DetailItem label="Category" value={<Badge variant="secondary">{details.category_label}</Badge>} />
-                                <DetailItem label="Procurement Mode" value={<Badge variant="outline">{details.procurement_mode_label}</Badge>} />
+ <DetailItem label="Category" value={<TruncateBadge variant="secondary" maxChars={22}>{details.category_label}</TruncateBadge>} />
+ <DetailItem label="Procurement Mode" value={<TruncateBadge variant="outline" maxChars={22}>{details.procurement_mode_label}</TruncateBadge>} />
                             </div>
                         </div>
 
