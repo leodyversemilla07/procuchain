@@ -1,4 +1,8 @@
 *
 !private/
 !public/
+!temp/
+!temp/.gitkeep
+!temp/blockchain-uploads/
+!temp/blockchain-uploads/.gitkeep
 !.gitignore

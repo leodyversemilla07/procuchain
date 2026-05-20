@@ -306,6 +306,24 @@ class SharedLedgerController extends Controller
             $client->setoption('chain_name', config('multichain.chain_name'));
             $client->setoption('use_curl', true);
             $client->setoption('verify_ssl', false);
+            $client->setTimeout(5);
+
+            // Quick connectivity check — fail fast if the node is unreachable.
+            // Without this, iterating 10 streams × 5s timeout = 50s of hanging.
+            $client->getinfo();
+            if (! $client->success()) {
+                $errCode = $client->errorcode();
+                $errMsg = $client->errormessage();
+                Log::warning('SharedLedger: Node connectivity check failed, falling back to Manager', [
+                    'node_id' => $nodeId,
+                    'error_code' => $errCode,
+                    'error_message' => $errMsg,
+                ]);
+
+                return $this->fetchFromDefaultClient();
+            }
+
+            // Node is reachable — increase timeout for the heavy stream reads
             $client->setTimeout(15);
 
             // Detect purge state by probing each stream.
@@ -548,6 +566,20 @@ class SharedLedgerController extends Controller
                 $client->setoption('chain_name', config('multichain.chain_name'));
                 $client->setoption('use_curl', true);
                 $client->setoption('verify_ssl', false);
+                $client->setTimeout(5);
+
+                // Quick connectivity check — skip unreachable nodes fast
+                $client->getinfo();
+                if (! $client->success()) {
+                    Log::info('SharedLedger: Skipping unreachable node in all-nodes fetch', [
+                        'node_id' => $nodeConfig['id'],
+                        'error' => $client->errormessage(),
+                    ]);
+
+                    continue;
+                }
+
+                // Node is reachable — increase timeout for the heavy stream reads
                 $client->setTimeout(15);
 
                 // Ensure this node is subscribed before listing

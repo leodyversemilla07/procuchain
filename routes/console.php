@@ -14,3 +14,6 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('multichain:node-health --fix --notify')->everySixHours()->withoutOverlapping();
+
+// Clean up orphaned temp files from blockchain uploads every hour
+Schedule::command('temp:cleanup --hours=1')->hourly()->withoutOverlapping();

@@ -1,0 +1,29 @@
+[Unit]
+Description=Laravel Queue Worker (BlockchainWriteJob)
+After=network.target mariadb.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=webapp
+Group=webapp
+Restart=always
+RestartSec=5
+ExecStart=/usr/bin/php /var/app/current/artisan queue:work database --sleep=3 --tries=3 --max-time=3600 --queue=default
+
+# Graceful shutdown — let the current job finish
+StopWaitSec=60
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=90
+
+# Memory limit — restart the worker if it leaks
+MemoryMax=256M
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=laravel-queue-worker
+
+[Install]
+WantedBy=multi-user.target
