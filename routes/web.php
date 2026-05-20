@@ -3,6 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Bare prefix redirects → role dashboard
+Route::redirect('/admin', '/admin/dashboard', 301);
+Route::redirect('/bac-secretariat', '/bac-secretariat/dashboard', 301);
+Route::redirect('/bac-chairman', '/bac-chairman/dashboard', 301);
+Route::redirect('/hope', '/hope/dashboard', 301);
+
 require __DIR__.'/web/public.php';
 require __DIR__.'/web/authenticated.php';
 require __DIR__.'/web/bac-secretariat.php';
