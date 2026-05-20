@@ -143,12 +143,12 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
 
     return (
         <div className="space-y-6">
-            {/* Header with submit button */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-semibold">Procurement Corrections</h3>
-                    <p className="text-muted-foreground text-sm">View and submit corrections to procurement metadata</p>
-                </div>
+  {/* Header with submit button */}
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-w-0">
+      <h3 className="text-lg font-semibold">Procurement Corrections</h3>
+      <p className="text-muted-foreground text-sm">View and submit corrections to procurement metadata</p>
+    </div>
                 <Sheet open={showCorrectionDialog} onOpenChange={setShowCorrectionDialog}>
                     <SheetTrigger render={<Button />}>
                         <Edit className="mr-2 h-4 w-4" />
@@ -423,35 +423,35 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
 
             {/* Corrections History */}
             <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">History</h3>
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <h3 className="text-lg font-semibold">History</h3>
                 </div>
 
                 {corrections.length > 0 ? (
-                    <div className="border-border relative ml-3 space-y-8 border-l pl-8">
-                        {corrections.map((correction, index) => (
-                            <div key={index} className="relative">
-                                {/* Timeline Dot */}
-                                <div className="bg-background ring-background absolute top-1.5 -left-[37px] flex h-5 w-5 items-center justify-center rounded-full border ring-4">
-                                    <div className="bg-muted-foreground h-2 w-2 rounded-full" />
-                                </div>
+          <div className="border-border relative ml-3 space-y-8 border-l pl-8">
+              {corrections.map((correction, index) => (
+                <div key={index} className="min-w-0">
+                  {/* Timeline Dot */}
+                  <div className="bg-background ring-background absolute top-1.5 -left-[37px] flex h-5 w-5 items-center justify-center rounded-full border ring-4">
+                    <div className="bg-muted-foreground h-2 w-2 rounded-full" />
+                  </div>
 
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold">{correction.correction_type_display}</span>
-                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                                                {correction.corrected_by}
-                                            </Badge>
-                                        </div>
-                                        <time className="text-muted-foreground font-mono text-xs">
-                                            {new Date(correction.timestamp).toLocaleString()}
-                                        </time>
-                                    </div>
+                  <div className="flex flex-col gap-2 min-w-0">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate text-sm font-semibold">{correction.correction_type_display}</span>
+                        <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">
+                          {correction.corrected_by}
+                        </Badge>
+                      </div>
+                      <time className="text-muted-foreground shrink-0 font-mono text-xs">
+                        {new Date(correction.timestamp).toLocaleString()}
+                      </time>
+                    </div>
 
-                                    <div className="bg-muted/30 rounded-lg border p-3 text-sm">
-                                        <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">Reason</div>
-                                        <p>{correction.reason}</p>
+                    <div className="bg-muted/30 min-w-0 rounded-lg border p-3 text-sm">
+                      <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">Reason</div>
+                      <p className="break-words">{correction.reason}</p>
 
                                         {correction.changed_fields.length > 0 && (
                                             <>
