@@ -82,7 +82,7 @@ class ProcurementSupportService
                 }
             }
 
-            return array_unique($uploadedTypes);
+            return array_values(array_unique($uploadedTypes));
         } catch (\Exception $e) {
             Log::error('Failed to fetch uploaded documents', [
                 'pr_number' => $pr_number,
