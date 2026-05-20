@@ -29,9 +29,9 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-1">
-                        <h1 className="text-primary text-xl font-bold sm:text-2xl">{document.document_type_display}</h1>
-                        <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{document.procurement_title}</p>
+ <div className="min-w-0 flex-1">
+ <h1 className="text-primary truncate text-xl font-bold sm:text-2xl">{document.document_type_display}</h1>
+ <p className="text-muted-foreground mt-1 truncate text-xs sm:text-sm">{document.procurement_title}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
                             {document.phase_display_name && (
                                 <Badge variant="secondary" className="text-xs font-medium">

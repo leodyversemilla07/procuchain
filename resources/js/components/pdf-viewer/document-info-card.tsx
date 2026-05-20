@@ -51,12 +51,12 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                         <span className="bg-muted rounded px-2 py-1 font-mono text-xs font-medium sm:text-sm">{document.pr_number}</span>
                     </div>
 
-                    <div className="flex items-start justify-between gap-2">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
-                            <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Procurement Title:
-                        </span>
-                        <span className="max-w-[140px] text-right text-xs font-medium sm:max-w-[200px] sm:text-sm">{document.procurement_title}</span>
+ <div className="flex items-start justify-between gap-2">
+ <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
+ <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+ Procurement Title:
+ </span>
+ <span className="max-w-[140px] truncate text-right text-xs font-medium sm:max-w-[200px] sm:text-sm">{document.procurement_title}</span>
                     </div>
 
                     <div className="flex items-center justify-between gap-2">
@@ -144,7 +144,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                             <Tooltip>
                                 <TooltipTrigger
                                     render={
-                                        <span className="bg-muted max-w-[140px] cursor-help truncate rounded px-2 py-1 font-mono text-xs sm:max-w-[180px]">
+                                        <span className="bg-muted max-w-[100px] cursor-help truncate rounded px-2 py-1 font-mono text-xs sm:max-w-[180px]">
                                             {fileKey}
                                         </span>
                                     }
@@ -165,16 +165,16 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                                 <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 Document Hash:
                             </span>
-                            <div className="text-right">
-                                {document.hash && document.hash.trim() !== '' ? (
-                                    <>
-                                        <Tooltip>
-                                            <TooltipTrigger
-                                                render={
-                                                    <span className="bg-muted text-muted-foreground cursor-help rounded px-2 py-1 font-mono text-xs">
-                                                        {formatUserAddress(document.hash)}
-                                                    </span>
-                                                }
+ <div className="min-w-0 text-right">
+ {document.hash && document.hash.trim() !== '' ? (
+ <>
+ <Tooltip>
+ <TooltipTrigger
+ render={
+ <span className="bg-muted text-muted-foreground block max-w-[120px] cursor-help truncate rounded px-2 py-1 font-mono text-xs sm:max-w-none">
+ {formatUserAddress(document.hash)}
+ </span>
+ }
                                             />
                                             <TooltipContent className="max-w-md">
                                                 <p className="font-mono text-xs break-all">{document.hash}</p>

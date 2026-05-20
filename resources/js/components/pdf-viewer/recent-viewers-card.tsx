@@ -46,47 +46,47 @@ export default function RecentViewersCard({ recentViews }: Props) {
                                 </SheetHeader>
                                 <ScrollArea className="mt-6 h-[calc(100vh-120px)]">
                                     <div className="space-y-3 pr-4">
-                                        {recentViews.map((view, index) => (
-                                            <div
-                                                key={view.id}
-                                                className="bg-card hover:bg-accent/50 flex items-center justify-between rounded-lg border p-3 transition-colors"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-muted-foreground bg-muted rounded px-2 py-1 font-mono text-xs">
-                                                            #{index + 1}
-                                                        </span>
-                                                        <Avatar className="h-8 w-8">
-                                                            <AvatarFallback>{view.user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                                                        </Avatar>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-medium">{view.user.name}</span>
-                                                            <Badge variant="secondary" className={cn('text-xs', getRoleBadgeColor(view.user.role))}>
-                                                                {formatRole(view.user.role)}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                                                            <span>{view.viewed_at_human}</span>
-                                                            {view.user_address && (
-                                                                <>
-                                                                    <span>•</span>
-                                                                    <span className="bg-muted flex items-center gap-1 rounded px-1 py-0.5 font-mono text-xs">
-                                                                        <Shield className="h-3 w-3" />
-                                                                        {formatUserAddress(view.user_address)}
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                            <span>•</span>
-                                                            <span className="flex items-center gap-1">
-                                                                <Globe className="h-3 w-3" />
-                                                                {view.ip_address}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+ {recentViews.map((view, index) => (
+ <div
+ key={view.id}
+ className="bg-card hover:bg-accent/50 flex min-w-0 items-center justify-between gap-3 rounded-lg border p-3 transition-colors"
+ >
+ <div className="flex min-w-0 items-center gap-3">
+ <div className="flex shrink-0 items-center gap-2">
+ <span className="text-muted-foreground bg-muted rounded px-2 py-1 font-mono text-xs">
+ #{index + 1}
+ </span>
+ <Avatar className="h-8 w-8">
+ <AvatarFallback>{view.user.name.charAt(0).toUpperCase()}</AvatarFallback>
+ </Avatar>
+ </div>
+ <div className="min-w-0">
+ <div className="flex flex-wrap items-center gap-2">
+ <span className="truncate text-sm font-medium">{view.user.name}</span>
+ <Badge variant="secondary" className={cn('shrink-0 text-xs', getRoleBadgeColor(view.user.role))}>
+ {formatRole(view.user.role)}
+ </Badge>
+ </div>
+ <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+ <span className="shrink-0">{view.viewed_at_human}</span>
+ {view.user_address && (
+ <>
+ <span className="hidden sm:inline">•</span>
+ <span className="bg-muted text-muted-foreground hidden shrink-0 truncate rounded px-1 py-0.5 font-mono text-xs sm:inline">
+ <Shield className="mr-0.5 inline h-3 w-3" />
+ {formatUserAddress(view.user_address)}
+ </span>
+ </>
+ )}
+ <span className="hidden sm:inline">•</span>
+ <span className="hidden shrink-0 items-center gap-1 sm:flex">
+ <Globe className="h-3 w-3" />
+ {view.ip_address}
+ </span>
+ </div>
+ </div>
+ </div>
+ </div>
                                         ))}
                                     </div>
                                 </ScrollArea>
@@ -124,7 +124,7 @@ export default function RecentViewersCard({ recentViews }: Props) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-muted-foreground shrink-0 text-xs">{view.ip_address}</div>
+                                <div className="text-muted-foreground hidden shrink-0 text-xs sm:block">{view.ip_address}</div>
                             </div>
                         ))}
                     </div>
