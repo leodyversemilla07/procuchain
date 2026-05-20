@@ -395,16 +395,16 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                         <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
                             <Clock className="h-5 w-5" />
                         </div>
-                        <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                                <h4 className="font-semibold text-amber-900">Latest Correction</h4>
+ <div className="min-w-0 flex-1 space-y-1">
+ <div className="flex min-w-0 flex-wrap items-center justify-between gap-1">
+ <h4 className="shrink-0 font-semibold text-amber-900">Latest Correction</h4>
                                 <span className="text-xs font-medium text-amber-700">
                                     {new Date(latestCorrection.timestamp).toLocaleDateString()}
                                 </span>
                             </div>
-                            <p className="text-sm text-amber-800">{latestCorrection.reason}</p>
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                                <span className="font-medium text-amber-900">Changed:</span>
+ <p className="min-w-0 break-words text-sm text-amber-800">{latestCorrection.reason}</p>
+ <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
+ <span className="shrink-0 font-medium text-amber-900">Changed:</span>
                                 {latestCorrection.changed_fields.map((field, index) => (
                                     <Badge
                                         key={index}
@@ -414,7 +414,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                         {formatFieldName(field)}
                                     </Badge>
                                 ))}
-                                <span className="ml-auto text-amber-700">by {latestCorrection.corrected_by}</span>
+                                <span className="ml-auto shrink-0 truncate text-amber-700">by {latestCorrection.corrected_by}</span>
                             </div>
                         </div>
                     </div>

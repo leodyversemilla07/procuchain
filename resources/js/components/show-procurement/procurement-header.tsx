@@ -62,7 +62,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 {/* Title and ID Section */}
                 <div className="space-y-1.5 sm:space-y-2">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                        <CardTitle className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
+                        <CardTitle className="min-w-0 truncate text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
                         {procurementModeLabel && (
                             <Badge variant="secondary" className="flex items-center gap-1.5 text-xs font-medium sm:text-sm">
                                 <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
@@ -119,20 +119,20 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                     {/* Current Phase */}
                     {status?.phase && (
-                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
-                            <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
-                                <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-                                Current Phase
-                            </div>
-                            <Badge variant="outline" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm">
-                                {status.phase_display_name}
-                            </Badge>
-                        </div>
+ <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+ <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
+ <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+ Current Phase
+ </div>
+ <Badge variant="outline" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm">
+ {status.phase_display_name}
+ </Badge>
+ </div>
                     )}
 
-                    {/* Current Stage */}
-                    {status?.stage && (
-                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+ {/* Current Stage */}
+ {status?.stage && (
+ <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
                             <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Current Stage
@@ -149,9 +149,9 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                         </div>
                     )}
 
-                    {/* Current Status */}
-                    {status?.status_formatted && (
-                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+ {/* Current Status */}
+ {status?.status_formatted && (
+ <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
                             <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Status
@@ -162,9 +162,9 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                         </div>
                     )}
 
-                    {/* Last Updated */}
-                    {status?.timestamp && (
-                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+ {/* Last Updated */}
+ {status?.timestamp && (
+ <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
                             <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Last Updated

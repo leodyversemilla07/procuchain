@@ -201,13 +201,13 @@ const DetailItem = ({
 }) => {
     if (!value) return null;
 
-    return (
-        <div className="space-y-1">
-            <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
-                {icon}
-                {label}
-            </label>
-            <div className={cn('text-sm font-medium', className)}>{value}</div>
-        </div>
-    );
+ return (
+ <div className="min-w-0 space-y-1">
+ <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+ {icon}
+ {label}
+ </label>
+ <div className={cn('min-w-0 text-sm font-medium', typeof value === 'string' ? 'truncate' : '', className)}>{value}</div>
+ </div>
+ );
 };

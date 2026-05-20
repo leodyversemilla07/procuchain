@@ -56,10 +56,10 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
                         <section key={stage} className="relative" aria-labelledby={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}>
                             {/* Sticky Header */}
                             <div className="bg-background/95 sticky top-0 z-10 mb-2 border-b py-2 backdrop-blur-sm">
-                                <div className="flex items-center gap-3">
+                                <div className="flex min-w-0 items-center gap-3">
                                     <div className={`h-8 w-1 rounded-full ${isLatestStage ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
-                                    <h3 id={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`} className="flex items-center gap-2 font-semibold">
-                                        <span className="text-foreground">{stage}</span>
+ <h3 id={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`} className="flex min-w-0 items-center gap-2 font-semibold">
+ <span className="text-foreground truncate">{stage}</span>
                                         <Badge variant="secondary" className="h-5 min-w-6 justify-center px-1.5 text-xs">
                                             {stageDocuments.length}
                                         </Badge>

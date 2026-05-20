@@ -123,32 +123,32 @@ export const MobileCardView = ({
                             </Link>
                         </div>
 
-                        {/* Stage and Status with Labels */}
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground text-xs font-medium">Stage:</span>
-                                <Badge
-                                    variant="outline"
-                                    className={cn(getStageBadgeStyle(procurement.stage as Stage), 'border text-xs font-medium shadow-sm')}
-                                >
-                                    {formatLabel(procurement.stage)}
-                                </Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground text-xs font-medium">Status:</span>
-                                <Badge
-                                    variant="outline"
-                                    className={cn(getStatusBadgeStyle(procurement.current_status as Status), 'border text-xs font-medium shadow-sm')}
-                                >
-                                    {formatLabel(procurement.current_status)}
-                                </Badge>
-                            </div>
-                            {procurement.procurement_mode_label && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground text-xs font-medium">Mode:</span>
-                                    <span className="text-xs font-medium">{procurement.procurement_mode_label}</span>
-                                </div>
-                            )}
+ {/* Stage and Status with Labels */}
+ <div className="min-w-0 space-y-2">
+ <div className="flex min-w-0 items-center gap-2">
+ <span className="text-muted-foreground shrink-0 text-xs font-medium">Stage:</span>
+ <Badge
+ variant="outline"
+ className={cn(getStageBadgeStyle(procurement.stage as Stage), 'border text-xs font-medium shadow-sm')}
+ >
+ {formatLabel(procurement.stage)}
+ </Badge>
+ </div>
+ <div className="flex min-w-0 items-center gap-2">
+ <span className="text-muted-foreground shrink-0 text-xs font-medium">Status:</span>
+ <Badge
+ variant="outline"
+ className={cn(getStatusBadgeStyle(procurement.current_status as Status), 'border text-xs font-medium shadow-sm')}
+ >
+ {formatLabel(procurement.current_status)}
+ </Badge>
+ </div>
+ {procurement.procurement_mode_label && (
+ <div className="flex min-w-0 items-center gap-2">
+ <span className="text-muted-foreground shrink-0 text-xs font-medium">Mode:</span>
+ <span className="min-w-0 truncate text-xs font-medium">{procurement.procurement_mode_label}</span>
+ </div>
+ )}
                         </div>
 
                         {/* Meta Info */}

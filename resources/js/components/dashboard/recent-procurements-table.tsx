@@ -114,7 +114,7 @@ export const RecentProcurementsTable = ({
                                                 {procurement.title}
                                             </span>
                                         </div>
-                                        <div className="mt-1.5 flex items-center gap-1.5">
+                                        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
                                             <Badge variant={stageBadgeVariant} className="text-[10px] transition-all duration-200 hover:shadow-sm">
                                                 {procurement.stage}
                                             </Badge>

@@ -42,17 +42,17 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
         if (type === 'stage_change') {
             const stageItem = item as TimelineItem;
             return (
-                <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-foreground text-sm font-semibold">Stage Update</span>
-                        <Badge variant="default" className="hover:bg-primary text-xs">
-                            {stageItem.stage_formatted || stageItem.stage}
-                        </Badge>
-                    </div>
-                    <p className="text-muted-foreground text-sm">
-                        Status: <span className="text-foreground/80 font-medium">{stageItem.status_formatted || stageItem.status}</span>
-                    </p>
-                </div>
+ <div className="flex min-w-0 flex-col gap-1">
+ <div className="flex min-w-0 flex-wrap items-center gap-2">
+ <span className="text-foreground shrink-0 text-sm font-semibold">Stage Update</span>
+ <Badge variant="default" className="hover:bg-primary text-xs">
+ {stageItem.stage_formatted || stageItem.stage}
+ </Badge>
+ </div>
+ <p className="text-muted-foreground min-w-0 text-sm">
+ Status: <span className="text-foreground/80 truncate font-medium">{stageItem.status_formatted || stageItem.status}</span>
+ </p>
+ </div>
             );
         }
 
@@ -74,11 +74,11 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
         }
 
         return (
-            <div className="flex flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-foreground text-sm font-semibold">
-                        {eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}
-                    </span>
+ <div className="flex min-w-0 flex-col gap-1">
+ <div className="flex min-w-0 flex-wrap items-center gap-2">
+ <span className="text-foreground shrink-0 text-sm font-semibold">
+ {eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}
+ </span>
                     {eventItem.category && eventItem.category !== 'stage_transition' && (
                         <Badge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]">
                             {eventItem.category_formatted || eventItem.category}
