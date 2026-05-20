@@ -7,13 +7,13 @@ import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
+ Pagination,
+ PaginationContent,
+ PaginationEllipsis,
+ PaginationItem,
+ PaginationLink,
+ PaginationNext,
+ PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,33 +22,34 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import type { LedgerEntry, LedgerFilters, LedgerPagination, NodeOption, StreamOption } from '@/types/blockchain';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import {
-    AlertTriangle,
-    Archive,
-    ArrowDownUp,
-    BookOpen,
-    BookOpenText,
-    CalendarIcon,
-    ChevronDown,
-    ClipboardCopy,
-    Download,
-    ExternalLink,
-    FileText,
-    FilterX,
-    GitBranch,
-    Pencil,
-    RotateCcw,
-    ScrollText,
-    Server,
-    ServerCrash,
-    Shield,
-    Trash2,
+ AlertTriangle,
+ Archive,
+ ArrowDownUp,
+ BookOpen,
+ BookOpenText,
+ CalendarIcon,
+ ChevronDown,
+ ClipboardCopy,
+ Download,
+ ExternalLink,
+ FileText,
+ FilterX,
+ GitBranch,
+ Pencil,
+ RotateCcw,
+ ScrollText,
+ Server,
+ ServerCrash,
+ Shield,
+ Trash2,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
+import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
 
 interface NodePurgeState {
     is_purged: boolean;
@@ -71,9 +72,18 @@ interface SharedLedgerPageProps {
     error?: string;
 }
 
-const basePath = window.location.pathname;
+/**
+ * Resolve the correct Wayfinder route function for the shared-ledger page
+ * based on the current URL pathname. This avoids hardcoded basePath strings
+ * that can go stale during Inertia client-side navigations.
+ */
+const resolveSharedLedgerRoute = (pathname: string) => {
+ const routeKey = Object.keys(sharedLedgerRoutes).find(
+   (key) => pathname === key || pathname.startsWith(key + '/'),
+ ) as keyof typeof sharedLedgerRoutes | undefined;
 
-const breadcrumbs = [{ title: 'Shared Ledger', href: basePath }];
+ return routeKey ? sharedLedgerRoutes[routeKey] : sharedLedgerRoutes['/admin/shared-ledger'];
+};
 
 /** Stream badge configuration */
 const STREAM_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -130,86 +140,101 @@ function computeDiff(oldValues: Record<string, unknown>, newValues: Record<strin
 }
 
 export default function SharedLedger({
-    entries,
-    pagination,
-    available_streams,
-    available_nodes,
-    stream_totals,
-    selected_node,
-    node_purge_state,
-    filters,
-    error,
+ entries,
+ pagination,
+ available_streams,
+ available_nodes,
+ stream_totals,
+ selected_node,
+ node_purge_state,
+ filters,
+ error,
 }: SharedLedgerPageProps) {
-    const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
-    const [stream, setStream] = useState(filters.stream ?? '');
-    const [node, setNode] = useState(filters.node ?? selected_node ?? 'all');
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: filters.date_from ? parseISO(filters.date_from) : undefined,
-        to: filters.date_to ? parseISO(filters.date_to) : undefined,
-    });
+ const page = usePage();
+ const ledgerRoute = useMemo(() => resolveSharedLedgerRoute(new URL(page.url, window.location.origin).pathname), [page.url]);
+ const breadcrumbs = useMemo(() => [{ title: 'Shared Ledger', href: ledgerRoute.url() }], [ledgerRoute]);
 
-    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-    const [isFiltering, setIsFiltering] = useState(false);
+ const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
+ const [stream, setStream] = useState(filters.stream ?? '');
+ const [node, setNode] = useState(filters.node ?? selected_node ?? 'all');
+ const [dateRange, setDateRange] = useState<DateRange | undefined>({
+ from: filters.date_from ? parseISO(filters.date_from) : undefined,
+ to: filters.date_to ? parseISO(filters.date_to) : undefined,
+ });
 
-    // Clear filtering state when Inertia re-renders with new data
-    useEffect(() => {
-        setIsFiltering(false);
-    }, [entries, pagination]);
+ const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+ const [isFiltering, setIsFiltering] = useState(false);
 
-    const hasActiveFilters = !!(
-        filters.pr_number ||
-        filters.stream ||
-        filters.date_from ||
-        filters.date_to ||
-        (filters.node && filters.node !== 'all')
-    );
+ // Clear filtering state when Inertia re-renders with new data
+ useEffect(() => {
+ setIsFiltering(false);
+ }, [entries, pagination]);
 
-    const toggleRow = (txid: string) => {
-        setExpandedRows((prev) => {
-            const next = new Set(prev);
-            if (next.has(txid)) {
-                next.delete(txid);
-            } else {
-                next.add(txid);
-            }
-            return next;
-        });
-    };
+ const hasActiveFilters = !!(
+ filters.pr_number ||
+ filters.stream ||
+ filters.date_from ||
+ filters.date_to ||
+ (filters.node && filters.node !== 'all')
+ );
 
-    const copyTxid = (txid: string) => {
-        navigator.clipboard
-            .writeText(txid)
-            .then(() => {
-                toast.success('TX ID copied to clipboard');
-            })
-            .catch(() => {
-                toast.error('Failed to copy TX ID');
-            });
-    };
+ const toggleRow = (txid: string) => {
+ setExpandedRows((prev) => {
+ const next = new Set(prev);
+ if (next.has(txid)) {
+ next.delete(txid);
+ } else {
+ next.add(txid);
+ }
+ return next;
+ });
+ };
 
-    const applyFilters = () => {
-        setIsFiltering(true);
-        router.get(
-            basePath,
-            {
-                ...(prNumber ? { pr_number: prNumber } : {}),
-                ...(stream && stream !== 'all' ? { stream } : {}),
-                ...(node && node !== 'all' ? { node } : {}),
-                ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
-                ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
-            },
-            { preserveState: true, replace: true },
-        );
-    };
+ const copyTxid = (txid: string) => {
+ navigator.clipboard
+ .writeText(txid)
+ .then(() => {
+ toast.success('TX ID copied to clipboard');
+ })
+ .catch(() => {
+ toast.error('Failed to copy TX ID');
+ });
+ };
 
-    const clearFilters = () => {
-        setPrNumber('');
-        setStream('');
-        setNode('all');
-        setDateRange(undefined);
-        setIsFiltering(true);
-        router.get(basePath, {}, { preserveState: false, replace: true });
-    };
+ /** Build query params object for the current filter state */
+ const buildQuery = useCallback(
+ (overrides: Record<string, string | undefined> = {}) => {
+ const query: Record<string, string> = {};
+ const effectivePr = overrides.pr_number ?? (prNumber || undefined);
+ const effectiveStream = overrides.stream ?? (stream && stream !== 'all' ? stream : undefined);
+ const effectiveNode = overrides.node ?? (node && node !== 'all' ? node : undefined);
+ const effectiveDateFrom = overrides.date_from ?? (dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined);
+ const effectiveDateTo = overrides.date_to ?? (dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined);
+
+ if (effectivePr) query.pr_number = effectivePr;
+ if (effectiveStream) query.stream = effectiveStream;
+ if (effectiveNode) query.node = effectiveNode;
+ if (effectiveDateFrom) query.date_from = effectiveDateFrom;
+ if (effectiveDateTo) query.date_to = effectiveDateTo;
+
+ return query;
+ },
+ [prNumber, stream, node, dateRange],
+ );
+
+ const applyFilters = () => {
+ setIsFiltering(true);
+ router.visit(ledgerRoute({ query: buildQuery() }), { preserveState: true, replace: true });
+ };
+
+ const clearFilters = () => {
+ setPrNumber('');
+ setStream('');
+ setNode('all');
+ setDateRange(undefined);
+ setIsFiltering(true);
+ router.visit(ledgerRoute(), { preserveState: false, replace: true });
+ };
 
     const selectedStreamLabel = stream && stream !== 'all' ? (STREAM_CONFIG[stream]?.label ?? stream) : 'All streams';
 
@@ -336,19 +361,13 @@ export default function SharedLedger({
 
                             <Select
                                 value={node || 'all'}
-                                onValueChange={(value) => {
-                                    if (!value) return;
-                                    setNode(value);
-                                    // Auto-apply: immediately navigate with the new node
-                                    setIsFiltering(true);
-                                    const params = new URLSearchParams();
-                                    if (prNumber) params.set('pr_number', prNumber);
-                                    if (stream && stream !== 'all') params.set('stream', stream);
-                                    if (value !== 'all') params.set('node', value);
-                                    if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
-                                    if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
-                                    router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
-                                }}
+ onValueChange={(value) => {
+ if (!value) return;
+ setNode(value);
+ // Auto-apply: immediately navigate with the new node
+ setIsFiltering(true);
+ router.visit(ledgerRoute({ query: buildQuery({ node: value !== 'all' ? value : undefined }) }), { preserveState: true, replace: true });
+ }}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All nodes">
@@ -386,19 +405,13 @@ export default function SharedLedger({
 
                             <Select
                                 value={stream || 'all'}
-                                onValueChange={(value) => {
-                                    if (!value) return;
-                                    setStream(value);
-                                    // Auto-apply: immediately navigate with the new stream
-                                    setIsFiltering(true);
-                                    const params = new URLSearchParams();
-                                    if (prNumber) params.set('pr_number', prNumber);
-                                    if (value !== 'all') params.set('stream', value);
-                                    if (node && node !== 'all') params.set('node', node);
-                                    if (dateRange?.from) params.set('date_from', format(dateRange.from, 'yyyy-MM-dd'));
-                                    if (dateRange?.to) params.set('date_to', format(dateRange.to, 'yyyy-MM-dd'));
-                                    router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true, replace: true });
-                                }}
+ onValueChange={(value) => {
+ if (!value) return;
+ setStream(value);
+ // Auto-apply: immediately navigate with the new stream
+ setIsFiltering(true);
+ router.visit(ledgerRoute({ query: buildQuery({ stream: value !== 'all' ? value : undefined }) }), { preserveState: true, replace: true });
+ }}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
@@ -730,17 +743,15 @@ export default function SharedLedger({
                                     <PaginationItem>
                                         <PaginationPrevious
                                             href={pagination.current_page > 1 ? `?page=${pagination.current_page - 1}` : undefined}
-                                            onClick={(e) => {
-                                                if (pagination.current_page <= 1) {
-                                                    e.preventDefault();
-                                                    return;
-                                                }
-                                                e.preventDefault();
-                                                setIsFiltering(true);
-                                                const params = new URLSearchParams(window.location.search);
-                                                params.set('page', String(pagination.current_page - 1));
-                                                router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
-                                            }}
+ onClick={(e) => {
+ if (pagination.current_page <= 1) {
+ e.preventDefault();
+ return;
+ }
+ e.preventDefault();
+ setIsFiltering(true);
+ router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page - 1) } }), { preserveState: true });
+ }}
                                             className={pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
                                         />
                                     </PaginationItem>
@@ -754,13 +765,11 @@ export default function SharedLedger({
                                                 <PaginationLink
                                                     isActive={pagination.current_page === page}
                                                     href={`?page=${page}`}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setIsFiltering(true);
-                                                        const params = new URLSearchParams(window.location.search);
-                                                        params.set('page', String(page));
-                                                        router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
-                                                    }}
+ onClick={(e) => {
+ e.preventDefault();
+ setIsFiltering(true);
+ router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(page) } }), { preserveState: true });
+ }}
                                                 >
                                                     {page}
                                                 </PaginationLink>
@@ -770,17 +779,15 @@ export default function SharedLedger({
                                     <PaginationItem>
                                         <PaginationNext
                                             href={pagination.current_page < pagination.last_page ? `?page=${pagination.current_page + 1}` : undefined}
-                                            onClick={(e) => {
-                                                if (pagination.current_page >= pagination.last_page) {
-                                                    e.preventDefault();
-                                                    return;
-                                                }
-                                                e.preventDefault();
-                                                setIsFiltering(true);
-                                                const params = new URLSearchParams(window.location.search);
-                                                params.set('page', String(pagination.current_page + 1));
-                                                router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
-                                            }}
+ onClick={(e) => {
+ if (pagination.current_page >= pagination.last_page) {
+ e.preventDefault();
+ return;
+ }
+ e.preventDefault();
+ setIsFiltering(true);
+ router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page + 1) } }), { preserveState: true });
+ }}
                                             className={pagination.current_page >= pagination.last_page ? 'pointer-events-none opacity-50' : ''}
                                         />
                                     </PaginationItem>
