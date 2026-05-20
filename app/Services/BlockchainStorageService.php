@@ -830,17 +830,22 @@ class BlockchainStorageService implements BlockchainStorageInterface
             }
 
             // Get live item count from the node
+            // Note: getstreaminfo() in MultiChain CE 2.3.x does NOT return
+            // 'subscribed' or 'items' fields. Use liststreams() instead,
+            // which returns all streams with both fields present.
             if (! $isPurged && ! empty($nodeIp)) {
                 try {
                     $client = new Client($nodeIp, $nodePort, $rpcUser, $rpcPass, false);
                     $client->setoption('chain_name', $chainName);
                     $client->setTimeout(5);
 
-                    foreach ($streams as $stream) {
-                        $info = $client->getstreaminfo($stream);
-                        if ($client->success() && ($info['subscribed'] ?? false)) {
-                            $totalItems += $info['items'] ?? 0;
-                        }
+                    $allStreams = $client->liststreams();
+                    if ($client->success() && is_array($allStreams)) {
+                        $streamMap = collect($allStreams)
+                            ->filter(fn ($s) => ($s['subscribed'] ?? false) && in_array($s['name'], $streams))
+                            ->mapWithKeys(fn ($s) => [$s['name'] => $s['items'] ?? 0]);
+
+                        $totalItems = $streamMap->sum();
                     }
                 } catch (Exception $e) {
                     // Node unreachable — items unknown, still show node
