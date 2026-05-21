@@ -54,4 +54,10 @@ DEFAULTS
  chown webapp:webapp "$ENV_FILE" 2>/dev/null || true
  chmod 640 "$ENV_FILE" 2>/dev/null || true
  echo "PREDEPLOY CONFIG: .env generated ($(wc -l < "$ENV_FILE" 2>/dev/null || echo '?') lines)"
+
+ # Fix REDIS_PASSWORD=null — Predis sends literal "AUTH null" which Redis rejects.
+ if grep -q '^REDIS_PASSWORD="null"' "$ENV_FILE" 2>/dev/null || grep -q '^REDIS_PASSWORD=null' "$ENV_FILE" 2>/dev/null; then
+  echo "PREDEPLOY CONFIG: Stripping REDIS_PASSWORD=null (breaks Predis AUTH)"
+  sed -i '/^REDIS_PASSWORD=/d' "$ENV_FILE"
+ fi
 fi
