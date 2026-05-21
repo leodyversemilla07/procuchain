@@ -226,7 +226,11 @@ export default function SharedLedger({
 
  const applyFilters = () => {
  setIsFiltering(true);
- router.visit(ledgerRoute({ query: buildQuery() }), { preserveState: true, replace: true });
+ router.visit(ledgerRoute({ query: buildQuery() }), {
+ preserveState: true,
+ replace: true,
+ onFinish: () => setIsFiltering(false),
+ });
  };
 
  const clearFilters = () => {
@@ -382,7 +386,11 @@ export default function SharedLedger({
  setNode(value);
  // Auto-apply: immediately navigate with the new node
  setIsFiltering(true);
- router.visit(ledgerRoute({ query: buildQuery({ node: value !== 'all' ? value : undefined }) }), { preserveState: true, replace: true });
+ router.visit(ledgerRoute({ query: buildQuery({ node: value !== 'all' ? value : undefined }) }), {
+ preserveState: true,
+ replace: true,
+ onFinish: () => setIsFiltering(false),
+ });
  }}
                             >
                                 <SelectTrigger className="w-full">
@@ -426,7 +434,11 @@ export default function SharedLedger({
  setStream(value);
  // Auto-apply: immediately navigate with the new stream
  setIsFiltering(true);
- router.visit(ledgerRoute({ query: buildQuery({ stream: value !== 'all' ? value : undefined }) }), { preserveState: true, replace: true });
+ router.visit(ledgerRoute({ query: buildQuery({ stream: value !== 'all' ? value : undefined }) }), {
+ preserveState: true,
+ replace: true,
+ onFinish: () => setIsFiltering(false),
+ });
  }}
                             >
                                 <SelectTrigger className="w-full">
@@ -766,7 +778,10 @@ export default function SharedLedger({
  }
  e.preventDefault();
  setIsFiltering(true);
- router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page - 1) } }), { preserveState: true });
+ router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page - 1) } }), {
+ preserveState: true,
+ onFinish: () => setIsFiltering(false),
+ });
  }}
                                             className={pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
                                         />
@@ -784,7 +799,10 @@ export default function SharedLedger({
  onClick={(e) => {
  e.preventDefault();
  setIsFiltering(true);
- router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(page) } }), { preserveState: true });
+ router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(page) } }), {
+ preserveState: true,
+ onFinish: () => setIsFiltering(false),
+ });
  }}
                                                 >
                                                     {page}
@@ -802,7 +820,10 @@ export default function SharedLedger({
  }
  e.preventDefault();
  setIsFiltering(true);
- router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page + 1) } }), { preserveState: true });
+ router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page + 1) } }), {
+ preserveState: true,
+ onFinish: () => setIsFiltering(false),
+ });
  }}
                                             className={pagination.current_page >= pagination.last_page ? 'pointer-events-none opacity-50' : ''}
                                         />

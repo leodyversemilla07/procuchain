@@ -10,6 +10,7 @@ use App\Libraries\MultiChain\Client;
 use App\Services\Manager;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,7 +27,7 @@ use Inertia\Response;
  */
 class SharedLedgerController extends Controller
 {
-    /** Streams to include in the shared ledger. */
+    /** Streams to include in the shared ledger (procurement transaction streams only). */
     private const LEDGER_STREAMS = [
         StreamEnums::METADATA->value,
         StreamEnums::STATUS->value,
@@ -35,10 +36,15 @@ class SharedLedgerController extends Controller
         StreamEnums::PROCUREMENTS_CORRECTIONS->value,
         StreamEnums::ARCHIVE->value,
         StreamEnums::EVENTS->value,
-        StreamEnums::FILE_DATA->value,
-        StreamEnums::FILE_METADATA->value,
-        StreamEnums::FILE_CHUNKS->value,
     ];
+
+    /**
+     * Streams used for purge/resync detection only.
+     * These are NOT loaded as ledger entries — they're large file-data streams
+     * that would make liststreamitems extremely slow (374+ items with big payloads).
+     * Purge keys are stored in file.metadata via liststreamkeyitems (targeted lookup).
+     */
+    private const PURGE_CHECK_STREAM = StreamEnums::FILE_METADATA->value;
 
     /** @var array{is_purged: bool, partially_purged: bool, unsubscribed_streams: string[]}|null */
     private ?array $nodePurgeState = null;
@@ -171,50 +177,8 @@ class SharedLedgerController extends Controller
                 $streamTotals[$e->stream] = ($streamTotals[$e->stream] ?? 0) + 1;
             }
 
-            // Build available nodes list with purge status
-            $availableNodes = collect($this->getNodes())->map(function ($node) {
-                $isPurged = false;
-
-                try {
-                    $purgeKey = 'node_'.$node['id'].'_full_purge';
-                    $purgeItems = $this->multichain->liststreamkeyitems(
-                        StreamEnums::FILE_METADATA->value,
-                        $purgeKey,
-                        false,
-                        1,
-                        0,
-                        false
-                    );
-
-                    if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
-                        $resyncKey = 'node_'.$node['id'].'_resync';
-                        $resyncItems = $this->multichain->liststreamkeyitems(
-                            StreamEnums::FILE_METADATA->value,
-                            $resyncKey,
-                            false,
-                            1,
-                            0,
-                            false
-                        );
-
-                        $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
-                        $resyncBlock = ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0)
-                            ? ($resyncItems[0]['blocktime'] ?? 0)
-                            : 0;
-
-                        $isPurged = $purgeBlock >= $resyncBlock;
-                    }
-                } catch (Exception $e) {
-                    // Leave as not purged if check fails
-                }
-
-                return [
-                    'id' => $node['id'],
-                    'name' => $node['name'],
-                    'role' => $node['role'],
-                    'is_purged' => $isPurged,
-                ];
-            })->values()->toArray();
+        // Build available nodes list with purge status
+        $availableNodes = $this->buildAvailableNodesList();
 
             return Inertia::render('shared-ledger', [
                 'entries' => $mapped,
@@ -497,7 +461,7 @@ class SharedLedgerController extends Controller
         // This preserves the demo purge state — without this check, visiting
         // the Shared Ledger with "All nodes" selected would silently resubscribe
         // and re-download all data, making the purge invisible.
-        if ($nodeId && $this->isNodePurged($nodeId)) {
+        if ($nodeId && $this->isNodePurged($nodeId, $client)) {
             Log::info("SharedLedger: Skipping ensureSubscribed for purged node '{$nodeId}'");
 
             return;
@@ -528,34 +492,67 @@ class SharedLedgerController extends Controller
      * Check if a node has been explicitly purged by looking for a
      * full_node_purge event on-chain. This prevents ensureSubscribed()
      * from silently undoing a demo purge.
+     *
+     * @param Client|null $client  Optional direct client to use instead of
+     *                             the Manager singleton. Passing a client
+     *             avoids the 24s+ Manager timeout when checking
+     *             multiple nodes during fetchFromAllNodes().
      */
-    private function isNodePurged(string $nodeId): bool
+    private function isNodePurged(string $nodeId, ?Client $client = null): bool
     {
         try {
             $purgeKey = 'node_'.$nodeId.'_full_purge';
-            $purgeItems = $this->multichain->liststreamkeyitems(
-                'file.metadata',
-                $purgeKey,
-                false,
-                1,
-                0,
-                false
-            );
 
-            if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
-                // Check if there's a corresponding resync event after the purge.
-                // If the node was resynced, the purge is no longer active.
-                $resyncKey = 'node_'.$nodeId.'_resync';
-                $resyncItems = $this->multichain->liststreamkeyitems(
-                    'file.metadata',
-                    $resyncKey,
+            if ($client) {
+                $purgeItems = $client->liststreamkeyitems(
+                    self::PURGE_CHECK_STREAM,
+                    $purgeKey,
                     false,
                     1,
                     0,
                     false
                 );
+                $success = $client->success();
+            } else {
+                $purgeItems = $this->multichain->liststreamkeyitems(
+                    'file.metadata',
+                    $purgeKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+                $success = $this->multichain->success();
+            }
 
-                if ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0) {
+            if ($success && is_array($purgeItems) && count($purgeItems) > 0) {
+                // Check if there's a corresponding resync event after the purge.
+                // If the node was resynced, the purge is no longer active.
+                $resyncKey = 'node_'.$nodeId.'_resync';
+
+                if ($client) {
+                    $resyncItems = $client->liststreamkeyitems(
+                        'file.metadata',
+                        $resyncKey,
+                        false,
+                        1,
+                        0,
+                        false
+                    );
+                    $resyncSuccess = $client->success();
+                } else {
+                    $resyncItems = $this->multichain->liststreamkeyitems(
+                        'file.metadata',
+                        $resyncKey,
+                        false,
+                        1,
+                        0,
+                        false
+                    );
+                    $resyncSuccess = $this->multichain->success();
+                }
+
+                if ($resyncSuccess && is_array($resyncItems) && count($resyncItems) > 0) {
                     // Both purge and resync exist — compare block times.
                     // If resync came after purge, the node has been restored.
                     $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
@@ -747,5 +744,107 @@ class SharedLedgerController extends Controller
             'file.chunks' => 'File Chunks',
             default => $stream,
         };
+    }
+
+    /**
+     * Build the available nodes list with purge status.
+     *
+     * Creates direct Client connections per node (with 2s timeout)
+     * instead of using the Manager singleton. The Manager can be
+     * pointing to a stale/slow node, causing 24+ second hangs
+     * when checking purge status for all 4 nodes (8 RPC calls).
+     *
+     * Each node check is individually timed out at 2s to prevent
+     * a single unreachable node from blocking the entire page load.
+     *
+     * @return array<int, array{id: string, name: string, role: string, is_purged: bool}>
+     */
+    private function buildAvailableNodesList(): array
+    {
+        // Cache node list for 60 seconds — purge status rarely changes,
+        // and 4×(getinfo + 2×liststreamkeyitems) per request adds up fast.
+        return Cache::remember('shared_ledger:available_nodes', 60, function () {
+            return $this->buildAvailableNodesListUncached();
+        });
+    }
+
+    private function buildAvailableNodesListUncached(): array
+    {
+        return collect($this->getNodes())->map(function ($node) {
+            $isPurged = false;
+
+            try {
+                $client = new Client(
+                    $node['private_ip'],
+                    $node['rpc_port'],
+                    $this->getRpcUser(),
+                    $this->getRpcPassword(),
+                    false
+                );
+                $client->setoption('chain_name', config('multichain.chain_name'));
+                $client->setoption('use_curl', true);
+                $client->setoption('verify_ssl', false);
+                $client->setTimeout(2);
+
+                // Quick connectivity check — if node is unreachable, skip purge check
+                $client->getinfo();
+                if (! $client->success()) {
+                    Log::debug('SharedLedger: Skipping purge check for unreachable node', [
+                        'node_id' => $node['id'],
+                        'error' => $client->errormessage(),
+                    ]);
+
+                    return [
+                        'id' => $node['id'],
+                        'name' => $node['name'],
+                        'role' => $node['role'],
+                        'is_purged' => false,
+                    ];
+                }
+
+                // Check purge status via the node's own client
+                $purgeKey = 'node_'.$node['id'].'_full_purge';
+            $purgeItems = $client->liststreamkeyitems(
+                self::PURGE_CHECK_STREAM,
+                $purgeKey,
+                    false,
+                    1,
+                    0,
+                    false
+                );
+
+                if ($client->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+                    $resyncKey = 'node_'.$node['id'].'_resync';
+                $resyncItems = $client->liststreamkeyitems(
+                    self::PURGE_CHECK_STREAM,
+                    $resyncKey,
+                        false,
+                        1,
+                        0,
+                        false
+                    );
+
+                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+                    $resyncBlock = ($client->success() && is_array($resyncItems) && count($resyncItems) > 0)
+                        ? ($resyncItems[0]['blocktime'] ?? 0)
+                        : 0;
+
+                    $isPurged = $purgeBlock >= $resyncBlock;
+                }
+            } catch (Exception $e) {
+                // Timeout or connection error — leave as not purged
+                Log::debug('SharedLedger: Purge check failed for node', [
+                    'node_id' => $node['id'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return [
+                'id' => $node['id'],
+                'name' => $node['name'],
+                'role' => $node['role'],
+                'is_purged' => $isPurged,
+            ];
+        })->values()->toArray();
     }
 }
