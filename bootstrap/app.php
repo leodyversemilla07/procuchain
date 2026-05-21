@@ -82,11 +82,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 return $response;
             }
 
-            if (in_array($status, [500, 503, 404, 403, 401, 429])) {
-                return Inertia::render('error', ['status' => $status])
-                    ->toResponse($request)
-                    ->setStatusCode($status);
-            }
+ if (in_array($status, [500, 503, 404, 403, 401, 429])) {
+ // Temporarily log 500 errors to daily log for debugging
+ if ($status === 500) {
+ \Illuminate\Support\Facades\Log::error('SHARED_LEDGER_500_DEBUG', [
+ 'exception_class' => get_class($exception),
+ 'message' => $exception->getMessage(),
+ 'file' => $exception->getFile() . ':' . $exception->getLine(),
+ 'url' => $request->fullUrl(),
+ 'trace' => $exception->getTraceAsString(),
+ ]);
+ }
+ return Inertia::render('error', ['status' => $status])
+ ->toResponse($request)
+ ->setStatusCode($status);
+ }
 
             return $response;
         });
