@@ -59,10 +59,10 @@ for VAR in APP_KEY DB_HOST MAIL_MAILER; do
 done
 
 # Always recache config to pick up new env vars
-# The failover cache driver (redis→database→file) handles Redis unavailability
-# gracefully, so config:cache won't crash even if Redis is temporarily down.
+# Using CACHE_STORE=failover (redis→database→file) so config:cache
+# won't crash even if Redis is temporarily unreachable.
 if php artisan config:cache 2>/dev/null; then
- echo "POSTDEPLOY: Config cached successfully (CACHE_STORE=failover baked in)"
+ echo "POSTDEPLOY: Config cached successfully"
 else
  echo "POSTDEPLOY: WARNING — config:cache failed, clearing cache to use live .env"
  php artisan config:clear 2>/dev/null || true
