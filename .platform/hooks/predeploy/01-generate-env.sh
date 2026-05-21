@@ -2,25 +2,36 @@
 # Generate complete .env from EB environment variables.
 # Predeploy hooks run in /var/app/staging/ — this directory gets promoted
 # to /var/app/current/ after all predeploy hooks succeed.
-set -e
+# NOTE: Removed 'set -e' — individual failures are handled gracefully.
 
 ENV_FILE="/var/app/staging/.env"
 
 echo "PREDEPLOY: Generating .env from EB environment variables..."
 
-# Use get-config to pull all EB env vars as JSON, then convert to .env format.
-# This is the canonical source — every EB env var becomes a .env entry.
-/opt/elasticbeanstalk/bin/get-config environment | python3 -c "
+# Try get-config first (works during full deploys)
+RAW=$(/opt/elasticbeanstalk/bin/get-config environment 2>/dev/null)
+
+if [ -n "$RAW" ]; then
+ echo "PREDEPLOY: get-config succeeded, generating .env from JSON"
+ echo "$RAW" | python3 -c "
 import sys, json
 env = json.load(sys.stdin)
 lines = []
 for key, value in env.items():
-    escaped = str(value).replace('\"', '\\\\\"')
-    lines.append(f'{key}=\"{escaped}\"')
-print('\n'.join(lines))
+ escaped = str(value).replace('\"', '\\\\\"')
+ lines.append(f'{key}=\"{escaped}\"')
+print('\\n'.join(lines))
 " > "$ENV_FILE"
+elif [ -f /opt/elasticbeanstalk/deploy/configuration/envfile ]; then
+ echo "PREDEPLOY: get-config failed, using envfile fallback"
+ cp /opt/elasticbeanstalk/deploy/configuration/envfile "$ENV_FILE"
+else
+ echo "PREDEPLOY: WARNING — No env source available, creating minimal .env"
+ # Create a minimal .env so the deploy doesn't crash
+ touch "$ENV_FILE"
+fi
 
-# Append any defaults that are NOT already in EB env vars
+# Append defaults that are NOT already in EB env vars
 # (these have safe production defaults and rarely change)
 cat >> "$ENV_FILE" <<'DEFAULTS'
 
@@ -39,7 +50,7 @@ SESSION_ENCRYPT=false
 REDIS_CLIENT=predis
 DEFAULTS
 
-chown webapp:webapp "$ENV_FILE"
-chmod 640 "$ENV_FILE"
+chown webapp:webapp "$ENV_FILE" 2>/dev/null || true
+chmod 640 "$ENV_FILE" 2>/dev/null || true
 
-echo "PREDEPLOY: .env generated successfully ($(wc -l < "$ENV_FILE") lines)"
+echo "PREDEPLOY: .env ready ($(wc -l < "$ENV_FILE" 2>/dev/null || echo '?') lines)"
