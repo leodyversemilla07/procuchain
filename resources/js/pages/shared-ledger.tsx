@@ -52,12 +52,14 @@ import { toast } from 'sonner';
 import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
 
 interface NodePurgeState {
-    is_purged: boolean;
-    was_explicitly_purged: boolean;
-    partially_purged: boolean;
-    unsubscribed_streams: string[];
-    purge_reason?: string | null;
-    purge_timestamp?: number | null;
+ is_purged: boolean;
+ was_explicitly_purged: boolean;
+ partially_purged: boolean;
+ unsubscribed_streams: string[];
+ purge_reason?: string | null;
+ purge_timestamp?: number | null;
+ connection_error?: boolean;
+ connection_error_message?: string | null;
 }
 
 interface SharedLedgerPageProps {
@@ -329,15 +331,29 @@ export default function SharedLedger({
                         </p>
                     </div>
                 )}
-                {node_purge_state?.partially_purged && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20">
-                        <p className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300">
-                            <AlertTriangle className="h-4 w-4" />
-                            Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
-                        </p>
-                        <p className="mt-1 text-amber-700 dark:text-amber-400">Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}</p>
-                    </div>
-                )}
+ {node_purge_state?.partially_purged && (
+ <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20">
+ <p className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300">
+ <AlertTriangle className="h-4 w-4" />
+ Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
+ </p>
+ <p className="mt-1 text-amber-700 dark:text-amber-400">Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}</p>
+ </div>
+ )}
+ {node_purge_state?.connection_error && (
+ <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-800 dark:bg-red-900/20">
+ <p className="flex items-center gap-2 font-medium text-red-800 dark:text-red-300">
+ <ServerCrash className="h-4 w-4" />
+ Unable to connect to this node
+ </p>
+ <p className="mt-1 text-red-700 dark:text-red-400">
+ The blockchain node could not be reached. It may be temporarily offline or have a network configuration issue.
+ </p>
+ {node_purge_state.connection_error_message && (
+ <p className="mt-1 text-xs text-red-600 dark:text-red-500">{node_purge_state.connection_error_message}</p>
+ )}
+ </div>
+ )}
 
                 {/* Filters */}
                 <Card>

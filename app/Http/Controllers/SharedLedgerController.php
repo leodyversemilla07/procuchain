@@ -306,21 +306,36 @@ class SharedLedgerController extends Controller
             $client->setoption('chain_name', config('multichain.chain_name'));
             $client->setoption('use_curl', true);
             $client->setoption('verify_ssl', false);
-            $client->setTimeout(5);
+            $client->setTimeout(3);
 
             // Quick connectivity check — fail fast if the node is unreachable.
-            // Without this, iterating 10 streams × 5s timeout = 50s of hanging.
+            // Without this, iterating 10 streams × timeout = massive hang.
+            // We use 3s (not 5s) to keep total worst-case under PHP/Nginx limits.
             $client->getinfo();
             if (! $client->success()) {
                 $errCode = $client->errorcode();
                 $errMsg = $client->errormessage();
-                Log::warning('SharedLedger: Node connectivity check failed, falling back to Manager', [
+                Log::warning('SharedLedger: Node connectivity check failed', [
                     'node_id' => $nodeId,
                     'error_code' => $errCode,
                     'error_message' => $errMsg,
                 ]);
 
-                return $this->fetchFromDefaultClient();
+                // Node is unreachable — return empty with warning rather than
+                // falling back to a different node's data. Each node must show
+                // its own perspective.
+                $this->nodePurgeState = [
+                    'is_purged' => false,
+                    'was_explicitly_purged' => false,
+                    'partially_purged' => false,
+                    'unsubscribed_streams' => [],
+                    'purge_reason' => null,
+                    'purge_timestamp' => null,
+                    'connection_error' => true,
+                    'connection_error_message' => "Node '{$nodeId}' is unreachable: {$errMsg}",
+                ];
+
+                return [];
             }
 
             // Node is reachable — increase timeout for the heavy stream reads
@@ -393,31 +408,34 @@ class SharedLedgerController extends Controller
             $purgeReason = null;
             $purgeTimestamp = null;
 
-            if ($allUnsubscribed) {
-                try {
-                    $purgeKey = 'node_'.$nodeId.'_full_purge';
-                    $purgeItems = $this->multichain->liststreamkeyitems(
-                        'file.metadata',
-                        $purgeKey,
-                        false,
-                        1,
-                        0,
-                        false
-                    );
+ if ($allUnsubscribed) {
+ try {
+ $purgeKey = 'node_'.$nodeId.'_full_purge';
+ // Use the node-specific client ($client) instead of the default
+ // Manager ($this->multichain). The Manager client may be pointing
+ // to a stale/broken connection, causing the entire request to hang.
+ $purgeItems = $client->liststreamkeyitems(
+ 'file.metadata',
+ $purgeKey,
+ false,
+ 1,
+ 0,
+ false
+ );
 
-                    if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
-                        $wasExplicitlyPurged = true;
-                        $purgeData = $purgeItems[0]['data']['json'] ?? [];
-                        $purgeReason = $purgeData['reason'] ?? null;
-                        $purgeTimestamp = $purgeItems[0]['blocktime'] ?? $purgeData['purged_at'] ?? null;
-                    }
-                } catch (Exception $e) {
-                    Log::warning('SharedLedger: Failed to check purge event', [
-                        'node' => $nodeId,
-                        'error' => 'An error occurred loading the shared ledger.',
-                    ]);
-                }
-            }
+ if ($client->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+ $wasExplicitlyPurged = true;
+ $purgeData = $purgeItems[0]['data']['json'] ?? [];
+ $purgeReason = $purgeData['reason'] ?? null;
+ $purgeTimestamp = $purgeItems[0]['blocktime'] ?? $purgeData['purged_at'] ?? null;
+ }
+ } catch (Exception $e) {
+ Log::warning('SharedLedger: Failed to check purge event', [
+ 'node' => $nodeId,
+ 'error' => 'An error occurred loading the shared ledger.',
+ ]);
+ }
+ }
 
             Log::info('SharedLedger: Node purge state determined', [
                 'node' => $nodeId,
@@ -438,14 +456,27 @@ class SharedLedgerController extends Controller
             ];
 
             return $entries;
-        } catch (Exception $e) {
-            report($e);
-            Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
-                'error' => 'An error occurred loading the shared ledger.',
-            ]);
+    } catch (Exception $e) {
+        report($e);
+        Log::warning("SharedLedger: Failed to connect to node {$nodeId}", [
+            'error' => 'An error occurred loading the shared ledger.',
+        ]);
 
-            return $this->fetchFromDefaultClient();
-        }
+        // Return empty with connection error — don't fall back to another node.
+        // Each node must show its own data perspective.
+        $this->nodePurgeState = [
+            'is_purged' => false,
+            'was_explicitly_purged' => false,
+            'partially_purged' => false,
+            'unsubscribed_streams' => [],
+            'purge_reason' => null,
+            'purge_timestamp' => null,
+            'connection_error' => true,
+            'connection_error_message' => "Node '{$nodeId}' connection failed: {$e->getMessage()}",
+        ];
+
+        return [];
+    }
     }
 
     /**
@@ -564,12 +595,12 @@ class SharedLedgerController extends Controller
                     false
                 );
                 $client->setoption('chain_name', config('multichain.chain_name'));
-                $client->setoption('use_curl', true);
-                $client->setoption('verify_ssl', false);
-                $client->setTimeout(5);
+ $client->setoption('use_curl', true);
+ $client->setoption('verify_ssl', false);
+ $client->setTimeout(3);
 
-                // Quick connectivity check — skip unreachable nodes fast
-                $client->getinfo();
+ // Quick connectivity check — skip unreachable nodes fast
+ $client->getinfo();
                 if (! $client->success()) {
                     Log::info('SharedLedger: Skipping unreachable node in all-nodes fetch', [
                         'node_id' => $nodeConfig['id'],
