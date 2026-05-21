@@ -49,4 +49,10 @@ for VAR in APP_KEY DB_HOST MAIL_MAILER; do
 done
 
 # Always recache config to pick up new env vars
-php artisan config:cache 2>/dev/null && echo "POSTDEPLOY: Config cached successfully"
+# Don't let config:cache failures kill the deploy (e.g., Redis not yet reachable)
+if php artisan config:cache 2>/dev/null; then
+ echo "POSTDEPLOY: Config cached successfully"
+else
+ echo "POSTDEPLOY: WARNING — config:cache failed, clearing cache to use live .env"
+ php artisan config:clear 2>/dev/null || true
+fi
