@@ -74,61 +74,61 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    const handleRestore = (fileKey: string) => {
-        const reason = reasons[fileKey] || 'Restored by admin';
-        setRestoringKey(fileKey);
+ const handleRestore = (fileKey: string) => {
+ setRestoringKey(fileKey);
 
-        router.post(
-            adminRecoverableData.restore.url(),
-            { file_key: fileKey, reason },
-            {
-                onSuccess: () => {
-                    toast.success('File restored on blockchain. The restoration event is now on-chain and audit-logged.');
-                },
-                onError: () => {
-                    toast.error('Failed to restore file on blockchain.');
-                },
-                onFinish: () => {
-                    setRestoringKey(null);
-                },
-            },
-        );
-    };
+ router.post(
+ adminRecoverableData.restoreFromBlockchain.url(),
+ { file_key: fileKey },
+ {
+ onSuccess: () => {
+ // Flash message from server handles the toast via useEffect
+ router.reload({ only: ['deletedFiles'] });
+ },
+ onError: (errors) => {
+ const msg = Object.values(errors).join(' ') || 'Failed to restore file on blockchain.';
+ toast.error(String(msg));
+ },
+ onFinish: () => {
+ setRestoringKey(null);
+ },
+ },
+ );
+ };
 
-    const handleFullPurgeFromNode = () => {
-        if (!fullPurgeNodeId) {
-            toast.error('Select a target node to purge');
-            return;
-        }
+ const handleFullPurgeFromNode = () => {
+ if (!fullPurgeNodeId) {
+ toast.error('Select a target node to purge');
+ return;
+ }
 
-  setIsFullPurging(true);
+ setIsFullPurging(true);
 
-  router.post(
-    adminRecoverableData.purgeAllFromNode.url(),
-    {
-      node_id: fullPurgeNodeId,
-      reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
-    },
-    {
-      onSuccess: () => {
-        setFullPurgeNodeId('');
-        setFullPurgeReason('');
-        setPurgeDialogOpen(false);
-        toast.success(
-          `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. The node now shows 0 items. Resync to restore.`,
-        );
-        router.reload({ only: ['nodes'] });
-      },
-      onError: () => {
-        setPurgeDialogOpen(false);
-        toast.error('Failed to purge node. Check server logs.');
-      },
-      onFinish: () => {
-        setIsFullPurging(false);
-      },
-    },
-  );
-    };
+ router.post(
+ adminRecoverableData.purgeAllFromNode.url(),
+ {
+ node_id: fullPurgeNodeId,
+ reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
+ },
+ {
+ onSuccess: () => {
+ setFullPurgeNodeId('');
+ setFullPurgeReason('');
+ setPurgeDialogOpen(false);
+ // Flash message from server handles the toast via useEffect
+ router.reload({ only: ['nodes'] });
+ },
+ onError: (errors) => {
+ setPurgeDialogOpen(false);
+ const msg = Object.values(errors).join(' ') || 'Failed to purge node. Check server logs.';
+ toast.error(String(msg));
+ },
+ onFinish: () => {
+ setIsFullPurging(false);
+ },
+ },
+ );
+ };
 
  const handleResyncNode = () => {
  if (!resyncNodeId) {
@@ -148,11 +148,12 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  onSuccess: () => {
  setResyncNodeId('');
  setResyncReason('');
- toast.success('Node resync complete. Data has been re-downloaded from peers. The node status should now show Healthy.');
+ // Flash message from server handles the toast via useEffect
  router.reload({ only: ['nodes'] });
  },
- onError: () => {
- toast.error('Failed to initiate node resync.');
+ onError: (errors) => {
+ const msg = Object.values(errors).join(' ') || 'Failed to initiate node resync.';
+ toast.error(String(msg));
  },
  onFinish: () => {
  setIsResyncing(false);
