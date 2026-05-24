@@ -704,18 +704,25 @@ class NodeOperationsService
                     ];
                 }
 
-                // Still Pending/InProgress — keep polling
-                Log::debug("SSM command still running", [
-                    'command_id' => $commandId,
-                    'status' => $status,
-                    'elapsed' => $elapsed,
-                ]);
-            }
+ // Still Pending/InProgress — keep polling
+ Log::debug("SSM command still running", [
+ 'command_id' => $commandId,
+ 'status' => $status,
+ 'elapsed' => $elapsed,
+ ]);
  }
-    }
+ } catch (Exception $e) {
+ return [
+ 'success' => false,
+ 'message' => 'SSM command exception: ' . $e->getMessage(),
+ 'output' => '',
+ ];
+ }
 
-    /**
-     * Get the total item count across all streams on a node.
+ }
+
+ /**
+ * Get the total item count across all streams on a node.
      */
     private function getNodeItemCount(array $node): int
     {
