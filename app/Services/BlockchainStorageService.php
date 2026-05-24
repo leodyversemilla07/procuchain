@@ -140,10 +140,10 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $this->nodeOps->deleteFromNode($fileKey, $nodeId, $reason);
     }
 
-    public function resyncNode(string $nodeId): array
-    {
-        return $this->nodeOps->resyncNode($nodeId);
-    }
+ public function resyncNode(string $nodeId, string $reason = ''): array
+ {
+ return $this->nodeOps->resyncNode($nodeId, $reason);
+ }
 
     public function purgeAllFromNode(string $nodeId, string $reason = ''): array
     {

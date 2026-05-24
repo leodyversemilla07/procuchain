@@ -118,15 +118,19 @@ class RecoverableDataController extends Controller
      * After a single-node purge, this triggers the node to re-download
      * all missing stream items from its connected peers.
      */
-    public function resyncNode(Request $request): RedirectResponse
-    {
-        $this->authorize('manage-recoverable-data');
+ public function resyncNode(Request $request): RedirectResponse
+ {
+ $this->authorize('manage-recoverable-data');
 
-        $validated = $request->validate([
-            'node_id' => 'required|string',
-        ]);
+ $validated = $request->validate([
+ 'node_id' => 'required|string',
+ 'reason' => 'nullable|string|max:500',
+ ]);
 
-        $result = $this->storage->resyncNode($validated['node_id']);
+ $result = $this->storage->resyncNode(
+ $validated['node_id'],
+ $validated['reason'] ?? 'Manual resync — data restored from peers'
+ );
 
         if ($result['success']) {
             return redirect()->back()->with('success', $result['message']);

@@ -75,13 +75,18 @@ class AuditLogger
         'admin.stage_config_updated' => 'Stage document configuration updated',
         'admin.stage_config_reset' => 'Stage document configuration reset to defaults',
 
-        // Settings
-        'settings.profile_updated' => 'Profile updated',
-        'settings.password_changed' => 'Password changed',
-        'settings.account_deleted' => 'Account deleted',
-        'settings.two_factor_enabled' => 'Two-factor authentication enabled',
-        'settings.two_factor_confirmed' => 'Two-factor authentication confirmed',
-        'settings.two_factor_disabled' => 'Two-factor authentication disabled',
+ // Settings
+ 'settings.profile_updated' => 'Profile updated',
+ 'settings.password_changed' => 'Password changed',
+ 'settings.account_deleted' => 'Account deleted',
+ 'settings.two_factor_enabled' => 'Two-factor authentication enabled',
+ 'settings.two_factor_confirmed' => 'Two-factor authentication confirmed',
+ 'settings.two_factor_disabled' => 'Two-factor authentication disabled',
+
+ // Blockchain node operations — NGPA Sec. 20 (electronic records), Sec. 3 (accountability)
+ 'node.full_purge' => 'Full node purge — all data removed',
+ 'node.file_purge' => 'File-level node purge',
+ 'node.resync' => 'Node resync — data restored from peers',
 
         // Security
         'security.ip_blocked' => 'IP address blocked',

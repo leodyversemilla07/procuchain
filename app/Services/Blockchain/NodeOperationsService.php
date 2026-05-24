@@ -52,36 +52,57 @@ class NodeOperationsService
      *
      * @return array{success: bool, message: string}
      */
-    public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
-    {
-        $result = $this->purgeAllFromNode($nodeId, $reason ?: "File purge: {$fileKey}");
+ public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
+ {
+ // Pass skipAudit=true — we record our own combined audit below
+ $result = $this->purgeAllFromNode($nodeId, $reason ?: "File purge: {$fileKey}", skipAudit: true);
 
-        if ($result['success']) {
-            // Record file-level purge on-chain for traceability
-            $dataKey = str_replace('/', '_', $fileKey);
-            try {
-                $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
-                    'json' => [
-                        'file_key' => $fileKey,
-                        'data_key' => $dataKey,
-                        'action' => 'file_node_purge',
-                        'node_id' => $nodeId,
-                        'reason' => $reason,
-                        'purged_at' => now()->toIso8601String(),
-                        'performed_by' => auth()->user()?->name ?? 'system',
-                    ],
-                ]);
-            } catch (Exception $e) {
-                Log::warning('Failed to record file-level purge event on-chain', [
-                    'file_key' => $fileKey,
-                    'node_id' => $nodeId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+ if ($result['success']) {
+ // Record file-level purge on-chain for traceability
+ $dataKey = str_replace('/', '_', $fileKey);
+ try {
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
+ 'json' => [
+ 'file_key' => $fileKey,
+ 'data_key' => $dataKey,
+ 'action' => 'file_node_purge',
+ 'node_id' => $nodeId,
+ 'node_name' => $result['node_name'] ?? $nodeId,
+ 'items_purged' => $result['items_purged'] ?? 0,
+ 'method' => 'ssm_physical_delete',
+ 'reason' => $reason,
+ 'purged_at' => now()->toIso8601String(),
+ 'performed_by' => auth()->user()?->name ?? 'system',
+ ],
+ ]);
+ } catch (Exception $e) {
+ Log::warning('Failed to record file-level purge event on-chain', [
+ 'file_key' => $fileKey,
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+ }
 
-        return $result;
-    }
+ // Record single combined audit log for the file-node-purge operation
+ app(AuditLogger::class)->log(
+ action: 'node.file_purge',
+ subjectType: 'file',
+ subjectId: $fileKey,
+ oldValues: [
+ 'action' => 'file_node_purge',
+ 'file_key' => $fileKey,
+ 'node_id' => $nodeId,
+ 'node_name' => $result['node_name'] ?? $nodeId,
+ 'items_purged' => $result['items_purged'] ?? 0,
+ 'method' => 'ssm_physical_delete',
+ 'reason' => $reason,
+ 'performed_by' => auth()->user()?->name ?? 'system',
+ ],
+ );
+ }
+
+ return $result;
+ }
 
     /**
      * Purge ALL data from a specific node via AWS SSM.
@@ -101,10 +122,10 @@ class NodeOperationsService
      *
      * @return array{success: bool, message: string, items_purged: int}
      */
-    public function purgeAllFromNode(string $nodeId, string $reason = ''): array
-    {
-        try {
-            $nodes = config('multichain.nodes', []);
+ public function purgeAllFromNode(string $nodeId, string $reason = '', bool $skipAudit = false): array
+ {
+ try {
+ $nodes = config('multichain.nodes', []);
             $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
 
             if (! $targetNode) {
@@ -211,44 +232,56 @@ class NodeOperationsService
                 ]);
             }
 
-            // Record the purge event on-chain (from primary node — this still has data)
-            $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
-                'json' => [
-                    'action' => 'full_node_purge',
-                    'node_id' => $nodeId,
-                    'node_name' => $targetNode['name'] ?? $nodeId,
-                    'items_purged' => $itemsBefore,
-                    'method' => 'ssm_physical_delete',
-                    'reason' => $reason ?: 'Demo: physical chain data deleted from node',
-                    'purged_at' => now()->toIso8601String(),
-                    'performed_by' => auth()->user()?->name ?? 'system',
-                ],
-            ]);
+ // Record the purge event on-chain (from primary node — this still has data)
+ try {
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
+ 'json' => [
+ 'action' => 'full_node_purge',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'items_purged' => $itemsBefore,
+ 'method' => 'ssm_physical_delete',
+ 'reason' => $reason ?: 'Demo: physical chain data deleted from node',
+ 'purged_at' => now()->toIso8601String(),
+ 'performed_by' => auth()->user()?->name ?? 'system',
+ ],
+ ]);
+ } catch (Exception $e) {
+ Log::warning('Failed to record full purge event on-chain', [
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+ }
 
-            Log::info('Full node purge completed via SSM', [
-                'node_id' => $nodeId,
-                'instance_id' => $instanceId,
-                'items_purged' => $itemsBefore,
-            ]);
+ Log::info('Full node purge completed via SSM', [
+ 'node_id' => $nodeId,
+ 'instance_id' => $instanceId,
+ 'items_purged' => $itemsBefore,
+ ]);
 
-            app(AuditLogger::class)->log(
-                action: 'node.full_purge',
-                subjectType: 'node',
-                subjectId: $nodeId,
-                oldValues: [
-                    'action' => 'full_node_purge',
-                    'node_id' => $nodeId,
-                    'method' => 'ssm_physical_delete',
-                    'items_purged' => $itemsBefore,
-                    'reason' => $reason,
-                ],
-            );
+ if (! $skipAudit) {
+ app(AuditLogger::class)->log(
+ action: 'node.full_purge',
+ subjectType: 'node',
+ subjectId: $nodeId,
+ oldValues: [
+ 'action' => 'full_node_purge',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'method' => 'ssm_physical_delete',
+ 'items_purged' => $itemsBefore,
+ 'reason' => $reason,
+ 'performed_by' => auth()->user()?->name ?? 'system',
+ ],
+ );
+ }
 
-            return [
-                'success' => true,
-                'message' => "Physically purged all data ({$itemsBefore} items) from {$targetNode['name']} ({$nodeId}). Chain data deleted from disk — node now has zero data. Data survives on remaining nodes — click Resync to restore from peers.",
-                'items_purged' => $itemsBefore,
-            ];
+ return [
+ 'success' => true,
+ 'message' => "Physically purged all data ({$itemsBefore} items) from {$targetNode['name']} ({$nodeId}). Chain data deleted from disk — node now has zero data. Data survives on remaining nodes — click Resync to restore from peers.",
+ 'items_purged' => $itemsBefore,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ ];
         } catch (Exception $e) {
             Log::error('Full node purge failed', [
                 'node_id' => $nodeId,
@@ -276,7 +309,7 @@ class NodeOperationsService
      *
      * @return array{success: bool, message: string}
      */
-    public function resyncNode(string $nodeId): array
+    public function resyncNode(string $nodeId, string $reason = ''): array
     {
         try {
             $nodes = config('multichain.nodes', []);
@@ -342,24 +375,29 @@ class NodeOperationsService
             $output = $ssmResult['output'] ?? '';
             $resyncOk = str_contains($output, 'RESYNC_SUCCESS');
 
-            // Record resync event on-chain
-            try {
-                $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_resync', [
-                    'json' => [
-                        'action' => 'node_resync',
-                        'node_id' => $nodeId,
-                        'node_name' => $targetNode['name'] ?? $nodeId,
-                        'method' => 'ssm_subscribe_all',
-                        'resynced_at' => now()->toIso8601String(),
-                        'performed_by' => auth()->user()?->name ?? 'system',
-                    ],
-                ]);
-            } catch (Exception $e) {
-                Log::warning('Failed to record resync event on-chain', [
-                    'node_id' => $nodeId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+ // Record resync event on-chain
+ try {
+ // Get item counts after resync for the audit trail
+ $itemsAfter = $this->getNodeItemCount($targetNode);
+
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_resync', [
+ 'json' => [
+ 'action' => 'node_resync',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'items_resynced' => $itemsAfter,
+ 'method' => 'ssm_subscribe_all',
+ 'reason' => $reason ?? 'Manual resync — data restored from peers',
+ 'resynced_at' => now()->toIso8601String(),
+ 'performed_by' => auth()->user()?->name ?? 'system',
+ ],
+ ]);
+ } catch (Exception $e) {
+ Log::warning('Failed to record resync event on-chain', [
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+ }
 
             // If this was the primary node, clear the purge flag
             if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
@@ -380,16 +418,20 @@ class NodeOperationsService
                 'success' => $resyncOk,
             ]);
 
-            app(AuditLogger::class)->log(
-                action: 'node.resync',
-                subjectType: 'node',
-                subjectId: $nodeId,
-                newValues: [
-                    'action' => 'node_resync',
-                    'node_id' => $nodeId,
-                    'method' => 'ssm_subscribe_all',
-                ],
-            );
+ app(AuditLogger::class)->log(
+ action: 'node.resync',
+ subjectType: 'node',
+ subjectId: $nodeId,
+ newValues: [
+ 'action' => 'node_resync',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'method' => 'ssm_subscribe_all',
+ 'items_resynced' => $itemsAfter ?? 0,
+ 'reason' => $reason ?: 'Manual resync — data restored from peers',
+ 'performed_by' => auth()->user()?->name ?? 'system',
+ ],
+ );
 
             return [
                 'success' => $resyncOk,

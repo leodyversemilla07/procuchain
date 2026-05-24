@@ -39,35 +39,60 @@ final readonly class LedgerEntryData
         $txid = $item['txid'] ?? '';
         $key = $item['keys'][0] ?? '';
 
-        // Detect system-level purge/resync events (node_{id}_full_purge / node_{id}_resync)
-        $isNodePurgeEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_full_purge');
-        $isNodeResyncEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_resync');
+ // Detect system-level purge/resync events (node_{id}_full_purge / node_{id}_resync)
+ $isNodePurgeEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_full_purge');
+ $isNodeResyncEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_resync');
+ $isFileNodePurgeEvent = str_ends_with($key, '_node_purge') && ! $isNodePurgeEvent;
 
-        if ($isNodePurgeEvent) {
-            $prNumber = 'system';
-            $procurementTitle = null;
-            $action = 'node_purged';
-            $actorAddress = $data['performed_by'] ?? '';
-            $oldValues = [];
-            $newValues = ['node_id' => $data['node_id'] ?? $key, 'reason' => $data['reason'] ?? ''];
-            $originalTxid = null;
-            $summary = sprintf(
-                'Node %s purged — all data removed%s',
-                $data['node_name'] ?? $data['node_id'] ?? $key,
-                ! empty($data['reason']) ? ': '.$data['reason'] : ''
-            );
-        } elseif ($isNodeResyncEvent) {
-            $prNumber = 'system';
-            $procurementTitle = null;
-            $action = 'node_resynced';
-            $actorAddress = $data['performed_by'] ?? '';
-            $oldValues = [];
-            $newValues = ['node_id' => $data['node_id'] ?? $key];
-            $originalTxid = null;
-            $summary = sprintf(
-                'Node %s resynced — data restored from peers',
-                $data['node_name'] ?? $data['node_id'] ?? $key
-            );
+ if ($isNodePurgeEvent) {
+ $prNumber = 'system';
+ $procurementTitle = null;
+ $action = 'node_purged';
+ $actorAddress = $data['performed_by'] ?? '';
+ $oldValues = [];
+ $newValues = ['node_id' => $data['node_id'] ?? $key, 'reason' => $data['reason'] ?? ''];
+ $originalTxid = null;
+ $summary = sprintf(
+ 'Node %s purged — all data removed%s',
+ $data['node_name'] ?? $data['node_id'] ?? $key,
+ ! empty($data['reason']) ? ': '.$data['reason'] : ''
+ );
+ } elseif ($isFileNodePurgeEvent) {
+ $prNumber = $data['pr_number'] ?? explode('_', $key)[0] ?? 'system';
+ $procurementTitle = null;
+ $action = 'file_node_purged';
+ $actorAddress = $data['performed_by'] ?? '';
+ $oldValues = [];
+ $newValues = [
+ 'file_key' => $data['file_key'] ?? $key,
+ 'node_id' => $data['node_id'] ?? '',
+ 'items_purged' => $data['items_purged'] ?? 0,
+ 'reason' => $data['reason'] ?? '',
+ ];
+ $originalTxid = null;
+ $summary = sprintf(
+ 'File %s purged from node %s%s',
+ $data['file_key'] ?? $key,
+ $data['node_name'] ?? $data['node_id'] ?? 'unknown',
+ ! empty($data['reason']) ? ': '.$data['reason'] : ''
+ );
+ } elseif ($isNodeResyncEvent) {
+ $prNumber = 'system';
+ $procurementTitle = null;
+ $action = 'node_resynced';
+ $actorAddress = $data['performed_by'] ?? '';
+ $oldValues = [];
+ $newValues = [
+ 'node_id' => $data['node_id'] ?? $key,
+ 'items_resynced' => $data['items_resynced'] ?? 0,
+ 'reason' => $data['reason'] ?? '',
+ ];
+ $originalTxid = null;
+ $summary = sprintf(
+ 'Node %s resynced — data restored from peers%s',
+ $data['node_name'] ?? $data['node_id'] ?? $key,
+ ! empty($data['reason']) ? ': '.$data['reason'] : ''
+ );
         } else {
             $prNumber = $data['pr_number'] ?? $key;
             $procurementTitle = $data['procurement_title'] ?? $data['title'] ?? null;
