@@ -1,5 +1,5 @@
 [Unit]
-Description=Laravel Queue Worker (BlockchainWriteJob)
+Description=Laravel Queue Worker
 After=network.target mariadb.service
 StartLimitIntervalSec=0
 
@@ -9,7 +9,7 @@ User=webapp
 Group=webapp
 Restart=always
 RestartSec=5
-ExecStart=/usr/bin/php /var/app/current/artisan queue:work database --sleep=3 --tries=3 --max-time=3600 --queue=default
+ExecStart=/usr/bin/php /var/app/current/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600 --queue=default
 
 # Graceful shutdown — let the current job finish
 StopWaitSec=60
