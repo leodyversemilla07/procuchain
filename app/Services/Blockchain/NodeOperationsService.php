@@ -568,33 +568,39 @@ class NodeOperationsService
         $awsProfile = config('multichain.ssm.aws_profile', '');
         $profileArgs = ! empty($awsProfile) ? ['--profile', $awsProfile] : [];
 
-        // Write script to a temp file to avoid shell escaping issues
-        $tmpFile = tempnam(sys_get_temp_dir(), 'mc_ssm_');
-        file_put_contents($tmpFile, $script);
+ // AWS SSM RunShellScript accepts the script content directly in the
+ // commands parameter — no need to write to a temp file on the local
+ // machine (the script runs on the REMOTE instance, so a local temp
+ // file path would not exist there).
+ //
+ // We split the script into individual lines for the commands array.
+ // SSM joins them with newlines and executes as a single shell script.
+ $scriptLines = explode("\n", $script);
+ $commandsJson = json_encode($scriptLines);
 
-        try {
-            // Send the SSM command
-            $sendArgs = array_merge([
-                'aws', 'ssm', 'send-command',
-                '--instance-ids', $instanceId,
-                '--document-name', 'AWS-RunShellScript',
-                '--parameters', 'commands=["bash ' . $tmpFile . '"]',
-                '--timeout-seconds', (string) min($timeout, 600),
-                '--output', 'text',
-                '--query', 'Command.CommandId',
-            ], $profileArgs);
+ try {
+ // Send the SSM command
+ $sendArgs = array_merge([
+ 'aws', 'ssm', 'send-command',
+ '--instance-ids', $instanceId,
+ '--document-name', 'AWS-RunShellScript',
+ '--parameters', 'commands='.$commandsJson,
+ '--timeout-seconds', (string) min($timeout, 600),
+ '--output', 'text',
+ '--query', 'Command.CommandId',
+ ], $profileArgs);
 
-            // Reorder: profile args should come before subcommand args
-            if (! empty($profileArgs)) {
-                $sendArgs = array_merge(['aws', 'ssm', 'send-command'], $profileArgs, [
-                    '--instance-ids', $instanceId,
-                    '--document-name', 'AWS-RunShellScript',
-                    '--parameters', 'commands=["bash ' . $tmpFile . '"]',
-                    '--timeout-seconds', (string) min($timeout, 600),
-                    '--output', 'text',
-                    '--query', 'Command.CommandId',
-                ]);
-            }
+ // Reorder: profile args should come before subcommand args
+ if (! empty($profileArgs)) {
+ $sendArgs = array_merge(['aws', 'ssm', 'send-command'], $profileArgs, [
+ '--instance-ids', $instanceId,
+ '--document-name', 'AWS-RunShellScript',
+ '--parameters', 'commands='.$commandsJson,
+ '--timeout-seconds', (string) min($timeout, 600),
+ '--output', 'text',
+ '--query', 'Command.CommandId',
+ ]);
+ }
 
             $sendCmd = new Process($sendArgs);
             $sendCmd->setTimeout(30);
@@ -705,12 +711,7 @@ class NodeOperationsService
                     'elapsed' => $elapsed,
                 ]);
             }
-        } finally {
-            // Clean up temp file
-            if (file_exists($tmpFile)) {
-                @unlink($tmpFile);
-            }
-        }
+ }
     }
 
     /**
