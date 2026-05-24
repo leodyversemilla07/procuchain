@@ -573,19 +573,26 @@ class NodeOperationsService
  // machine (the script runs on the REMOTE instance, so a local temp
  // file path would not exist there).
  //
- // We split the script into individual lines for the commands array.
- // SSM joins them with newlines and executes as a single shell script.
+ // We use --cli-input-json to avoid shell-escaping issues with the
+ // --parameters flag. The script lines go into the JSON structure
+ // which the AWS CLI parses natively — no escaping gymnastics needed.
  $scriptLines = explode("\n", $script);
- $commandsJson = json_encode($scriptLines);
+
+ $cliInput = json_encode([
+ 'InstanceIds' => [$instanceId],
+ 'DocumentName' => 'AWS-RunShellScript',
+ 'Parameters' => ['commands' => $scriptLines],
+ 'TimeoutSeconds' => min($timeout, 600),
+ ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+ $tmpInputFile = tempnam(sys_get_temp_dir(), 'mc_ssm_input_');
+ file_put_contents($tmpInputFile, $cliInput);
 
  try {
- // Send the SSM command
+ // Send the SSM command via --cli-input-json
  $sendArgs = array_merge([
  'aws', 'ssm', 'send-command',
- '--instance-ids', $instanceId,
- '--document-name', 'AWS-RunShellScript',
- '--parameters', 'commands='.$commandsJson,
- '--timeout-seconds', (string) min($timeout, 600),
+ '--cli-input-json', 'file://'.$tmpInputFile,
  '--output', 'text',
  '--query', 'Command.CommandId',
  ], $profileArgs);
@@ -593,10 +600,7 @@ class NodeOperationsService
  // Reorder: profile args should come before subcommand args
  if (! empty($profileArgs)) {
  $sendArgs = array_merge(['aws', 'ssm', 'send-command'], $profileArgs, [
- '--instance-ids', $instanceId,
- '--document-name', 'AWS-RunShellScript',
- '--parameters', 'commands='.$commandsJson,
- '--timeout-seconds', (string) min($timeout, 600),
+ '--cli-input-json', 'file://'.$tmpInputFile,
  '--output', 'text',
  '--query', 'Command.CommandId',
  ]);
@@ -717,6 +721,11 @@ class NodeOperationsService
  'message' => 'SSM command exception: ' . $e->getMessage(),
  'output' => '',
  ];
+ } finally {
+ // Clean up cli-input-json temp file (local only, not sent to remote)
+ if (isset($tmpInputFile) && file_exists($tmpInputFile)) {
+ @unlink($tmpInputFile);
+ }
  }
 
  }
