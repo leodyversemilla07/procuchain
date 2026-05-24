@@ -43,19 +43,26 @@ class NodeOperationsService
         private Manager $multichain,
     ) {}
 
-    /**
-     * Purge a single file's data from a specific node.
-     *
-     * For MultiChain CE, this performs a full node purge via SSM
-     * (same as purgeAllFromNode) since per-key deletion is not available.
-     * The purge event is recorded on-chain with the file key for traceability.
-     *
-     * @return array{success: bool, message: string}
-     */
+ /**
+ * Purge a specific node's data (full chain wipe via SSM).
+ *
+ * In MultiChain CE, per-key deletion is not available, so this performs
+ * a full node purge — the same physical operation as purgeAllFromNode().
+ * The distinction is intentional for the demo workflow:
+ *   - deleteFromNode  → demo: "purge this node to show data survives on peers"
+ *   - resyncNode      → demo: "resync this node to show data recovers from peers"
+ *   - purgeAllFromNode → admin: non-demo full purge with its own audit trail
+ *
+ * Both deleteFromNode and purgeAllFromNode physically wipe the node via SSM.
+ * The difference: deleteFromNode records a file-key-scoped on-chain event
+ * for traceability, then a single combined audit entry.
+ *
+ * @return array{success: bool, message: string}
+ */
  public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
  {
- // Pass skipAudit=true — we record our own combined audit below
- $result = $this->purgeAllFromNode($nodeId, $reason ?: "File purge: {$fileKey}", skipAudit: true);
+ // Pass skipDbAudit=true — we record our own combined audit below
+ $result = $this->purgeAllFromNode($nodeId, $reason ?: "File purge: {$fileKey}", skipDbAudit: true);
 
  if ($result['success']) {
  // Record file-level purge on-chain for traceability
@@ -88,7 +95,7 @@ class NodeOperationsService
  action: 'node.file_purge',
  subjectType: 'file',
  subjectId: $fileKey,
- oldValues: [
+ newValues: [
  'action' => 'file_node_purge',
  'file_key' => $fileKey,
  'node_id' => $nodeId,
@@ -122,7 +129,7 @@ class NodeOperationsService
      *
      * @return array{success: bool, message: string, items_purged: int}
      */
- public function purgeAllFromNode(string $nodeId, string $reason = '', bool $skipAudit = false): array
+ public function purgeAllFromNode(string $nodeId, string $reason = '', bool $skipDbAudit = false): array
  {
  try {
  $nodes = config('multichain.nodes', []);
@@ -259,12 +266,12 @@ class NodeOperationsService
  'items_purged' => $itemsBefore,
  ]);
 
- if (! $skipAudit) {
+ if (! $skipDbAudit) {
  app(AuditLogger::class)->log(
  action: 'node.full_purge',
  subjectType: 'node',
  subjectId: $nodeId,
- oldValues: [
+ newValues: [
  'action' => 'full_node_purge',
  'node_id' => $nodeId,
  'node_name' => $targetNode['name'] ?? $nodeId,

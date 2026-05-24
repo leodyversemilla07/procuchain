@@ -50,7 +50,15 @@ final readonly class LedgerEntryData
  $action = 'node_purged';
  $actorAddress = $data['performed_by'] ?? '';
  $oldValues = [];
- $newValues = ['node_id' => $data['node_id'] ?? $key, 'node_name' => $data['node_name'] ?? '', 'items_purged' => $data['items_purged'] ?? 0, 'reason' => $data['reason'] ?? ''];
+ $newValues = [
+ 'node_id' => $data['node_id'] ?? $key,
+ 'node_name' => $data['node_name'] ?? '',
+ 'items_purged' => $data['items_purged'] ?? 0,
+ 'method' => $data['method'] ?? 'ssm_physical_delete',
+ 'reason' => $data['reason'] ?? '',
+ 'performed_by' => $data['performed_by'] ?? '',
+ 'purged_at' => $data['purged_at'] ?? '',
+ ];
  $originalTxid = null;
  $summary = sprintf(
  'Node %s purged — %d items removed%s',
@@ -59,21 +67,27 @@ final readonly class LedgerEntryData
  ! empty($data['reason']) ? ': '.$data['reason'] : ''
  );
  } elseif ($isFileNodePurgeEvent) {
- $prNumber = $data['pr_number'] ?? explode('_', $key)[0] ?? 'system';
+ // Extract PR number from file_key (e.g. "PR-2024-001-001/document.pdf" → "PR-2024-001-001")
+ $fileKey = $data['file_key'] ?? $key;
+ $prNumber = str_contains($fileKey, '/') ? explode('/', $fileKey)[0] : 'system';
  $procurementTitle = null;
  $action = 'file_node_purged';
  $actorAddress = $data['performed_by'] ?? '';
  $oldValues = [];
  $newValues = [
- 'file_key' => $data['file_key'] ?? $key,
+ 'file_key' => $fileKey,
  'node_id' => $data['node_id'] ?? '',
+ 'node_name' => $data['node_name'] ?? '',
  'items_purged' => $data['items_purged'] ?? 0,
+ 'method' => $data['method'] ?? 'ssm_physical_delete',
  'reason' => $data['reason'] ?? '',
+ 'performed_by' => $data['performed_by'] ?? '',
+ 'purged_at' => $data['purged_at'] ?? '',
  ];
  $originalTxid = null;
  $summary = sprintf(
  'File %s purged from node %s%s',
- $data['file_key'] ?? $key,
+ $fileKey,
  $data['node_name'] ?? $data['node_id'] ?? 'unknown',
  ! empty($data['reason']) ? ': '.$data['reason'] : ''
  );
@@ -87,7 +101,10 @@ final readonly class LedgerEntryData
  'node_id' => $data['node_id'] ?? $key,
  'node_name' => $data['node_name'] ?? '',
  'items_resynced' => $data['items_resynced'] ?? 0,
+ 'method' => $data['method'] ?? 'ssm_subscribe_all',
  'reason' => $data['reason'] ?? '',
+ 'performed_by' => $data['performed_by'] ?? '',
+ 'resynced_at' => $data['resynced_at'] ?? '',
  ];
  $originalTxid = null;
  $summary = sprintf(

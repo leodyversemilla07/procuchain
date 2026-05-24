@@ -85,11 +85,15 @@ class RecoverableDataController extends Controller
         return redirect()->back()->with('error', 'Failed to restore file on blockchain.');
     }
 
-    /**
-     * Purge a file's data from a single node's local storage.
-     * The data remains on all other nodes and will be re-synced automatically.
-     * Recorded on-chain as action: 'node_purge' for audit compliance.
-     */
+ /**
+ * Purge a node's data to demonstrate blockchain data resilience.
+ *
+ * In MultiChain CE, per-key deletion is not available — this performs
+ * a full node purge (same as purgeAllFromNode). Data survives on all
+ * other nodes and can be restored via manual resync.
+ *
+ * Recorded on-chain as action: 'file_node_purge' for audit compliance.
+ */
     public function deleteFromNode(Request $request): RedirectResponse
     {
         $this->authorize('manage-recoverable-data');

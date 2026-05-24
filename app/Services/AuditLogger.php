@@ -249,17 +249,18 @@ class AuditLogger
      */
     private function categorizeAction(string $action): string
     {
-        return match (true) {
-            str_starts_with($action, 'procurement.') => 'procurement',
-            str_starts_with($action, 'document.') => 'document',
-            str_starts_with($action, 'auth.') => 'authentication',
-            str_starts_with($action, 'admin.') => 'administration',
-            str_starts_with($action, 'user.') => 'user_management',
-            str_starts_with($action, 'account.') => 'account_security',
-            str_starts_with($action, 'settings.') => 'user_settings',
-            str_starts_with($action, 'security.') => 'security',
-            default => 'system',
-        };
+ return match (true) {
+ str_starts_with($action, 'procurement.') => 'procurement',
+ str_starts_with($action, 'document.') => 'document',
+ str_starts_with($action, 'auth.') => 'authentication',
+ str_starts_with($action, 'admin.') => 'administration',
+ str_starts_with($action, 'user.') => 'user_management',
+ str_starts_with($action, 'account.') => 'account_security',
+ str_starts_with($action, 'settings.') => 'user_settings',
+ str_starts_with($action, 'security.') => 'security',
+ str_starts_with($action, 'node.') => 'node_operations',
+ default => 'system',
+ };
     }
 
     /**
