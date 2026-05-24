@@ -13,6 +13,8 @@ use App\Models\User;
  * Gate::define('manage-workflow-config', [SettingsPolicy::class, 'manageWorkflowConfig'])
  * Gate::define('manage-stage-document-config', [SettingsPolicy::class, 'manageStageDocumentConfig'])
  * Gate::define('manage-user-invitations', [SettingsPolicy::class, 'manageUserInvitations'])
+ * Gate::define('view-workflow', [SettingsPolicy::class, 'viewWorkflow'])
+ * Gate::define('manage-recoverable-data', [SettingsPolicy::class, 'manageRecoverableData'])
  *
  * Usage in controllers:
  * $this->authorize('manage-settings');
@@ -59,5 +61,22 @@ class SettingsPolicy
     public function manageUserInvitations(User $user): bool
     {
         return $user->can('create users');
+    }
+
+    /**
+     * Determine whether the user can view the workflow page.
+     * All authenticated users can view workflow definitions.
+     */
+    public function viewWorkflow(User $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can manage recoverable data.
+     */
+    public function manageRecoverableData(User $user): bool
+    {
+        return $user->can('manage settings');
     }
 }

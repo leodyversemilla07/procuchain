@@ -20,6 +20,8 @@ class WorkflowController extends Controller
      */
     public function __invoke(): Response
     {
+        $this->authorize('view-workflow');
+
         $workflows = collect(ProcurementModeEnums::cases())->map(function (ProcurementModeEnums $mode): array {
             $optionalStages = $this->workflowDefinitionService->getOptionalStagesForMode($mode);
             $stages = $this->workflowDefinitionService->getStagesForMode($mode);

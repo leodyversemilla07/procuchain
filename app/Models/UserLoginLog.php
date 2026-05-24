@@ -5,7 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $ip_address
+ * @property string $user_agent
+ * @property string|null $device_type
+ * @property string|null $browser
+ * @property string|null $platform
+ * @property string|null $location
+ * @property bool $successful
+ * @property Carbon|null $login_at
+ * @property Carbon|null $logout_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ */
 class UserLoginLog extends Model
 {
     use HasFactory;

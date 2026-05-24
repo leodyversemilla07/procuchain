@@ -5,7 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string $file_key
+ * @property string|null $pr_number
+ * @property string|null $procurement_title
+ * @property string|null $document_type
+ * @property string|null $stage
+ * @property string|null $ip_address
+ * @property string|null $user_agent
+ * @property int|null $view_duration
+ * @property array|null $metadata
+ * @property Carbon|null $viewed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ */
 class DocumentView extends Model
 {
     use HasFactory;

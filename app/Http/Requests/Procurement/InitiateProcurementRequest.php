@@ -33,6 +33,7 @@ class InitiateProcurementRequest extends FormRequest
             // Classification
             'category' => ['required', Rule::enum(ProcurementCategoryEnums::class)],
             'procurement_mode' => ['required', Rule::enum(ProcurementModeEnums::class)],
+            'negotiated_procurement_type' => ['nullable', 'string', 'in:' . implode(',', array_keys(ProcurementModeEnums::negotiatedProcurementSubTypes()))],
 
             // Municipal Office Information
             'office' => ['required', 'string', 'max:255'],
@@ -68,6 +69,7 @@ class InitiateProcurementRequest extends FormRequest
                 $this->validateMandatoryDocuments($validator);
             }
             $this->validateAbcAgainstMode($validator);
+            $this->validateNegotiatedProcurementType($validator);
         });
     }
 
@@ -140,6 +142,30 @@ class InitiateProcurementRequest extends FormRequest
         }
     }
 
+    /**
+     * Validate that negotiated_procurement_type is required when procurement_mode is negotiated_procurement
+     * Per NGPA IRR Section 35
+     */
+    protected function validateNegotiatedProcurementType($validator): void
+    {
+        $mode = $this->input('procurement_mode');
+        $negotiatedType = $this->input('negotiated_procurement_type');
+
+        if ($mode === ProcurementModeEnums::NEGOTIATED_PROCUREMENT->value && empty($negotiatedType)) {
+            $validator->errors()->add(
+                'negotiated_procurement_type',
+                'The negotiated procurement type is required when procurement mode is Negotiated Procurement per RA 12009 Section 35.'
+            );
+        }
+
+        if ($mode !== ProcurementModeEnums::NEGOTIATED_PROCUREMENT->value && ! empty($negotiatedType)) {
+            $validator->errors()->add(
+                'negotiated_procurement_type',
+                'The negotiated procurement type should only be specified when procurement mode is Negotiated Procurement.'
+            );
+        }
+    }
+
     public function messages(): array
     {
         return [
@@ -149,6 +175,7 @@ class InitiateProcurementRequest extends FormRequest
             'abc_amount.required' => 'Approved Budget for Contract (ABC) is required per RA 12009.',
             'category.required' => 'Procurement category must be specified (Goods/Infrastructure/Consulting).',
             'procurement_mode.required' => 'Procurement mode must comply with RA 12009 requirements.',
+            'negotiated_procurement_type.in' => 'The negotiated procurement type must be one of the valid sub-types per RA 12009 Section 35.',
             'office.required' => 'Municipal/City Office is required.',
             'prepared_by.required' => 'Prepared by field is required to identify the procurement officer.',
             'other_description.required_if' => 'Please specify the description when selecting "Other".',

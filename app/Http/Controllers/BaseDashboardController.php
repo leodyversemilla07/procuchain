@@ -21,11 +21,12 @@ use Inertia\Response;
 
 abstract class BaseDashboardController extends BaseController
 {
-    public function __construct(
-        protected Manager $multichain,
-        protected DashboardService $dashboardService,
-        protected CacheStrategyInterface $cacheStrategy
-    ) {}
+ public function __construct(
+ protected Manager $multichain,
+ protected DashboardService $dashboardService,
+ protected CacheStrategyInterface $cacheStrategy,
+ private ProcurementRepository $procurementRepository
+ ) {}
 
     /**
      * Display the dashboard for the role
@@ -242,7 +243,7 @@ abstract class BaseDashboardController extends BaseController
         $prNumbers = $procurementsByKey->keys()->all();
 
         // Fetch procurement metadata to check ownership
-        $procurements = app(ProcurementRepository::class)->findManyByProcurement($prNumbers);
+        $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
 
         // Filter to only include procurements owned by the user
         $allowedPrNumbers = [];

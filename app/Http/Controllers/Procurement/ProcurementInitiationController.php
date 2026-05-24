@@ -117,7 +117,8 @@ class ProcurementInitiationController extends BaseController
     {
         $this->authorize('initiate-procurement');
 
-        $prNumber = $request->input('pr_number');
+        $validated = $request->validated();
+        $prNumber = $validated['pr_number'];
         $user = $request->user();
 
         // Duplicate check stays synchronous
@@ -130,17 +131,17 @@ class ProcurementInitiationController extends BaseController
 
         $procurementData = [
             'pr_number' => $prNumber,
-            'app_reference' => $request->input('app_reference'),
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'abc_amount' => (float) $request->input('abc_amount'),
-            'funding_source' => $request->input('funding_source'),
-            'category' => $request->input('category'),
-            'procurement_mode' => $request->input('procurement_mode'),
-            'negotiated_procurement_type' => $request->input('negotiated_procurement_type'),
-            'office' => $request->input('office'),
-            'end_user' => $request->input('end_user'),
-            'prepared_by' => $request->input('prepared_by') ?? $user->name,
+            'app_reference' => $validated['app_reference'],
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'abc_amount' => (float) $validated['abc_amount'],
+            'funding_source' => $validated['funding_source'],
+            'category' => $validated['category'],
+            'procurement_mode' => $validated['procurement_mode'],
+            'negotiated_procurement_type' => $validated['negotiated_procurement_type'] ?? null,
+            'office' => $validated['office'],
+            'end_user' => $validated['end_user'] ?? null,
+            'prepared_by' => $validated['prepared_by'] ?? $user->name,
             'status' => 'draft',
             'user_id' => (string) $user->id,
             'user_address' => $user->blockchain_address,

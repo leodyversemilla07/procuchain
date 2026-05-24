@@ -9,6 +9,7 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\Manager;
+use App\Traits\AuditContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -19,6 +20,8 @@ use Inertia\Response;
 
 class UserManagementController extends Controller
 {
+    use AuditContext;
+
     public function __construct(protected AuditLogger $auditLogger) {}
 
     /**
@@ -104,7 +107,7 @@ class UserManagementController extends Controller
             $user->assignRole($validated['role']);
 
             Log::info('Admin created new user', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'created_user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_role' => $validated['role'],
@@ -121,7 +124,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', 'User created successfully with blockchain address.');
         } catch (\Exception $e) {
             Log::error('Failed to create user', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
 
@@ -160,7 +163,7 @@ class UserManagementController extends Controller
             $user->syncRoles([$validated['role']]);
 
             Log::info('Admin updated user', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'updated_user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_role' => $validated['role'],
@@ -176,7 +179,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to update user', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'user_id' => $user->id,
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
@@ -202,7 +205,7 @@ class UserManagementController extends Controller
             $userId = $user->id;
             $user->delete();
             Log::info('Admin deleted user', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'deleted_user_email' => $userEmail,
             ]);
 
@@ -216,7 +219,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', 'User deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to delete user', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'user_id' => $user->id,
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
@@ -263,15 +266,15 @@ class UserManagementController extends Controller
                 return redirect()->back()->with('error', 'You cannot delete your own account.');
             }
 
-            // Perform bulk deletion within a transaction
-            $currentUserId = $request->user()->id;
-            DB::transaction(function () use ($userIds, $usersToDelete, $currentUserId) {
-                User::whereIn('id', $userIds)->delete();
+ // Perform bulk deletion within a transaction
+ $auditCtx = $this->auditContext($request);
+ DB::transaction(function () use ($userIds, $usersToDelete, $auditCtx) {
+ User::whereIn('id', $userIds)->delete();
 
-                // Log the bulk deletion
-                Log::info('Admin performed bulk user deletion', [
-                    'admin_id' => $currentUserId,
-                    'deleted_users' => $usersToDelete->map(function ($user) {
+ // Log the bulk deletion
+ Log::info('Admin performed bulk user deletion', [
+ ...$auditCtx,
+ 'deleted_users' => $usersToDelete->map(function ($user) {
                         return [
                             'id' => $user->id,
                             'email' => $user->email,
@@ -298,7 +301,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', $message);
         } catch (\Exception $e) {
             Log::error('Failed to bulk delete users', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'user_ids' => $validated['user_ids'] ?? [],
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
@@ -330,7 +333,7 @@ class UserManagementController extends Controller
             if ($status === Password::RESET_LINK_SENT) {
                 // Log the password reset action
                 Log::info('Admin initiated password reset for user', [
-                    'admin_id' => $request->user()->id,
+                    ...$this->auditContext($request),
                     'admin_email' => $request->user()->email,
                     'user_id' => $user->id,
                     'user_email' => $user->email,
@@ -348,7 +351,7 @@ class UserManagementController extends Controller
                 return redirect()->back()->with('success', "Password reset link sent to {$user->email}");
             } else {
                 Log::warning('Failed to send password reset link', [
-                    'admin_id' => $request->user()->id,
+                    ...$this->auditContext($request),
                     'user_id' => $user->id,
                     'user_email' => $user->email,
                     'status' => $status,
@@ -358,7 +361,7 @@ class UserManagementController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Error sending password reset link', [
-                'admin_id' => $request->user()->id,
+                ...$this->auditContext($request),
                 'user_id' => $user->id,
                 'error' => 'An error occurred managing users. Please try again.',
                 'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),

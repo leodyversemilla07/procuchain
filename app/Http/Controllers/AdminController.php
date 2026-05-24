@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
+use App\Repositories\ProcurementRepository;
 use App\Services\AdminAnalyticsService;
 use App\Services\DashboardService;
 use App\Services\Manager;
@@ -11,14 +12,15 @@ use Inertia\Inertia;
 
 class AdminController extends BaseDashboardController
 {
-    public function __construct(
-        Manager $multichain,
-        DashboardService $dashboardService,
-        CacheStrategyInterface $cacheStrategy,
-        private AdminAnalyticsService $analyticsService
-    ) {
-        parent::__construct($multichain, $dashboardService, $cacheStrategy);
-    }
+ public function __construct(
+ Manager $multichain,
+ DashboardService $dashboardService,
+ CacheStrategyInterface $cacheStrategy,
+ ProcurementRepository $procurementRepository,
+ private AdminAnalyticsService $analyticsService
+ ) {
+ parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
+ }
 
     /**
      * Get the role name for middleware and cache keys

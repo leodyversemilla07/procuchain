@@ -42,6 +42,14 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read string|null $primary_role
  * @property-read int $remaining_lock_time
  * @property-read Collection<int, UserLoginLog> $loginLogs
+ * @property-read Collection<int, AuditLog> $auditLogs
+ * @property-read Collection<int, BlockedIp> $blockedIps
+ * @property-read Collection<int, UserInvitation> $invitations
+ * @property-read Collection<int, UserInvitation> $acceptedInvitations
+ * @property-read Collection<int, UserInvitation> $revokedInvitations
+ * @property-read Collection<int, DocumentView> $documentViews
+ * @property-read Collection<int, ProcurementWorkflowConfig> $updatedWorkflowConfigs
+ * @property-read Collection<int, StageDocumentConfig> $updatedStageDocumentConfigs
  * @property-read Collection<int, Role> $roles
  * @property-read Collection<int, Permission> $permissions
  *
@@ -185,6 +193,70 @@ class User extends Authenticatable
     public function loginLogs(): HasMany
     {
         return $this->hasMany(UserLoginLog::class);
+    }
+
+    /**
+     * Get the audit logs for the user.
+     */
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'user_id');
+    }
+
+    /**
+     * Get the blocked IPs created by this user.
+     */
+    public function blockedIps(): HasMany
+    {
+        return $this->hasMany(BlockedIp::class, 'blocked_by');
+    }
+
+    /**
+     * Get the invitations sent by this user.
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(UserInvitation::class, 'invited_by');
+    }
+
+    /**
+     * Get the invitations accepted by this user.
+     */
+    public function acceptedInvitations(): HasMany
+    {
+        return $this->hasMany(UserInvitation::class, 'user_id');
+    }
+
+    /**
+     * Get the invitations revoked by this user.
+     */
+    public function revokedInvitations(): HasMany
+    {
+        return $this->hasMany(UserInvitation::class, 'revoked_by');
+    }
+
+    /**
+     * Get the document views for the user.
+     */
+    public function documentViews(): HasMany
+    {
+        return $this->hasMany(DocumentView::class);
+    }
+
+    /**
+     * Get the procurement workflow configs updated by this user.
+     */
+    public function updatedWorkflowConfigs(): HasMany
+    {
+        return $this->hasMany(ProcurementWorkflowConfig::class, 'updated_by');
+    }
+
+    /**
+     * Get the stage document configs updated by this user.
+     */
+    public function updatedStageDocumentConfigs(): HasMany
+    {
+        return $this->hasMany(StageDocumentConfig::class, 'updated_by');
     }
 
     /**

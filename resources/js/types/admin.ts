@@ -208,12 +208,18 @@ export interface HealthStatus {
     checked_at: string;
 }
 
+export interface SearchResults {
+  block?: object;
+  transaction?: object;
+  address?: object;
+}
+
 export interface BlockchainExplorerData {
-    overview: BlockchainOverview | null;
-    latestBlocks: BlockInfo[];
-    streams: StreamInfo[];
-    addresses: AddressInfo[];
-    peers: PeerInfo[];
-    health: HealthStatus | null;
-    error?: string;
+  overview: BlockchainOverview | null;
+  latestBlocks: BlockInfo[];
+  streams: StreamInfo[];
+  addresses: AddressInfo[];
+  peers: PeerInfo[];
+  health: HealthStatus | null;
+  error?: string;
 }

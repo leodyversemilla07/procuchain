@@ -5,8 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $email
+ * @property string $name
+ * @property string $role
+ * @property string $token
+ * @property int|null $invited_by
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $accepted_at
+ * @property int|null $user_id
+ * @property bool $revoked
+ * @property Carbon|null $revoked_at
+ * @property int|null $revoked_by
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $invitedBy
+ * @property-read User $user
+ * @property-read User|null $revokedBy
+ */
 class UserInvitation extends Model
 {
     use HasFactory;

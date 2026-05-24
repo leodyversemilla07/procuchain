@@ -40,6 +40,8 @@ class RecoverableDataController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('manage-recoverable-data');
+
         $deletedFiles = $this->storage->getDeletedFiles();
 
         $files = collect($deletedFiles)->values()->map(fn (array $file) => [
@@ -64,6 +66,8 @@ class RecoverableDataController extends Controller
      */
     public function restore(Request $request): RedirectResponse
     {
+        $this->authorize('manage-recoverable-data');
+
         $validated = $request->validate([
             'file_key' => 'required|string',
             'reason' => 'nullable|string|max:500',
@@ -88,6 +92,8 @@ class RecoverableDataController extends Controller
      */
     public function deleteFromNode(Request $request): RedirectResponse
     {
+        $this->authorize('manage-recoverable-data');
+
         $validated = $request->validate([
             'file_key' => 'required|string',
             'node_id' => 'required|string',
@@ -114,6 +120,8 @@ class RecoverableDataController extends Controller
      */
     public function resyncNode(Request $request): RedirectResponse
     {
+        $this->authorize('manage-recoverable-data');
+
         $validated = $request->validate([
             'node_id' => 'required|string',
         ]);
@@ -135,6 +143,8 @@ class RecoverableDataController extends Controller
      */
     public function purgeAllFromNode(Request $request): RedirectResponse
     {
+        $this->authorize('manage-recoverable-data');
+
         $validated = $request->validate([
             'node_id' => 'required|string',
             'reason' => 'nullable|string|max:500',

@@ -4,7 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $ip_address
+ * @property int|null $blocked_by
+ * @property string|null $reason
+ * @property Carbon|null $expires_at
+ * @property bool $is_active
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $blocker
+ */
 class BlockedIp extends Model
 {
     protected $fillable = [

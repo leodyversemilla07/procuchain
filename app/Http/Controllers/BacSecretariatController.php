@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\CacheStrategyInterface;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Repositories\ProcurementRepository;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
@@ -15,14 +16,15 @@ use Inertia\Inertia;
 
 class BacSecretariatController extends BaseDashboardController
 {
-    public function __construct(
-        protected Manager $multichain,
-        protected DashboardService $dashboardService,
-        CacheStrategyInterface $cacheStrategy,
-        private ProcurementStageTransitionService $stageTransitionService
-    ) {
-        parent::__construct($multichain, $dashboardService, $cacheStrategy);
-    }
+ public function __construct(
+ protected Manager $multichain,
+ protected DashboardService $dashboardService,
+ CacheStrategyInterface $cacheStrategy,
+ ProcurementRepository $procurementRepository,
+ private ProcurementStageTransitionService $stageTransitionService
+ ) {
+ parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
+ }
 
     protected function getRoleName(): string
     {
