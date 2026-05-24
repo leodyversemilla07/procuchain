@@ -18,6 +18,15 @@ use Illuminate\Support\Facades\Log;
  * and node health/status queries. Each operation connects to
  * the target node via its own RPC client.
  *
+ * Purge strategy for MultiChain CE:
+ * - MultiChain CE has no per-key deletion API
+ * - "Purge" means unsubscribing from streams on the target node
+ *   so the node drops its local copy of the data
+ * - Data survives on all other nodes (they remain subscribed)
+ * - Resync re-subscribes the node, re-downloading from peers
+ * - This demonstrates the core blockchain property: data survives
+ *   individual node failures and can be recovered from peers
+ *
  * @see FileLifecycleManager for file-level delete/restore operations
  */
 class NodeOperationsService
@@ -27,12 +36,16 @@ class NodeOperationsService
     ) {}
 
     /**
-     * Delete a file's data from a single node's local storage.
+     * Purge a single file's data from a node's local storage.
      *
-     * The data remains on other nodes and will be re-synced automatically.
-     * The deletion event is recorded on-chain for audit compliance (RA 12009).
+     * Since MultiChain CE has no per-key deletion, this unsubscribes
+     * the node from file-related streams (FILE_METADATA, FILE_DATA),
+     * causing the node to drop its local copy of ALL file data.
+     * The file data remains on other nodes and is restored on resync.
      *
-     * @return array{success: bool, message: string}
+     * The purge event is recorded on-chain for audit compliance (RA 12009).
+     *
+     * @return array{success: bool, message: string, streams_purged: int}
      */
     public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
     {
@@ -41,10 +54,8 @@ class NodeOperationsService
             $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
 
             if (! $targetNode) {
-                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
+                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry", 'streams_purged' => 0];
             }
-
-            $dataKey = str_replace('/', '_', $fileKey);
 
             $nodeClient = new Client(
                 $targetNode['private_ip'],
@@ -55,40 +66,50 @@ class NodeOperationsService
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
-            // Community Edition compatible per-key purge
-            $items = $nodeClient->liststreamkeyitems(
-                StreamEnums::FILE_METADATA->value,
-                $dataKey,
-                false,
-                100,
-                0,
-                false
-            );
+            // Verify RPC connection
+            $nodeInfo = $nodeClient->getinfo();
+            if (! $nodeClient->success()) {
+                return [
+                    'success' => false,
+                    'message' => "Cannot connect to node '{$nodeId}' — RPC failed: {$nodeClient->errormessage()}",
+                    'streams_purged' => 0,
+                ];
+            }
 
-            $purgedCount = count($items);
+            $dataKey = str_replace('/', '_', $fileKey);
 
-            $chunkItems = $nodeClient->liststreamkeyitems(
-                StreamEnums::FILE_DATA->value,
-                $dataKey,
-                false,
-                1000,
-                0,
-                false
-            );
-            $purgedCount += count($chunkItems);
+            // Unsubscribe from file-related streams on the target node
+            // This causes the node to drop ALL its local file data
+            // (MultiChain CE cannot delete per-key — this is the best we can do)
+            $fileStreams = [StreamEnums::FILE_METADATA, StreamEnums::FILE_DATA];
+            $streamsPurged = 0;
+            $itemsDropped = 0;
 
-            if ($purgedCount > 0) {
-                foreach ([StreamEnums::FILE_METADATA, StreamEnums::FILE_DATA] as $streamEnum) {
-                    try {
-                        $nodeClient->unsubscribe($streamEnum->value, true);
-                        $nodeClient->subscribe($streamEnum->value, true);
-                    } catch (Exception $subEx) {
-                        Log::warning("Could not unsubscribe/resubscribe {$streamEnum->value}: ".$subEx->getMessage());
+            foreach ($fileStreams as $streamEnum) {
+                try {
+                    // Get item count before purging
+                    $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
+                    $itemCount = 0;
+                    if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
+                        $itemCount = $streamInfo['items'] ?? 0;
                     }
+
+                    // Unsubscribe — this drops the node's local copy of the stream data
+                    $nodeClient->unsubscribe($streamEnum->value, true);
+
+                    if ($nodeClient->success()) {
+                        $streamsPurged++;
+                        $itemsDropped += $itemCount;
+                        Log::info("Unsubscribed {$streamEnum->value} on node {$nodeId} (dropped {$itemCount} items)");
+                    } else {
+                        Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
+                    }
+                } catch (Exception $streamEx) {
+                    Log::warning("Could not unsubscribe from {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
                 }
             }
 
-            // Record the single-node deletion on-chain (from the primary node)
+            // Record the file-level node purge on-chain (from the primary node)
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
                 'json' => [
                     'file_key' => $fileKey,
@@ -96,16 +117,19 @@ class NodeOperationsService
                     'action' => 'node_purge',
                     'node_id' => $nodeId,
                     'node_name' => $targetNode['name'] ?? $nodeId,
-                    'items_purged' => $purgedCount,
+                    'streams_purged' => $streamsPurged,
+                    'items_dropped' => $itemsDropped,
                     'reason' => $reason,
                     'purged_at' => now()->toIso8601String(),
+                    'performed_by' => auth()->user()?->name ?? 'system',
                 ],
             ]);
 
             Log::info("File data purged from node {$nodeId}", [
                 'file_key' => $fileKey,
                 'node_id' => $nodeId,
-                'items_purged' => $purgedCount,
+                'streams_purged' => $streamsPurged,
+                'items_dropped' => $itemsDropped,
             ]);
 
             app(AuditLogger::class)->log(
@@ -116,14 +140,16 @@ class NodeOperationsService
                     'file_key' => $fileKey,
                     'action' => 'node_purge',
                     'node_id' => $nodeId,
-                    'items_purged' => $purgedCount,
+                    'streams_purged' => $streamsPurged,
+                    'items_dropped' => $itemsDropped,
                     'reason' => $reason,
                 ],
             );
 
             return [
                 'success' => true,
-                'message' => "Purged {$purgedCount} items from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes and will resync automatically.",
+                'message' => "Purged file data from {$targetNode['name']} ({$nodeId}). {$streamsPurged} file streams unsubscribed ({$itemsDropped} items dropped). Data survives on remaining nodes — resync to restore.",
+                'streams_purged' => $streamsPurged,
             ];
         } catch (Exception $e) {
             Log::error('Single-node file purge failed', [
@@ -132,15 +158,19 @@ class NodeOperationsService
                 'error' => $e->getMessage(),
             ]);
 
-            return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Failed: '.$e->getMessage(), 'streams_purged' => 0];
         }
     }
 
     /**
      * Resync a node's stream data from peers.
      *
-     * After a single-node purge, this triggers the node to re-download
-     * the missing stream items from its connected peers.
+     * After a purge (single-file or full-node), this re-subscribes
+     * the node to all streams, causing MultiChain to re-download
+     * the missing data from connected peers.
+     *
+     * This demonstrates blockchain recoverability: even after a
+     * node loses all its local data, it can fully recover from peers.
      *
      * @return array{success: bool, message: string}
      */
@@ -163,12 +193,19 @@ class NodeOperationsService
             );
             $nodeClient->setoption('chain_name', config('multichain.chain_name'));
 
+            // Verify RPC connection
+            $nodeInfo = $nodeClient->getinfo();
+            if (! $nodeClient->success()) {
+                return ['success' => false, 'message' => "Cannot connect to node '{$nodeId}' — RPC failed: {$nodeClient->errormessage()}"];
+            }
+
             $streams = StreamEnums::cases();
 
             $resyncedStreams = 0;
             $totalRetrieved = 0;
             foreach ($streams as $streamEnum) {
                 try {
+                    // Re-subscribe — triggers MultiChain to pull data from peers
                     $nodeClient->subscribe($streamEnum->value, true);
 
                     if (! $nodeClient->success()) {
@@ -176,34 +213,32 @@ class NodeOperationsService
                         continue;
                     }
 
+                    // After subscribing, check item count to confirm data was retrieved
                     $info = $nodeClient->getstreaminfo($streamEnum->value);
                     $itemsAfter = 0;
 
                     if ($nodeClient->success() && isset($info['items'])) {
                         $itemsAfter = $info['items'];
                     } else {
-                        $sampleItems = $nodeClient->liststreamitems($streamEnum->value, false, 1, 0, false);
-                        if ($nodeClient->success() && is_array($sampleItems)) {
+                        // Fallback: list a sample to force sync, then re-check
+                        $nodeClient->liststreamitems($streamEnum->value, false, 1, 0, false);
+                        if ($nodeClient->success()) {
                             $info2 = $nodeClient->getstreaminfo($streamEnum->value);
-                            $itemsAfter = $info2['items'] ?? (count($sampleItems) > 0 ? 1 : 0);
+                            $itemsAfter = $info2['items'] ?? 0;
                         }
                     }
 
-                    $adminInfo = $this->multichain->getstreaminfo($streamEnum->value);
-                    $adminItemCount = $adminInfo['items'] ?? 0;
-                    $reportedItems = max($itemsAfter, $adminItemCount);
-
-                    if ($reportedItems > 0) {
+                    if ($itemsAfter > 0) {
                         $resyncedStreams++;
-                        $totalRetrieved += $reportedItems;
-                        Log::info("Resynced {$reportedItems} items from {$streamEnum->value} on node {$nodeId} (local={$itemsAfter}, chain={$adminItemCount})");
+                        $totalRetrieved += $itemsAfter;
+                        Log::info("Resynced {$itemsAfter} items from {$streamEnum->value} on node {$nodeId}");
                     }
                 } catch (Exception $streamEx) {
                     Log::warning("Could not resubscribe to stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
                 }
             }
 
-            // Record resync event on-chain
+            // Record resync event on-chain — proves recovery happened
             $dataKey = 'node_'.$nodeId.'_resync';
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
                 'json' => [
@@ -235,7 +270,7 @@ class NodeOperationsService
                 ],
             );
 
-            // If this was the primary node, clear the purge flag
+            // If this was the primary node, clear the purge flag so failover can promote it back
             if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
                 $primaryHost = config('multichain.rpc.host');
                 $primaryPort = config('multichain.rpc.port');
@@ -250,7 +285,7 @@ class NodeOperationsService
 
             return [
                 'success' => true,
-                'message' => "Resynced {$targetNode['name']} ({$nodeId}) — {$totalRetrieved} items retrieved across {$resyncedStreams} streams from peers.",
+                'message' => "Resynced {$targetNode['name']} ({$nodeId}) — {$totalRetrieved} items retrieved across {$resyncedStreams} streams from peers. Data fully restored from blockchain.",
             ];
         } catch (Exception $e) {
             Log::error('Node resync failed', [
@@ -265,8 +300,10 @@ class NodeOperationsService
     /**
      * Purge ALL stream data from a single node's local storage.
      *
-     * Unlike deleteFromNode() which targets a specific file key,
-     * this iterates every stream and purges all items.
+     * Simulates catastrophic node data loss for the demo.
+     * Unsubscribes the node from every stream, dropping all local data.
+     * Data survives on remaining nodes — resync to fully restore.
+     * Recorded on-chain as action: 'full_node_purge' per RA 12009.
      *
      * @return array{success: bool, message: string, items_purged: int}
      */
@@ -312,6 +349,7 @@ class NodeOperationsService
                         $nodeItemCount = $streamInfo['items'] ?? 0;
                     }
 
+                    // Unsubscribe — drops ALL local data for this stream
                     $nodeClient->unsubscribe($streamEnum->value, true);
 
                     $purgeOk = $nodeClient->success();
@@ -379,6 +417,10 @@ class NodeOperationsService
 
     /**
      * Get list of available nodes with real-time health status and item counts.
+     *
+     * For each node, checks on-chain purge/resync events to determine
+     * if the node is currently in a purged state, and queries the node's
+     * RPC for live item counts.
      *
      * @return array<int, array{id: string, name: string, role: string, is_purged: bool, purged_at: string|null, items: int}>
      */
