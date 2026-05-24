@@ -100,5 +100,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
         Route::post('/delete-from-node', [RecoverableDataController::class, 'deleteFromNode'])->name('delete-from-node');
         Route::post('/purge-all-from-node', [RecoverableDataController::class, 'purgeAllFromNode'])->name('purge-all-from-node');
         Route::post('/resync-node', [RecoverableDataController::class, 'resyncNode'])->name('resync-node');
+        Route::get('/node-operation/{jobId}/status', [RecoverableDataController::class, 'nodeOperationStatus'])->name('node-operation-status');
     });
 });
