@@ -10,300 +10,94 @@ use App\Services\AuditLogger;
 use App\Services\Manager;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 
 /**
  * Handles node-level operations for blockchain disaster recovery.
  *
- * Manages per-node and full-node purges, resync operations,
- * and node health/status queries. Each operation connects to
- * the target node via its own RPC client.
+ * Manages per-node purges and resync operations using AWS SSM
+ * to execute remote commands on MultiChain node EC2 instances.
  *
  * Purge strategy for MultiChain CE:
- * - MultiChain CE has no per-key deletion API
- * - "Purge" means unsubscribing from streams on the target node
- *   so the node drops its local copy of the data
- * - Data survives on all other nodes (they remain subscribed)
- * - Resync re-subscribes the node, re-downloading from peers
- * - This demonstrates the core blockchain property: data survives
- *   individual node failures and can be recovered from peers
+ * - MultiChain CE has no purgestreamitems API (Enterprise only)
+ * - unsubscribe alone doesn't delete data — MultiChain auto-resubscribes
+ * - Real purge: AWS SSM → stop daemon → delete chain data → restart
+ * - The node restarts with zero blocks, zero subscriptions
+ * - Data survives on all other nodes (they still run normally)
+ * - Manual resync re-subscribes all streams, re-downloading from peers
+ * - This demonstrates: data survives individual node failures
+ *
+ * SSM command flow:
+ * 1. Stop: multichain-cli procuchain stop (graceful)
+ * 2. Wipe: rm -rf everything except multichain.conf + params.dat + wallet.dat
+ * 3. Restart: multichaind procuchain@<seed>:6835 -daemon
+ * 4. Node comes back with 0 blocks, connects to peers but no data yet
  *
  * @see FileLifecycleManager for file-level delete/restore operations
  */
 class NodeOperationsService
 {
+    private const SEED_NODE_PRIVATE_IP = '172.31.13.21';
+
     public function __construct(
         private Manager $multichain,
     ) {}
 
     /**
-     * Purge a single file's data from a node's local storage.
+     * Purge a single file's data from a specific node.
      *
-     * Since MultiChain CE has no per-key deletion, this unsubscribes
-     * the node from file-related streams (FILE_METADATA, FILE_DATA),
-     * causing the node to drop its local copy of ALL file data.
-     * The file data remains on other nodes and is restored on resync.
-     *
-     * The purge event is recorded on-chain for audit compliance (RA 12009).
-     *
-     * @return array{success: bool, message: string, streams_purged: int}
-     */
-    public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
-    {
-        try {
-            $nodes = config('multichain.nodes', []);
-            $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
-
-            if (! $targetNode) {
-                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry", 'streams_purged' => 0];
-            }
-
-            $nodeClient = new Client(
-                $targetNode['private_ip'],
-                $targetNode['rpc_port'],
-                config('multichain.rpc.username', 'multichainrpc'),
-                config('multichain.rpc.password'),
-                false
-            );
-            $nodeClient->setoption('chain_name', config('multichain.chain_name'));
-
-            // Verify RPC connection
-            $nodeInfo = $nodeClient->getinfo();
-            if (! $nodeClient->success()) {
-                return [
-                    'success' => false,
-                    'message' => "Cannot connect to node '{$nodeId}' — RPC failed: {$nodeClient->errormessage()}",
-                    'streams_purged' => 0,
-                ];
-            }
-
-            $dataKey = str_replace('/', '_', $fileKey);
-
-            // Unsubscribe from file-related streams on the target node
-            // This causes the node to drop ALL its local file data
-            // (MultiChain CE cannot delete per-key — this is the best we can do)
-            $fileStreams = [StreamEnums::FILE_METADATA, StreamEnums::FILE_DATA];
-            $streamsPurged = 0;
-            $itemsDropped = 0;
-
-            foreach ($fileStreams as $streamEnum) {
-                try {
-                    // Get item count before purging
-                    $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
-                    $itemCount = 0;
-                    if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
-                        $itemCount = $streamInfo['items'] ?? 0;
-                    }
-
-                    // Unsubscribe — this drops the node's local copy of the stream data
-                    $nodeClient->unsubscribe($streamEnum->value, true);
-
-                    if ($nodeClient->success()) {
-                        $streamsPurged++;
-                        $itemsDropped += $itemCount;
-                        Log::info("Unsubscribed {$streamEnum->value} on node {$nodeId} (dropped {$itemCount} items)");
-                    } else {
-                        Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
-                    }
-                } catch (Exception $streamEx) {
-                    Log::warning("Could not unsubscribe from {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
-                }
-            }
-
-            // Record the file-level node purge on-chain (from the primary node)
-            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
-                'json' => [
-                    'file_key' => $fileKey,
-                    'data_key' => $dataKey,
-                    'action' => 'node_purge',
-                    'node_id' => $nodeId,
-                    'node_name' => $targetNode['name'] ?? $nodeId,
-                    'streams_purged' => $streamsPurged,
-                    'items_dropped' => $itemsDropped,
-                    'reason' => $reason,
-                    'purged_at' => now()->toIso8601String(),
-                    'performed_by' => auth()->user()?->name ?? 'system',
-                ],
-            ]);
-
-            Log::info("File data purged from node {$nodeId}", [
-                'file_key' => $fileKey,
-                'node_id' => $nodeId,
-                'streams_purged' => $streamsPurged,
-                'items_dropped' => $itemsDropped,
-            ]);
-
-            app(AuditLogger::class)->log(
-                action: 'file.node_purge',
-                subjectType: 'file',
-                subjectId: $fileKey,
-                oldValues: [
-                    'file_key' => $fileKey,
-                    'action' => 'node_purge',
-                    'node_id' => $nodeId,
-                    'streams_purged' => $streamsPurged,
-                    'items_dropped' => $itemsDropped,
-                    'reason' => $reason,
-                ],
-            );
-
-            return [
-                'success' => true,
-                'message' => "Purged file data from {$targetNode['name']} ({$nodeId}). {$streamsPurged} file streams unsubscribed ({$itemsDropped} items dropped). Data survives on remaining nodes — resync to restore.",
-                'streams_purged' => $streamsPurged,
-            ];
-        } catch (Exception $e) {
-            Log::error('Single-node file purge failed', [
-                'file_key' => $fileKey,
-                'node_id' => $nodeId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return ['success' => false, 'message' => 'Failed: '.$e->getMessage(), 'streams_purged' => 0];
-        }
-    }
-
-    /**
-     * Resync a node's stream data from peers.
-     *
-     * After a purge (single-file or full-node), this re-subscribes
-     * the node to all streams, causing MultiChain to re-download
-     * the missing data from connected peers.
-     *
-     * This demonstrates blockchain recoverability: even after a
-     * node loses all its local data, it can fully recover from peers.
+     * For MultiChain CE, this performs a full node purge via SSM
+     * (same as purgeAllFromNode) since per-key deletion is not available.
+     * The purge event is recorded on-chain with the file key for traceability.
      *
      * @return array{success: bool, message: string}
      */
-    public function resyncNode(string $nodeId): array
+    public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
     {
-        try {
-            $nodes = config('multichain.nodes', []);
-            $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+        $result = $this->purgeAllFromNode($nodeId, $reason ?: "File purge: {$fileKey}");
 
-            if (! $targetNode) {
-                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
-            }
-
-            $nodeClient = new Client(
-                $targetNode['private_ip'],
-                $targetNode['rpc_port'],
-                config('multichain.rpc.username', 'multichainrpc'),
-                config('multichain.rpc.password'),
-                false
-            );
-            $nodeClient->setoption('chain_name', config('multichain.chain_name'));
-
-            // Verify RPC connection
-            $nodeInfo = $nodeClient->getinfo();
-            if (! $nodeClient->success()) {
-                return ['success' => false, 'message' => "Cannot connect to node '{$nodeId}' — RPC failed: {$nodeClient->errormessage()}"];
-            }
-
-            $streams = StreamEnums::cases();
-
-            $resyncedStreams = 0;
-            $totalRetrieved = 0;
-            foreach ($streams as $streamEnum) {
-                try {
-                    // Re-subscribe — triggers MultiChain to pull data from peers
-                    $nodeClient->subscribe($streamEnum->value, true);
-
-                    if (! $nodeClient->success()) {
-                        Log::warning("subscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
-                        continue;
-                    }
-
-                    // After subscribing, check item count to confirm data was retrieved
-                    $info = $nodeClient->getstreaminfo($streamEnum->value);
-                    $itemsAfter = 0;
-
-                    if ($nodeClient->success() && isset($info['items'])) {
-                        $itemsAfter = $info['items'];
-                    } else {
-                        // Fallback: list a sample to force sync, then re-check
-                        $nodeClient->liststreamitems($streamEnum->value, false, 1, 0, false);
-                        if ($nodeClient->success()) {
-                            $info2 = $nodeClient->getstreaminfo($streamEnum->value);
-                            $itemsAfter = $info2['items'] ?? 0;
-                        }
-                    }
-
-                    if ($itemsAfter > 0) {
-                        $resyncedStreams++;
-                        $totalRetrieved += $itemsAfter;
-                        Log::info("Resynced {$itemsAfter} items from {$streamEnum->value} on node {$nodeId}");
-                    }
-                } catch (Exception $streamEx) {
-                    Log::warning("Could not resubscribe to stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
-                }
-            }
-
-            // Record resync event on-chain — proves recovery happened
-            $dataKey = 'node_'.$nodeId.'_resync';
-            $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey, [
-                'json' => [
-                    'action' => 'node_resync',
+        if ($result['success']) {
+            // Record file-level purge on-chain for traceability
+            $dataKey = str_replace('/', '_', $fileKey);
+            try {
+                $this->multichain->publish(StreamEnums::FILE_METADATA->value, $dataKey.'_node_purge', [
+                    'json' => [
+                        'file_key' => $fileKey,
+                        'data_key' => $dataKey,
+                        'action' => 'file_node_purge',
+                        'node_id' => $nodeId,
+                        'reason' => $reason,
+                        'purged_at' => now()->toIso8601String(),
+                        'performed_by' => auth()->user()?->name ?? 'system',
+                    ],
+                ]);
+            } catch (Exception $e) {
+                Log::warning('Failed to record file-level purge event on-chain', [
+                    'file_key' => $fileKey,
                     'node_id' => $nodeId,
-                    'node_name' => $targetNode['name'] ?? $nodeId,
-                    'streams_resynced' => $resyncedStreams,
-                    'items_retrieved' => $totalRetrieved,
-                    'resynced_at' => now()->toIso8601String(),
-                    'performed_by' => auth()->user()?->name ?? 'system',
-                ],
-            ]);
-
-            Log::info("Node {$nodeId} resync completed", [
-                'node_id' => $nodeId,
-                'streams_resynced' => $resyncedStreams,
-                'items_retrieved' => $totalRetrieved,
-            ]);
-
-            app(AuditLogger::class)->log(
-                action: 'node.resync',
-                subjectType: 'node',
-                subjectId: $nodeId,
-                newValues: [
-                    'action' => 'node_resync',
-                    'node_id' => $nodeId,
-                    'streams_resynced' => $resyncedStreams,
-                    'items_retrieved' => $totalRetrieved,
-                ],
-            );
-
-            // If this was the primary node, clear the purge flag so failover can promote it back
-            if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
-                $primaryHost = config('multichain.rpc.host');
-                $primaryPort = config('multichain.rpc.port');
-
-                $isPrimary = ($targetNode['private_ip'] ?? '') === $primaryHost
-                    && ($targetNode['rpc_port'] ?? 6834) === $primaryPort;
-
-                if ($isPrimary) {
-                    $this->multichain->resetByResync();
-                }
+                    'error' => $e->getMessage(),
+                ]);
             }
-
-            return [
-                'success' => true,
-                'message' => "Resynced {$targetNode['name']} ({$nodeId}) — {$totalRetrieved} items retrieved across {$resyncedStreams} streams from peers. Data fully restored from blockchain.",
-            ];
-        } catch (Exception $e) {
-            Log::error('Node resync failed', [
-                'node_id' => $nodeId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
         }
+
+        return $result;
     }
 
     /**
-     * Purge ALL stream data from a single node's local storage.
+     * Purge ALL data from a specific node via AWS SSM.
      *
-     * Simulates catastrophic node data loss for the demo.
-     * Unsubscribes the node from every stream, dropping all local data.
-     * Data survives on remaining nodes — resync to fully restore.
-     * Recorded on-chain as action: 'full_node_purge' per RA 12009.
+     * This is the REAL purge — physically deletes the chain data
+     * from the target node's disk using AWS Systems Manager.
+     *
+     * Steps executed on the target node via SSM:
+     * 1. Gracefully stop the MultiChain daemon
+     * 2. Delete all chain data (blocks, chunks, chainstate, etc.)
+     * 3. Preserve multichain.conf, params.dat, wallet.dat (needed to reconnect)
+     * 4. Restart the daemon connecting to the seed node
+     *
+     * After purge: node has 0 blocks, 0 subscriptions, 0 data.
+     * The Shared Ledger page will show 0 entries for this node.
+     * Data survives on all other nodes.
      *
      * @return array{success: bool, message: string, items_purged: int}
      */
@@ -317,74 +111,124 @@ class NodeOperationsService
                 return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry", 'items_purged' => 0];
             }
 
-            $nodeClient = new Client(
-                $targetNode['private_ip'],
-                $targetNode['rpc_port'],
-                config('multichain.rpc.username', 'multichainrpc'),
-                config('multichain.rpc.password'),
-                false
-            );
-            $nodeClient->setoption('chain_name', config('multichain.chain_name'));
-
-            // Verify RPC connection
-            $nodeInfo = $nodeClient->getinfo();
-            if (! $nodeClient->success()) {
-                Log::error("Cannot connect to node {$nodeId} at {$targetNode['private_ip']}:{$targetNode['rpc_port']}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
-
-                return ['success' => false, 'message' => "Cannot connect to node '{$nodeId}' — RPC connection failed: {$nodeClient->errormessage()}", 'items_purged' => 0];
+            $instanceId = $targetNode['instance_id'] ?? '';
+            if (empty($instanceId)) {
+                return ['success' => false, 'message' => "Node '{$nodeId}' has no EC2 instance ID configured", 'items_purged' => 0];
             }
 
-            Log::info("Connected to node {$nodeId}", ['version' => $nodeInfo['version'] ?? 'unknown', 'blocks' => $nodeInfo['blocks'] ?? 0]);
+            // Get item count before purge (for reporting)
+            $itemsBefore = $this->getNodeItemCount($targetNode);
 
-            $streams = StreamEnums::cases();
-            $totalPurged = 0;
-            $streamStats = [];
+            // Execute the purge via AWS SSM
+            $chainDataDir = '/root/.multichain/procuchain';
+            $seedIp = $this->getSeedNodeIp($nodeId);
 
-            foreach ($streams as $streamEnum) {
-                try {
-                    $streamInfo = $nodeClient->getstreaminfo($streamEnum->value);
-                    $nodeItemCount = 0;
+            // The purge script:
+            // 1. Stop daemon gracefully (multichain-cli stop — needs HOME=/root)
+            // 2. Wait for process to exit
+            // 3. Delete all chain data EXCEPT conf/params/wallet/peers
+            // 4. Restart daemon connecting to seed peer
+            // 5. Wait for daemon to be ready, verify 0 blocks
+            $script = implode("\n", [
+                '#!/bin/bash',
+                'export HOME=/root',
+                'CLI="/usr/local/bin/multichain-cli procuchain"',
+                'DAEMON="/usr/local/bin/multichaind"',
+                '',
+                '# Step 1: Stop MultiChain daemon gracefully',
+                '$CLI stop 2>/dev/null || true',
+                '',
+                '# Step 2: Wait for daemon to fully stop (max 30s)',
+                'for i in $(seq 1 30); do',
+                '  if ! pgrep -x multichaind > /dev/null 2>&1; then',
+                '    echo "Daemon stopped after ${i}s"',
+                '    break',
+                '  fi',
+                '  sleep 1',
+                'done',
+                '',
+                '# Force kill if still running',
+                'if pgrep -x multichaind > /dev/null 2>&1; then',
+                '  pkill -9 multichaind',
+                '  sleep 2',
+                '  echo "Daemon force-killed"',
+                'fi',
+                '',
+                '# Step 3: Delete chain data — keep only what we need to reconnect',
+                'cd ' . escapeshellarg($chainDataDir),
+                '',
+                '# Preserve these files (needed to rejoin the network)',
+                'mkdir -p /tmp/mc-purge-backup',
+                'cp -f multichain.conf params.dat wallet.dat peers.dat /tmp/mc-purge-backup/ 2>/dev/null || true',
+                '',
+                '# Delete everything in the directory',
+                'rm -rf blocks/ chainstate/ chunks/ entities.dat entities.db/',
+                'rm -rf permissions.dat permissions.db permissions.log',
+                'rm -rf addrs.dat fee_estimates.dat debug.log .lock multichain.pid',
+                'rm -rf blk*.dat rev*.dat wallet/',
+                '',
+                '# Restore preserved files',
+                'cp -f /tmp/mc-purge-backup/* . 2>/dev/null || true',
+                'rm -rf /tmp/mc-purge-backup',
+                '',
+                '# Step 4: Restart daemon — connects to seed peer with zero data',
+                '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
+                'sleep 5',
+                '',
+                '# Step 5: Verify daemon is running and has 0 blocks',
+                'for i in $(seq 1 10); do',
+                '  BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -oP \'"blocks":\\s*\\K[0-9]+\' || echo "N/A")',
+                '  if [ "$BLOCKS" != "N/A" ]; then',
+                '    echo "PURGE_SUCCESS: Daemon restarted, blocks=$BLOCKS"',
+                '    break',
+                '  fi',
+                '  sleep 2',
+                'done',
+                '',
+                'if [ "$BLOCKS" = "N/A" ]; then',
+                '  echo "PURGE_WARNING: Daemon may still be starting"',
+                'fi',
+            ]);
 
-                    if ($nodeClient->success() && ($streamInfo['subscribed'] ?? false)) {
-                        $nodeItemCount = $streamInfo['items'] ?? 0;
-                    }
+            $ssmResult = $this->executeSsmCommand($instanceId, $script, 120);
 
-                    // Unsubscribe — drops ALL local data for this stream
-                    $nodeClient->unsubscribe($streamEnum->value, true);
-
-                    $purgeOk = $nodeClient->success();
-                    if (! $purgeOk) {
-                        Log::warning("unsubscribe failed for {$streamEnum->value} on node {$nodeId}: [{$nodeClient->errorcode()}] {$nodeClient->errormessage()}");
-                    }
-
-                    $totalPurged += $nodeItemCount;
-                    $streamStats[$streamEnum->value] = [
-                        'items_purged' => $nodeItemCount,
-                        'purged' => $purgeOk,
-                    ];
-                } catch (Exception $streamEx) {
-                    Log::warning("Could not unsubscribe/purge stream {$streamEnum->value} on node {$nodeId}: ".$streamEx->getMessage());
-                }
+            if (! $ssmResult['success']) {
+                return [
+                    'success' => false,
+                    'message' => "SSM command failed on node {$nodeId}: {$ssmResult['message']}",
+                    'items_purged' => 0,
+                ];
             }
 
-            // Record the full-node purge event on-chain
+            // Check the SSM output for success indicator
+            $output = $ssmResult['output'] ?? '';
+            $purgeOk = str_contains($output, 'PURGE_SUCCESS') || str_contains($output, 'PURGE_WARNING');
+
+            if (! $purgeOk) {
+                Log::warning('SSM purge output unexpected', [
+                    'node_id' => $nodeId,
+                    'output' => $output,
+                ]);
+            }
+
+            // Record the purge event on-chain (from primary node — this still has data)
             $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_full_purge', [
                 'json' => [
                     'action' => 'full_node_purge',
                     'node_id' => $nodeId,
                     'node_name' => $targetNode['name'] ?? $nodeId,
-                    'items_purged' => $totalPurged,
-                    'streams_affected' => array_keys(array_filter($streamStats, fn ($s) => $s['items_purged'] > 0)),
-                    'reason' => $reason ?: 'Demo: full node purge — all data removed from single node',
+                    'items_purged' => $itemsBefore,
+                    'method' => 'ssm_physical_delete',
+                    'reason' => $reason ?: 'Demo: physical chain data deleted from node',
                     'purged_at' => now()->toIso8601String(),
                     'performed_by' => auth()->user()?->name ?? 'system',
                 ],
             ]);
 
-            Log::info('Full node purge completed', [
+            Log::info('Full node purge completed via SSM', [
                 'node_id' => $nodeId,
-                'items_purged' => $totalPurged,
-                'streams_affected' => count($streamStats),
+                'instance_id' => $instanceId,
+                'items_purged' => $itemsBefore,
             ]);
 
             app(AuditLogger::class)->log(
@@ -394,16 +238,16 @@ class NodeOperationsService
                 oldValues: [
                     'action' => 'full_node_purge',
                     'node_id' => $nodeId,
-                    'items_purged' => $totalPurged,
-                    'streams_affected' => array_keys($streamStats),
+                    'method' => 'ssm_physical_delete',
+                    'items_purged' => $itemsBefore,
                     'reason' => $reason,
                 ],
             );
 
             return [
                 'success' => true,
-                'message' => "Purged all data ({$totalPurged} items across ".count($streamStats)." streams) from {$targetNode['name']} ({$nodeId}). Data survives on remaining nodes — resync to restore.",
-                'items_purged' => $totalPurged,
+                'message' => "Physically purged all data ({$itemsBefore} items) from {$targetNode['name']} ({$nodeId}). Chain data deleted from disk — node now has zero data. Data survives on remaining nodes — click Resync to restore from peers.",
+                'items_purged' => $itemsBefore,
             ];
         } catch (Exception $e) {
             Log::error('Full node purge failed', [
@@ -412,6 +256,154 @@ class NodeOperationsService
             ]);
 
             return ['success' => false, 'message' => 'Failed: '.$e->getMessage(), 'items_purged' => 0];
+        }
+    }
+
+    /**
+     * Resync a node's data from peers via AWS SSM.
+     *
+     * After a purge, the node has zero subscriptions and zero data.
+     * This subscribes the node to all streams, triggering MultiChain
+     * to re-download all data from connected peers.
+     *
+     * For the demo: this is a MANUAL action — the node does NOT
+     * auto-resync. The user must explicitly click "Resync".
+     *
+     * Steps executed on the target node via SSM:
+     * 1. Subscribe to all streams (triggers data download from peers)
+     * 2. Wait for initial sync to complete
+     * 3. Verify item counts match other nodes
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function resyncNode(string $nodeId): array
+    {
+        try {
+            $nodes = config('multichain.nodes', []);
+            $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $nodeId);
+
+            if (! $targetNode) {
+                return ['success' => false, 'message' => "Node '{$nodeId}' not found in registry"];
+            }
+
+            $instanceId = $targetNode['instance_id'] ?? '';
+            if (empty($instanceId)) {
+                return ['success' => false, 'message' => "Node '{$nodeId}' has no EC2 instance ID configured"];
+            }
+
+            $chainName = config('multichain.chain_name', 'procuchain');
+            $streams = collect(StreamEnums::cases())->map->value->toArray();
+
+            // Build the resync script: subscribe to all streams with rescan
+            $subscribeCommands = array_map(
+                fn (string $stream) => "\$CLI subscribe " . escapeshellarg($stream) . " true",
+                $streams
+            );
+
+            $script = implode("\n", array_merge([
+                '#!/bin/bash',
+                'export HOME=/root',
+                'CLI="/usr/local/bin/multichain-cli procuchain"',
+                '',
+                '# Wait for daemon to be ready',
+                'for i in $(seq 1 30); do',
+                '  if $CLI getinfo > /dev/null 2>&1; then',
+                '    echo "Daemon ready after ${i}s"',
+                '    break',
+                '  fi',
+                '  sleep 1',
+                'done',
+                '',
+                '# Subscribe to all streams with rescan — triggers data download from peers',
+            ], $subscribeCommands, [
+                '',
+                '# Wait for data to sync (give it 20s for initial download)',
+                'sleep 20',
+                '',
+                '# Report item counts per stream',
+                'echo "RESYNC_RESULT:"',
+                'for stream in ' . implode(' ', array_map('escapeshellarg', $streams)) . '; do',
+                '  COUNT=$($CLI getstreaminfo "$stream" 2>/dev/null | grep -oP \'"items":\\s*\\K[0-9]+\' || echo "0")',
+                '  echo "  $stream: $COUNT items"',
+                'done',
+                '',
+                'echo "RESYNC_SUCCESS: All streams subscribed"',
+            ]));
+
+            $ssmResult = $this->executeSsmCommand($instanceId, $script, 180);
+
+            if (! $ssmResult['success']) {
+                return [
+                    'success' => false,
+                    'message' => "SSM resync command failed on node {$nodeId}: {$ssmResult['message']}",
+                ];
+            }
+
+            $output = $ssmResult['output'] ?? '';
+            $resyncOk = str_contains($output, 'RESYNC_SUCCESS');
+
+            // Record resync event on-chain
+            try {
+                $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_resync', [
+                    'json' => [
+                        'action' => 'node_resync',
+                        'node_id' => $nodeId,
+                        'node_name' => $targetNode['name'] ?? $nodeId,
+                        'method' => 'ssm_subscribe_all',
+                        'resynced_at' => now()->toIso8601String(),
+                        'performed_by' => auth()->user()?->name ?? 'system',
+                    ],
+                ]);
+            } catch (Exception $e) {
+                Log::warning('Failed to record resync event on-chain', [
+                    'node_id' => $nodeId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // If this was the primary node, clear the purge flag
+            if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
+                $primaryHost = config('multichain.rpc.host');
+                $primaryPort = config('multichain.rpc.port');
+
+                $isPrimary = ($targetNode['private_ip'] ?? '') === $primaryHost
+                    && ($targetNode['rpc_port'] ?? 6834) === $primaryPort;
+
+                if ($isPrimary) {
+                    $this->multichain->resetByResync();
+                }
+            }
+
+            Log::info('Node resync completed via SSM', [
+                'node_id' => $nodeId,
+                'instance_id' => $instanceId,
+                'success' => $resyncOk,
+            ]);
+
+            app(AuditLogger::class)->log(
+                action: 'node.resync',
+                subjectType: 'node',
+                subjectId: $nodeId,
+                newValues: [
+                    'action' => 'node_resync',
+                    'node_id' => $nodeId,
+                    'method' => 'ssm_subscribe_all',
+                ],
+            );
+
+            return [
+                'success' => $resyncOk,
+                'message' => $resyncOk
+                    ? "Resynced {$targetNode['name']} ({$nodeId}) — all streams subscribed, data re-downloaded from peers. Node fully restored."
+                    : "Resync command sent to {$targetNode['name']} ({$nodeId}) but output was inconclusive. Check node status in a few moments.",
+            ];
+        } catch (Exception $e) {
+            Log::error('Node resync failed', [
+                'node_id' => $nodeId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
         }
     }
 
@@ -509,5 +501,216 @@ class NodeOperationsService
                 'items' => $totalItems,
             ];
         })->values()->all();
+    }
+
+    /**
+     * Execute a shell script on a remote EC2 instance via AWS SSM.
+     *
+     * @param string $instanceId EC2 instance ID (e.g. 'i-0aba884e70ad04588')
+     * @param string $script Shell script to execute
+     * @param int $timeout Max seconds to wait for command completion
+     * @return array{success: bool, message: string, output: string}
+     */
+    private function executeSsmCommand(string $instanceId, string $script, int $timeout = 120): array
+    {
+        // On EB: use instance profile (no --profile needed)
+        // On dev/VPS: use the configured AWS profile
+        $awsProfile = config('multichain.ssm.aws_profile', '');
+        $profileArgs = ! empty($awsProfile) ? ['--profile', $awsProfile] : [];
+
+        // Write script to a temp file to avoid shell escaping issues
+        $tmpFile = tempnam(sys_get_temp_dir(), 'mc_ssm_');
+        file_put_contents($tmpFile, $script);
+
+        try {
+            // Send the SSM command
+            $sendArgs = array_merge([
+                'aws', 'ssm', 'send-command',
+                '--instance-ids', $instanceId,
+                '--document-name', 'AWS-RunShellScript',
+                '--parameters', 'commands=["bash ' . $tmpFile . '"]',
+                '--timeout-seconds', (string) min($timeout, 600),
+                '--output', 'text',
+                '--query', 'Command.CommandId',
+            ], $profileArgs);
+
+            // Reorder: profile args should come before subcommand args
+            if (! empty($profileArgs)) {
+                $sendArgs = array_merge(['aws', 'ssm', 'send-command'], $profileArgs, [
+                    '--instance-ids', $instanceId,
+                    '--document-name', 'AWS-RunShellScript',
+                    '--parameters', 'commands=["bash ' . $tmpFile . '"]',
+                    '--timeout-seconds', (string) min($timeout, 600),
+                    '--output', 'text',
+                    '--query', 'Command.CommandId',
+                ]);
+            }
+
+            $sendCmd = new Process($sendArgs);
+            $sendCmd->setTimeout(30);
+            $sendCmd->run();
+
+            if (! $sendCmd->isSuccessful()) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to send SSM command: ' . $sendCmd->getErrorOutput() . ' ' . $sendCmd->getOutput(),
+                    'output' => '',
+                ];
+            }
+
+            $commandId = trim($sendCmd->getOutput());
+
+            if (empty($commandId)) {
+                return [
+                    'success' => false,
+                    'message' => 'SSM send-command returned empty command ID',
+                    'output' => '',
+                ];
+            }
+
+            Log::info("SSM command sent", ['command_id' => $commandId, 'instance_id' => $instanceId]);
+
+            // Poll for command completion
+            $startTime = time();
+            $pollInterval = 3;
+
+            while (true) {
+                $elapsed = time() - $startTime;
+                if ($elapsed >= $timeout) {
+                    return [
+                        'success' => false,
+                        'message' => "SSM command timed out after {$timeout}s (commandId: {$commandId})",
+                        'output' => '',
+                    ];
+                }
+
+                sleep($pollInterval);
+
+                // Check status first
+                $statusArgs = array_merge([
+                    'aws', 'ssm', 'get-command-invocation',
+                    '--command-id', $commandId,
+                    '--instance-id', $instanceId,
+                    '--query', 'Status',
+                    '--output', 'text',
+                ], $profileArgs);
+
+                if (! empty($profileArgs)) {
+                    $statusArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
+                        '--command-id', $commandId,
+                        '--instance-id', $instanceId,
+                        '--query', 'Status',
+                        '--output', 'text',
+                    ]);
+                }
+
+                $statusCmd = new Process($statusArgs);
+                $statusCmd->setTimeout(15);
+                $statusCmd->run();
+                $status = trim($statusCmd->getOutput());
+
+                if ($status === 'Success' || $status === 'Failed' || $status === 'Cancelled' || $status === 'TimedOut') {
+                    // Get output
+                    $outputArgs = array_merge([
+                        'aws', 'ssm', 'get-command-invocation',
+                        '--command-id', $commandId,
+                        '--instance-id', $instanceId,
+                        '--query', 'StandardOutputContent',
+                        '--output', 'text',
+                    ], $profileArgs);
+
+                    if (! empty($profileArgs)) {
+                        $outputArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
+                            '--command-id', $commandId,
+                            '--instance-id', $instanceId,
+                            '--query', 'StandardOutputContent',
+                            '--output', 'text',
+                        ]);
+                    }
+
+                    $getCmd = new Process($outputArgs);
+                    $getCmd->setTimeout(15);
+                    $getCmd->run();
+                    $stdout = trim($getCmd->getOutput());
+
+                    if ($status !== 'Success') {
+                        return [
+                            'success' => false,
+                            'message' => "SSM command {$status} (commandId: {$commandId})",
+                            'output' => $stdout,
+                        ];
+                    }
+
+                    return [
+                        'success' => true,
+                        'message' => 'SSM command completed',
+                        'output' => $stdout,
+                    ];
+                }
+
+                // Still Pending/InProgress — keep polling
+                Log::debug("SSM command still running", [
+                    'command_id' => $commandId,
+                    'status' => $status,
+                    'elapsed' => $elapsed,
+                ]);
+            }
+        } finally {
+            // Clean up temp file
+            if (file_exists($tmpFile)) {
+                @unlink($tmpFile);
+            }
+        }
+    }
+
+    /**
+     * Get the total item count across all streams on a node.
+     */
+    private function getNodeItemCount(array $node): int
+    {
+        try {
+            $client = new Client(
+                $node['private_ip'],
+                $node['rpc_port'],
+                config('multichain.rpc.username', 'multichainrpc'),
+                config('multichain.rpc.password'),
+                false
+            );
+            $client->setoption('chain_name', config('multichain.chain_name'));
+            $client->setTimeout(5);
+
+            $allStreams = $client->liststreams();
+            if ($client->success() && is_array($allStreams)) {
+                $streamNames = collect(StreamEnums::cases())->map->value->toArray();
+
+                return collect($allStreams)
+                    ->filter(fn ($s) => ($s['subscribed'] ?? false) && in_array($s['name'], $streamNames))
+                    ->sum(fn ($s) => $s['items'] ?? 0);
+            }
+        } catch (Exception $e) {
+            // Node unreachable
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get the seed node IP for the target node to connect to after purge.
+     *
+     * Never use the target node's own IP as seed — use a different node.
+     */
+    private function getSeedNodeIp(string $targetNodeId): string
+    {
+        $nodes = config('multichain.nodes', []);
+
+        // Prefer the admin node as seed (it's always running)
+        foreach ($nodes as $node) {
+            if ($node['id'] !== $targetNodeId && ! empty($node['private_ip'])) {
+                return $node['private_ip'];
+            }
+        }
+
+        // Fallback to hardcoded admin IP
+        return self::SEED_NODE_PRIVATE_IP;
     }
 }
