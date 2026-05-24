@@ -50,11 +50,12 @@ final readonly class LedgerEntryData
  $action = 'node_purged';
  $actorAddress = $data['performed_by'] ?? '';
  $oldValues = [];
- $newValues = ['node_id' => $data['node_id'] ?? $key, 'reason' => $data['reason'] ?? ''];
+ $newValues = ['node_id' => $data['node_id'] ?? $key, 'node_name' => $data['node_name'] ?? '', 'items_purged' => $data['items_purged'] ?? 0, 'reason' => $data['reason'] ?? ''];
  $originalTxid = null;
  $summary = sprintf(
- 'Node %s purged — all data removed%s',
+ 'Node %s purged — %d items removed%s',
  $data['node_name'] ?? $data['node_id'] ?? $key,
+ $data['items_purged'] ?? 0,
  ! empty($data['reason']) ? ': '.$data['reason'] : ''
  );
  } elseif ($isFileNodePurgeEvent) {
@@ -84,6 +85,7 @@ final readonly class LedgerEntryData
  $oldValues = [];
  $newValues = [
  'node_id' => $data['node_id'] ?? $key,
+ 'node_name' => $data['node_name'] ?? '',
  'items_resynced' => $data['items_resynced'] ?? 0,
  'reason' => $data['reason'] ?? '',
  ];

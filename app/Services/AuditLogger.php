@@ -115,10 +115,15 @@ class AuditLogger
         'procurement.decision_published',
         'procurement.pre_bid_decision_published',
 
-        // Document integrity — NGPA Sec. 20
-        'document.corrected',
+ // Document integrity — NGPA Sec. 20
+ 'document.corrected',
 
-        // Auth anomalies
+ // Blockchain node operations — NGPA Sec. 3 (accountability), Sec. 20 (electronic records)
+ 'node.full_purge',
+ 'node.file_purge',
+ 'node.resync',
+
+ // Auth anomalies
         'auth.invitation_accepted',
         'auth.password_reset',
         'settings.password_changed',

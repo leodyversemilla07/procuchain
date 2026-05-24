@@ -375,7 +375,7 @@ class NodeOperationsService
             $output = $ssmResult['output'] ?? '';
             $resyncOk = str_contains($output, 'RESYNC_SUCCESS');
 
- // Record resync event on-chain
+ // Record resync event on-chain (wrapped in try/catch — SSM already succeeded)
  try {
  // Get item counts after resync for the audit trail
  $itemsAfter = $this->getNodeItemCount($targetNode);
@@ -387,7 +387,7 @@ class NodeOperationsService
  'node_name' => $targetNode['name'] ?? $nodeId,
  'items_resynced' => $itemsAfter,
  'method' => 'ssm_subscribe_all',
- 'reason' => $reason ?? 'Manual resync — data restored from peers',
+ 'reason' => $reason ?: 'Manual resync — data restored from peers',
  'resynced_at' => now()->toIso8601String(),
  'performed_by' => auth()->user()?->name ?? 'system',
  ],
@@ -399,24 +399,25 @@ class NodeOperationsService
  ]);
  }
 
-            // If this was the primary node, clear the purge flag
-            if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
-                $primaryHost = config('multichain.rpc.host');
-                $primaryPort = config('multichain.rpc.port');
+ // If this was the primary node, clear the purge flag
+ if ($this->multichain instanceof Manager && $this->multichain->isPrimaryPurged()) {
+ $primaryHost = config('multichain.rpc.host');
+ $primaryPort = config('multichain.rpc.port');
 
-                $isPrimary = ($targetNode['private_ip'] ?? '') === $primaryHost
-                    && ($targetNode['rpc_port'] ?? 6834) === $primaryPort;
+ $isPrimary = ($targetNode['private_ip'] ?? '') === $primaryHost
+ && ($targetNode['rpc_port'] ?? 6834) === $primaryPort;
 
-                if ($isPrimary) {
-                    $this->multichain->resetByResync();
-                }
-            }
+ if ($isPrimary) {
+ $this->multichain->resetByResync();
+ }
+ }
 
-            Log::info('Node resync completed via SSM', [
-                'node_id' => $nodeId,
-                'instance_id' => $instanceId,
-                'success' => $resyncOk,
-            ]);
+ Log::info('Node resync completed via SSM', [
+ 'node_id' => $nodeId,
+ 'instance_id' => $instanceId,
+ 'success' => $resyncOk,
+ 'items_resynced' => $itemsAfter ?? 0,
+ ]);
 
  app(AuditLogger::class)->log(
  action: 'node.resync',
@@ -433,20 +434,20 @@ class NodeOperationsService
  ],
  );
 
-            return [
-                'success' => $resyncOk,
-                'message' => $resyncOk
-                    ? "Resynced {$targetNode['name']} ({$nodeId}) — all streams subscribed, data re-downloaded from peers. Node fully restored."
-                    : "Resync command sent to {$targetNode['name']} ({$nodeId}) but output was inconclusive. Check node status in a few moments.",
-            ];
-        } catch (Exception $e) {
-            Log::error('Node resync failed', [
-                'node_id' => $nodeId,
-                'error' => $e->getMessage(),
-            ]);
+ return [
+ 'success' => $resyncOk,
+ 'message' => $resyncOk
+ ? "Resynced {$targetNode['name']} ({$nodeId}) — all streams subscribed, data re-downloaded from peers. Node fully restored."
+ : "Resync command sent to {$targetNode['name']} ({$nodeId}) but output was inconclusive. Check node status in a few moments.",
+ ];
+ } catch (Exception $e) {
+ Log::error('Node resync failed', [
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
 
-            return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
-        }
+ return ['success' => false, 'message' => 'Failed: '.$e->getMessage()];
+ }
     }
 
     /**
