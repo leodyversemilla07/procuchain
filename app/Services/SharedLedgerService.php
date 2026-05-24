@@ -265,54 +265,59 @@ class SharedLedgerService
                 return [];
             }
 
-            $client->setTimeout(15);
+        $client->setTimeout(15);
 
-            $entries = [];
+        $entries = [];
+        $unsubscribedStreams = [];
 
-            foreach (self::LEDGER_STREAMS as $stream) {
-                $items = $client->liststreamitems($stream, true, 5000, 0, false);
-                $errorCode = $client->errorcode();
-                $success = $client->success();
+        foreach (self::LEDGER_STREAMS as $stream) {
+            $items = $client->liststreamitems($stream, true, 5000, 0, false);
+            $errorCode = $client->errorcode();
+            $success = $client->success();
 
-                Log::info('SharedLedger: liststreamitems result', [
-                    'node' => $nodeId,
-                    'stream' => $stream,
-                    'success' => $success,
-                    'error_code' => $errorCode,
-                    'items_count' => is_array($items) ? count($items) : 'null',
-                ]);
+            Log::info('SharedLedger: liststreamitems result', [
+                'node' => $nodeId,
+                'stream' => $stream,
+                'success' => $success,
+                'error_code' => $errorCode,
+                'items_count' => is_array($items) ? count($items) : 'null',
+            ]);
 
-                // -703 = not subscribed, -708 = stream not found (node has 0 blocks after real purge)
-                if (! $success && ($errorCode === -703 || $errorCode === -708)) {
-                    continue;
-                }
-
-                if (! $items || ! is_array($items)) {
-                    continue;
-                }
-
-                foreach ($items as $item) {
-                    if (! isset($item['data']['json'])) {
-                        continue;
-                    }
-
-                    try {
-                        $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
-                    } catch (Exception $e) {
-                        report($e);
-                    }
-                }
+            // -703 = not subscribed, -708 = stream not found (node has 0 blocks after real purge)
+            if (! $success && ($errorCode === -703 || $errorCode === -708)) {
+                $unsubscribedStreams[] = $stream;
+                continue;
             }
 
-            // Node is reachable and has data — not purged
-            $this->nodePurgeState = [
-                'is_purged' => false,
-                'was_explicitly_purged' => false,
-                'partially_purged' => false,
-                'unsubscribed_streams' => [],
-                'purge_reason' => null,
-                'purge_timestamp' => null,
-            ];
+            if (! $items || ! is_array($items)) {
+                continue;
+            }
+
+            foreach ($items as $item) {
+                if (! isset($item['data']['json'])) {
+                    continue;
+                }
+
+                try {
+                    $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
+                } catch (Exception $e) {
+                    report($e);
+                }
+            }
+        }
+
+        // Node is reachable — set purge state based on subscription status
+        $hasPartialPurge = count($unsubscribedStreams) > 0 && count($unsubscribedStreams) < count(self::LEDGER_STREAMS);
+        $this->nodePurgeState = [
+            'is_purged' => false,
+            'was_explicitly_purged' => false,
+            'partially_purged' => $hasPartialPurge,
+        'unsubscribed_streams' => $unsubscribedStreams,
+            'purge_reason' => null,
+            'purge_timestamp' => null,
+            'connection_error' => false,
+            'connection_error_message' => null,
+        ];
 
             Log::info('SharedLedger: Node data loaded', [
                 'node' => $nodeId,
@@ -348,7 +353,7 @@ class SharedLedgerService
      * read on-chain events. The primary node still has all data.
      * We check the file.metadata stream for purge/resync event keys.
      *
-     * @return array{is_purged: bool, was_explicitly_purged: bool, partially_purged: bool, unsubscribed_streams: string[], purge_reason: string|null, purge_timestamp: int|null}
+     * @return array{is_purged: bool, was_explicitly_purged: bool, partially_purged: bool, unsubscribed_streams: string[], purge_reason: string|null, purge_timestamp: int|null, connection_error: bool, connection_error_message: string|null}
      */
     private function checkPurgeStateFromPrimary(string $nodeId): array
     {
@@ -359,6 +364,8 @@ class SharedLedgerService
             'unsubscribed_streams' => [],
             'purge_reason' => null,
             'purge_timestamp' => null,
+            'connection_error' => false,
+            'connection_error_message' => null,
         ];
 
         try {
@@ -401,14 +408,16 @@ class SharedLedgerService
 
             $purgeData = $purgeItems[0]['data']['json'] ?? [];
 
-            return [
-                'is_purged' => true,
-                'was_explicitly_purged' => true,
-                'partially_purged' => false,
-                'unsubscribed_streams' => self::LEDGER_STREAMS,
-                'purge_reason' => $purgeData['reason'] ?? 'Node data physically deleted (SSM purge)',
-                'purge_timestamp' => $purgeBlock,
-            ];
+        return [
+            'is_purged' => true,
+            'was_explicitly_purged' => true,
+            'partially_purged' => false,
+            'unsubscribed_streams' => [], // Full purge — banner shows "all data removed", not individual streams
+            'purge_reason' => $purgeData['reason'] ?? 'Node data physically deleted (SSM purge)',
+            'purge_timestamp' => $purgeBlock,
+            'connection_error' => false,
+            'connection_error_message' => null,
+        ];
         } catch (Exception $e) {
             Log::warning("SharedLedger: Failed to check purge state from primary for node {$nodeId}", [
                 'error' => $e->getMessage(),
@@ -600,7 +609,7 @@ class SharedLedgerService
                 $purgeItems = $client->liststreamkeyitems(self::PURGE_CHECK_STREAM, $purgeKey, false, 1, 0, false);
                 $success = $client->success();
             } else {
-                $purgeItems = $this->multichain->liststreamkeyitems('file.metadata', $purgeKey, false, 1, 0, false);
+                $purgeItems = $this->multichain->liststreamkeyitems(self::PURGE_CHECK_STREAM, $purgeKey, false, 1, 0, false);
                 $success = $this->multichain->success();
             }
 
@@ -611,7 +620,7 @@ class SharedLedgerService
                     $resyncItems = $client->liststreamkeyitems(self::PURGE_CHECK_STREAM, $resyncKey, false, 1, 0, false);
                     $resyncSuccess = $client->success();
                 } else {
-                    $resyncItems = $this->multichain->liststreamkeyitems('file.metadata', $resyncKey, false, 1, 0, false);
+                    $resyncItems = $this->multichain->liststreamkeyitems(self::PURGE_CHECK_STREAM, $resyncKey, false, 1, 0, false);
                     $resyncSuccess = $this->multichain->success();
                 }
 

@@ -100,32 +100,33 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
             return;
         }
 
-        setIsFullPurging(true);
+  setIsFullPurging(true);
 
-        router.post(
-            adminRecoverableData.purgeAllFromNode.url(),
-            {
-                node_id: fullPurgeNodeId,
-                reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
-            },
-            {
-                onSuccess: () => {
-                    setIsFullPurging(false);
-                    setFullPurgeNodeId('');
-                    setFullPurgeReason('');
-                    setPurgeDialogOpen(false);
-                    toast.success(
-                        `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. The node now shows 0 items. Resync to restore.`,
-                    );
-                    router.reload({ only: ['nodes'] });
-                },
-                onError: () => {
-                    setIsFullPurging(false);
-                    setPurgeDialogOpen(false);
-                    toast.error('Failed to purge node. Check server logs.');
-                },
-            },
+  router.post(
+    adminRecoverableData.purgeAllFromNode.url(),
+    {
+      node_id: fullPurgeNodeId,
+      reason: fullPurgeReason || 'Demo: full node purge — all data removed from single node',
+    },
+    {
+      onSuccess: () => {
+        setFullPurgeNodeId('');
+        setFullPurgeReason('');
+        setPurgeDialogOpen(false);
+        toast.success(
+          `All data purged from ${nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}. The node now shows 0 items. Resync to restore.`,
         );
+        router.reload({ only: ['nodes'] });
+      },
+      onError: () => {
+        setPurgeDialogOpen(false);
+        toast.error('Failed to purge node. Check server logs.');
+      },
+      onFinish: () => {
+        setIsFullPurging(false);
+      },
+    },
+  );
     };
 
     const handleResyncNode = () => {

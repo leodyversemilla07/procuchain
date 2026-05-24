@@ -169,10 +169,12 @@ class MultichainNodeHealthCheck extends Command
             return false;
         }
 
+        $purgeCheckStream = StreamEnums::FILE_METADATA->value;
+
         try {
             $purgeKey = 'node_'.$nodeId.'_full_purge';
             $purgeItems = $manager->liststreamkeyitems(
-                'file.metadata',
+                $purgeCheckStream,
                 $purgeKey,
                 false,
                 1,
@@ -184,7 +186,7 @@ class MultichainNodeHealthCheck extends Command
                 // Check for a newer resync event
                 $resyncKey = 'node_'.$nodeId.'_resync';
                 $resyncItems = $manager->liststreamkeyitems(
-                    'file.metadata',
+                    $purgeCheckStream,
                     $resyncKey,
                     false,
                     1,
