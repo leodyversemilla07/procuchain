@@ -204,15 +204,15 @@ class NodeOperationsService
  '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
  'sleep 8',
  '',
- '# Step 5: Wait for daemon to be ready',
+ '# Step 5: Wait for daemon to be ready (full re-sync from peers can take 3-5 min)',
  'READY=false',
- 'for i in $(seq 1 20); do',
+ 'for i in $(seq 1 90); do',
  ' if $CLI getblockchaininfo > /dev/null 2>&1; then',
  ' READY=true',
- ' echo "Daemon ready after $((8 + i * 2))s"',
+ ' echo "Daemon ready after $((8 + i * 3))s"',
  ' break',
  ' fi',
- ' sleep 2',
+ ' sleep 3',
  'done',
  '',
  'if [ "$READY" = "false" ]; then',
@@ -260,9 +260,9 @@ class NodeOperationsService
  'fi',
  '',
  'echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
-            ]);
+ ]);
 
-            $ssmResult = $this->executeSsmCommand($instanceId, $script, 300);
+ $ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
 
             if (! $ssmResult['success']) {
                 return [
@@ -436,10 +436,10 @@ class NodeOperationsService
                 '  echo "  $stream: $COUNT items"',
                 'done',
                 '',
-                'echo "RESYNC_SUCCESS: All streams subscribed"',
-            ]));
+ 'echo "RESYNC_SUCCESS: All streams subscribed"',
+ ]));
 
-            $ssmResult = $this->executeSsmCommand($instanceId, $script, 300);
+ $ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
 
             if (! $ssmResult['success']) {
                 return [
