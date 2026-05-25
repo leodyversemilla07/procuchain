@@ -203,13 +203,17 @@ class NodeOperationsService
  '# Step 4: Restart daemon — connects to seed peer',
 '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
 
-'# Step 5: Wait for daemon to be ready (full re-sync from peers can take 3-5 min)',
+'# Step 5: Wait for daemon to be ready AND connected to peers',
 'READY=false',
 'for i in $(seq 1 180); do',
 ' if $CLI getblockchaininfo > /dev/null 2>&1; then',
-' READY=true',
-' echo "Daemon ready after ${i}s"',
-' break',
+'  # Daemon process is up — now wait for at least 1 peer connection',
+'  PEER_COUNT=$($CLI getpeerinfo 2>/dev/null | python3 -c "import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else []; print(len(obj) if isinstance(obj,list) else 0)" 2>/dev/null || echo 0)',
+'  if [ "$PEER_COUNT" -gt 0 ] 2>/dev/null; then',
+'   READY=true',
+'   echo "Daemon ready after ${i}s (${PEER_COUNT} peers connected)"',
+'   break',
+'  fi',
 ' fi',
 ' sleep 1',
 'done',
@@ -256,9 +260,13 @@ class NodeOperationsService
 
 'if [ "$SYNC_DONE" = "false" ]; then',
 ' echo "RESYNC_IN_PROGRESS: Streams still syncing. total_items=$TOTAL_ITEMS"',
- 'fi',
- '',
- 'echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
+'fi',
+'',
+'if [ "$TOTAL_ITEMS" -eq 0 ] 2>/dev/null; then',
+' echo "PURGE_PARTIAL: Daemon restarted but no data resynced yet (peers may still be connecting). current_items=$TOTAL_ITEMS"',
+'else',
+' echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
+'fi',
  ]);
 
  $ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
@@ -271,16 +279,38 @@ class NodeOperationsService
                 ];
             }
 
-            // Check the SSM output for success indicator
-            $output = $ssmResult['output'] ?? '';
-            $purgeOk = str_contains($output, 'PURGE_SUCCESS') || str_contains($output, 'PURGE_WARNING');
+    // Check the SSM output for success indicator
+    $output = $ssmResult['output'] ?? '';
 
-            if (! $purgeOk) {
-                Log::warning('SSM purge output unexpected', [
-                    'node_id' => $nodeId,
-                    'output' => $output,
-                ]);
-            }
+    // Parse actual item count from shell output
+    $currentItems = 0;
+    if (preg_match('/current_items=(\d+)/', $output, $m)) {
+        $currentItems = (int) $m[1];
+    }
+
+    $purgeOk = str_contains($output, 'PURGE_SUCCESS');
+    $purgePartial = str_contains($output, 'PURGE_PARTIAL');
+
+    if ($purgePartial && $currentItems === 0) {
+        return [
+            'success' => false,
+            'message' => "Purge executed on node {$targetNode['name']} ({$nodeId}) but data did not resync — peers may not have been connected yet. Please retry the resync operation.",
+            'items_purged' => $itemsBefore,
+        ];
+    }
+
+    if (! $purgeOk && ! $purgePartial) {
+        Log::warning('SSM purge output unexpected', [
+            'node_id' => $nodeId,
+            'output' => $output,
+        ]);
+
+        return [
+            'success' => false,
+            'message' => "SSM command completed but purge output unexpected on node {$nodeId}. Check logs.",
+            'items_purged' => 0,
+        ];
+    }
 
  // Record the purge event on-chain (from primary node — this still has data)
  try {
@@ -413,14 +443,17 @@ class NodeOperationsService
  'CLI="/usr/local/bin/multichain-cli procuchain"',
  'MC_PARSE="import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else {}"',
  '',
- '# Wait for daemon to be ready',
- 'for i in $(seq 1 30); do',
-                '  if $CLI getinfo > /dev/null 2>&1; then',
-                '    echo "Daemon ready after ${i}s"',
-                '    break',
-                '  fi',
-                '  sleep 1',
-                'done',
+'# Wait for daemon to be ready AND connected to peers',
+'for i in $(seq 1 60); do',
+' if $CLI getinfo > /dev/null 2>&1; then',
+'  PEER_COUNT=$($CLI getpeerinfo 2>/dev/null | python3 -c "import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else []; print(len(obj) if isinstance(obj,list) else 0)" 2>/dev/null || echo 0)',
+'  if [ "$PEER_COUNT" -gt 0 ] 2>/dev/null; then',
+'   echo "Daemon ready after ${i}s (${PEER_COUNT} peers connected)"',
+'   break',
+'  fi',
+' fi',
+' sleep 1',
+'done',
                 '',
 '# Subscribe to all streams with rescan — triggers data download from peers',
 ], $subscribeCommands, [
