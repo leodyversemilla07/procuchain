@@ -25,7 +25,7 @@ import { dashboard } from '@/routes/admin';
 import adminRecoverableData from '@/routes/admin/recoverable-data';
 import { Head, router } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
-import { ArchiveRestore, Database, Network, RotateCcw, ServerCrash, Shield, Trash2, Zap } from 'lucide-react';
+import { ArchiveRestore, Database, Network, RotateCcw, ServerCrash, Shield, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -92,11 +92,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
   const [isFullPurging, setIsFullPurging] = useState(false);
   const [purgeStatusMessage, setPurgeStatusMessage] = useState<string>('');
 
-  // Resync state
-  const [resyncNodeId, setResyncNodeId] = useState<string>('');
-  const [resyncReason, setResyncReason] = useState<string>('');
-  const [isResyncing, setIsResyncing] = useState(false);
-  const [resyncStatusMessage, setResyncStatusMessage] = useState<string>('');
+ // (Resync is automatic after purge — no manual UI needed)
 
   // Dialog open states
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
@@ -209,79 +205,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
       setIsFullPurging(false);
       setPurgeStatusMessage('');
     }
-  }, [fullPurgeNodeId, fullPurgeReason]);
+ }, [fullPurgeNodeId, fullPurgeReason]);
 
-  // ── Resync (async — dispatches queue job, then polls) ──
-  const handleResyncNode = useCallback(async () => {
-    if (!resyncNodeId) {
-      toast.error('Select a node to resync');
-      return;
-    }
-
-    setIsResyncing(true);
-    setResyncStatusMessage('Dispatching resync request...');
-
-    try {
-      await fetch('/sanctum/csrf-cookie');
-
-      const res = await fetch(adminRecoverableData.resyncNode.url(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          node_id: resyncNodeId,
-          reason: resyncReason || 'Manual resync — data restored from peers',
-        }),
-      });
-
- if (!res.ok && res.status !== 202) {
- const errorData = await res.json().catch(() => ({}));
- if (res.status === 409) {
- toast.warning(errorData.message || 'An operation is already in progress on this node.');
- return;
- }
- throw new Error(errorData.message || `Server returned ${res.status}`);
- }
-
- const data = await res.json();
- const jobId = data.job_id;
-
- if (!jobId) {
- throw new Error('No job ID returned from server');
- }
-
- toast.info('Resync request queued. SSM command is running in the background...');
-
-      const result = await pollNodeOperationStatus(
-        jobId,
-        (status, message) => {
-          const label = status === 'running' ? 'SSM command executing...' : message;
-          setResyncStatusMessage(label);
-        },
-      );
-
-      if (result.status === 'done') {
-        toast.success(result.message || 'Node resynced successfully.');
-        setResyncNodeId('');
-        setResyncReason('');
-        router.reload({ only: ['nodes'] });
-      } else {
-        toast.error(result.message || 'Resync operation failed.');
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to dispatch resync request.';
-      toast.error(message);
-    } finally {
-      setIsResyncing(false);
-      setResyncStatusMessage('');
-    }
-  }, [resyncNodeId, resyncReason]);
-
-  return (
+ return (
     <AppLayout
       breadcrumbs={[
         { title: 'Admin', href: dashboard.url() },
@@ -500,74 +426,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
               )}
             </div>
           </CardContent>
-        </Card>
+ </Card>
 
-        {/* ─── DEMO: Resync Node ─── */}
-        <Card className="border-violet-500/20 bg-violet-500/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Zap className="h-4 w-4 text-violet-600" />
-              Demo: Force Resync (Fallback)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
- <FieldDescription>
- After a purge, the node auto-resyncs from peers. Use this to manually <strong className="text-foreground">force re-subscribe + rescan</strong>{' '}
- if auto-resync was incomplete. The resync event is also recorded on-chain.
- </FieldDescription>
-
-            <div className="flex items-end gap-4">
-              <Field className="flex-1">
-                <FieldLabel htmlFor="resync-node">Node to Resync</FieldLabel>
-                <Select value={resyncNodeId} onValueChange={(v) => v && setResyncNodeId(v)} disabled={isResyncing}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select node..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
- {nodes.map((node) => (
- <SelectItem key={node.id} value={node.id} disabled={!node.is_purged && node.items > 0}>
- {node.name} ({node.role})
- {node.is_purged ? ` — 🔴 Needs Resync${node.resync_at ? ' (auto-resynced)' : ''}` : node.items === 0 ? ' — ⚠️ No Data' : ` — ✅ ${node.items.toLocaleString()} items`}
- </SelectItem>
- ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-
-            <Field>
-              <FieldLabel htmlFor="resync-reason">Reason (optional)</FieldLabel>
-              <Input
-                id="resync-reason"
-                placeholder="e.g., Restoring after demo purge"
-                value={resyncReason}
-                onChange={(e) => setResyncReason(e.target.value)}
-                disabled={isResyncing}
-              />
-            </Field>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="gap-2 border-violet-500/30 hover:bg-violet-500/10"
-                disabled={isResyncing || !resyncNodeId}
-                onClick={handleResyncNode}
-              >
-                {isResyncing ? <Spinner className="h-4 w-4" /> : <Network className="h-4 w-4" />}
-                {isResyncing ? 'Resyncing...' : 'Force Resync'}
-              </Button>
-
-              {/* Live status message while resyncing */}
-              {isResyncing && resyncStatusMessage && (
-                <span className="text-muted-foreground animate-pulse text-xs">{resyncStatusMessage}</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ─── Deleted Files Table ─── */}
+ {/* ─── Deleted Files Table ─── */}
         {deletedFiles.length === 0 ? (
           <Empty>
             <EmptyMedia variant="icon">
