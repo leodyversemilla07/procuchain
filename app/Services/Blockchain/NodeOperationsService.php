@@ -203,15 +203,14 @@ class NodeOperationsService
  '# Step 4: Restart daemon — connects to seed peer',
 '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
 
-'# Step 5: Wait for daemon to be ready AND connected to peers',
+'# Step 5: Wait for daemon to be ready AND blocks synced from peers',
 'READY=false',
 'for i in $(seq 1 180); do',
 ' if $CLI getblockchaininfo > /dev/null 2>&1; then',
-'  # Daemon process is up — now wait for at least 1 peer connection',
-'  PEER_COUNT=$($CLI getpeerinfo 2>/dev/null | python3 -c "import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else []; print(len(obj) if isinstance(obj,list) else 0)" 2>/dev/null || echo 0)',
-'  if [ "$PEER_COUNT" -gt 0 ] 2>/dev/null; then',
+'  BLOCKS=$($CLI getblockchaininfo 2>/dev/null | python3 -c "import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else {}; print(obj.get(chr(98)+chr(108)+chr(111)+chr(99)+chr(107)+chr(115),0))" 2>/dev/null || echo 0)',
+'  if [ "$BLOCKS" -gt 0 ] 2>/dev/null; then',
 '   READY=true',
-'   echo "Daemon ready after ${i}s (${PEER_COUNT} peers connected)"',
+'   echo "Daemon ready after ${i}s (blocks=$BLOCKS)"',
 '   break',
 '  fi',
 ' fi',
@@ -269,12 +268,12 @@ class NodeOperationsService
 'fi',
  ]);
 
- $ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
+$ssmResult = $this->executeSsmCommand($instanceId, $script, 400);
 
-            if (! $ssmResult['success']) {
-                return [
-                    'success' => false,
-                    'message' => "SSM command failed on node {$nodeId}: {$ssmResult['message']}",
+        if (! $ssmResult['success']) {
+            return [
+                'success' => false,
+                'message' => "SSM command failed on node {$nodeId}: {$ssmResult['message']}",
                     'items_purged' => 0,
                 ];
             }
@@ -443,12 +442,12 @@ class NodeOperationsService
  'CLI="/usr/local/bin/multichain-cli procuchain"',
  'MC_PARSE="import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else {}"',
  '',
-'# Wait for daemon to be ready AND connected to peers',
+'# Wait for daemon to be ready AND blocks synced from peers',
 'for i in $(seq 1 60); do',
 ' if $CLI getinfo > /dev/null 2>&1; then',
-'  PEER_COUNT=$($CLI getpeerinfo 2>/dev/null | python3 -c "import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else []; print(len(obj) if isinstance(obj,list) else 0)" 2>/dev/null || echo 0)',
-'  if [ "$PEER_COUNT" -gt 0 ] 2>/dev/null; then',
-'   echo "Daemon ready after ${i}s (${PEER_COUNT} peers connected)"',
+'  BLOCKS=$($CLI getblockchaininfo 2>/dev/null | python3 -c "import sys,json; data=sys.stdin.read(); parts=[x for x in data.split(chr(10)+chr(10)) if x.strip() and x.strip().startswith((chr(91),chr(123)))]; obj=json.loads(parts[-1]) if parts else {}; print(obj.get(chr(98)+chr(108)+chr(111)+chr(99)+chr(107)+chr(115),0))" 2>/dev/null || echo 0)',
+'  if [ "$BLOCKS" -gt 0 ] 2>/dev/null; then',
+'   echo "Daemon ready after ${i}s (blocks=$BLOCKS)"',
 '   break',
 '  fi',
 ' fi',
@@ -482,12 +481,12 @@ class NodeOperationsService
  'echo "RESYNC_SUCCESS: All streams subscribed"',
  ]));
 
- $ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
+$ssmResult = $this->executeSsmCommand($instanceId, $script, 400);
 
-            if (! $ssmResult['success']) {
-                return [
-                    'success' => false,
-                    'message' => "SSM resync command failed on node {$nodeId}: {$ssmResult['message']}",
+        if (! $ssmResult['success']) {
+            return [
+                'success' => false,
+                'message' => "SSM resync command failed on node {$nodeId}: {$ssmResult['message']}",
                 ];
             }
 
