@@ -148,122 +148,158 @@ class NodeOperationsService
             // Get item count before purge (for reporting)
             $itemsBefore = $this->getNodeItemCount($targetNode);
 
-            // Execute the purge via AWS SSM
-            $chainDataDir = '/root/.multichain/procuchain';
-            $seedIp = $this->getSeedNodeIp($nodeId);
+ // Execute the purge via AWS SSM — split into 2 phases to avoid SSM "no such process"
+ // Phase 1: Stop daemon + delete chain data + restart daemon (fast, ~30s)
+ // Phase 2: Wait for block sync + subscribe streams + verify data (slow, ~300s)
+ $chainDataDir = '/root/.multichain/procuchain';
+ $seedIp = $this->getSeedNodeIp($nodeId);
 
-    // The purge script uses grep/awk for JSON parsing (python3 was fragile and caused hangs)
-    $script = implode("\n", [
-        '#!/bin/bash',
-        'export HOME=/root',
-        'CLI="/usr/local/bin/multichain-cli procuchain"',
-        'DAEMON="/usr/local/bin/multichaind"',
-        '',
-        '# Step 1: Stop MultiChain daemon gracefully',
-        '$CLI stop 2>/dev/null || true',
-        '',
-        '# Step 2: Wait for daemon to fully stop (max 30s)',
-        'for i in $(seq 1 30); do',
-        ' if ! pgrep -x multichaind > /dev/null 2>&1; then',
-        ' echo "Daemon stopped after ${i}s"',
-        ' break',
-        ' fi',
-        ' sleep 1',
-        'done',
-        '',
-        '# Force kill if still running',
-        'if pgrep -x multichaind > /dev/null 2>&1; then',
-        ' pkill -9 multichaind',
-        ' sleep 2',
-        ' echo "Daemon force-killed"',
-        'fi',
-        '',
-        '# Step 3: Delete chain data — keep only what we need to reconnect',
-        'cd ' . escapeshellarg($chainDataDir),
-        '',
-        '# Preserve these files (needed to rejoin the network)',
-        'mkdir -p /tmp/mc-purge-backup',
-        'cp -f multichain.conf params.dat wallet.dat peers.dat /tmp/mc-purge-backup/ 2>/dev/null || true',
-        '',
-        '# Delete everything in the directory',
-        'rm -rf blocks/ chainstate/ chunks/ entities.dat entities.db/',
-        'rm -rf permissions.dat permissions.db permissions.log',
-        'rm -rf addrs.dat fee_estimates.dat debug.log .lock multichain.pid',
-        'rm -rf blk*.dat rev*.dat wallet/',
-        '',
-        '# Restore preserved files',
-        'cp -f /tmp/mc-purge-backup/* . 2>/dev/null || true',
-        'rm -rf /tmp/mc-purge-backup',
-        '',
-        '# Step 4: Restart daemon — connects to seed peer',
-        '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
-        '',
-        '# Step 5: Wait for daemon AND block sync from peers (blocks > 0 = peers connected & data flowing)',
-        'READY=false',
-        'for i in $(seq 1 60); do',
-        ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\"blocks\" : [0-9]*" | grep -o "[0-9]*" || true)',
-        ' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 0 ] 2>/dev/null; then',
-        ' READY=true',
-        ' echo "Daemon ready after ${i}s (blocks=$BLOCKS)"',
-        ' break',
-        ' fi',
-        ' sleep 1',
-        'done',
-        '',
-        'if [ "$READY" = "false" ]; then',
-        ' echo "PURGE_WARNING: Daemon may still be starting"',
-        ' exit 0',
-        'fi',
-        '',
-        '# Step 6: Subscribe to all streams (no rescan — sync happens in background)',
-        'STREAMS="procurement.data procurement.documents procurement.status procurement.events procurement.corrections file.data file.chunks file.metadata procurement.metadata procurement.metadata.corrections procurement.archive"',
-        'SUB_COUNT=0',
-        'for S in $STREAMS; do',
-        ' $CLI subscribe "$S" > /dev/null 2>&1 && SUB_COUNT=$((SUB_COUNT + 1)) || true',
-        'done',
-        'echo "Subscribed to $SUB_COUNT streams"',
-        '',
-        '# Step 7: Quick sync check (5 polls only — data syncs in background)',
-        'SYNC_DONE=false',
-        'TOTAL_ITEMS=0',
-        'for i in $(seq 1 5); do',
-        ' TOTAL_ITEMS=0',
-        ' for S in $STREAMS; do',
-        ' ITEMS=$($CLI getstreaminfo "$S" 2>/dev/null | grep -o "\"items\" : [0-9]*" | grep -o "[0-9]*" || echo 0)',
-        ' TOTAL_ITEMS=$((TOTAL_ITEMS + ITEMS))',
-        ' done',
-        ' if [ "$TOTAL_ITEMS" -gt 0 ]; then',
-        ' SYNC_DONE=true',
-        ' break',
-        ' fi',
-        ' sleep 5',
-        'done',
-        '',
-        'if [ "$SYNC_DONE" = "true" ]; then',
-        ' echo "RESYNC_COMPLETE: All streams synchronized. total_items=$TOTAL_ITEMS"',
-        'else',
-        ' echo "RESYNC_IN_PROGRESS: Streams still syncing. total_items=$TOTAL_ITEMS"',
-        'fi',
-        '',
-        'if [ "$TOTAL_ITEMS" -eq 0 ] 2>/dev/null; then',
-        ' echo "PURGE_PARTIAL: Daemon restarted but no data resynced yet. current_items=$TOTAL_ITEMS"',
-        'else',
-        ' echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
-        'fi',
-]);
+ // ── Phase 1: Stop → Delete → Restart ──
+ $phase1 = implode("\n", [
+ '#!/bin/bash',
+ 'export HOME=/root',
+ 'CLI="/usr/local/bin/multichain-cli procuchain"',
+ 'DAEMON="/usr/local/bin/multichaind"',
+ '',
+ '# Step 1: Stop MultiChain daemon gracefully',
+ '$CLI stop 2>/dev/null || true',
+ '',
+ '# Step 2: Wait for daemon to fully stop (max 30s)',
+ 'for i in $(seq 1 30); do',
+ ' if ! pgrep -x multichaind > /dev/null 2>&1; then',
+ ' echo "Daemon stopped after ${i}s"',
+ ' break',
+ ' fi',
+ ' sleep 1',
+ 'done',
+ '',
+ '# Force kill if still running',
+ 'if pgrep -x multichaind > /dev/null 2>&1; then',
+ ' pkill -9 multichaind',
+ ' sleep 2',
+ ' echo "Daemon force-killed"',
+ 'fi',
+ '',
+ '# Step 3: Delete chain data — keep only what we need to reconnect',
+ 'cd ' . escapeshellarg($chainDataDir),
+ '',
+ '# Preserve these files (needed to rejoin the network)',
+ 'mkdir -p /tmp/mc-purge-backup',
+ 'cp -f multichain.conf params.dat wallet.dat peers.dat /tmp/mc-purge-backup/ 2>/dev/null || true',
+ '',
+ '# Delete everything in the directory',
+ 'rm -rf blocks/ chainstate/ chunks/ entities.dat entities.db/',
+ 'rm -rf permissions.dat permissions.db permissions.log',
+ 'rm -rf addrs.dat fee_estimates.dat debug.log .lock multichain.pid',
+ 'rm -rf blk*.dat rev*.dat wallet/',
+ '',
+ '# Restore preserved files',
+ 'cp -f /tmp/mc-purge-backup/* . 2>/dev/null || true',
+ 'rm -rf /tmp/mc-purge-backup',
+ '',
+ '# Step 4: Restart daemon as a proper background process',
+ '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon > /dev/null 2>&1',
+ 'sleep 2',
+ '',
+ '# Verify daemon is running',
+ 'if pgrep -x multichaind > /dev/null 2>&1; then',
+ ' echo "PHASE1_SUCCESS: Daemon stopped, data deleted, daemon restarted"',
+ 'else',
+ ' echo "PHASE1_FAIL: Daemon did not start"',
+ 'fi',
+ ]);
 
-$ssmResult = $this->executeSsmCommand($instanceId, $script, 240);
+ $phase1Result = $this->executeSsmCommand($instanceId, $phase1, 120);
 
-if (! $ssmResult['success']) {
-    return [
-        'success' => false,
-        'message' => "SSM command failed on node {$nodeId}: {$ssmResult['message']}",
-        'items_purged' => 0,
-    ];
-            }
+ if (! $phase1Result['success']) {
+ return [
+ 'success' => false,
+ 'message' => "Purge Phase 1 failed on node {$nodeId}: {$phase1Result['message']}",
+ 'items_purged' => 0,
+ ];
+ }
+
+ $phase1Output = $phase1Result['output'] ?? '';
+ if (! str_contains($phase1Output, 'PHASE1_SUCCESS')) {
+ return [
+ 'success' => false,
+ 'message' => "Purge Phase 1 did not complete on node {$nodeId}. Output: {$phase1Output}",
+ 'items_purged' => 0,
+ ];
+ }
+
+ Log::info('Purge Phase 1 complete', ['node_id' => $nodeId, 'output' => $phase1Output]);
+
+ // ── Phase 2: Wait for sync → Subscribe → Verify ──
+ // Give the daemon 15s head start to begin downloading blocks before we start polling
+ sleep(15);
+
+ $phase2 = implode("\n", [
+ '#!/bin/bash',
+ 'export HOME=/root',
+ 'CLI="/usr/local/bin/multichain-cli procuchain"',
+ '',
+ '# Step 5: Wait for daemon to fully sync blocks from peers',
+ 'READY=false',
+ 'LAST_BLOCKS=0',
+ 'STABLE_COUNT=0',
+ 'for i in $(seq 1 60); do',
+ ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\"blocks\" : [0-9]*" | grep -o "[0-9]*" || true)',
+ ' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 0 ] 2>/dev/null; then',
+ ' if [ "$BLOCKS" = "$LAST_BLOCKS" ]; then',
+ ' STABLE_COUNT=$((STABLE_COUNT + 1))',
+ ' else',
+ ' STABLE_COUNT=0',
+ ' fi',
+ ' LAST_BLOCKS=$BLOCKS',
+ ' # Consider synced when block count is stable for 3 checks (≥18s) AND > 50',
+ ' if [ "$STABLE_COUNT" -ge 3 ] && [ "$BLOCKS" -gt 50 ]; then',
+ ' READY=true',
+ ' echo "Daemon ready after ${i}s (blocks=$BLOCKS)"',
+ ' break',
+ ' fi',
+ ' fi',
+ ' sleep 6',
+ 'done',
+ '',
+ 'if [ "$READY" = "false" ]; then',
+ ' echo "PURGE_WARNING: Block sync incomplete, proceeding with subscribe anyway"',
+ 'fi',
+ '',
+ '# Step 6: Subscribe to all streams with rescan (daemon is ready now, this is fast)',
+ 'STREAMS="procurement.data procurement.documents procurement.status procurement.events procurement.corrections file.data file.chunks file.metadata procurement.metadata procurement.metadata.corrections procurement.archive"',
+ 'SUB_COUNT=0',
+ 'for S in $STREAMS; do',
+ ' $CLI subscribe "$S" true > /dev/null 2>&1 && SUB_COUNT=$((SUB_COUNT + 1)) || true',
+ 'done',
+ 'echo "Subscribed to $SUB_COUNT streams"',
+ '',
+ '# Step 7: Verify data items across streams',
+ 'TOTAL_ITEMS=0',
+ 'for S in $STREAMS; do',
+ ' ITEMS=$($CLI getstreaminfo "$S" 2>/dev/null | grep -o "\"items\" : [0-9]*" | grep -o "[0-9]*" || echo 0)',
+ ' TOTAL_ITEMS=$((TOTAL_ITEMS + ITEMS))',
+ 'done',
+ '',
+ 'if [ "$TOTAL_ITEMS" -eq 0 ] 2>/dev/null; then',
+ ' echo "PURGE_PARTIAL: Daemon restarted but no data resynced yet. current_items=$TOTAL_ITEMS"',
+ 'else',
+ ' echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
+ 'fi',
+ ]);
+
+ $phase2Result = $this->executeSsmCommand($instanceId, $phase2, 600);
+
+if (! $phase2Result['success']) {
+ return [
+ 'success' => false,
+ 'message' => "Purge Phase 2 failed on node {$nodeId}: {$phase2Result['message']}",
+ 'items_purged' => 0,
+ ];
+ }
 
  // Check the SSM output for success indicator
- $output = $ssmResult['output'] ?? '';
+ $output = $phase2Result['output'] ?? '';
 
  // Parse actual item count from shell output
  $currentItems = 0;
@@ -414,29 +450,45 @@ if (! $ssmResult['success']) {
             $chainName = config('multichain.chain_name', 'procuchain');
             $streams = collect(StreamEnums::cases())->map->value->toArray();
 
- // Build the resync script: subscribe to all streams (no rescan — sync in background)
+ // Build the resync script: subscribe to all streams with rescan (after block sync)
  $subscribeCommands = array_map(
- fn (string $stream) => '$CLI subscribe ' . escapeshellarg($stream) . ' > /dev/null 2>&1 || true',
+ fn (string $stream) => '$CLI subscribe ' . escapeshellarg($stream) . ' true > /dev/null 2>&1 || true',
  $streams
  );
 
-    $script = implode("\n", array_merge([
-        '#!/bin/bash',
-        'export HOME=/root',
-        'CLI="/usr/local/bin/multichain-cli procuchain"',
-        '',
-        '# Wait for daemon AND block sync from peers',
-        'for i in $(seq 1 60); do',
-        ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\"blocks\" : [0-9]*" | grep -o "[0-9]*" || true)',
-        ' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 0 ] 2>/dev/null; then',
-        ' echo "Daemon ready after ${i}s (blocks=$BLOCKS)"',
-        ' break',
-        ' fi',
-        ' sleep 1',
-        'done',
-        '',
-        '# Subscribe to all streams — sync happens in background',
-        ], $subscribeCommands, [
+ $script = implode("\n", array_merge([
+ '#!/bin/bash',
+ 'export HOME=/root',
+ 'CLI="/usr/local/bin/multichain-cli procuchain"',
+ '',
+ '# Wait for daemon to be fully synced (stable block count > 50)',
+ 'READY=false',
+ 'LAST_BLOCKS=0',
+ 'STABLE_COUNT=0',
+ 'for i in $(seq 1 60); do',
+ ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\"blocks\" : [0-9]*" | grep -o "[0-9]*" || true)',
+ ' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 0 ] 2>/dev/null; then',
+ ' if [ "$BLOCKS" = "$LAST_BLOCKS" ]; then',
+ ' STABLE_COUNT=$((STABLE_COUNT + 1))',
+ ' else',
+ ' STABLE_COUNT=0',
+ ' fi',
+ ' LAST_BLOCKS=$BLOCKS',
+ ' if [ "$STABLE_COUNT" -ge 3 ] && [ "$BLOCKS" -gt 50 ]; then',
+ ' READY=true',
+ ' echo "Daemon ready after ${i}s (blocks=$BLOCKS)"',
+ ' break',
+ ' fi',
+ ' fi',
+ ' sleep 6',
+ 'done',
+ '',
+ 'if [ "$READY" = "false" ]; then',
+ ' echo "RESYNC_WARNING: Block sync incomplete, subscribing anyway"',
+ 'fi',
+ '',
+ '# Subscribe to all streams with rescan (daemon is synced now)',
+ ], $subscribeCommands, [
         '',
         '# Poll for data sync (up to 25s — 5 polls × 5s)',
         'SYNC_DONE=false',
@@ -467,7 +519,7 @@ if (! $ssmResult['success']) {
         'echo "RESYNC_SUCCESS: All streams subscribed"',
 ]));
 
-$ssmResult = $this->executeSsmCommand($instanceId, $script, 240);
+$ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
 
 if (! $ssmResult['success']) {
     return [
