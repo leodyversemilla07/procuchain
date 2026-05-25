@@ -387,9 +387,8 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
           </CardHeader>
           <CardContent className="space-y-4">
             <FieldDescription>
-              Simulate <strong className="text-foreground">catastrophic data loss</strong> on a single node by purging{' '}
-              <strong className="text-foreground">all stream data</strong> from its local storage. The data survives on the remaining 3
-              nodes and can be fully restored via resync. Every purge is recorded on-chain as an audit event (RA 12009 NGPA).
+ Simulate <strong className="text-foreground">catastrophic data loss</strong> on a single node by purging{' '}
+ <strong className="text-foreground">all stream data</strong> from its local storage. After purging, the node automatically reconnects to peers and <strong className="text-foreground">resyncs all data</strong> — demonstrating blockchain resilience. Every purge is recorded on-chain as an audit event (RA 12009 NGPA).
             </FieldDescription>
 
             {/* Step-by-step demo flow */}
@@ -497,14 +496,14 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <Zap className="h-4 w-4 text-violet-600" />
-              Demo: Resync Node from Peers
+              Demo: Force Resync (Fallback)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FieldDescription>
-              After a single-node purge, trigger the node to <strong className="text-foreground">re-download all stream data</strong>{' '}
-              from its connected peers. The resync event is also recorded on-chain.
-            </FieldDescription>
+ <FieldDescription>
+ After a purge, the node auto-resyncs from peers. Use this to manually <strong className="text-foreground">force re-subscribe + rescan</strong>{' '}
+ if auto-resync was incomplete. The resync event is also recorded on-chain.
+ </FieldDescription>
 
             <div className="flex items-end gap-4">
               <Field className="flex-1">
@@ -518,7 +517,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                       {nodes.map((node) => (
                         <SelectItem key={node.id} value={node.id}>
                           {node.name} ({node.role})
-                          {node.is_purged ? ' — 🔴 Needs Resync' : ` — ${node.items.toLocaleString()} items`}
+                          {node.is_purged ? ' — 🔴 Recently Purged' : ` — ${node.items.toLocaleString()} items`}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -546,7 +545,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 onClick={handleResyncNode}
               >
                 {isResyncing ? <Spinner className="h-4 w-4" /> : <Network className="h-4 w-4" />}
-                {isResyncing ? 'Resyncing...' : 'Resync from Peers'}
+                {isResyncing ? 'Resyncing...' : 'Force Resync'}
               </Button>
 
               {/* Live status message while resyncing */}
