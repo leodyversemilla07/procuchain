@@ -143,10 +143,11 @@ return [
  |
  */
 
- 'ssm' => [
- 'aws_profile' => env('MULTICHAIN_SSM_AWS_PROFILE', ''),
- 'chain_data_dir' => env('MULTICHAIN_SSM_CHAIN_DATA_DIR', '/root/.multichain/procuchain'),
- ],
+    'ssm' => [
+        'aws_profile' => env('MULTICHAIN_SSM_AWS_PROFILE', ''),
+        'aws_region' => env('MULTICHAIN_SSM_AWS_REGION', ''),
+        'chain_data_dir' => env('MULTICHAIN_SSM_CHAIN_DATA_DIR', '/root/.multichain/procuchain'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

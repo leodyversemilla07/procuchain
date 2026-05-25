@@ -643,48 +643,60 @@ class NodeOperationsService
      */
     private function executeSsmCommand(string $instanceId, string $script, int $timeout = 120): array
     {
-        // On EB: use instance profile (no --profile needed)
-        // On dev/VPS: use the configured AWS profile
+        // Build AWS CLI profile + region args.
+        // On EB: use instance profile (no --profile needed), but --region is still required.
+        // On dev/VPS: use the configured AWS profile (region comes from the profile).
         $awsProfile = config('multichain.ssm.aws_profile', '');
-        $profileArgs = ! empty($awsProfile) ? ['--profile', $awsProfile] : [];
+        $awsRegion = config('multichain.ssm.aws_region', '');
 
- // AWS SSM RunShellScript accepts the script content directly in the
- // commands parameter — no need to write to a temp file on the local
- // machine (the script runs on the REMOTE instance, so a local temp
- // file path would not exist there).
- //
- // We use --cli-input-json to avoid shell-escaping issues with the
- // --parameters flag. The script lines go into the JSON structure
- // which the AWS CLI parses natively — no escaping gymnastics needed.
- $scriptLines = explode("\n", $script);
+        // Start with region if specified (needed on EB where instance profile
+        // doesn't carry a default region in ~/.aws/config).
+        $profileArgs = [];
+        if (! empty($awsProfile)) {
+            $profileArgs = ['--profile', $awsProfile];
+        }
+        if (! empty($awsRegion)) {
+            $profileArgs = array_merge($profileArgs, ['--region', $awsRegion]);
+        }
 
- $cliInput = json_encode([
- 'InstanceIds' => [$instanceId],
- 'DocumentName' => 'AWS-RunShellScript',
- 'Parameters' => ['commands' => $scriptLines],
- 'TimeoutSeconds' => min($timeout, 600),
- ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        // AWS SSM RunShellScript accepts the script content directly in the
+        // commands parameter — no need to write to a temp file on the local
+        // machine (the script runs on the REMOTE instance, so a local temp
+        // file path would not exist there).
+        //
+        // We use --cli-input-json to avoid shell-escaping issues with the
+        // --parameters flag. The script lines go into the JSON structure
+        // which the AWS CLI parses natively — no escaping gymnastics needed.
+        //
+        // Key AWS docs distinction:
+        //   TimeoutSeconds (send-command) = delivery timeout (how long SSM
+        //     waits for the agent to pick up the command). Max 600s.
+        //   executionTimeout (Parameters) = script execution timeout (how
+        //     long the script itself can run). Default 3600s if not set.
+        // Both must be sufficient for the script to complete.
+        $scriptLines = explode("\n", $script);
 
- $tmpInputFile = tempnam(sys_get_temp_dir(), 'mc_ssm_input_');
- file_put_contents($tmpInputFile, $cliInput);
+        $cliInput = json_encode([
+            'InstanceIds' => [$instanceId],
+            'DocumentName' => 'AWS-RunShellScript',
+            'Parameters' => [
+                'commands' => $scriptLines,
+                'executionTimeout' => [(string) $timeout],
+            ],
+            'TimeoutSeconds' => min($timeout + 60, 600),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
- try {
- // Send the SSM command via --cli-input-json
- $sendArgs = array_merge([
- 'aws', 'ssm', 'send-command',
- '--cli-input-json', 'file://'.$tmpInputFile,
- '--output', 'text',
- '--query', 'Command.CommandId',
- ], $profileArgs);
+        $tmpInputFile = tempnam(sys_get_temp_dir(), 'mc_ssm_input_');
+        file_put_contents($tmpInputFile, $cliInput);
 
- // Reorder: profile args should come before subcommand args
- if (! empty($profileArgs)) {
- $sendArgs = array_merge(['aws', 'ssm', 'send-command'], $profileArgs, [
- '--cli-input-json', 'file://'.$tmpInputFile,
- '--output', 'text',
- '--query', 'Command.CommandId',
- ]);
- }
+        try {
+            // Send the SSM command via --cli-input-json
+            // Profile/region args come first (before subcommand args) per AWS CLI convention.
+            $sendArgs = array_merge(['aws', 'ssm', 'send-command'], $profileArgs, [
+                '--cli-input-json', 'file://'.$tmpInputFile,
+                '--output', 'text',
+                '--query', 'Command.CommandId',
+            ]);
 
             $sendCmd = new Process($sendArgs);
             $sendCmd->setTimeout(30);
@@ -708,7 +720,7 @@ class NodeOperationsService
                 ];
             }
 
-            Log::info("SSM command sent", ['command_id' => $commandId, 'instance_id' => $instanceId]);
+            Log::info('SSM command sent', ['command_id' => $commandId, 'instance_id' => $instanceId]);
 
             // Poll for command completion
             $startTime = time();
@@ -726,23 +738,13 @@ class NodeOperationsService
 
                 sleep($pollInterval);
 
-                // Check status first
-                $statusArgs = array_merge([
-                    'aws', 'ssm', 'get-command-invocation',
+                // Check status — profile/region args come first.
+                $statusArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
                     '--command-id', $commandId,
                     '--instance-id', $instanceId,
                     '--query', 'Status',
                     '--output', 'text',
-                ], $profileArgs);
-
-                if (! empty($profileArgs)) {
-                    $statusArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
-                        '--command-id', $commandId,
-                        '--instance-id', $instanceId,
-                        '--query', 'Status',
-                        '--output', 'text',
-                    ]);
-                }
+                ]);
 
                 $statusCmd = new Process($statusArgs);
                 $statusCmd->setTimeout(15);
@@ -750,33 +752,36 @@ class NodeOperationsService
                 $status = trim($statusCmd->getOutput());
 
                 if ($status === 'Success' || $status === 'Failed' || $status === 'Cancelled' || $status === 'TimedOut') {
-                    // Get output
-                    $outputArgs = array_merge([
-                        'aws', 'ssm', 'get-command-invocation',
+                    // Fetch stdout
+                    $outputArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
                         '--command-id', $commandId,
                         '--instance-id', $instanceId,
                         '--query', 'StandardOutputContent',
                         '--output', 'text',
-                    ], $profileArgs);
-
-                    if (! empty($profileArgs)) {
-                        $outputArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
-                            '--command-id', $commandId,
-                            '--instance-id', $instanceId,
-                            '--query', 'StandardOutputContent',
-                            '--output', 'text',
-                        ]);
-                    }
+                    ]);
 
                     $getCmd = new Process($outputArgs);
                     $getCmd->setTimeout(15);
                     $getCmd->run();
                     $stdout = trim($getCmd->getOutput());
 
+                    // Also fetch stderr for error diagnostics
+                    $stderrArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
+                        '--command-id', $commandId,
+                        '--instance-id', $instanceId,
+                        '--query', 'StandardErrorContent',
+                        '--output', 'text',
+                    ]);
+
+                    $errCmd = new Process($stderrArgs);
+                    $errCmd->setTimeout(15);
+                    $errCmd->run();
+                    $stderr = trim($errCmd->getOutput());
+
                     if ($status !== 'Success') {
                         return [
                             'success' => false,
-                            'message' => "SSM command {$status} (commandId: {$commandId})",
+                            'message' => "SSM command {$status} (commandId: {$commandId})" . ($stderr ? " | stderr: {$stderr}" : ''),
                             'output' => $stdout,
                         ];
                     }
@@ -788,27 +793,27 @@ class NodeOperationsService
                     ];
                 }
 
- // Still Pending/InProgress — keep polling
- Log::debug("SSM command still running", [
- 'command_id' => $commandId,
- 'status' => $status,
- 'elapsed' => $elapsed,
- ]);
- }
- } catch (Exception $e) {
- return [
- 'success' => false,
- 'message' => 'SSM command exception: ' . $e->getMessage(),
- 'output' => '',
- ];
- } finally {
- // Clean up cli-input-json temp file (local only, not sent to remote)
- if (isset($tmpInputFile) && file_exists($tmpInputFile)) {
- @unlink($tmpInputFile);
- }
- }
+                // Still Pending/InProgress — keep polling
+                Log::debug('SSM command still running', [
+                    'command_id' => $commandId,
+                    'status' => $status,
+                    'elapsed' => $elapsed,
+                ]);
+            }
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'SSM command exception: ' . $e->getMessage(),
+                'output' => '',
+            ];
+        } finally {
+            // Clean up cli-input-json temp file (local only, not sent to remote)
+            if (isset($tmpInputFile) && file_exists($tmpInputFile)) {
+                @unlink($tmpInputFile);
+            }
+        }
 
- }
+    }
 
  /**
  * Get the total item count across all streams on a node.
