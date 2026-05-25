@@ -50,10 +50,10 @@ class NodeOperationJob implements ShouldQueue
             'operation' => $this->operation,
             'node_id' => $this->nodeId,
             'user_id' => $this->userId,
-        ], now()->addMinutes(10));
+ ], now()->addMinutes(20));
 
-        try {
-            $result = $this->operation === 'purge'
+ try {
+ $result = $this->operation === 'purge'
                 ? $storage->purgeAllFromNode($this->nodeId, $this->reason)
                 : $storage->resyncNode($this->nodeId, $this->reason);
 
@@ -63,7 +63,7 @@ class NodeOperationJob implements ShouldQueue
                 'node_id' => $this->nodeId,
                 'message' => $result['message'] ?? '',
                 'user_id' => $this->userId,
-            ], now()->addMinutes(10));
+            ], now()->addMinutes(20));
 
             if (!$result['success']) {
                 Log::warning('NodeOperationJob returned failure', [
@@ -80,7 +80,7 @@ class NodeOperationJob implements ShouldQueue
                 'node_id' => $this->nodeId,
                 'message' => 'Job exception: ' . $e->getMessage(),
                 'user_id' => $this->userId,
-            ], now()->addMinutes(10));
+            ], now()->addMinutes(20));
 
             Log::error('NodeOperationJob threw exception', [
                 'job_id' => $this->jobId,
@@ -101,6 +101,6 @@ class NodeOperationJob implements ShouldQueue
             'node_id' => $this->nodeId,
             'message' => 'Job failed after all retries: ' . ($exception?->getMessage() ?? 'Unknown error'),
             'user_id' => $this->userId,
-        ], now()->addMinutes(10));
+        ], now()->addMinutes(20));
     }
 }

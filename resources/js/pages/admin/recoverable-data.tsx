@@ -37,12 +37,14 @@ interface DeletedFile {
 }
 
 interface BlockchainNode {
-  id: string;
-  name: string;
-  role: string;
-  is_purged: boolean;
-  purged_at: string | null;
-  items: number;
+ id: string;
+ name: string;
+ role: string;
+ is_purged: boolean;
+ purged_at: string | null;
+ resync_at: string | null;
+ last_action: string | null;
+ items: number;
 }
 
 interface RecoverableDataPageProps {
@@ -164,19 +166,23 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
         }),
       });
 
-      if (!res.ok && res.status !== 202) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || `Server returned ${res.status}`);
-      }
+ if (!res.ok && res.status !== 202) {
+ const errorData = await res.json().catch(() => ({}));
+ if (res.status === 409) {
+ toast.warning(errorData.message || 'An operation is already in progress on this node.');
+ return;
+ }
+ throw new Error(errorData.message || `Server returned ${res.status}`);
+ }
 
-      const data = await res.json();
-      const jobId = data.job_id;
+ const data = await res.json();
+ const jobId = data.job_id;
 
-      if (!jobId) {
-        throw new Error('No job ID returned from server');
-      }
+ if (!jobId) {
+ throw new Error('No job ID returned from server');
+ }
 
-      toast.info('Purge request queued. SSM command is running in the background...');
+ toast.info('Purge request queued. SSM command is running in the background...');
 
       // Poll for completion
       const result = await pollNodeOperationStatus(
@@ -232,19 +238,23 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
         }),
       });
 
-      if (!res.ok && res.status !== 202) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || `Server returned ${res.status}`);
-      }
+ if (!res.ok && res.status !== 202) {
+ const errorData = await res.json().catch(() => ({}));
+ if (res.status === 409) {
+ toast.warning(errorData.message || 'An operation is already in progress on this node.');
+ return;
+ }
+ throw new Error(errorData.message || `Server returned ${res.status}`);
+ }
 
-      const data = await res.json();
-      const jobId = data.job_id;
+ const data = await res.json();
+ const jobId = data.job_id;
 
-      if (!jobId) {
-        throw new Error('No job ID returned from server');
-      }
+ if (!jobId) {
+ throw new Error('No job ID returned from server');
+ }
 
-      toast.info('Resync request queued. SSM command is running in the background...');
+ toast.info('Resync request queued. SSM command is running in the background...');
 
       const result = await pollNodeOperationStatus(
         jobId,
@@ -394,23 +404,24 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
             {/* Step-by-step demo flow */}
             <div className="bg-muted/50 space-y-2 rounded-md p-3 text-sm">
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Demo Flow</p>
-              <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-sm">
-                <li>
-                  <strong className="text-foreground">Purge</strong> — Wipe all blockchain data from one node (e.g.{' '}
-                  <code className="font-mono text-xs">hope</code>)
-                </li>
-                <li>
-                  <strong className="text-foreground">Verify</strong> — Check the Blockchain Explorer to see the purge event
-                  recorded on-chain
-                </li>
-                <li>
-                  <strong className="text-foreground">Resync</strong> — Trigger the purged node to re-download all data from its
-                  peers
-                </li>
-                <li>
-                  <strong className="text-foreground">Confirm</strong> — Data is fully restored, proving blockchain recoverability
-                </li>
-              </ol>
+ <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-sm">
+ <li>
+ <strong className="text-foreground">Purge</strong> — Wipe all blockchain data from one node (e.g.{' '}
+ <code className="font-mono text-xs">hope</code>)
+ </li>
+ <li>
+ <strong className="text-foreground">Verify</strong> — Check the Blockchain Explorer to see the purge event
+ recorded on-chain
+ </li>
+ <li>
+ <strong className="text-foreground">Auto-Resync</strong> — The purged node automatically reconnects to peers
+ and restores all data — <em>no manual action needed</em>
+ </li>
+ <li>
+ <strong className="text-foreground">Confirm</strong> — Both the purge and auto-resync events are on-chain;
+ data is fully restored, proving blockchain recoverability
+ </li>
+ </ol>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -422,12 +433,12 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {nodes.map((node) => (
-                        <SelectItem key={node.id} value={node.id} disabled={node.is_purged}>
-                          {node.name} ({node.role})
-                          {node.is_purged ? ' — 🔴 Purged' : ` — ${node.items.toLocaleString()} items`}
-                        </SelectItem>
-                      ))}
+ {nodes.map((node) => (
+ <SelectItem key={node.id} value={node.id} disabled={node.is_purged}>
+ {node.name} ({node.role})
+ {node.is_purged ? ` — 🔴 Purged${node.last_action === 'auto_resync' ? ' (resyncing…)' : ''}` : ` — ${node.items.toLocaleString()} items`}
+ </SelectItem>
+ ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -460,13 +471,13 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                       <ServerCrash className="text-destructive h-5 w-5" />
                       Confirm Full Node Purge
                     </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will remove <strong>ALL blockchain data</strong> from{' '}
-                      <strong className="mx-1">{nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}</strong>.
-                      Every stream item (metadata, files, events, status changes) will be purged from this node&apos;s local
-                      storage. The data remains on the other 3 nodes and can be restored by resyncing. This event is recorded
-                      on-chain for audit compliance.
-                    </AlertDialogDescription>
+ <AlertDialogDescription>
+ This will remove <strong>ALL blockchain data</strong> from{' '}
+ <strong className="mx-1">{nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}</strong>.
+ Every stream item (metadata, files, events, status changes) will be purged from this node&apos;s local
+ storage. The node will then auto-resync from peers — proving that blockchain data cannot be permanently destroyed.
+ Both the purge and auto-resync events are recorded on-chain for audit compliance (RA 12009).
+ </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel disabled={isFullPurging}>Cancel</AlertDialogCancel>
@@ -514,12 +525,12 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {nodes.map((node) => (
-                        <SelectItem key={node.id} value={node.id}>
-                          {node.name} ({node.role})
-                          {node.is_purged ? ' — 🔴 Recently Purged' : ` — ${node.items.toLocaleString()} items`}
-                        </SelectItem>
-                      ))}
+ {nodes.map((node) => (
+ <SelectItem key={node.id} value={node.id} disabled={!node.is_purged && node.items > 0}>
+ {node.name} ({node.role})
+ {node.is_purged ? ` — 🔴 Needs Resync${node.resync_at ? ' (auto-resynced)' : ''}` : node.items === 0 ? ' — ⚠️ No Data' : ` — ✅ ${node.items.toLocaleString()} items`}
+ </SelectItem>
+ ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>

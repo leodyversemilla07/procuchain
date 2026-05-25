@@ -78,7 +78,7 @@ class NodeOperationsService
  'items_purged' => $result['items_purged'] ?? 0,
  'method' => 'ssm_physical_delete',
  'reason' => $reason,
- 'purged_at' => now()->toIso8601String(),
+ 'occurred_at' => now()->toIso8601String(),
  'performed_by' => auth()->user()?->name ?? 'system',
  ],
  ]);
@@ -264,12 +264,38 @@ class NodeOperationsService
  'items_purged' => $itemsBefore,
  'method' => 'ssm_physical_delete',
  'reason' => $reason ?: 'Demo: physical chain data deleted — auto-resync from peers demonstrates blockchain resilience',
- 'purged_at' => now()->toIso8601String(),
+ 'occurred_at' => now()->toIso8601String(),
  'performed_by' => auth()->user()?->name ?? 'system',
  ],
  ]);
  } catch (Exception $e) {
  Log::warning('Failed to record full purge event on-chain', [
+ 'node_id' => $nodeId,
+ 'error' => $e->getMessage(),
+ ]);
+ }
+
+ // Record the auto-resync event on-chain — the daemon reconnects to peers
+ // and auto-resyncs all data. This is the BLOCKCHAIN RESILIENCE demo:
+ // data cannot be permanently destroyed because other nodes have copies.
+ try {
+ $itemsAfter = $this->getNodeItemCount($targetNode);
+
+ $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_resync', [
+ 'json' => [
+ 'action' => 'auto_resync',
+ 'node_id' => $nodeId,
+ 'node_name' => $targetNode['name'] ?? $nodeId,
+ 'items_resynced' => $itemsAfter,
+ 'method' => 'multichain_auto_subscribe',
+ 'trigger' => 'post_purge_daemon_restart',
+ 'reason' => 'Auto-resync: daemon restarted and re-subscribed to all streams from peers',
+ 'occurred_at' => now()->toIso8601String(),
+ 'performed_by' => 'system',
+ ],
+ ]);
+ } catch (Exception $e) {
+ Log::warning('Failed to record auto-resync event on-chain', [
  'node_id' => $nodeId,
  'error' => $e->getMessage(),
  ]);
@@ -314,21 +340,19 @@ class NodeOperationsService
         }
     }
 
-    /**
-     * Resync a node's data from peers via AWS SSM.
-     *
-     * After a purge, the node has zero subscriptions and zero data.
-     * This subscribes the node to all streams, triggering MultiChain
-     * to re-download all data from connected peers.
-     *
-     * For the demo: this is a MANUAL action — the node does NOT
-     * auto-resync. The user must explicitly click "Resync".
-     *
-     * Steps executed on the target node via SSM:
-     * 1. Subscribe to all streams (triggers data download from peers)
-     * 2. Wait for initial sync to complete
-     * 3. Verify item counts match other nodes
-     *
+ /**
+ * Resync a node's data from peers via AWS SSM.
+ *
+ * After a purge, the daemon auto-resyncs from peers (recorded on-chain
+ * as action: 'auto_resync'). This method is a FALLBACK for cases
+ * where auto-resync was incomplete — it explicitly subscribes to
+ * all streams and rescans.
+ *
+ * Steps executed on the target node via SSM:
+ * 1. Subscribe to all streams (triggers data download from peers)
+ * 2. Wait for initial sync to complete
+ * 3. Verify item counts match other nodes
+ *
      * @return array{success: bool, message: string}
      */
     public function resyncNode(string $nodeId, string $reason = ''): array
@@ -410,7 +434,7 @@ class NodeOperationsService
  'items_resynced' => $itemsAfter,
  'method' => 'ssm_subscribe_all',
  'reason' => $reason ?: 'Manual resync — data restored from peers',
- 'resynced_at' => now()->toIso8601String(),
+ 'occurred_at' => now()->toIso8601String(),
  'performed_by' => auth()->user()?->name ?? 'system',
  ],
  ]);
@@ -479,7 +503,7 @@ class NodeOperationsService
      * if the node is currently in a purged state, and queries the node's
      * RPC for live item counts.
      *
-     * @return array<int, array{id: string, name: string, role: string, is_purged: bool, purged_at: string|null, items: int}>
+     * @return array<int, array{id: string, name: string, role: string, is_purged: bool, purged_at: string|null, resync_at: string|null, last_action: string|null, items: int}>
      */
     public function getAvailableNodes(): array
     {
@@ -489,83 +513,94 @@ class NodeOperationsService
         $chainName = config('multichain.chain_name');
         $streams = collect(StreamEnums::cases())->map->value->toArray();
 
-        return collect($nodes)->map(function ($node) use ($streams, $rpcUser, $rpcPass, $chainName) {
-            $nodeId = $node['id'] ?? '';
-            $nodeIp = $node['private_ip'] ?? '';
-            $nodePort = $node['rpc_port'] ?? 6834;
+ return collect($nodes)->map(function ($node) use ($streams, $rpcUser, $rpcPass, $chainName) {
+ $nodeId = $node['id'] ?? '';
+ $nodeIp = $node['private_ip'] ?? '';
+ $nodePort = $node['rpc_port'] ?? 6834;
 
-            $isPurged = false;
-            $purgedAt = null;
-            $totalItems = 0;
+ $isPurged = false;
+ $purgedAt = null;
+ $resyncAt = null;
+ $lastAction = null;
+ $totalItems = 0;
 
-            // Check on-chain purge state
-            try {
-                $purgeKey = 'node_'.$nodeId.'_full_purge';
-                $purgeItems = $this->multichain->liststreamkeyitems(
-                    StreamEnums::FILE_METADATA->value,
-                    $purgeKey,
-                    false,
-                    1,
-                    0,
-                    false
-                );
+ // Get live item count from the node (always, even if purged)
+ if (! empty($nodeIp)) {
+ try {
+ $client = new Client($nodeIp, $nodePort, $rpcUser, $rpcPass, false);
+ $client->setoption('chain_name', $chainName);
+ $client->setTimeout(5);
 
-                if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
-                    $resyncKey = 'node_'.$nodeId.'_resync';
-                    $resyncItems = $this->multichain->liststreamkeyitems(
-                        StreamEnums::FILE_METADATA->value,
-                        $resyncKey,
-                        false,
-                        1,
-                        0,
-                        false
-                    );
+ $allStreams = $client->liststreams();
+ if ($client->success() && is_array($allStreams)) {
+ $streamMap = collect($allStreams)
+ ->filter(fn ($s) => ($s['subscribed'] ?? false) && in_array($s['name'], $streams))
+ ->mapWithKeys(fn ($s) => [$s['name'] => $s['items'] ?? 0]);
 
-                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
-                    $resyncBlock = 0;
+ $totalItems = $streamMap->sum();
+ }
+ } catch (Exception $e) {
+ // Node unreachable — items unknown
+ }
+ }
 
-                    if ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0) {
-                        $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
-                    }
+ // Check on-chain purge + resync state
+ try {
+ $purgeKey = 'node_'.$nodeId.'_full_purge';
+ $purgeItems = $this->multichain->liststreamkeyitems(
+ StreamEnums::FILE_METADATA->value,
+ $purgeKey,
+ false,
+ 1,
+ 0,
+ false
+ );
 
-                    if ($purgeBlock >= $resyncBlock) {
-                        $isPurged = true;
-                        $purgedAt = date('c', $purgeBlock);
-                    }
-                }
-            } catch (Exception $e) {
-                // If we can't check purge state, leave as false
-            }
+ if ($this->multichain->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+ $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+ $purgedAt = date('c', $purgeBlock);
+ $lastAction = 'purged';
 
-            // Get live item count from the node
-            if (! $isPurged && ! empty($nodeIp)) {
-                try {
-                    $client = new Client($nodeIp, $nodePort, $rpcUser, $rpcPass, false);
-                    $client->setoption('chain_name', $chainName);
-                    $client->setTimeout(5);
+ $resyncKey = 'node_'.$nodeId.'_resync';
+ $resyncItems = $this->multichain->liststreamkeyitems(
+ StreamEnums::FILE_METADATA->value,
+ $resyncKey,
+ false,
+ 1,
+ 0,
+ false
+ );
 
-                    $allStreams = $client->liststreams();
-                    if ($client->success() && is_array($allStreams)) {
-                        $streamMap = collect($allStreams)
-                            ->filter(fn ($s) => ($s['subscribed'] ?? false) && in_array($s['name'], $streams))
-                            ->mapWithKeys(fn ($s) => [$s['name'] => $s['items'] ?? 0]);
+ $resyncBlock = 0;
+ if ($this->multichain->success() && is_array($resyncItems) && count($resyncItems) > 0) {
+ $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
+ $resyncAt = date('c', $resyncBlock);
+ }
 
-                        $totalItems = $streamMap->sum();
-                    }
-                } catch (Exception $e) {
-                    // Node unreachable — items unknown
-                }
-            }
+ // Node is considered purged ONLY if:
+ // 1. No resync event exists after purge, AND
+ // 2. Live item count is 0 (no auto-resync happened yet)
+ if ($purgeBlock >= $resyncBlock && $totalItems === 0) {
+ $isPurged = true;
+ } elseif ($resyncBlock > 0) {
+ $lastAction = 'resynced';
+ }
+ }
+ } catch (Exception $e) {
+ // If we can't check purge state, leave as false
+ }
 
-            return [
-                'id' => $node['id'],
-                'name' => $node['name'],
-                'role' => $node['role'],
-                'is_purged' => $isPurged,
-                'purged_at' => $purgedAt,
-                'items' => $totalItems,
-            ];
-        })->values()->all();
+ return [
+ 'id' => $node['id'],
+ 'name' => $node['name'],
+ 'role' => $node['role'],
+ 'is_purged' => $isPurged,
+ 'purged_at' => $purgedAt,
+ 'resync_at' => $resyncAt,
+ 'last_action' => $lastAction,
+ 'items' => $totalItems,
+ ];
+ })->values()->all();
     }
 
     /**
