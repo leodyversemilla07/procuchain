@@ -201,19 +201,18 @@ class NodeOperationsService
                 'rm -rf /tmp/mc-purge-backup',
                 '',
  '# Step 4: Restart daemon — connects to seed peer',
- '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
- 'sleep 8',
- '',
- '# Step 5: Wait for daemon to be ready (full re-sync from peers can take 3-5 min)',
- 'READY=false',
- 'for i in $(seq 1 90); do',
- ' if $CLI getblockchaininfo > /dev/null 2>&1; then',
- ' READY=true',
- ' echo "Daemon ready after $((8 + i * 3))s"',
- ' break',
- ' fi',
- ' sleep 3',
- 'done',
+'$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
+
+'# Step 5: Wait for daemon to be ready (full re-sync from peers can take 3-5 min)',
+'READY=false',
+'for i in $(seq 1 180); do',
+' if $CLI getblockchaininfo > /dev/null 2>&1; then',
+' READY=true',
+' echo "Daemon ready after ${i}s"',
+' break',
+' fi',
+' sleep 1',
+'done',
  '',
  'if [ "$READY" = "false" ]; then',
  ' echo "PURGE_WARNING: Daemon may still be starting"',
@@ -252,11 +251,11 @@ class NodeOperationsService
  ' SYNC_DONE=true',
  ' break',
  ' fi',
- ' sleep 2',
- 'done',
- '',
- 'if [ "$SYNC_DONE" = "false" ]; then',
- ' echo "RESYNC_IN_PROGRESS: Streams still syncing. total_items=$TOTAL_ITEMS"',
+' sleep 1',
+'done',
+
+'if [ "$SYNC_DONE" = "false" ]; then',
+' echo "RESYNC_IN_PROGRESS: Streams still syncing. total_items=$TOTAL_ITEMS"',
  'fi',
  '',
  'echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
@@ -423,13 +422,24 @@ class NodeOperationsService
                 '  sleep 1',
                 'done',
                 '',
-                '# Subscribe to all streams with rescan — triggers data download from peers',
-            ], $subscribeCommands, [
-                '',
-                '# Wait for data to sync (give it 20s for initial download)',
-                'sleep 20',
-                '',
-                '# Report item counts per stream',
+'# Subscribe to all streams with rescan — triggers data download from peers',
+], $subscribeCommands, [
+'',
+'# Poll for data sync (up to 60s instead of blind 20s sleep)',
+'SYNC_DONE=false',
+'for i in $(seq 1 60); do',
+' STATUS=$($CLI liststreams 2>/dev/null | python3 -c "$MC_PARSE; streams=obj if isinstance(obj,list) else []; all_synced=all(s.get(chr(115)+chr(121)+chr(110)+chr(99)+chr(104)+chr(114)+chr(111)+chr(110)+chr(105)+chr(122)+chr(101)+chr(100),False) for s in streams); print(str(all_synced).lower())" 2>/dev/null || echo "false")',
+' if [ "$STATUS" = "true" ]; then',
+' SYNC_DONE=true',
+' break',
+' fi',
+' sleep 1',
+'done',
+'if [ "$SYNC_DONE" = "false" ]; then',
+' sleep 5',
+'fi',
+'',
+'# Report item counts per stream',
                 'echo "RESYNC_RESULT:"',
                 'for stream in ' . implode(' ', array_map('escapeshellarg', $streams)) . '; do',
  ' COUNT=$($CLI getstreaminfo "$stream" 2>/dev/null | python3 -c "$MC_PARSE; print(obj.get(chr(105)+chr(116)+chr(101)+chr(109)+chr(115),0))" 2>/dev/null || echo "0")',
@@ -722,81 +732,61 @@ class NodeOperationsService
 
             Log::info('SSM command sent', ['command_id' => $commandId, 'instance_id' => $instanceId]);
 
-            // Poll for command completion
-            $startTime = time();
-            $pollInterval = 3;
+    // Poll for command completion
+    $startTime = time();
+    $pollInterval = 1;
 
-            while (true) {
-                $elapsed = time() - $startTime;
-                if ($elapsed >= $timeout) {
-                    return [
-                        'success' => false,
-                        'message' => "SSM command timed out after {$timeout}s (commandId: {$commandId})",
-                        'output' => '',
-                    ];
-                }
+    while (true) {
+        $elapsed = time() - $startTime;
+        if ($elapsed >= $timeout) {
+            return [
+                'success' => false,
+                'message' => "SSM command timed out after {$timeout}s (commandId: {$commandId})",
+                'output' => '',
+            ];
+        }
 
-                sleep($pollInterval);
+        sleep($pollInterval);
 
-                // Check status — profile/region args come first.
-                $statusArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
-                    '--command-id', $commandId,
-                    '--instance-id', $instanceId,
-                    '--query', 'Status',
-                    '--output', 'text',
-                ]);
+        // Fetch status + output in a single call (less API round-trips)
+        $combinedArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
+            '--command-id', $commandId,
+            '--instance-id', $instanceId,
+            '--query', '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}',
+            '--output', 'json',
+        ]);
 
-                $statusCmd = new Process($statusArgs);
-                $statusCmd->setTimeout(15);
-                $statusCmd->run();
-                $status = trim($statusCmd->getOutput());
+        $combinedCmd = new Process($combinedArgs);
+        $combinedCmd->setTimeout(15);
+        $combinedCmd->run();
+        $raw = trim($combinedCmd->getOutput());
 
-                if ($status === 'Success' || $status === 'Failed' || $status === 'Cancelled' || $status === 'TimedOut') {
-                    // Fetch stdout
-                    $outputArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
-                        '--command-id', $commandId,
-                        '--instance-id', $instanceId,
-                        '--query', 'StandardOutputContent',
-                        '--output', 'text',
-                    ]);
+        // Parse the JSON response
+        $invocation = json_decode($raw, true);
+        $status = $invocation['Status'] ?? 'Unknown';
+        $stdout = $invocation['Output'] ?? '';
+        $stderr = $invocation['Error'] ?? '';
 
-                    $getCmd = new Process($outputArgs);
-                    $getCmd->setTimeout(15);
-                    $getCmd->run();
-                    $stdout = trim($getCmd->getOutput());
+        if ($status === 'Success' || $status === 'Failed' || $status === 'Cancelled' || $status === 'TimedOut') {
+            if ($status !== 'Success') {
+                return [
+                    'success' => false,
+                    'message' => "SSM command {$status} (commandId: {$commandId})" . ($stderr ? " | stderr: {$stderr}" : ''),
+                    'output' => $stdout,
+                ];
+            }
 
-                    // Also fetch stderr for error diagnostics
-                    $stderrArgs = array_merge(['aws', 'ssm', 'get-command-invocation'], $profileArgs, [
-                        '--command-id', $commandId,
-                        '--instance-id', $instanceId,
-                        '--query', 'StandardErrorContent',
-                        '--output', 'text',
-                    ]);
+            return [
+                'success' => true,
+                'message' => 'SSM command completed',
+                'output' => $stdout,
+            ];
+        }
 
-                    $errCmd = new Process($stderrArgs);
-                    $errCmd->setTimeout(15);
-                    $errCmd->run();
-                    $stderr = trim($errCmd->getOutput());
-
-                    if ($status !== 'Success') {
-                        return [
-                            'success' => false,
-                            'message' => "SSM command {$status} (commandId: {$commandId})" . ($stderr ? " | stderr: {$stderr}" : ''),
-                            'output' => $stdout,
-                        ];
-                    }
-
-                    return [
-                        'success' => true,
-                        'message' => 'SSM command completed',
-                        'output' => $stdout,
-                    ];
-                }
-
-                // Still Pending/InProgress — keep polling
-                Log::debug('SSM command still running', [
-                    'command_id' => $commandId,
-                    'status' => $status,
+        // Still Pending/InProgress — keep polling
+        Log::debug('SSM command still running', [
+            'command_id' => $commandId,
+            'status' => $status,
                     'elapsed' => $elapsed,
                 ]);
             }
