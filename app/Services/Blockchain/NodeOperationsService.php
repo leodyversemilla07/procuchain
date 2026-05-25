@@ -274,11 +274,19 @@ class NodeOperationsService
  'done',
  'echo "Subscribed to $SUB_COUNT streams"',
  '',
- '# Step 7: Verify data items across streams',
+ '# Step 7: Wait for rescan to populate items (subscribe with rescan runs in background)',
  'TOTAL_ITEMS=0',
- 'for S in $STREAMS; do',
+ 'for i in $(seq 1 30); do',
+ ' TOTAL_ITEMS=0',
+ ' for S in $STREAMS; do',
  ' ITEMS=$($CLI getstreaminfo "$S" 2>/dev/null | grep -o "\"items\" : [0-9]*" | grep -o "[0-9]*" || echo 0)',
  ' TOTAL_ITEMS=$((TOTAL_ITEMS + ITEMS))',
+ ' done',
+ ' if [ "$TOTAL_ITEMS" -gt 0 ] 2>/dev/null; then',
+ ' echo "Data resynced after ${i} polls (current_items=$TOTAL_ITEMS)"',
+ ' break',
+ ' fi',
+ ' sleep 5',
  'done',
  '',
  'if [ "$TOTAL_ITEMS" -eq 0 ] 2>/dev/null; then',
@@ -307,16 +315,24 @@ if (! $phase2Result['success']) {
         $currentItems = (int) $m[1];
     }
 
-    $purgeOk = str_contains($output, 'PURGE_SUCCESS');
-    $purgePartial = str_contains($output, 'PURGE_PARTIAL');
+ $purgeOk = str_contains($output, 'PURGE_SUCCESS');
+ $purgePartial = str_contains($output, 'PURGE_PARTIAL');
+ $subscribed = str_contains($output, 'Subscribed to');
 
-    if ($purgePartial && $currentItems === 0) {
-        return [
-            'success' => false,
-            'message' => "Purge executed on node {$targetNode['name']} ({$nodeId}) but data did not resync — peers may not have been connected yet. Please retry the resync operation.",
-            'items_purged' => $itemsBefore,
-        ];
-    }
+ if ($purgePartial && $currentItems === 0 && $subscribed) {
+ // Daemon is running and all streams subscribed — rescan is in progress
+ // This is acceptable; data will populate in background
+ Log::info('Purge completed with rescan in progress', [
+ 'node_id' => $nodeId,
+ 'output' => $output,
+ ]);
+ } elseif ($purgePartial && $currentItems === 0) {
+ return [
+ 'success' => false,
+ 'message' => "Purge executed on node {$targetNode['name']} ({$nodeId}) but data did not resync — peers may not have been connected yet. Please retry the resync operation.",
+ 'items_purged' => $itemsBefore,
+ ];
+ }
 
     if (! $purgeOk && ! $purgePartial) {
         Log::warning('SSM purge output unexpected', [
