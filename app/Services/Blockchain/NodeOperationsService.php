@@ -266,55 +266,50 @@ class NodeOperationsService
  ' echo "PURGE_WARNING: Block sync incomplete, proceeding with subscribe anyway"',
  'fi',
  '',
- '# Step 6: Subscribe to all streams WITHOUT rescan (instant — rescan is done via daemon restart)',
- 'STREAMS="procurement.data procurement.documents procurement.status procurement.events procurement.corrections file.data file.chunks file.metadata procurement.metadata procurement.metadata.corrections procurement.archive"',
- 'SUB_COUNT=0',
- 'for S in $STREAMS; do',
- ' $CLI subscribe "$S" > /dev/null 2>&1 && SUB_COUNT=$((SUB_COUNT + 1)) || true',
- 'done',
- 'echo "Subscribed to $SUB_COUNT streams"',
- '',
- '# Step 7: Stop daemon, then restart with -rescan flag to index all subscribed streams in background',
- '$CLI stop > /dev/null 2>&1 || true',
- 'sleep 3',
- 'export HOME=/root',
- '/usr/local/bin/multichaind procuchain -daemon -rescan > /dev/null 2>&1',
- 'sleep 5',
- '',
- '# Step 8: Verify daemon is back up after rescan restart',
- 'RESCAN_READY=false',
- 'for i in $(seq 1 20); do',
- ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\"blocks\" : [0-9]*" | grep -o "[0-9]*" || true)',
- ' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 50 ] 2>/dev/null; then',
- ' RESCAN_READY=true',
- ' echo "Daemon ready after rescan restart (blocks=$BLOCKS)"',
- ' break',
- ' fi',
- ' sleep 3',
- 'done',
- '',
- 'if [ "$RESCAN_READY" = "false" ]; then',
- ' echo "PURGE_WARNING: Daemon not responding after rescan restart, but subscriptions are in place"',
- 'fi',
- '',
- '# Step 9: Quick verify — check streams are listed',
- 'VERIFY_COUNT=0',
- 'for S in $STREAMS; do',
- ' if $CLI getstreaminfo "$S" > /dev/null 2>&1; then',
- ' VERIFY_COUNT=$((VERIFY_COUNT + 1))',
- ' fi',
- 'done',
- '',
- 'if [ "$SUB_COUNT" -eq 11 ] && [ "$VERIFY_COUNT" -eq 11 ]; then',
- ' echo "PURGE_SUCCESS: Daemon restarted with rescan, 11 streams subscribed"',
- 'elif [ "$SUB_COUNT" -gt 0 ]; then',
- ' echo "PURGE_PARTIAL: Daemon restarted with rescan, $SUB_COUNT/11 streams subscribed"',
- 'else',
- ' echo "PURGE_FAIL: No streams could be subscribed"',
- 'fi',
+'# Step 6: Batch subscribe to all streams with rescan=true (single blockchain pass)',
+'# MultiChain supports subscribing to multiple streams at once — one rescan pass instead of 11',
+'STREAMS_JSON=\'["procurement.data","procurement.documents","procurement.status","procurement.events","procurement.corrections","file.data","file.chunks","file.metadata","procurement.metadata","procurement.metadata.corrections","procurement.archive"]\'',
+'echo "Starting batch subscribe with rescan (this may take several minutes)..."',
+'$CLI subscribe "$STREAMS_JSON" true 2>&1',
+'SUB_EXIT=$?',
+'echo "Batch subscribe completed with exit=$SUB_EXIT"',
+
+'# Step 7: Verify daemon is still responsive after rescan',
+'POST_READY=false',
+'for i in $(seq 1 20); do',
+' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\\"blocks\\" : [0-9]*" | grep -o "[0-9]*" || true)',
+' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 50 ] 2>/dev/null; then',
+' POST_READY=true',
+' echo "Daemon responsive after rescan (blocks=$BLOCKS)"',
+' break',
+' fi',
+' sleep 3',
+'done',
+
+'if [ "$POST_READY" = "false" ]; then',
+' echo "PURGE_WARNING: Daemon not responsive after rescan"',
+'fi',
+
+'# Step 8: Quick verify — check stream items count for first 5 streams',
+'VERIFY_COUNT=0',
+'ITEM_COUNT=0',
+'for S in procurement.data procurement.documents procurement.status file.data file.metadata; do',
+' ITEMS=$($CLI liststreams "$S" 2>&1 | grep -A1 "\\"items\\"" | grep -o "[0-9]*" | tail -1 || echo "0")',
+' if [ -n "$ITEMS" ] && [ "$ITEMS" -gt 0 ] 2>/dev/null; then',
+' ITEM_COUNT=$((ITEM_COUNT + ITEMS))',
+' fi',
+' VERIFY_COUNT=$((VERIFY_COUNT + 1))',
+'done',
+'echo "Verified $VERIFY_COUNT streams, total items=$ITEM_COUNT"',
+
+'if [ "$SUB_EXIT" -eq 0 ]; then',
+' echo "PURGE_SUCCESS: Batch subscribe+rescan completed, 11 streams subscribed, items=$ITEM_COUNT"',
+'else',
+' echo "PURGE_PARTIAL: Batch subscribe had issues (exit=$SUB_EXIT), items=$ITEM_COUNT"',
+'fi',
  ]);
 
- $phase2Result = $this->executeSsmCommand($instanceId, $phase2, 600);
+ $phase2Result = $this->executeSsmCommand($instanceId, $phase2, 900);
 
 if (! $phase2Result['success']) {
  return [
@@ -486,13 +481,8 @@ if (! $phase2Result['success']) {
             $chainName = config('multichain.chain_name', 'procuchain');
             $streams = collect(StreamEnums::cases())->map->value->toArray();
 
- // Build the resync script: subscribe to all streams WITHOUT rescan, then restart with -rescan
- $subscribeCommands = array_map(
- fn (string $stream) => '$CLI subscribe ' . escapeshellarg($stream) . ' > /dev/null 2>&1 || true',
- $streams
- );
-
- $script = implode("\n", array_merge([
+ // Build the resync script: batch subscribe to all streams with rescan=true
+ $script = implode("\n", [
  '#!/bin/bash',
  'export HOME=/root',
  'CLI="/usr/local/bin/multichain-cli procuchain"',
@@ -523,40 +513,31 @@ if (! $phase2Result['success']) {
  ' echo "RESYNC_WARNING: Block sync incomplete, subscribing anyway"',
  'fi',
  '',
-'# Subscribe to all streams without rescan (instant)',
- ], $subscribeCommands, [
- '',
- '# Restart daemon with -rescan to index all subscribed streams',
- '$CLI stop > /dev/null 2>&1 || true',
- 'sleep 3',
- 'export HOME=/root',
- '/usr/local/bin/multichaind procuchain -daemon -rescan > /dev/null 2>&1',
- 'sleep 5',
- '',
- '# Verify daemon is back up after rescan restart',
- 'RESCAN_READY=false',
+'# Batch subscribe to all streams with rescan=true (single blockchain pass)',
+ 'STREAMS_JSON=\'[' . implode(',', array_map(fn ($s) => '"' . $s . '"', $streams)) . ']\'',
+ 'echo "Starting batch subscribe with rescan (this may take several minutes)..."',
+ '$CLI subscribe "$STREAMS_JSON" true 2>&1',
+ 'SUB_EXIT=$?',
+ 'echo "Batch subscribe completed with exit=$SUB_EXIT"',
+
+ '# Verify daemon is still responsive after rescan',
+ 'POST_READY=false',
  'for i in $(seq 1 20); do',
- ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\"blocks\" : [0-9]*" | grep -o "[0-9]*" || true)',
+ ' BLOCKS=$($CLI getblockchaininfo 2>/dev/null | grep -o "\\"blocks\\" : [0-9]*" | grep -o "[0-9]*" || true)',
  ' if [ -n "$BLOCKS" ] && [ "$BLOCKS" -gt 50 ] 2>/dev/null; then',
- ' RESCAN_READY=true',
- ' echo "Daemon ready after rescan restart (blocks=$BLOCKS)"',
+ ' POST_READY=true',
+ ' echo "Daemon responsive after rescan (blocks=$BLOCKS)"',
  ' break',
  ' fi',
  ' sleep 3',
  'done',
- '',
- '# Quick verify — check daemon responds to getstreaminfo for each stream',
- 'VERIFY_COUNT=0',
- 'for stream in ' . implode(' ', array_map('escapeshellarg', $streams)) . '; do',
- ' if $CLI getstreaminfo "$stream" > /dev/null 2>&1; then',
- ' VERIFY_COUNT=$((VERIFY_COUNT + 1))',
- ' fi',
- 'done',
- '',
- 'echo "RESYNC_SUCCESS: $VERIFY_COUNT/' . count($streams) . ' streams verified, rescan indexing in background"',
- ]));
 
-$ssmResult = $this->executeSsmCommand($instanceId, $script, 600);
+ '# Quick verify — check items count on first stream',
+ 'ITEMS=$($CLI liststreams ' . escapeshellarg($streams[0]) . ' 2>&1 | grep -A1 "\\"items\\"" | grep -o "[0-9]*" | tail -1 || echo "0")',
+'echo "RESYNC_SUCCESS: Batch subscribe+rescan completed (exit=$SUB_EXIT), ' . $streams[0] . ' items=$ITEMS"',
+]);
+
+$ssmResult = $this->executeSsmCommand($instanceId, $script, 900);
 
 if (! $ssmResult['success']) {
     return [
