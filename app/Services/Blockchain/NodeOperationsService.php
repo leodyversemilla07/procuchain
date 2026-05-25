@@ -21,17 +21,18 @@ use Symfony\Component\Process\Process;
  * Purge strategy for MultiChain CE:
  * - MultiChain CE has no purgestreamitems API (Enterprise only)
  * - unsubscribe alone doesn't delete data — MultiChain auto-resubscribes
- * - Real purge: AWS SSM → stop daemon → delete chain data → restart
+ * - Real purge: AWS SSM → stop daemon → delete chain data → restart → subscribe streams → resync
  * - The node restarts with zero blocks, zero subscriptions
  * - Data survives on all other nodes (they still run normally)
- * - Manual resync re-subscribes all streams, re-downloading from peers
- * - This demonstrates: data survives individual node failures
+ * - After restart, the purge script explicitly subscribes all streams + rescans
+ * - This re-downloads all data from peers, demonstrating: data survives individual node failures
  *
  * SSM command flow:
  * 1. Stop: multichain-cli procuchain stop (graceful)
  * 2. Wipe: rm -rf everything except multichain.conf + params.dat + wallet.dat
- * 3. Restart: multichaind procuchain@<seed>:6835 -daemon
- * 4. Node comes back with 0 blocks, connects to peers but no data yet
+ * 3. Restart: multichaind connecting to seed peer
+ * 4. Subscribe: explicitly subscribe to all streams (MultiChain does NOT auto-subscribe after data wipe)
+ * 5. Resync: wait for all streams to synchronize (data downloads from peers)
  *
  * @see FileLifecycleManager for file-level delete/restore operations
  */
@@ -199,16 +200,16 @@ class NodeOperationsService
                 'cp -f /tmp/mc-purge-backup/* . 2>/dev/null || true',
                 'rm -rf /tmp/mc-purge-backup',
                 '',
- '# Step 4: Restart daemon — connects to seed peer, auto-resyncs from peers',
+ '# Step 4: Restart daemon — connects to seed peer',
  '$DAEMON procuchain@' . escapeshellarg($seedIp) . ':6835 -daemon',
  'sleep 8',
  '',
  '# Step 5: Wait for daemon to be ready',
  'READY=false',
- 'for i in $(seq 1 15); do',
+ 'for i in $(seq 1 20); do',
  ' if $CLI getblockchaininfo > /dev/null 2>&1; then',
  ' READY=true',
- ' echo "Daemon ready after $((i * 2))s"',
+ ' echo "Daemon ready after $((8 + i * 2))s"',
  ' break',
  ' fi',
  ' sleep 2',
@@ -219,21 +220,49 @@ class NodeOperationsService
  ' exit 0',
  'fi',
  '',
- '# Step 6: Check initial item count (before resync completes)',
- '# Note: MultiChain auto-subscribes to streams and resyncs data from peers.',
- '# This is the BLOCKCHAIN RESILIENCE — data automatically restores!',
- '# We report items at this moment to show the purge happened.',
- 'TOTAL_ITEMS=0',
- 'STREAMS=$($CLI liststreams -ci 2>/dev/null | grep -oP \'"name"\\s*:\\s*"\\K[^"]+\' || true)',
+ '# Step 6: Subscribe to all streams (MultiChain does NOT auto-subscribe',
+ '# after a data wipe — we must explicitly subscribe + rescan to restore data)',
+ 'STREAMS=$($CLI liststreams 2>/dev/null | grep -oP \'"name"\s*:\s*"\\K[^"]+\' || true)',
+ 'SUB_COUNT=0',
  'for S in $STREAMS; do',
  ' if [ "$S" = "root" ]; then continue; fi',
- ' ITEMS=$($CLI getstreaminfo "$S" 2>/dev/null | grep -oP \'"items"\\s*:\\s*\\K[0-9]+\' || echo "0")',
- ' TOTAL_ITEMS=$((TOTAL_ITEMS + ITEMS))',
+ ' # Check if already subscribed',
+ " SUB=\$($CLI getstreaminfo \"\$S\" 2>/dev/null | grep -oP '\"subscribed\"\\s*:\\s*\\K[a-z]+' || echo \"false\")",
+ ' if [ "$SUB" != "true" ]; then',
+ ' $CLI subscribe "$S" 2>/dev/null && SUB_COUNT=$((SUB_COUNT + 1)) || true',
+ ' fi',
  'done',
- 'echo "PURGE_SUCCESS: Daemon restarted, auto-resyncing from peers. current_items=$TOTAL_ITEMS"',
+ 'echo "Subscribed to $SUB_COUNT streams"',
+ '',
+ '# Step 7: Wait for resync to download data from peers (max 60s)',
+ 'SYNC_DONE=false',
+ 'for i in $(seq 1 30); do',
+ ' TOTAL_ITEMS=0',
+ ' ALL_SYNCED=true',
+ ' for S in $STREAMS; do',
+ ' if [ "$S" = "root" ]; then continue; fi',
+ ' INFO=$($CLI getstreaminfo "$S" 2>/dev/null || echo "")',
+ " SYNCED=\$(echo \"\$INFO\" | grep -oP '\"synchronized\"\\\\s*:\\\\s*\\\\K[a-z]+' || echo \"false\")",
+ " ITEMS=\$(echo \"\$INFO\" | grep -oP '\"items\"\\\\s*:\\\\s*\\\\K[0-9]+' || echo \"0\")",
+ ' TOTAL_ITEMS=$((TOTAL_ITEMS + ITEMS))',
+ ' if [ "$SYNCED" != "true" ]; then ALL_SYNCED="false"; fi',
+ ' done',
+ ' if [ "$ALL_SYNCED" = "true" ]; then',
+ ' echo "RESYNC_COMPLETE: All streams synchronized. total_items=$TOTAL_ITEMS"',
+ ' SYNC_DONE=true',
+ ' break',
+ ' fi',
+ ' sleep 2',
+ 'done',
+ '',
+ 'if [ "$SYNC_DONE" = "false" ]; then',
+ ' echo "RESYNC_IN_PROGRESS: Streams still syncing. total_items=$TOTAL_ITEMS"',
+ 'fi',
+ '',
+ 'echo "PURGE_SUCCESS: Daemon restarted, data restored from peers. current_items=$TOTAL_ITEMS"',
             ]);
 
-            $ssmResult = $this->executeSsmCommand($instanceId, $script, 180);
+            $ssmResult = $this->executeSsmCommand($instanceId, $script, 300);
 
             if (! $ssmResult['success']) {
                 return [
@@ -289,7 +318,7 @@ class NodeOperationsService
  'items_resynced' => $itemsAfter,
  'method' => 'multichain_auto_subscribe',
  'trigger' => 'post_purge_daemon_restart',
- 'reason' => 'Auto-resync: daemon restarted and re-subscribed to all streams from peers',
+ 'reason' => 'Auto-resync: daemon restarted, explicitly subscribed all streams, data restored from peers',
  'occurred_at' => now()->toIso8601String(),
  'performed_by' => 'system',
  ],
@@ -409,7 +438,7 @@ class NodeOperationsService
                 'echo "RESYNC_SUCCESS: All streams subscribed"',
             ]));
 
-            $ssmResult = $this->executeSsmCommand($instanceId, $script, 180);
+            $ssmResult = $this->executeSsmCommand($instanceId, $script, 300);
 
             if (! $ssmResult['success']) {
                 return [
