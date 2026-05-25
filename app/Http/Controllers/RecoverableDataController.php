@@ -47,10 +47,15 @@ class RecoverableDataController extends Controller
  return Cache::has("node_operation_lock:{$nodeId}");
  }
 
- private function lockNode(string $nodeId): void
- {
- Cache::put("node_operation_lock:{$nodeId}", true, now()->addMinutes(20));
- }
+    private function lockNode(string $nodeId): void
+    {
+        Cache::put("node_operation_lock:{$nodeId}", true, now()->addMinutes(20));
+    }
+
+    private function unlockNode(string $nodeId): void
+    {
+        Cache::forget("node_operation_lock:{$nodeId}");
+    }
 
  /**
      * Display the Recoverable Data admin page.

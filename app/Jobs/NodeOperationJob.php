@@ -73,6 +73,9 @@ class NodeOperationJob implements ShouldQueue
                     'message' => $result['message'] ?? '',
                 ]);
             }
+
+            // Release the node lock regardless of success/failure
+            Cache::forget("node_operation_lock:{$this->nodeId}");
         } catch (Throwable $e) {
             Cache::put("node_operation:{$this->jobId}", [
                 'status' => 'failed',
@@ -81,6 +84,9 @@ class NodeOperationJob implements ShouldQueue
                 'message' => 'Job exception: ' . $e->getMessage(),
                 'user_id' => $this->userId,
             ], now()->addMinutes(20));
+
+            // Release the node lock on exception too
+            Cache::forget("node_operation_lock:{$this->nodeId}");
 
             Log::error('NodeOperationJob threw exception', [
                 'job_id' => $this->jobId,
@@ -102,5 +108,8 @@ class NodeOperationJob implements ShouldQueue
             'message' => 'Job failed after all retries: ' . ($exception?->getMessage() ?? 'Unknown error'),
             'user_id' => $this->userId,
         ], now()->addMinutes(20));
+
+        // Release the node lock on final failure
+        Cache::forget("node_operation_lock:{$this->nodeId}");
     }
 }
