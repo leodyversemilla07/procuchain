@@ -9,13 +9,13 @@ User=webapp
 Group=webapp
 Restart=always
 RestartSec=5
-ExecStart=/usr/bin/php /var/app/current/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600 --queue=default
+ExecStart=/usr/bin/php /var/app/current/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600 --timeout=360 --queue=default
 
-# Graceful shutdown — let the current job finish
-StopWaitSec=60
+# Graceful shutdown — let the current job finish (must be >= job timeout)
+StopWaitSec=400
 KillMode=mixed
 KillSignal=SIGTERM
-TimeoutStopSec=90
+TimeoutStopSec=420
 
 # Memory limit — restart the worker if it leaks
 MemoryMax=256M
