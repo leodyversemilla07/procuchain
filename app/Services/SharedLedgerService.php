@@ -400,10 +400,13 @@ class SharedLedgerService
                 ? ($resyncItems[0]['blocktime'] ?? 0)
                 : 0;
 
-            $isPurged = $purgeBlock >= $resyncBlock;
+            // Use > (not >=): when purge and resync are published in the same block,
+            // they share the same blocktime. A resync at the same blocktime as a purge
+            // means the node has already recovered — it should NOT show as purged.
+            $isPurged = $purgeBlock > $resyncBlock;
 
             if (! $isPurged) {
-                return $default;
+            return $default;
             }
 
             $purgeData = $purgeItems[0]['data']['json'] ?? [];
@@ -625,10 +628,11 @@ class SharedLedgerService
                 }
 
                 if ($resyncSuccess && is_array($resyncItems) && count($resyncItems) > 0) {
-                    $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
-                    $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
+                $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
+                $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
 
-                    return $purgeBlock >= $resyncBlock;
+                // Use > (not >=): same-block purge+resync means node has recovered
+                return $purgeBlock > $resyncBlock;
                 }
 
                 return true;

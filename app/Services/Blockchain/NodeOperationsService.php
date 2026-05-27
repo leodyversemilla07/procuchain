@@ -706,9 +706,10 @@ if (! $ssmResult['success']) {
  }
 
  // Node is considered purged ONLY if:
- // 1. No resync event exists after purge, AND
+ // 1. Purge blocktime is strictly greater than resync (>= would fail
+ //    when purge+resync publish in the same block — same blocktime), AND
  // 2. Live item count is 0 (no auto-resync happened yet)
- if ($purgeBlock >= $resyncBlock && $totalItems === 0) {
+ if ($purgeBlock > $resyncBlock && $totalItems === 0) {
  $isPurged = true;
  } elseif ($resyncBlock > 0) {
  $lastAction = 'resynced';
