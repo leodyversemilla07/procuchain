@@ -11,7 +11,6 @@ namespace App\Enums;
 enum StreamEnums: string
 {
     case METADATA = 'procurement.metadata';
-    case DATA = 'procurement.data';
     case DOCUMENTS = 'procurement.documents';
     case STATUS = 'procurement.status';
     case EVENTS = 'procurement.events';
@@ -29,7 +28,6 @@ enum StreamEnums: string
     {
         return match ($this) {
             self::METADATA => 'Procurement Metadata',
-            self::DATA => 'Procurement Data',
             self::DOCUMENTS => 'Procurement Documents',
             self::STATUS => 'Procurement Status',
             self::EVENTS => 'Procurement Events',
@@ -49,7 +47,6 @@ enum StreamEnums: string
     {
         return match ($this) {
             self::METADATA => 'Stores core procurement metadata and details',
-            self::DATA => 'Stores procurement data records and structured information',
             self::DOCUMENTS => 'Stores procurement documents and their metadata',
             self::STATUS => 'Tracks status changes throughout the procurement process',
             self::EVENTS => 'Records procurement events and activities',
@@ -69,7 +66,6 @@ enum StreamEnums: string
     {
         return in_array($this, [
             self::METADATA,
-            self::DATA,
             self::DOCUMENTS,
             self::STATUS,
             self::EVENTS,
