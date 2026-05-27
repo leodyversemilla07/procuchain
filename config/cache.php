@@ -121,6 +121,9 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        \Carbon\Carbon::class,
+        \Illuminate\Support\Carbon::class,
+    ],
 
 ];

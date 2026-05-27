@@ -85,23 +85,34 @@ export default function ReportIndex() {
         setError(null);
 
         try {
-            const response = await fetch(generateUrl(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': getXsrfToken(),
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify(filters),
-            });
+          const response = await fetch(generateUrl(), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-XSRF-TOKEN': getXsrfToken(),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(filters),
+          });
 
-            const data = await response.json();
+          // Guard against HTML error pages (e.g. 500 from Laravel)
+          const contentType = response.headers.get('content-type') ?? '';
+          const isJson = contentType.includes('application/json');
+          const data = isJson ? await response.json() : null;
 
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || 'Failed to generate report');
-            }
+          if (!response.ok) {
+            throw new Error(
+              isJson
+                ? data?.message || `Report generation failed (HTTP ${response.status})`
+                : `Server error (HTTP ${response.status})`,
+            );
+          }
 
-            setReportData(data);
+          if (!data?.success) {
+            throw new Error(data?.message || 'Failed to generate report');
+          }
+
+          setReportData(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {

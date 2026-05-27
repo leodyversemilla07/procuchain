@@ -308,8 +308,8 @@ final class ProcurementListAggregatorService
     {
         return $statusItems
             ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions, $authUser) {
-                $originalTimestamp = $statusDto->timestamp;
-                $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
+                $originalTimestamp = $statusDto->timestamp->toIso8601String();
+                $displayTimestamp = $statusDto->timestamp->toDateString();
 
                 $stageEnum = StageEnums::tryFrom($statusDto->stage);
                 $phase = $stageEnum?->getPhase() ?? 'unknown';

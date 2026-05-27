@@ -70,11 +70,25 @@ class ProcurementSearchService
     private function fetchCachedProcurements(): array
     {
         return Cache::remember('search:procurements:all', self::PROCUREMENT_CACHE_TTL, function () {
-            return $this->procurementDataService->fetchAndProcessProcurements(
+            $data = $this->procurementDataService->fetchAndProcessProcurements(
                 skipActions: false,
                 filterByUserId: null,
                 filterByUserAddress: null
             );
+
+            // Ensure all timestamp fields are strings (never Carbon objects).
+            // Laravel 13's serializable_classes=false will break Carbon deserialization,
+            // causing __PHP_Incomplete_Class errors on cache reads.
+            return array_map(function (array $procurement) {
+                if (isset($procurement['timestamp']) && $procurement['timestamp'] instanceof \DateTimeInterface) {
+                    $procurement['timestamp'] = Carbon::instance($procurement['timestamp'])->toIso8601String();
+                }
+                if (isset($procurement['created_at']) && $procurement['created_at'] instanceof \DateTimeInterface) {
+                    $procurement['created_at'] = Carbon::instance($procurement['created_at'])->toIso8601String();
+                }
+
+                return $procurement;
+            }, $data);
         });
     }
 
@@ -128,21 +142,26 @@ class ProcurementSearchService
             }
 
             if (! empty($filters['date_from']) || ! empty($filters['date_to'])) {
-                $dateField = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
+                    $dateField = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
 
-                if (! $dateField) {
-                    return false;
-                }
-
-                if ($dateField instanceof Carbon) {
-                    $timestamp = $dateField->timestamp;
-                } else {
-                    $timestamp = strtotime($dateField);
-
-                    if ($timestamp === false) {
+                    if (! $dateField) {
                         return false;
                     }
-                }
+
+                    // Guard against __PHP_Incomplete_Class from stale cache
+                    // (Laravel 13 serializable_classes=false can break Carbon deserialization)
+                    if ($dateField instanceof Carbon) {
+                        $timestamp = $dateField->timestamp;
+                    } elseif (is_string($dateField)) {
+                        $timestamp = strtotime($dateField);
+
+                        if ($timestamp === false) {
+                            return false;
+                        }
+                    } else {
+                        // __PHP_Incomplete_Class or other non-string — skip date filtering
+                        return false;
+                    }
 
                 if (! empty($filters['date_from'])) {
                     $dateFrom = strtotime($filters['date_from'].' 00:00:00');

@@ -219,11 +219,13 @@ class ReportGenerationService
                 continue;
             }
 
-            // Handle Carbon instances
+            // Guard against __PHP_Incomplete_Class from stale cache
             if ($createdAt instanceof Carbon) {
                 $date = $createdAt->toDateString();
-            } else {
+            } elseif (is_string($createdAt)) {
                 $date = Carbon::parse($createdAt)->toDateString();
+            } else {
+                continue;
             }
 
             if (! isset($dailyData[$date])) {
@@ -253,11 +255,13 @@ class ReportGenerationService
                 continue;
             }
 
-            // Handle Carbon instances
+            // Guard against __PHP_Incomplete_Class from stale cache
             if ($createdAt instanceof Carbon) {
                 $month = $createdAt->format('Y-m');
-            } else {
+            } elseif (is_string($createdAt)) {
                 $month = Carbon::parse($createdAt)->format('Y-m');
+            } else {
+                continue;
             }
 
             if (! isset($monthlyData[$month])) {
@@ -300,6 +304,13 @@ class ReportGenerationService
         $rows = [$headers];
 
         foreach ($reportData['data'] as $item) {
+            $createdAt = $item['created_at'] ?? $item['timestamp'] ?? '';
+            if ($createdAt instanceof Carbon) {
+                $createdAt = $createdAt->toIso8601String();
+            } elseif (! is_string($createdAt)) {
+                $createdAt = '';
+            }
+
             $rows[] = [
                 $item['id'] ?? '',
                 $item['title'] ?? '',
@@ -308,7 +319,7 @@ class ReportGenerationService
                 $item['mode'] ?? '',
                 $item['category'] ?? '',
                 $item['abc_amount'] ?? 0,
-                $item['created_at'] ?? '',
+                $createdAt,
             ];
         }
 
