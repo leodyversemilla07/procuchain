@@ -142,10 +142,14 @@ final class ProcurementListAggregatorService
      */
     private function buildDocumentCountMap(): array
     {
-        $documentLimit = 100;
+    // Use a limit large enough to cover all documents across all procurements.
+    // The procurement.documents stream may have hundreds of items (376+ as of May 2026);
+    // fetching only 100 (the previous default) missed items for older procurements,
+    // causing "Completed" ones to show document_count: 0.
+    $documentLimit = 5000;
 
-        try {
-            $documentDtos = $this->documentRepository->all($documentLimit, 0);
+    try {
+    $documentDtos = $this->documentRepository->all($documentLimit, 0);
         } catch (\Exception $e) {
             Log::warning('Failed to fetch documents, continuing without document counts', [
                 'error' => $e->getMessage(),

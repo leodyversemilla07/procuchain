@@ -92,7 +92,11 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
   const [isFullPurging, setIsFullPurging] = useState(false);
   const [purgeStatusMessage, setPurgeStatusMessage] = useState<string>('');
 
- // (Resync is automatic after purge — no manual UI needed)
+ // Manual resync state — select a purged node to resync
+ const [resyncNodeId, setResyncNodeId] = useState<string>('');
+ const [resyncReason, setResyncReason] = useState<string>('');
+ const [isResyncing, setIsResyncing] = useState(false);
+ const [resyncStatusMessage, setResyncStatusMessage] = useState<string>('');
 
   // Dialog open states
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
@@ -206,6 +210,76 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
       setPurgeStatusMessage('');
     }
  }, [fullPurgeNodeId, fullPurgeReason]);
+
+ // ── Manual Resync (async — dispatches queue job, then polls) ──
+ const handleResyncNode = useCallback(async () => {
+ if (!resyncNodeId) {
+ toast.error('Select a purged node to resync');
+ return;
+ }
+
+ setIsResyncing(true);
+ setResyncStatusMessage('Dispatching resync request...');
+
+ try {
+ await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+
+ const res = await fetch(adminRecoverableData.resyncNode.url(), {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'Accept': 'application/json',
+ 'X-Requested-With': 'XMLHttpRequest',
+ },
+ credentials: 'same-origin',
+ body: JSON.stringify({
+ node_id: resyncNodeId,
+ reason: resyncReason || 'Manual resync — data restored from peers',
+ }),
+ });
+
+ if (!res.ok && res.status !== 202) {
+ const errorData = await res.json().catch(() => ({}));
+ if (res.status === 409) {
+ toast.warning(errorData.message || 'An operation is already in progress on this node.');
+ return;
+ }
+ throw new Error(errorData.message || `Server returned ${res.status}`);
+ }
+
+ const data = await res.json();
+ const jobId = data.job_id;
+
+ if (!jobId) {
+ throw new Error('No job ID returned from server');
+ }
+
+ toast.info('Resync request queued. SSM command is running in the background...');
+
+ const result = await pollNodeOperationStatus(
+ jobId,
+ (status, message) => {
+ const label = status === 'running' ? 'SSM command executing...' : message;
+ setResyncStatusMessage(label);
+ },
+ );
+
+ if (result.status === 'done') {
+ toast.success(result.message || 'Node resynced successfully.');
+ setResyncNodeId('');
+ setResyncReason('');
+ router.reload({ only: ['nodes'] });
+ } else {
+ toast.error(result.message || 'Resync operation failed.');
+ }
+ } catch (err) {
+ const message = err instanceof Error ? err.message : 'Failed to dispatch resync request.';
+ toast.error(message);
+ } finally {
+ setIsResyncing(false);
+ setResyncStatusMessage('');
+ }
+ }, [resyncNodeId, resyncReason]);
 
  return (
     <AppLayout
@@ -427,6 +501,77 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
             </div>
           </CardContent>
  </Card>
+
+ {/* ─── DEMO: Manual Resync of Purged Node ─── */}
+ {nodes.some((n) => n.is_purged) && (
+ <Card className="border-emerald-500/20 bg-emerald-500/5">
+ <CardHeader className="pb-3">
+ <CardTitle className="flex items-center gap-2 text-sm font-medium">
+ <RotateCcw className="h-4 w-4 text-emerald-600" />
+ Resync Purged Node
+ </CardTitle>
+ </CardHeader>
+ <CardContent className="space-y-4">
+ <FieldDescription>
+ Manually trigger a <strong className="text-foreground">blockchain resync</strong> on a purged node.
+ The node will reconnect to its peers and re-download all stream data — proving that blockchain
+ data cannot be permanently destroyed. Both the purge and resync events are recorded on-chain
+ for RA 12009 audit compliance.
+ </FieldDescription>
+
+ <div className="grid gap-4 sm:grid-cols-2">
+ <Field>
+ <FieldLabel htmlFor="resync-node">Purged Node</FieldLabel>
+ <Select value={resyncNodeId} onValueChange={(v) => v && setResyncNodeId(v)}>
+ <SelectTrigger className="w-full">
+ <SelectValue placeholder="Select purged node to resync..." />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectGroup>
+ {nodes
+ .filter((node) => node.is_purged)
+ .map((node) => (
+ <SelectItem key={node.id} value={node.id}>
+ {node.name} ({node.role}) — 🔴 Purged
+ {node.last_action === 'auto_resync' ? ' (resyncing…)' : ''}
+ </SelectItem>
+ ))}
+ </SelectGroup>
+ </SelectContent>
+ </Select>
+ </Field>
+
+ <Field>
+ <FieldLabel htmlFor="resync-reason">Reason (RA 12009 audit)</FieldLabel>
+ <Input
+ id="resync-reason"
+ type="text"
+ placeholder="Reason for manual resync..."
+ value={resyncReason}
+ onChange={(e) => setResyncReason(e.target.value)}
+ disabled={isResyncing}
+ />
+ </Field>
+ </div>
+
+ <div className="flex items-center gap-3">
+ <Button
+ variant="default"
+ className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+ disabled={isResyncing || !resyncNodeId}
+ onClick={handleResyncNode}
+ >
+ {isResyncing ? <Spinner className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+ {isResyncing ? 'Resyncing...' : 'Resync Node'}
+ </Button>
+
+ {isResyncing && resyncStatusMessage && (
+ <span className="text-muted-foreground animate-pulse text-xs">{resyncStatusMessage}</span>
+ )}
+ </div>
+ </CardContent>
+ </Card>
+ )}
 
  {/* ─── Deleted Files Table ─── */}
         {deletedFiles.length === 0 ? (

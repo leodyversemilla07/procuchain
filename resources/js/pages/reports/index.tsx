@@ -12,6 +12,7 @@ import AppLayout from '@/layouts/app-layout';
 import { getXsrfToken } from '@/lib/csrf';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { BarChart3, Calendar, Download, FileText, Search, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -109,38 +110,60 @@ export default function ReportIndex() {
     };
 
     const exportReport = async (format: 'json' | 'csv' | 'pdf') => {
-        try {
-            const response = await fetch(exportUrl(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': getXsrfToken(),
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ ...filters, format }),
-            });
+      try {
+        // Refresh CSRF cookie to avoid 419 errors on the export request
+        await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
 
-            if (format === 'csv' || format === 'pdf') {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.${format}`;
-                a.click();
-                window.URL.revokeObjectURL(url);
-            } else {
-                const data = await response.json();
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                window.URL.revokeObjectURL(url);
-            }
-        } catch (err) {
-            console.error('Export failed:', err);
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getXsrfToken(),
+        };
+
+        if (format === 'pdf') {
+          headers['Accept'] = 'application/pdf';
         }
+
+        const response = await fetch(exportUrl(), {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({ ...filters, format }),
+        });
+
+        if (!response.ok) {
+          let message = 'Export failed';
+          try {
+            const data = await response.json();
+            message = data.message || message;
+          } catch {
+            message = response.statusText || `Export failed (HTTP ${response.status})`;
+          }
+          toast.error(message);
+          return;
+        }
+
+        if (format === 'csv' || format === 'pdf') {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.${format}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } else {
+          const data = await response.json();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        console.error('Export failed:', err);
+        toast.error(err instanceof Error ? err.message : 'Export failed');
+      }
     };
 
     const currentYear = new Date().getFullYear();

@@ -23,22 +23,22 @@ use Illuminate\Support\Facades\Log;
  */
 class SharedLedgerService
 {
-    /** Streams to include in the shared ledger (procurement transaction streams only). */
+    /** Streams to include in the shared ledger. */
     private const LEDGER_STREAMS = [
-        StreamEnums::METADATA->value,
-        StreamEnums::STATUS->value,
-        StreamEnums::DOCUMENTS->value,
-        StreamEnums::CORRECTIONS->value,
-        StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-        StreamEnums::ARCHIVE->value,
-        StreamEnums::EVENTS->value,
+    StreamEnums::METADATA->value,
+    StreamEnums::STATUS->value,
+    StreamEnums::DOCUMENTS->value,
+    StreamEnums::CORRECTIONS->value,
+    StreamEnums::PROCUREMENTS_CORRECTIONS->value,
+    StreamEnums::ARCHIVE->value,
+    StreamEnums::EVENTS->value,
+    StreamEnums::FILE_METADATA->value,
     ];
 
     /**
-     * Stream used for purge/resync detection only.
-     * NOT loaded as ledger entries — large file-data streams
-     * that would make liststreamitems extremely slow.
-     */
+    * Stream used for purge/resync detection (also included in LEDGER_STREAMS
+    * for full visibility — file upload metadata, node purge/resync events).
+    */
     private const PURGE_CHECK_STREAM = StreamEnums::FILE_METADATA->value;
 
     /** Items per page. */
@@ -309,20 +309,22 @@ class SharedLedgerService
         // Node is reachable — set purge state based on subscription status
         $hasPartialPurge = count($unsubscribedStreams) > 0 && count($unsubscribedStreams) < count(self::LEDGER_STREAMS);
         $this->nodePurgeState = [
-            'is_purged' => false,
-            'was_explicitly_purged' => false,
-            'partially_purged' => $hasPartialPurge,
-        'unsubscribed_streams' => $unsubscribedStreams,
-            'purge_reason' => null,
-            'purge_timestamp' => null,
-            'connection_error' => false,
-            'connection_error_message' => null,
+         'is_purged' => false,
+         'was_explicitly_purged' => false,
+         'partially_purged' => $hasPartialPurge,
+         'unsubscribed_streams' => $unsubscribedStreams,
+         'purge_reason' => null,
+         'purge_timestamp' => null,
+         'connection_error' => false,
+         'connection_error_message' => null,
         ];
 
-            Log::info('SharedLedger: Node data loaded', [
-                'node' => $nodeId,
-                'entries_count' => count($entries),
-            ]);
+        // Node operation events from file.metadata are now included via LEDGER_STREAMS
+
+        Log::info('SharedLedger: Node data loaded', [
+         'node' => $nodeId,
+         'entries_count' => count($entries),
+        ]);
 
             return $entries;
         } catch (Exception $e) {
@@ -376,7 +378,7 @@ class SharedLedgerService
                 $purgeKey,
                 false,
                 1,
-                0,
+                -1,
                 false
             );
 
@@ -391,7 +393,7 @@ class SharedLedgerService
                 $resyncKey,
                 false,
                 1,
-                0,
+                -1,
                 false
             );
 
@@ -479,14 +481,14 @@ class SharedLedgerService
         }
 
         return $allEntries;
-    }
+        }
 
-    /**
-     * Fetch entries using the default Manager (singleton) connection.
-     *
-     * @return LedgerEntryData[]
-     */
-    private function fetchFromDefaultClient(): array
+        /**
+        * Fetch entries using the default Manager (singleton) connection.
+        *
+        * @return LedgerEntryData[]
+        */
+        private function fetchFromDefaultClient(): array
     {
         $entries = [];
 
@@ -522,11 +524,13 @@ class SharedLedgerService
             }
         }
 
-        return $entries;
-    }
+        // Node operation events from file.metadata are now included via LEDGER_STREAMS
 
-    /**
-     * Fetch entries from a specific Client instance.
+        return $entries;
+        }
+
+        /**
+        * Fetch entries from a specific Client instance.
      *
      * @return LedgerEntryData[]
      */
@@ -566,11 +570,13 @@ class SharedLedgerService
             }
         }
 
-        return $entries;
-    }
+        // Node operation events from file.metadata are now included via LEDGER_STREAMS
 
-    /**
-     * Ensure the client's node is subscribed to all ledger streams.
+        return $entries;
+        }
+
+        /**
+        * Ensure the client's node is subscribed to all ledger streams.
      * Idempotent — subscribing to an already-subscribed stream is a no-op.
      * Skips nodes that were intentionally purged.
      */
@@ -609,10 +615,10 @@ class SharedLedgerService
             $purgeKey = 'node_'.$nodeId.'_full_purge';
 
             if ($client) {
-                $purgeItems = $client->liststreamkeyitems(self::PURGE_CHECK_STREAM, $purgeKey, false, 1, 0, false);
+                $purgeItems = $client->liststreamkeyitems(self::PURGE_CHECK_STREAM, $purgeKey, false, 1, -1, false);
                 $success = $client->success();
             } else {
-                $purgeItems = $this->multichain->liststreamkeyitems(self::PURGE_CHECK_STREAM, $purgeKey, false, 1, 0, false);
+                $purgeItems = $this->multichain->liststreamkeyitems(self::PURGE_CHECK_STREAM, $purgeKey, false, 1, -1, false);
                 $success = $this->multichain->success();
             }
 
@@ -620,10 +626,10 @@ class SharedLedgerService
                 $resyncKey = 'node_'.$nodeId.'_resync';
 
                 if ($client) {
-                    $resyncItems = $client->liststreamkeyitems(self::PURGE_CHECK_STREAM, $resyncKey, false, 1, 0, false);
+                    $resyncItems = $client->liststreamkeyitems(self::PURGE_CHECK_STREAM, $resyncKey, false, 1, -1, false);
                     $resyncSuccess = $client->success();
                 } else {
-                    $resyncItems = $this->multichain->liststreamkeyitems(self::PURGE_CHECK_STREAM, $resyncKey, false, 1, 0, false);
+                    $resyncItems = $this->multichain->liststreamkeyitems(self::PURGE_CHECK_STREAM, $resyncKey, false, 1, -1, false);
                     $resyncSuccess = $this->multichain->success();
                 }
 

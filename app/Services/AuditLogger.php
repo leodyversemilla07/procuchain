@@ -212,15 +212,22 @@ class AuditLogger
             $userName = $user?->name ?? 'System';
             $details = $this->buildBlockchainDetails($action, $subjectType, $subjectId, $oldValues, $newValues);
 
+            // For node operations, extract items count from newValues so the
+            // blockchain event carries the correct count instead of always 0.
+            $docCount = 0;
+            if (str_starts_with($action, 'node.')) {
+            $docCount = (int) ($newValues['items_purged'] ?? $newValues['items_resynced'] ?? 0);
+            }
+
             $this->events->publish(
-                prNumber: $subjectType === 'procurement' ? ($subjectId ?? 'system') : 'system',
-                procurementTitle: $subjectType === 'procurement' ? "PR #{$subjectId}" : 'System Administration',
-                stage: 'administration',
-                eventType: $action,
-                category: $this->categorizeAction($action),
-                severity: in_array($action, self::CRITICAL_ACTIONS, true) ? 'warning' : 'info',
-                details: $details,
-                documentCount: 0,
+            prNumber: $subjectType === 'procurement' ? ($subjectId ?? 'system') : 'system',
+            procurementTitle: $subjectType === 'procurement' ? "PR #{$subjectId}" : 'System Administration',
+            stage: 'administration',
+            eventType: $action,
+            category: $this->categorizeAction($action),
+            severity: in_array($action, self::CRITICAL_ACTIONS, true) ? 'warning' : 'info',
+            details: $details,
+            documentCount: $docCount,
                 userAddress: $userAddress,
                 metadata: [
                     'action' => $action,

@@ -158,8 +158,14 @@ final readonly class LedgerEntryData
                 $data['reason'] ?? 'No reason provided'
             ),
             'procurement.archive' => sprintf(
-                'Procurement %s',
-                ! empty($data['archived']) ? 'archived' : 'restored'
+            'Procurement %s',
+            ! empty($data['archived']) ? 'archived' : 'restored'
+            ),
+            'file.metadata' => sprintf(
+            'File stored: %s — %s (%s)',
+            $data['pr_number'] ?? $key,
+            $data['file_name'] ?? $data['document_type'] ?? 'document',
+            $data['document_type'] ?? 'unknown'
             ),
             default => $data['details'] ?? json_encode($data),
         };

@@ -680,7 +680,7 @@ if (! $ssmResult['success']) {
  $purgeKey,
  false,
  1,
- 0,
+ -1,
  false
  );
 
@@ -695,7 +695,7 @@ if (! $ssmResult['success']) {
  $resyncKey,
  false,
  1,
- 0,
+ -1,
  false
  );
 
