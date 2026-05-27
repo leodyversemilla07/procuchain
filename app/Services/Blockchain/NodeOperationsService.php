@@ -20,7 +20,7 @@ use Symfony\Component\Process\Process;
  *
  * Purge strategy for MultiChain CE:
  * - MultiChain CE has no purgestreamitems API (Enterprise only)
- * - unsubscribe alone doesn't delete data — MultiChain auto-resubscribes
+ * - unsubscribe alone doesn't delete data — data persists on other nodes
  * - Real purge: AWS SSM → stop daemon → delete chain data → restart → subscribe streams → resync
  * - The node restarts with zero blocks, zero subscriptions
  * - Data survives on all other nodes (they still run normally)
@@ -153,6 +153,7 @@ class NodeOperationsService
  // Phase 2: Wait for block sync + subscribe streams + verify data (slow, ~300s)
  $chainDataDir = '/root/.multichain/procuchain';
  $seedIp = $this->getSeedNodeIp($nodeId);
+ $streams = collect(StreamEnums::cases())->map->value->toArray();
 
  // ── Phase 1: Stop → Delete → Restart ──
  $phase1 = implode("\n", [
@@ -267,8 +268,8 @@ class NodeOperationsService
  'fi',
  '',
 '# Step 6: Batch subscribe to all streams with rescan=true (single blockchain pass)',
-'# MultiChain supports subscribing to multiple streams at once — one rescan pass instead of 11',
-'STREAMS_JSON=\'["procurement.documents","procurement.status","procurement.events","procurement.corrections","file.data","file.chunks","file.metadata","procurement.metadata","procurement.metadata.corrections","procurement.archive"]\'',
+'# MultiChain supports subscribing to multiple streams at once — one rescan pass instead of N',
+'STREAMS_JSON=\'' . json_encode($streams) . '\'',
 'echo "Starting batch subscribe with rescan (this may take several minutes)..."',
 '$CLI subscribe "$STREAMS_JSON" true 2>&1',
 'SUB_EXIT=$?',
@@ -491,8 +492,8 @@ if (! $phase2Result['success']) {
  'fi',
  '',
 '# Batch subscribe to all streams with rescan=true (single blockchain pass)',
- 'STREAMS_JSON=\'[' . implode(',', array_map(fn ($s) => '"' . $s . '"', $streams)) . ']\'',
- 'echo "Starting batch subscribe with rescan (this may take several minutes)..."',
+'STREAMS_JSON=\'' . json_encode($streams) . '\'',
+'echo "Starting batch subscribe with rescan (this may take several minutes)..."',
  '$CLI subscribe "$STREAMS_JSON" true 2>&1',
  'SUB_EXIT=$?',
  'echo "Batch subscribe completed with exit=$SUB_EXIT"',
