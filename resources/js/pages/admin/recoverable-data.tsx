@@ -398,7 +398,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
           <CardContent className="space-y-4">
             <FieldDescription>
  Simulate <strong className="text-foreground">catastrophic data loss</strong> on a single node by purging{' '}
- <strong className="text-foreground">all stream data</strong> from its local storage. After purging, the node automatically reconnects to peers and <strong className="text-foreground">resyncs all data</strong> — demonstrating blockchain resilience. Every purge is recorded on-chain as an audit event (RA 12009 NGPA).
+ <strong className="text-foreground">all stream data</strong> from its local storage. After purging, the node's local data is wiped — but data survives on other nodes. Use <strong className="text-foreground">manual resync</strong> to restore the purged node's local copy from peers. Every purge is recorded on-chain as an audit event (RA 12009 NGPA).
             </FieldDescription>
 
             {/* Step-by-step demo flow */}
@@ -414,12 +414,12 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  recorded on-chain
  </li>
  <li>
- <strong className="text-foreground">Auto-Resync</strong> — The purged node automatically reconnects to peers
- and restores all data — <em>no manual action needed</em>
+     <strong className="text-foreground">Resync</strong> — Use the Manual Resync section below to restore
+     the purged node's data from peers
  </li>
  <li>
- <strong className="text-foreground">Confirm</strong> — Both the purge and auto-resync events are on-chain;
- data is fully restored, proving blockchain recoverability
+     <strong className="text-foreground">Confirm</strong> — Both the purge and resync events are on-chain;
+     data is fully restored, proving blockchain recoverability
  </li>
  </ol>
             </div>
@@ -436,7 +436,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  {nodes.map((node) => (
  <SelectItem key={node.id} value={node.id} disabled={node.is_purged}>
  {node.name} ({node.role})
- {node.is_purged ? ` — 🔴 Purged${node.last_action === 'auto_resync' ? ' (resyncing…)' : ''}` : ` — ${node.items.toLocaleString()} items`}
+ {node.is_purged ? ` — 🔴 Purged${node.last_action === 'resynced' ? ' (resynced)' : ''}` : ` — ${node.items.toLocaleString()} items`}
  </SelectItem>
  ))}
                     </SelectGroup>
@@ -475,8 +475,8 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  This will remove <strong>ALL blockchain data</strong> from{' '}
  <strong className="mx-1">{nodes.find((n) => n.id === fullPurgeNodeId)?.name || fullPurgeNodeId}</strong>.
  Every stream item (metadata, files, events, status changes) will be purged from this node&apos;s local
- storage. The node will then auto-resync from peers — proving that blockchain data cannot be permanently destroyed.
- Both the purge and auto-resync events are recorded on-chain for audit compliance (RA 12009).
+ storage. Data survives on other nodes — use Manual Resync to restore this node's local copy.
+ Both the purge and resync events are recorded on-chain for audit compliance (RA 12009).
  </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -533,7 +533,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  .map((node) => (
  <SelectItem key={node.id} value={node.id}>
  {node.name} ({node.role}) — 🔴 Purged
- {node.last_action === 'auto_resync' ? ' (resyncing…)' : ''}
+ {node.last_action === 'resynced' ? ' (resynced)' : ''}
  </SelectItem>
  ))}
  </SelectGroup>

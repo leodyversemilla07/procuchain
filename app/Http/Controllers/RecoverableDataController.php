@@ -114,7 +114,7 @@ class RecoverableDataController extends Controller
  *
  * In MultiChain CE, per-key deletion is not available — this performs
  * a full node purge (same as purgeAllFromNode). Data survives on all
- * other nodes and auto-resyncs from peers after daemon restart.
+ * other nodes. Manual resync is required to restore the purged node's local copy.
  *
  * Recorded on-chain as action: 'file_node_purge' for audit compliance.
  * Dispatched as async job because SSM takes 60-180s.
@@ -151,7 +151,7 @@ class RecoverableDataController extends Controller
  NodeOperationJob::dispatch(
  operation: 'purge',
  nodeId: $validated['node_id'],
- reason: $validated['reason'] ?? 'Demo: single-node purge — data auto-resyncs from peers',
+ reason: $validated['reason'] ?? 'Demo: single-node purge — data survives on peers, manual resync to restore',
  jobId: $jobId,
  userId: $request->user()->id,
  );

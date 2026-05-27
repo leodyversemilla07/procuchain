@@ -371,7 +371,7 @@ if (! $phase2Result['success']) {
  'node_name' => $targetNode['name'] ?? $nodeId,
  'items_purged' => $itemsBefore,
  'method' => 'ssm_physical_delete',
- 'reason' => $reason ?: 'Demo: physical chain data deleted — auto-resync from peers demonstrates blockchain resilience',
+ 'reason' => $reason ?: 'Demo: physical chain data deleted — manual resync from peers demonstrates blockchain resilience',
  'occurred_at' => now()->toIso8601String(),
  'performed_by' => auth()->user()?->name ?? 'system',
  ],
@@ -383,31 +383,9 @@ if (! $phase2Result['success']) {
  ]);
  }
 
- // Record the auto-resync event on-chain — the daemon reconnects to peers
- // and auto-resyncs all data. This is the BLOCKCHAIN RESILIENCE demo:
- // data cannot be permanently destroyed because other nodes have copies.
- try {
- $itemsAfter = $this->getNodeItemCount($targetNode);
-
- $this->multichain->publish(StreamEnums::FILE_METADATA->value, 'node_'.$nodeId.'_resync', [
- 'json' => [
- 'action' => 'auto_resync',
- 'node_id' => $nodeId,
- 'node_name' => $targetNode['name'] ?? $nodeId,
- 'items_resynced' => $itemsAfter,
- 'method' => 'multichain_auto_subscribe',
- 'trigger' => 'post_purge_daemon_restart',
- 'reason' => 'Auto-resync: daemon restarted, explicitly subscribed all streams, data restored from peers',
- 'occurred_at' => now()->toIso8601String(),
- 'performed_by' => 'system',
- ],
- ]);
- } catch (Exception $e) {
- Log::warning('Failed to record auto-resync event on-chain', [
- 'node_id' => $nodeId,
- 'error' => $e->getMessage(),
- ]);
- }
+ // Note: After purge, the node's local data is wiped but the daemon stays running.
+            // Data persists on other nodes. Manual resync (resyncNode) is required to
+            // restore the purged node's local copy from peers.
 
  Log::info('Full node purge completed via SSM', [
  'node_id' => $nodeId,
@@ -434,7 +412,7 @@ if (! $phase2Result['success']) {
 
  return [
  'success' => true,
- 'message' => "Purged all data ({$itemsBefore} items) from {$targetNode['name']} ({$nodeId}). Node is now auto-resyncing from peers — blockchain resilience in action!",
+ 'message' => "Purged all data ({$itemsBefore} items) from {$targetNode['name']} ({$nodeId}). Data survives on other nodes — use manual resync to restore this node's local copy.",
  'items_purged' => $itemsBefore,
  'node_name' => $targetNode['name'] ?? $nodeId,
  ];
@@ -449,17 +427,16 @@ if (! $phase2Result['success']) {
     }
 
  /**
- * Resync a node's data from peers via AWS SSM.
- *
- * After a purge, the daemon auto-resyncs from peers (recorded on-chain
- * as action: 'auto_resync'). This method is a FALLBACK for cases
- * where auto-resync was incomplete — it explicitly subscribes to
- * all streams and rescans.
- *
- * Steps executed on the target node via SSM:
- * 1. Subscribe to all streams (triggers data download from peers)
- * 2. Wait for initial sync to complete
- * 3. Verify item counts match other nodes
+  * Resync a node's data from peers via AWS SSM.
+  *
+  * After a purge, the node's local data is wiped but data persists on
+  * other nodes. This is the PRIMARY method to restore a purged node —
+  * it explicitly subscribes to all streams and rescans from peers.
+  *
+  * Steps executed on the target node via SSM:
+  * 1. Subscribe to all streams (triggers data download from peers)
+  * 2. Wait for initial sync to complete
+  * 3. Verify item counts match other nodes
  *
      * @return array{success: bool, message: string}
      */
@@ -708,7 +685,7 @@ if (! $ssmResult['success']) {
  // Node is considered purged ONLY if:
  // 1. Purge blocktime is strictly greater than resync (>= would fail
  //    when purge+resync publish in the same block — same blocktime), AND
- // 2. Live item count is 0 (no auto-resync happened yet)
+ // 2. Live item count is 0 (no manual resync has happened yet)
  if ($purgeBlock > $resyncBlock && $totalItems === 0) {
  $isPurged = true;
  } elseif ($resyncBlock > 0) {
