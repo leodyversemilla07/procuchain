@@ -226,14 +226,17 @@ class SharedLedgerService
         $purgeState = $this->checkPurgeStateFromPrimary($nodeId);
 
         if ($purgeState['is_purged']) {
-            Log::info('SharedLedger: Node is purged (detected via primary node)', [
-                'node_id' => $nodeId,
-                'was_explicitly_purged' => $purgeState['was_explicitly_purged'],
-            ]);
+        Log::info('SharedLedger: Node is purged (detected via primary node) — fetching entries from primary instead', [
+        'node_id' => $nodeId,
+        'was_explicitly_purged' => $purgeState['was_explicitly_purged'],
+        ]);
 
-            $this->nodePurgeState = $purgeState;
+        $this->nodePurgeState = $purgeState;
 
-            return [];
+        // The purged node has no subscriptions → can't read any stream data.
+        // Fall back to the primary node so the ledger table still shows on-chain
+        // events (including the purge/resync records themselves).
+        return $this->fetchFromDefaultClient();
         }
 
         try {
