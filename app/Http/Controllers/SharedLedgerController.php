@@ -32,6 +32,17 @@ class SharedLedgerController extends Controller
 
         $filters = $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']);
 
+        // Auto-detect the node from the route prefix (e.g. /bac-secretariat/shared-ledger → node=bac-secretariat)
+        // Only apply when no explicit ?node= query param is provided.
+        if (! isset($filters['node'])) {
+            $prefix = $request->segment(1);
+            $validNodeIds = collect(config('multichain.nodes', []))->pluck('id')->toArray();
+
+            if ($prefix && in_array($prefix, $validNodeIds, true)) {
+                $filters['node'] = $prefix;
+            }
+        }
+
         try {
             $data = $this->ledgerService->getLedgerPage($filters);
             $data['selected_node'] = $filters['node'] ?? 'all';

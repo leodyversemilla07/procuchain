@@ -226,18 +226,19 @@ class SharedLedgerService
         $purgeState = $this->checkPurgeStateFromPrimary($nodeId);
 
         if ($purgeState['is_purged']) {
-        Log::info('SharedLedger: Node is purged (detected via primary node) — fetching entries from primary instead', [
-        'node_id' => $nodeId,
-        'was_explicitly_purged' => $purgeState['was_explicitly_purged'],
-        ]);
+                Log::info('SharedLedger: Node is purged (detected via primary node) — returning empty entries', [
+                    'node_id' => $nodeId,
+                    'was_explicitly_purged' => $purgeState['was_explicitly_purged'],
+                ]);
 
-        $this->nodePurgeState = $purgeState;
+                $this->nodePurgeState = $purgeState;
 
-        // The purged node has no subscriptions → can't read any stream data.
-        // Fall back to the primary node so the ledger table still shows on-chain
-        // events (including the purge/resync records themselves).
-        return $this->fetchFromDefaultClient();
-        }
+                // The purged node has no data — it was physically deleted.
+                // Return empty entries so the ledger reflects that this node
+                // no longer holds any blockchain data. The purge event itself
+                // is visible on the primary node's "all" view.
+                return [];
+            }
 
         try {
             $client = $this->createNodeClient($nodeConfig);
@@ -447,6 +448,16 @@ class SharedLedgerService
 
         foreach ($this->getNodes() as $nodeConfig) {
             try {
+                // Skip purged nodes — they have no local blockchain data.
+                // Use the primary node's purge records for detection.
+                $purgeState = $this->checkPurgeStateFromPrimary($nodeConfig['id']);
+                if ($purgeState['is_purged']) {
+                    Log::info('SharedLedger: Skipping purged node in all-nodes fetch', [
+                        'node_id' => $nodeConfig['id'],
+                    ]);
+                    continue;
+                }
+
                 $client = $this->createNodeClient($nodeConfig);
                 $client->setTimeout(3);
 
