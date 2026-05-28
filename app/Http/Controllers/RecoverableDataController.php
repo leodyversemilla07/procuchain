@@ -172,21 +172,31 @@ class RecoverableDataController extends Controller
      */
  public function purgeAllFromNode(Request $request): JsonResponse
  {
- $this->authorize('manage-recoverable-data');
+     $this->authorize('manage-recoverable-data');
 
- $validated = $request->validate([
- 'node_id' => 'required|string',
- 'reason' => 'nullable|string|max:500',
- ]);
+     $validated = $request->validate([
+         'node_id' => 'required|string',
+         'reason' => 'nullable|string|max:500',
+     ]);
 
- if ($this->isNodeLocked($validated['node_id'])) {
- return response()->json([
- 'status' => 'rejected',
- 'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
- ], 409);
- }
+     if ($this->isNodeLocked($validated['node_id'])) {
+         return response()->json([
+             'status' => 'rejected',
+             'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
+         ], 409);
+     }
 
- $this->lockNode($validated['node_id']);
+     // Guard: reject purge if node is already purged
+     $nodes = $this->storage->getAvailableNodes();
+     $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $validated['node_id']);
+     if ($targetNode && ($targetNode['is_purged'] ?? false)) {
+         return response()->json([
+             'status' => 'rejected',
+             'message' => "Node '{$targetNode['name']}' is already purged. Use Resync to restore its data first.",
+         ], 422);
+     }
+
+     $this->lockNode($validated['node_id']);
 
  $jobId = Str::uuid()->toString();
 
@@ -222,21 +232,31 @@ class RecoverableDataController extends Controller
      */
  public function resyncNode(Request $request): JsonResponse
  {
- $this->authorize('manage-recoverable-data');
+     $this->authorize('manage-recoverable-data');
 
- $validated = $request->validate([
- 'node_id' => 'required|string',
- 'reason' => 'nullable|string|max:500',
- ]);
+     $validated = $request->validate([
+         'node_id' => 'required|string',
+         'reason' => 'nullable|string|max:500',
+     ]);
 
- if ($this->isNodeLocked($validated['node_id'])) {
- return response()->json([
- 'status' => 'rejected',
- 'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
- ], 409);
- }
+     if ($this->isNodeLocked($validated['node_id'])) {
+         return response()->json([
+             'status' => 'rejected',
+             'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
+         ], 409);
+     }
 
- $this->lockNode($validated['node_id']);
+     // Guard: reject resync if node is NOT purged (nothing to resync)
+     $nodes = $this->storage->getAvailableNodes();
+     $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $validated['node_id']);
+     if ($targetNode && !($targetNode['is_purged'] ?? false)) {
+         return response()->json([
+             'status' => 'rejected',
+             'message' => "Node '{$targetNode['name']}' is not purged — no resync needed. Data is already available.",
+         ], 422);
+     }
+
+     $this->lockNode($validated['node_id']);
 
  $jobId = Str::uuid()->toString();
 

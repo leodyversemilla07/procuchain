@@ -167,25 +167,30 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
       });
 
  if (!res.ok && res.status !== 202) {
- const errorData = await res.json().catch(() => ({}));
- if (res.status === 409) {
- toast.warning(errorData.message || 'An operation is already in progress on this node.');
- return;
- }
- throw new Error(errorData.message || `Server returned ${res.status}`);
+   const errorData = await res.json().catch(() => ({}));
+   if (res.status === 409) {
+     toast.warning(errorData.message || 'An operation is already in progress on this node.');
+     return;
+   }
+   if (res.status === 422) {
+     toast.info(errorData.message || 'Node is already in this state.');
+     router.reload({ only: ['nodes'] });
+     return;
+   }
+   throw new Error(errorData.message || `Server returned ${res.status}`);
  }
 
  const data = await res.json();
  const jobId = data.job_id;
 
  if (!jobId) {
- throw new Error('No job ID returned from server');
+   throw new Error('No job ID returned from server');
  }
 
  toast.info('Purge request queued. SSM command is running in the background...');
 
-      // Poll for completion
-      const result = await pollNodeOperationStatus(
+ // Poll for completion
+ const result = await pollNodeOperationStatus(
         jobId,
         (status, message) => {
           const label = status === 'running' ? 'SSM command executing...' : message;
@@ -201,6 +206,8 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
         router.reload({ only: ['nodes'] });
       } else {
         toast.error(result.message || 'Purge operation failed.');
+        // Reload nodes even on failure — state may have changed partially
+        router.reload({ only: ['nodes'] });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to dispatch purge request.';
@@ -239,19 +246,24 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  });
 
  if (!res.ok && res.status !== 202) {
- const errorData = await res.json().catch(() => ({}));
- if (res.status === 409) {
- toast.warning(errorData.message || 'An operation is already in progress on this node.');
- return;
- }
- throw new Error(errorData.message || `Server returned ${res.status}`);
+   const errorData = await res.json().catch(() => ({}));
+   if (res.status === 409) {
+     toast.warning(errorData.message || 'An operation is already in progress on this node.');
+     return;
+   }
+   if (res.status === 422) {
+     toast.info(errorData.message || 'Node is already in this state.');
+     router.reload({ only: ['nodes'] });
+     return;
+   }
+   throw new Error(errorData.message || `Server returned ${res.status}`);
  }
 
  const data = await res.json();
  const jobId = data.job_id;
 
  if (!jobId) {
- throw new Error('No job ID returned from server');
+   throw new Error('No job ID returned from server');
  }
 
  toast.info('Resync request queued. SSM command is running in the background...');
@@ -265,12 +277,14 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
  );
 
  if (result.status === 'done') {
- toast.success(result.message || 'Node resynced successfully.');
- setResyncNodeId('');
- setResyncReason('');
- router.reload({ only: ['nodes'] });
+   toast.success(result.message || 'Node resynced successfully.');
+   setResyncNodeId('');
+   setResyncReason('');
+   router.reload({ only: ['nodes'] });
  } else {
- toast.error(result.message || 'Resync operation failed.');
+   toast.error(result.message || 'Resync operation failed.');
+   // Reload nodes even on failure — state may have changed partially
+   router.reload({ only: ['nodes'] });
  }
  } catch (err) {
  const message = err instanceof Error ? err.message : 'Failed to dispatch resync request.';
