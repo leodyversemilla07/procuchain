@@ -559,14 +559,17 @@ if (! $ssmResult['success']) {
  $resyncAt = date('c', $resyncBlock);
  }
 
- // Node is considered purged ONLY if:
- // 1. Purge blocktime is strictly greater than resync (>= would fail
- //    when purge+resync publish in the same block — same blocktime), AND
- // 2. Live item count is 0 (no manual resync has happened yet)
- if ($purgeBlock > $resyncBlock && $totalItems === 0) {
- $isPurged = true;
+ // Node is considered purged if the most recent on-chain event is a purge
+ // (purgeBlock > resyncBlock). We do NOT require totalItems === 0 because
+ // MultiChain auto-syncs blocks from peers after a daemon restart, which
+ // re-subscribes streams and restores item counts before the user can
+ // see the purged state. The on-chain timestamp comparison is the only
+ // reliable indicator of purge vs resync state.
+ if ($purgeBlock > $resyncBlock) {
+     $isPurged = true;
+     $lastAction = 'purged';
  } elseif ($resyncBlock > 0) {
- $lastAction = 'resynced';
+     $lastAction = 'resynced';
  }
  }
  } catch (Exception $e) {
