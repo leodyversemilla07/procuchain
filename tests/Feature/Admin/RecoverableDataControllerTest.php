@@ -1,9 +1,12 @@
 <?php
 
+use App\Contracts\BlockchainStorageInterface;
+use App\Jobs\NodeOperationJob;
 use App\Models\User;
 use App\Services\BlockchainStorageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -14,6 +17,15 @@ beforeEach(function () {
     $this->admin = User::factory()->create();
     $this->admin->assignRole('admin');
 });
+
+function mockBlockchainStorageForNodes(array $nodes): void
+{
+    $mock = Mockery::mock(BlockchainStorageService::class);
+    $mock->shouldReceive('getDeletedFiles')->zeroOrMoreTimes()->andReturn([]);
+    $mock->shouldReceive('getAvailableNodes')->zeroOrMoreTimes()->andReturn($nodes);
+    app()->instance(BlockchainStorageService::class, $mock);
+    app()->instance(BlockchainStorageInterface::class, $mock);
+}
 
 // ─── Route Access ─────────────────────────────────────────────────────────────
 
@@ -53,82 +65,83 @@ it('purge-all-from-node route requires admin role', function () {
 
 it('purge-all-from-node validates node_id is required', function () {
     $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/purge-all-from-node', [])
-        ->assertSessionHasErrors('node_id');
+        ->postJson('/admin/recoverable-data/purge-all-from-node', [])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('node_id');
 });
 
 it('purge-all-from-node validates reason is max 500 chars', function () {
     $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/purge-all-from-node', [
+        ->postJson('/admin/recoverable-data/purge-all-from-node', [
             'node_id' => 'hope',
             'reason' => str_repeat('x', 501),
         ])
-        ->assertSessionHasErrors('reason');
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('reason');
 });
 
-it('purge-all-from-node returns error for invalid node', function () {
-    // Mock the service to return failure for invalid node
-    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
-    $mock->shouldReceive('purgeAllFromNode')
-        ->with('nonexistent-node', 'Demo: full node purge')
-        ->once()
-        ->andReturn([
-            'success' => false,
-            'message' => "Node 'nonexistent-node' not found in registry",
-            'items_purged' => 0,
-        ]);
-    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
-    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
-    app()->instance(BlockchainStorageService::class, $mock);
+it('purge-all-from-node rejects purge when node is already purged', function () {
+    mockBlockchainStorageForNodes([
+        ['id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE', 'is_purged' => true],
+    ]);
 
     $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/purge-all-from-node', [
-            'node_id' => 'nonexistent-node',
-        ])
-        ->assertSessionHas('error');
-});
-
-it('purge-all-from-node succeeds and redirects back with success', function () {
-    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
-    $mock->shouldReceive('purgeAllFromNode')
-        ->with('hope', 'Demo: full node purge')
-        ->once()
-        ->andReturn([
-            'success' => true,
-            'message' => 'Purged all data (15 items across 4 streams) from Hope (hope). Data survives on remaining nodes — resync to restore.',
-            'items_purged' => 15,
-        ]);
-    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
-    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
-    app()->instance(BlockchainStorageService::class, $mock);
-
-    $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/purge-all-from-node', [
+        ->postJson('/admin/recoverable-data/purge-all-from-node', [
             'node_id' => 'hope',
         ])
-        ->assertSessionHas('success');
+        ->assertStatus(422)
+        ->assertJsonPath('status', 'rejected');
+});
+
+it('purge-all-from-node dispatches job and returns 202', function () {
+    Queue::fake();
+
+    mockBlockchainStorageForNodes([
+        ['id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE'],
+    ]);
+
+    $response = $this->actingAs($this->admin)
+        ->postJson('/admin/recoverable-data/purge-all-from-node', [
+            'node_id' => 'hope',
+        ]);
+
+    $response->assertStatus(202)
+        ->assertJsonPath('status', 'pending')
+        ->assertJsonStructure(['job_id', 'status', 'message']);
+
+    Queue::assertPushed(NodeOperationJob::class, function ($job) {
+        return $job->operation === 'purge' && $job->nodeId === 'hope';
+    });
 });
 
 it('purge-all-from-node uses custom reason when provided', function () {
-    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
-    $mock->shouldReceive('purgeAllFromNode')
-        ->with('hope', 'Hardware failure on hope node')
-        ->once()
-        ->andReturn([
-            'success' => true,
-            'message' => 'Purged all data from Hope.',
-            'items_purged' => 5,
-        ]);
-    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
-    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
-    app()->instance(BlockchainStorageService::class, $mock);
+    Queue::fake();
+
+    mockBlockchainStorageForNodes([
+        ['id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE'],
+    ]);
 
     $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/purge-all-from-node', [
+        ->postJson('/admin/recoverable-data/purge-all-from-node', [
             'node_id' => 'hope',
             'reason' => 'Hardware failure on hope node',
         ])
-        ->assertSessionHas('success');
+        ->assertStatus(202);
+
+    Queue::assertPushed(NodeOperationJob::class, function ($job) {
+        return $job->reason === 'Hardware failure on hope node';
+    });
+});
+
+it('purge-all-from-node rejects when node operation is already in progress', function () {
+    Cache::put('node_operation_lock:hope', true, now()->addMinutes(20));
+
+    $this->actingAs($this->admin)
+        ->postJson('/admin/recoverable-data/purge-all-from-node', [
+            'node_id' => 'hope',
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('status', 'rejected');
 });
 
 // ─── Resync Node ──────────────────────────────────────────────────────────────
@@ -141,45 +154,56 @@ it('resync-node route requires authentication', function () {
 
 it('resync-node validates node_id is required', function () {
     $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/resync-node', [])
-        ->assertSessionHasErrors('node_id');
+        ->postJson('/admin/recoverable-data/resync-node', [])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('node_id');
 });
 
-it('resync-node succeeds and redirects back with success', function () {
-    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
-    $mock->shouldReceive('resyncNode')
-        ->with('hope')
-        ->once()
-        ->andReturn([
-            'success' => true,
-            'message' => 'Node hope resynced successfully. All stream data restored from peers.',
-        ]);
-    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
-    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
-    app()->instance(BlockchainStorageService::class, $mock);
+it('resync-node rejects resync when node is not purged', function () {
+    mockBlockchainStorageForNodes([
+        ['id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE'],
+    ]);
 
     $this->actingAs($this->admin)
-        ->post('/admin/recoverable-data/resync-node', [
+        ->postJson('/admin/recoverable-data/resync-node', [
             'node_id' => 'hope',
         ])
-        ->assertSessionHas('success');
+        ->assertStatus(422)
+        ->assertJsonPath('status', 'rejected');
+});
+
+it('resync-node dispatches job for purged node and returns 202', function () {
+    Queue::fake();
+
+    mockBlockchainStorageForNodes([
+        ['id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE', 'is_purged' => true],
+    ]);
+
+    $response = $this->actingAs($this->admin)
+        ->postJson('/admin/recoverable-data/resync-node', [
+            'node_id' => 'hope',
+        ]);
+
+    $response->assertStatus(202)
+        ->assertJsonPath('status', 'pending')
+        ->assertJsonStructure(['job_id', 'status', 'message']);
+
+    Queue::assertPushed(NodeOperationJob::class, function ($job) {
+        return $job->operation === 'resync' && $job->nodeId === 'hope';
+    });
 });
 
 // ─── Inertia Props ────────────────────────────────────────────────────────────
 
 it('index returns nodes and deleted files but not prNumbers', function () {
-    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
-    $mock->shouldReceive('getDeletedFiles')->once()->andReturn([]);
-    $mock->shouldReceive('getAvailableNodes')->once()->andReturn([
+    mockBlockchainStorageForNodes([
         ['id' => 'admin', 'name' => 'Admin', 'role' => 'admin'],
     ]);
-    app()->instance(BlockchainStorageService::class, $mock);
 
     $response = $this->actingAs($this->admin)
         ->get('/admin/recoverable-data');
 
     $response->assertStatus(200);
-    // The page should receive nodes and deletedFiles, but NOT prNumbers anymore
     $props = $response->viewData('page')['props'];
     expect($props)->toHaveKey('nodes');
     expect($props)->toHaveKey('deletedFiles');

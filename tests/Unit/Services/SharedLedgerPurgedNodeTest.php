@@ -4,16 +4,31 @@ declare(strict_types=1);
 
 use App\Services\Manager;
 use App\Services\SharedLedgerService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     $this->managerMock = Mockery::mock(Manager::class);
-    $this->managerMock->shouldReceive('success')->andReturn(true);
+    $this->managerMock->shouldReceive('success')->zeroOrMoreTimes()->andReturn(true);
     $this->service = new SharedLedgerService($this->managerMock);
 
-    // Default: no purge events for any node
-    $this->managerMock->shouldReceive('liststreamkeyitems')
-        ->withArgs(fn (string $stream, string $key) => str_ends_with($key, '_full_purge'))
-        ->andReturn([]);
+    // Set up node config so getNodes() works — matches production config/multichain.php
+    config()->set('multichain.nodes', [
+        ['id' => 'admin', 'name' => 'Primary Node', 'role' => 'Administrator', 'private_ip' => '10.0.1.10', 'rpc_port' => 6834],
+        ['id' => 'bac-sec', 'name' => 'BAC Secretariat', 'role' => 'Secretariat', 'private_ip' => '10.0.1.20', 'rpc_port' => 6834],
+        ['id' => 'bac-chairman', 'name' => 'BAC Chairman', 'role' => 'Chairman', 'private_ip' => '10.0.1.30', 'rpc_port' => 6834],
+        ['id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE', 'private_ip' => '10.0.1.40', 'rpc_port' => 6834],
+    ]);
+
+    config()->set('multichain.chain_name', 'procuchain');
+    config()->set('multichain.rpc.username', 'multichainrpc');
+    config()->set('multichain.rpc.password', 'testpassword');
+
+    // Clear the available nodes cache
+    Cache::forget('shared_ledger:available_nodes');
 });
 
 afterEach(function () {
@@ -28,10 +43,12 @@ it('returns empty entries when viewing a purged node', function () {
     // Primary node detects the purge
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_full_purge')
+        ->once()
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'Demo: full node purge']]]]);
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_resync')
+        ->once()
         ->andReturn([]);
 
     // Use reflection to call fetchFromNode
@@ -54,14 +71,15 @@ it('does not call fetchFromDefaultClient for purged nodes', function () {
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_full_purge')
+        ->once()
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'purge']]]]);
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_resync')
+        ->once()
         ->andReturn([]);
 
     // The default client should NOT be called for liststreamitems
-    // (only liststreamkeyitems for purge detection)
     $this->managerMock->shouldNotReceive('liststreamitems');
 
     $method = new ReflectionMethod(SharedLedgerService::class, 'fetchFromNode');
@@ -80,26 +98,13 @@ it('skips purged nodes when fetching from all nodes', function () {
     // bac-sec is purged
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_full_purge')
+        ->once()
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'purge']]]]);
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_resync')
+        ->once()
         ->andReturn([]);
-
-    // admin is NOT purged (already handled by beforeEach default)
-
-    // Since fetchFromAllNodes creates node clients, and the purged node is
-    // skipped before client creation, the test ensures no client is created
-    // for bac-sec. We verify by checking that the service skips purged nodes
-    // by calling checkPurgeStateFromPrimary which we've already set up.
-
-    $method = new ReflectionMethod(SharedLedgerService::class, 'fetchFromAllNodes');
-    $method->setAccessible(true);
-
-    // This will try to connect to nodes — since we can't mock the Client,
-    // we just verify the logic path. The key assertion is that purged nodes
-    // are detected and skipped before client connection attempts.
-    // The actual integration test is covered by the purge state tests above.
 
     // Instead, test fetchFromNode directly which is the user-facing behavior
     $fetchFromNode = new ReflectionMethod(SharedLedgerService::class, 'fetchFromNode');
@@ -117,10 +122,12 @@ it('returns data for a previously purged but resynced node', function () {
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_full_purge')
+        ->once()
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'old-purge']]]]);
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_resync')
+        ->once()
         ->andReturn([['blocktime' => $resyncBlocktime]]);
 
     $method = new ReflectionMethod(SharedLedgerService::class, 'checkPurgeStateFromPrimary');
@@ -136,8 +143,10 @@ it('returns data for a previously purged but resynced node', function () {
 it('returns empty entries with purge state when viewing purged node via getLedgerPage', function () {
     $purgeBlocktime = 1779754000;
 
+    // Set up purge detection for bac-sec (the target node)
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_full_purge')
+        ->zeroOrMoreTimes()
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => [
             'reason' => 'Demo: full node purge',
             'node_id' => 'bac-sec',
@@ -147,7 +156,16 @@ it('returns empty entries with purge state when viewing purged node via getLedge
 
     $this->managerMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-sec_resync')
+        ->zeroOrMoreTimes()
         ->andReturn([]);
+
+    // No purge for other nodes
+    foreach (['admin', 'bac-chairman', 'hope'] as $nodeId) {
+        $this->managerMock->shouldReceive('liststreamkeyitems')
+            ->withArgs(fn (string $stream, string $key) => $key === "node_{$nodeId}_full_purge")
+            ->zeroOrMoreTimes()
+            ->andReturn([]);
+    }
 
     $result = $this->service->getLedgerPage(['node' => 'bac-sec']);
 
