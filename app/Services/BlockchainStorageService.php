@@ -29,11 +29,15 @@ use Illuminate\Support\Facades\Log;
 class BlockchainStorageService implements BlockchainStorageInterface
 {
     private int $maxChunkSize;
+
     private int $recommendedMaxSize;
 
     private FileUploader $uploader;
+
     private FileRetriever $retriever;
+
     private FileLifecycleManager $lifecycle;
+
     private NodeOperationsService $nodeOps;
 
     public function __construct(
@@ -83,6 +87,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
             if (! $metadata) {
                 Log::error('Metadata not found', ['metadata_txid' => $metadataTxid]);
+
                 return false;
             }
 
@@ -91,16 +96,19 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
             if (! $blockchainHash || ! $dataTxid) {
                 Log::error('Invalid metadata structure', ['metadata' => $metadata]);
+
                 return false;
             }
 
             $fileData = $this->retrieveFile($fileKey, $dataTxid);
+
             return $fileData['hash'] === $blockchainHash;
         } catch (Exception $e) {
             Log::error('File integrity verification failed', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -108,6 +116,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
     public function getFileMetadata(string $metadataTxid): array
     {
         $metadataItem = $this->multichain->getstreamitem(StreamEnums::FILE_METADATA->value, $metadataTxid, true);
+
         return $metadataItem['data']['json'] ?? [];
     }
 
@@ -140,10 +149,10 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $this->nodeOps->deleteFromNode($fileKey, $nodeId, $reason);
     }
 
- public function resyncNode(string $nodeId, string $reason = ''): array
- {
- return $this->nodeOps->resyncNode($nodeId, $reason);
- }
+    public function resyncNode(string $nodeId, string $reason = ''): array
+    {
+        return $this->nodeOps->resyncNode($nodeId, $reason);
+    }
 
     public function purgeAllFromNode(string $nodeId, string $reason = ''): array
     {

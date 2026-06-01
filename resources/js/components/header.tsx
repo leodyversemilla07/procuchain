@@ -79,13 +79,13 @@ export default function Header() {
                         >
                             Workflow
                         </Link>
- <Link
- href={contact.url()}
- className={`text-sm font-medium transition-colors ${isRouteActive(contact.url()) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
- >
- Contact
- </Link>
- </nav>
+                        <Link
+                            href={contact.url()}
+                            className={`text-sm font-medium transition-colors ${isRouteActive(contact.url()) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Contact
+                        </Link>
+                    </nav>
 
                     <div className="flex items-center gap-2 sm:gap-3">
                         <button
@@ -171,19 +171,19 @@ export default function Header() {
                                     >
                                         Workflow
                                     </Link>
- <Link
- href={contact.url()}
- onClick={() => setMobileMenuOpen(false)}
- className={`block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
- isRouteActive(contact.url())
- ? 'bg-primary/10 text-primary'
- : 'text-muted-foreground hover:bg-muted hover:text-foreground'
- }`}
- >
- Contact
- </Link>
- </div>
- </nav>
+                                    <Link
+                                        href={contact.url()}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={`block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                                            isRouteActive(contact.url())
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                        }`}
+                                    >
+                                        Contact
+                                    </Link>
+                                </div>
+                            </nav>
 
                             <div className="space-y-3 border-t p-4">
                                 <button

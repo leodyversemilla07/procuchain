@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 return [
@@ -71,16 +72,16 @@ return [
             ],
         ],
 
- 'redis' => [
- 'driver' => 'redis',
- 'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
- 'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
- ],
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
+            'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
+        ],
 
- 'failover' => [
- 'driver' => 'failover',
- 'stores' => ['redis', 'database', 'file'],
- ],
+        'failover' => [
+            'driver' => 'failover',
+            'stores' => ['redis', 'database', 'file'],
+        ],
 
         'dynamodb' => [
             'driver' => 'dynamodb',
@@ -122,8 +123,8 @@ return [
     */
 
     'serializable_classes' => [
-        \Carbon\Carbon::class,
-        \Illuminate\Support\Carbon::class,
+        Carbon::class,
+        Illuminate\Support\Carbon::class,
     ],
 
 ];

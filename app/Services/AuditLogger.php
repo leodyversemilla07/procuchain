@@ -75,18 +75,18 @@ class AuditLogger
         'admin.stage_config_updated' => 'Stage document configuration updated',
         'admin.stage_config_reset' => 'Stage document configuration reset to defaults',
 
- // Settings
- 'settings.profile_updated' => 'Profile updated',
- 'settings.password_changed' => 'Password changed',
- 'settings.account_deleted' => 'Account deleted',
- 'settings.two_factor_enabled' => 'Two-factor authentication enabled',
- 'settings.two_factor_confirmed' => 'Two-factor authentication confirmed',
- 'settings.two_factor_disabled' => 'Two-factor authentication disabled',
+        // Settings
+        'settings.profile_updated' => 'Profile updated',
+        'settings.password_changed' => 'Password changed',
+        'settings.account_deleted' => 'Account deleted',
+        'settings.two_factor_enabled' => 'Two-factor authentication enabled',
+        'settings.two_factor_confirmed' => 'Two-factor authentication confirmed',
+        'settings.two_factor_disabled' => 'Two-factor authentication disabled',
 
- // Blockchain node operations — NGPA Sec. 20 (electronic records), Sec. 3 (accountability)
- 'node.full_purge' => 'Full node purge — all data removed',
- 'node.file_purge' => 'File-level node purge',
- 'node.resync' => 'Node resync — data restored from peers',
+        // Blockchain node operations — NGPA Sec. 20 (electronic records), Sec. 3 (accountability)
+        'node.full_purge' => 'Full node purge — all data removed',
+        'node.file_purge' => 'File-level node purge',
+        'node.resync' => 'Node resync — data restored from peers',
 
         // Security
         'security.ip_blocked' => 'IP address blocked',
@@ -115,15 +115,15 @@ class AuditLogger
         'procurement.decision_published',
         'procurement.pre_bid_decision_published',
 
- // Document integrity — NGPA Sec. 20
- 'document.corrected',
+        // Document integrity — NGPA Sec. 20
+        'document.corrected',
 
- // Blockchain node operations — NGPA Sec. 3 (accountability), Sec. 20 (electronic records)
- 'node.full_purge',
- 'node.file_purge',
- 'node.resync',
+        // Blockchain node operations — NGPA Sec. 3 (accountability), Sec. 20 (electronic records)
+        'node.full_purge',
+        'node.file_purge',
+        'node.resync',
 
- // Auth anomalies
+        // Auth anomalies
         'auth.invitation_accepted',
         'auth.password_reset',
         'settings.password_changed',
@@ -216,18 +216,18 @@ class AuditLogger
             // blockchain event carries the correct count instead of always 0.
             $docCount = 0;
             if (str_starts_with($action, 'node.')) {
-            $docCount = (int) ($newValues['items_purged'] ?? $newValues['items_resynced'] ?? 0);
+                $docCount = (int) ($newValues['items_purged'] ?? $newValues['items_resynced'] ?? 0);
             }
 
             $this->events->publish(
-            prNumber: $subjectType === 'procurement' ? ($subjectId ?? 'system') : 'system',
-            procurementTitle: $subjectType === 'procurement' ? "PR #{$subjectId}" : 'System Administration',
-            stage: 'administration',
-            eventType: $action,
-            category: $this->categorizeAction($action),
-            severity: in_array($action, self::CRITICAL_ACTIONS, true) ? 'warning' : 'info',
-            details: $details,
-            documentCount: $docCount,
+                prNumber: $subjectType === 'procurement' ? ($subjectId ?? 'system') : 'system',
+                procurementTitle: $subjectType === 'procurement' ? "PR #{$subjectId}" : 'System Administration',
+                stage: 'administration',
+                eventType: $action,
+                category: $this->categorizeAction($action),
+                severity: in_array($action, self::CRITICAL_ACTIONS, true) ? 'warning' : 'info',
+                details: $details,
+                documentCount: $docCount,
                 userAddress: $userAddress,
                 metadata: [
                     'action' => $action,
@@ -256,18 +256,18 @@ class AuditLogger
      */
     private function categorizeAction(string $action): string
     {
- return match (true) {
- str_starts_with($action, 'procurement.') => 'procurement',
- str_starts_with($action, 'document.') => 'document',
- str_starts_with($action, 'auth.') => 'authentication',
- str_starts_with($action, 'admin.') => 'administration',
- str_starts_with($action, 'user.') => 'user_management',
- str_starts_with($action, 'account.') => 'account_security',
- str_starts_with($action, 'settings.') => 'user_settings',
- str_starts_with($action, 'security.') => 'security',
- str_starts_with($action, 'node.') => 'node_operations',
- default => 'system',
- };
+        return match (true) {
+            str_starts_with($action, 'procurement.') => 'procurement',
+            str_starts_with($action, 'document.') => 'document',
+            str_starts_with($action, 'auth.') => 'authentication',
+            str_starts_with($action, 'admin.') => 'administration',
+            str_starts_with($action, 'user.') => 'user_management',
+            str_starts_with($action, 'account.') => 'account_security',
+            str_starts_with($action, 'settings.') => 'user_settings',
+            str_starts_with($action, 'security.') => 'security',
+            str_starts_with($action, 'node.') => 'node_operations',
+            default => 'system',
+        };
     }
 
     /**

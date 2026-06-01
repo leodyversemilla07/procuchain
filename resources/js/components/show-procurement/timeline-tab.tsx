@@ -106,9 +106,9 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
 
                             return (
                                 <section key={date} className="relative" role="listitem">
-              {/* Date Marker */}
-                <div className="relative mb-4 flex items-center">
-                  <div className="bg-muted-foreground/30 ring-background absolute left-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full ring-4" />
+                                    {/* Date Marker */}
+                                    <div className="relative mb-4 flex items-center">
+                                        <div className="bg-muted-foreground/30 ring-background absolute left-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full ring-4" />
                                         <div className="ml-4 flex items-center gap-2">
                                             <Calendar className="text-muted-foreground h-3.5 w-3.5" aria-hidden="true" />
                                             <time dateTime={date} className="text-muted-foreground text-sm font-semibold">

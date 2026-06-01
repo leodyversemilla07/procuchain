@@ -151,27 +151,27 @@ return [
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 
- 'default' => [
- 'url' => env('REDIS_URL'),
- 'host' => env('REDIS_HOST', '127.0.0.1'),
- 'username' => env('REDIS_USERNAME'),
+        'default' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD') ?: null,
- 'port' => env('REDIS_PORT', '6379'),
- 'database' => env('REDIS_DB', '0'),
- 'scheme' => env('REDIS_SCHEME', 'tcp'),
- 'read_write_timeout' => env('REDIS_TIMEOUT', 60),
- ],
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_DB', '0'),
+            'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'read_write_timeout' => env('REDIS_TIMEOUT', 60),
+        ],
 
- 'cache' => [
- 'url' => env('REDIS_URL'),
- 'host' => env('REDIS_HOST', '127.0.0.1'),
- 'username' => env('REDIS_USERNAME'),
+        'cache' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD') ?: null,
- 'port' => env('REDIS_PORT', '6379'),
- 'database' => env('REDIS_CACHE_DB', '1'),
- 'scheme' => env('REDIS_SCHEME', 'tcp'),
- 'read_write_timeout' => env('REDIS_TIMEOUT', 60),
- ],
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_CACHE_DB', '1'),
+            'scheme' => env('REDIS_SCHEME', 'tcp'),
+            'read_write_timeout' => env('REDIS_TIMEOUT', 60),
+        ],
 
     ],
 

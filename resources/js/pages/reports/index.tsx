@@ -12,10 +12,10 @@ import AppLayout from '@/layouts/app-layout';
 import { getXsrfToken } from '@/lib/csrf';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { toast } from 'sonner';
 import { BarChart3, Calendar, Download, FileText, Search, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { toast } from 'sonner';
 
 /**
  * Resolve the correct Wayfinder route function for the current role prefix.
@@ -85,34 +85,32 @@ export default function ReportIndex() {
         setError(null);
 
         try {
-          const response = await fetch(generateUrl(), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-XSRF-TOKEN': getXsrfToken(),
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(filters),
-          });
+            const response = await fetch(generateUrl(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(filters),
+            });
 
-          // Guard against HTML error pages (e.g. 500 from Laravel)
-          const contentType = response.headers.get('content-type') ?? '';
-          const isJson = contentType.includes('application/json');
-          const data = isJson ? await response.json() : null;
+            // Guard against HTML error pages (e.g. 500 from Laravel)
+            const contentType = response.headers.get('content-type') ?? '';
+            const isJson = contentType.includes('application/json');
+            const data = isJson ? await response.json() : null;
 
-          if (!response.ok) {
-            throw new Error(
-              isJson
-                ? data?.message || `Report generation failed (HTTP ${response.status})`
-                : `Server error (HTTP ${response.status})`,
-            );
-          }
+            if (!response.ok) {
+                throw new Error(
+                    isJson ? data?.message || `Report generation failed (HTTP ${response.status})` : `Server error (HTTP ${response.status})`,
+                );
+            }
 
-          if (!data?.success) {
-            throw new Error(data?.message || 'Failed to generate report');
-          }
+            if (!data?.success) {
+                throw new Error(data?.message || 'Failed to generate report');
+            }
 
-          setReportData(data);
+            setReportData(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
@@ -121,60 +119,60 @@ export default function ReportIndex() {
     };
 
     const exportReport = async (format: 'json' | 'csv' | 'pdf') => {
-      try {
-        // Refresh CSRF cookie to avoid 419 errors on the export request
-        await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+        try {
+            // Refresh CSRF cookie to avoid 419 errors on the export request
+            await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
 
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'X-XSRF-TOKEN': getXsrfToken(),
-        };
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getXsrfToken(),
+            };
 
-        if (format === 'pdf') {
-          headers['Accept'] = 'application/pdf';
+            if (format === 'pdf') {
+                headers['Accept'] = 'application/pdf';
+            }
+
+            const response = await fetch(exportUrl(), {
+                method: 'POST',
+                headers,
+                credentials: 'same-origin',
+                body: JSON.stringify({ ...filters, format }),
+            });
+
+            if (!response.ok) {
+                let message = 'Export failed';
+                try {
+                    const data = await response.json();
+                    message = data.message || message;
+                } catch {
+                    message = response.statusText || `Export failed (HTTP ${response.status})`;
+                }
+                toast.error(message);
+                return;
+            }
+
+            if (format === 'csv' || format === 'pdf') {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.${format}`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                const data = await response.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
+        } catch (err) {
+            console.error('Export failed:', err);
+            toast.error(err instanceof Error ? err.message : 'Export failed');
         }
-
-        const response = await fetch(exportUrl(), {
-          method: 'POST',
-          headers,
-          credentials: 'same-origin',
-          body: JSON.stringify({ ...filters, format }),
-        });
-
-        if (!response.ok) {
-          let message = 'Export failed';
-          try {
-            const data = await response.json();
-            message = data.message || message;
-          } catch {
-            message = response.statusText || `Export failed (HTTP ${response.status})`;
-          }
-          toast.error(message);
-          return;
-        }
-
-        if (format === 'csv' || format === 'pdf') {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.${format}`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-        } else {
-          const data = await response.json();
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.json`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-        }
-      } catch (err) {
-        console.error('Export failed:', err);
-        toast.error(err instanceof Error ? err.message : 'Export failed');
-      }
     };
 
     const currentYear = new Date().getFullYear();

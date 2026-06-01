@@ -124,8 +124,8 @@ export const DocumentMetadataCard: FC<DocumentMetadataCardProps> = ({ metadata, 
             const startFormatted = metadata.validity_period.start_date_formatted || 'Invalid Date';
             const endFormatted = metadata.validity_period.end_date_formatted || 'Invalid Date';
 
-      return (
-        <div key={key} className="col-span-1 sm:col-span-2">
+            return (
+                <div key={key} className="col-span-1 sm:col-span-2">
                     <div className="group flex items-start rounded-md p-2 transition-colors duration-200 ease-in-out hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                         <div className="text-primary bg-primary/10 mt-0.5 mr-2 shrink-0 rounded-md p-1.5 sm:mr-2.5">
                             <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

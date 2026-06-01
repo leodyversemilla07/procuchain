@@ -6,7 +6,6 @@ use App\Services\Manager;
 use App\Services\SharedLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Mockery\MockInterface;
 
 beforeEach(function () {
     $this->managerMock = Mockery::mock(Manager::class);

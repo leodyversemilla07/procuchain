@@ -266,15 +266,15 @@ class UserManagementController extends Controller
                 return redirect()->back()->with('error', 'You cannot delete your own account.');
             }
 
- // Perform bulk deletion within a transaction
- $auditCtx = $this->auditContext($request);
- DB::transaction(function () use ($userIds, $usersToDelete, $auditCtx) {
- User::whereIn('id', $userIds)->delete();
+            // Perform bulk deletion within a transaction
+            $auditCtx = $this->auditContext($request);
+            DB::transaction(function () use ($userIds, $usersToDelete, $auditCtx) {
+                User::whereIn('id', $userIds)->delete();
 
- // Log the bulk deletion
- Log::info('Admin performed bulk user deletion', [
- ...$auditCtx,
- 'deleted_users' => $usersToDelete->map(function ($user) {
+                // Log the bulk deletion
+                Log::info('Admin performed bulk user deletion', [
+                    ...$auditCtx,
+                    'deleted_users' => $usersToDelete->map(function ($user) {
                         return [
                             'id' => $user->id,
                             'email' => $user->email,

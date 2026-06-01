@@ -1,3 +1,4 @@
+import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -22,7 +23,6 @@ import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
 import { index as bacSecretariatProcurementInitiation } from '@/routes/bac-secretariat/procurement/initiation';
 import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements';
 import { dashboard as hopeDashboard } from '@/routes/hope';
-import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
 
 import { type NavItem, type SharedData } from '@/types';
@@ -145,23 +145,23 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         });
     }
 
- // Shared Ledger - role-based URL via Wayfinder
- const sharedLedgerRouteMap: Record<string, keyof typeof sharedLedgerRoutes> = {
- admin: '/admin/shared-ledger',
- bac_secretariat: '/bac-secretariat/shared-ledger',
- bac_chairman: '/bac-chairman/shared-ledger',
- hope: '/hope/shared-ledger',
- };
- const sharedLedgerRouteKey = sharedLedgerRouteMap[role];
- const sharedLedgerUrl = sharedLedgerRouteKey ? sharedLedgerRoutes[sharedLedgerRouteKey].url() : '';
+    // Shared Ledger - role-based URL via Wayfinder
+    const sharedLedgerRouteMap: Record<string, keyof typeof sharedLedgerRoutes> = {
+        admin: '/admin/shared-ledger',
+        bac_secretariat: '/bac-secretariat/shared-ledger',
+        bac_chairman: '/bac-chairman/shared-ledger',
+        hope: '/hope/shared-ledger',
+    };
+    const sharedLedgerRouteKey = sharedLedgerRouteMap[role];
+    const sharedLedgerUrl = sharedLedgerRouteKey ? sharedLedgerRoutes[sharedLedgerRouteKey].url() : '';
 
- if (sharedLedgerUrl) {
- items.push({
- title: 'Shared Ledger',
- href: sharedLedgerUrl,
- icon: BookOpen,
- });
- }
+    if (sharedLedgerUrl) {
+        items.push({
+            title: 'Shared Ledger',
+            href: sharedLedgerUrl,
+            icon: BookOpen,
+        });
+    }
 
     // Procurement Initiation - only for BAC Secretariat with permission
     if (role === 'bac_secretariat' && can.manageProcurement) {

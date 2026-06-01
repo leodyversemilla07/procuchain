@@ -31,25 +31,25 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
     const procurementDetailBreadcrumb = getProcurementDetailBreadcrumb(userRole, document.pr_number);
     const breadcrumbs = buildBreadcrumbs(userRole, [procurementsListBreadcrumb, procurementDetailBreadcrumb, { title: 'PDF Viewer', href: '#' }]);
 
- useEffect(() => {
- const updateHeight = () => {
- if (window.innerWidth < 1024) {
- // Mobile/tablet: Use viewport-based height with safe minimum
- const viewportHeight = window.innerHeight;
- // Account for: app chrome (~56px) + breadcrumb (~36px) + header card (~120px) + padding (~48px)
- const estimatedChrome = 260;
- const mobileHeight = Math.max(400, Math.min(800, viewportHeight - estimatedChrome));
- setPdfHeight(mobileHeight);
- } else if (statisticsPanelRef.current) {
- // Desktop: Match statistics panel height
- const statsHeight = statisticsPanelRef.current.offsetHeight;
- const desktopHeight = Math.max(600, Math.min(1200, statsHeight));
- setPdfHeight(desktopHeight);
- } else {
- // Fallback
- setPdfHeight(800);
- }
- };
+    useEffect(() => {
+        const updateHeight = () => {
+            if (window.innerWidth < 1024) {
+                // Mobile/tablet: Use viewport-based height with safe minimum
+                const viewportHeight = window.innerHeight;
+                // Account for: app chrome (~56px) + breadcrumb (~36px) + header card (~120px) + padding (~48px)
+                const estimatedChrome = 260;
+                const mobileHeight = Math.max(400, Math.min(800, viewportHeight - estimatedChrome));
+                setPdfHeight(mobileHeight);
+            } else if (statisticsPanelRef.current) {
+                // Desktop: Match statistics panel height
+                const statsHeight = statisticsPanelRef.current.offsetHeight;
+                const desktopHeight = Math.max(600, Math.min(1200, statsHeight));
+                setPdfHeight(desktopHeight);
+            } else {
+                // Fallback
+                setPdfHeight(800);
+            }
+        };
 
         // Initial update with delay for layout to settle
         const delayedUpdate = setTimeout(() => {

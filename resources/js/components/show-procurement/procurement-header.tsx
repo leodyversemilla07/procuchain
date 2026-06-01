@@ -1,7 +1,6 @@
 import { Calendar, Clock, FileCheck, Hash, Tag } from 'lucide-react';
 
 import { Stepper } from '@/components/stepper';
-import { Badge } from '@/components/ui/badge';
 import { TruncateBadge } from '@/components/truncate-badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { STAGE_ORDER } from '@/types/constants';
@@ -65,9 +64,14 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                     <div className="flex flex-wrap items-start justify-between gap-2">
                         <CardTitle className="min-w-0 truncate text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
                         {procurementModeLabel && (
- <TruncateBadge variant="secondary" icon={<Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />} className="flex items-center gap-1.5 text-xs font-medium sm:text-sm" maxChars={22}>
- {procurementModeLabel}
- </TruncateBadge>
+                            <TruncateBadge
+                                variant="secondary"
+                                icon={<Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />}
+                                className="flex items-center gap-1.5 text-xs font-medium sm:text-sm"
+                                maxChars={22}
+                            >
+                                {procurementModeLabel}
+                            </TruncateBadge>
                         )}
                     </div>
                     <CardDescription className="flex flex-wrap items-center gap-1.5 text-sm sm:gap-2 sm:text-base">
@@ -119,27 +123,27 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                     {/* Current Phase */}
                     {status?.phase && (
- <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
- <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
- <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
- Current Phase
- </div>
- <TruncateBadge variant="outline" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm" maxChars={20}>
- {status.phase_display_name}
- </TruncateBadge>
- </div>
+                        <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                            <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
+                                <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                                Current Phase
+                            </div>
+                            <TruncateBadge variant="outline" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm" maxChars={20}>
+                                {status.phase_display_name}
+                            </TruncateBadge>
+                        </div>
                     )}
 
- {/* Current Stage */}
- {status?.stage && (
- <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                    {/* Current Stage */}
+                    {status?.stage && (
+                        <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
                             <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Current Stage
                             </div>
- <TruncateBadge variant="secondary" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm" maxChars={20}>
- {status.stage_formatted || status.stage}
- </TruncateBadge>
+                            <TruncateBadge variant="secondary" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm" maxChars={20}>
+                                {status.stage_formatted || status.stage}
+                            </TruncateBadge>
                             {status.stage_description && (
                                 <p className="text-muted-foreground line-clamp-2 text-[11px] italic sm:text-xs">{status.stage_description}</p>
                             )}
@@ -149,22 +153,26 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                         </div>
                     )}
 
- {/* Current Status */}
- {status?.status_formatted && (
- <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                    {/* Current Status */}
+                    {status?.status_formatted && (
+                        <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
                             <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Status
                             </div>
- <TruncateBadge variant="default" className="inline-flex w-fit items-center gap-1 text-xs font-medium sm:gap-1.5 sm:text-sm" maxChars={16}>
- {status.status_formatted}
- </TruncateBadge>
+                            <TruncateBadge
+                                variant="default"
+                                className="inline-flex w-fit items-center gap-1 text-xs font-medium sm:gap-1.5 sm:text-sm"
+                                maxChars={16}
+                            >
+                                {status.status_formatted}
+                            </TruncateBadge>
                         </div>
                     )}
 
- {/* Last Updated */}
- {status?.timestamp && (
- <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                    {/* Last Updated */}
+                    {status?.timestamp && (
+                        <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
                             <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Last Updated

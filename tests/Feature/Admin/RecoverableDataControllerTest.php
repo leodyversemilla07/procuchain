@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Services\BlockchainStorageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -67,7 +68,7 @@ it('purge-all-from-node validates reason is max 500 chars', function () {
 
 it('purge-all-from-node returns error for invalid node', function () {
     // Mock the service to return failure for invalid node
-    $mock = $this->partialMock(BlockchainStorageService::class);
+    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
     $mock->shouldReceive('purgeAllFromNode')
         ->with('nonexistent-node', 'Demo: full node purge')
         ->once()
@@ -76,6 +77,9 @@ it('purge-all-from-node returns error for invalid node', function () {
             'message' => "Node 'nonexistent-node' not found in registry",
             'items_purged' => 0,
         ]);
+    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
+    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
+    app()->instance(BlockchainStorageService::class, $mock);
 
     $this->actingAs($this->admin)
         ->post('/admin/recoverable-data/purge-all-from-node', [
@@ -85,7 +89,7 @@ it('purge-all-from-node returns error for invalid node', function () {
 });
 
 it('purge-all-from-node succeeds and redirects back with success', function () {
-    $mock = $this->partialMock(BlockchainStorageService::class);
+    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
     $mock->shouldReceive('purgeAllFromNode')
         ->with('hope', 'Demo: full node purge')
         ->once()
@@ -94,6 +98,9 @@ it('purge-all-from-node succeeds and redirects back with success', function () {
             'message' => 'Purged all data (15 items across 4 streams) from Hope (hope). Data survives on remaining nodes — resync to restore.',
             'items_purged' => 15,
         ]);
+    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
+    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
+    app()->instance(BlockchainStorageService::class, $mock);
 
     $this->actingAs($this->admin)
         ->post('/admin/recoverable-data/purge-all-from-node', [
@@ -103,7 +110,7 @@ it('purge-all-from-node succeeds and redirects back with success', function () {
 });
 
 it('purge-all-from-node uses custom reason when provided', function () {
-    $mock = $this->partialMock(BlockchainStorageService::class);
+    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
     $mock->shouldReceive('purgeAllFromNode')
         ->with('hope', 'Hardware failure on hope node')
         ->once()
@@ -112,6 +119,9 @@ it('purge-all-from-node uses custom reason when provided', function () {
             'message' => 'Purged all data from Hope.',
             'items_purged' => 5,
         ]);
+    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
+    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
+    app()->instance(BlockchainStorageService::class, $mock);
 
     $this->actingAs($this->admin)
         ->post('/admin/recoverable-data/purge-all-from-node', [
@@ -136,7 +146,7 @@ it('resync-node validates node_id is required', function () {
 });
 
 it('resync-node succeeds and redirects back with success', function () {
-    $mock = $this->partialMock(BlockchainStorageService::class);
+    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
     $mock->shouldReceive('resyncNode')
         ->with('hope')
         ->once()
@@ -144,6 +154,9 @@ it('resync-node succeeds and redirects back with success', function () {
             'success' => true,
             'message' => 'Node hope resynced successfully. All stream data restored from peers.',
         ]);
+    $mock->shouldReceive('getDeletedFiles')->andReturn([]);
+    $mock->shouldReceive('getAvailableNodes')->andReturn([]);
+    app()->instance(BlockchainStorageService::class, $mock);
 
     $this->actingAs($this->admin)
         ->post('/admin/recoverable-data/resync-node', [
@@ -155,11 +168,12 @@ it('resync-node succeeds and redirects back with success', function () {
 // ─── Inertia Props ────────────────────────────────────────────────────────────
 
 it('index returns nodes and deleted files but not prNumbers', function () {
-    $mock = $this->partialMock(BlockchainStorageService::class);
+    $mock = Mockery::mock(BlockchainStorageService::class)->makePartial();
     $mock->shouldReceive('getDeletedFiles')->once()->andReturn([]);
     $mock->shouldReceive('getAvailableNodes')->once()->andReturn([
         ['id' => 'admin', 'name' => 'Admin', 'role' => 'admin'],
     ]);
+    app()->instance(BlockchainStorageService::class, $mock);
 
     $response = $this->actingAs($this->admin)
         ->get('/admin/recoverable-data');

@@ -2,7 +2,6 @@ import { Banknote, Building2, Calendar, ClipboardList, Clock, Copy, FileText, Ma
 import { type FC } from 'react';
 import { toast } from 'sonner';
 
-import { Badge } from '@/components/ui/badge';
 import { TruncateBadge } from '@/components/truncate-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,8 +114,22 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <DetailItem label="ABC Amount" value={details.abc_amount_formatted} className="text-primary text-lg font-bold" />
                                 <DetailItem label="Funding Source" value={details.funding_source} />
- <DetailItem label="Category" value={<TruncateBadge variant="secondary" maxChars={22}>{details.category_label}</TruncateBadge>} />
- <DetailItem label="Procurement Mode" value={<TruncateBadge variant="outline" maxChars={22}>{details.procurement_mode_label}</TruncateBadge>} />
+                                <DetailItem
+                                    label="Category"
+                                    value={
+                                        <TruncateBadge variant="secondary" maxChars={22}>
+                                            {details.category_label}
+                                        </TruncateBadge>
+                                    }
+                                />
+                                <DetailItem
+                                    label="Procurement Mode"
+                                    value={
+                                        <TruncateBadge variant="outline" maxChars={22}>
+                                            {details.procurement_mode_label}
+                                        </TruncateBadge>
+                                    }
+                                />
                             </div>
                         </div>
 
@@ -202,13 +215,13 @@ const DetailItem = ({
 }) => {
     if (!value) return null;
 
- return (
- <div className="min-w-0 space-y-1">
- <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
- {icon}
- {label}
- </label>
- <div className={cn('min-w-0 text-sm font-medium', typeof value === 'string' ? 'truncate' : '', className)}>{value}</div>
- </div>
- );
+    return (
+        <div className="min-w-0 space-y-1">
+            <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+                {icon}
+                {label}
+            </label>
+            <div className={cn('min-w-0 text-sm font-medium', typeof value === 'string' ? 'truncate' : '', className)}>{value}</div>
+        </div>
+    );
 };

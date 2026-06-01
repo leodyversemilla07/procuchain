@@ -89,54 +89,54 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
 
     return (
         <div className="border-sidebar-border/70 dark:border-sidebar-border bg-background relative flex flex-col overflow-hidden rounded-lg border shadow-md">
- {/* Toolbar */}
- {!loading && !error && numPages > 0 && (
- <div className="bg-muted/50 flex flex-col gap-1.5 border-b px-3 py-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-4 sm:py-2">
- <div className="flex items-center gap-1 sm:gap-2">
- <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={pageNumber <= 1}>
- <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
- </Button>
- <span className="text-muted-foreground min-w-[60px] text-center text-xs sm:text-sm">
- {pageNumber} / {numPages}
- </span>
- <Button
- variant="ghost"
- size="icon"
- className="h-7 w-7 sm:h-8 sm:w-8"
- onClick={goToNextPage}
- disabled={pageNumber >= numPages}
- >
- <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
- </Button>
- </div>
+            {/* Toolbar */}
+            {!loading && !error && numPages > 0 && (
+                <div className="bg-muted/50 flex flex-col gap-1.5 border-b px-3 py-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-4 sm:py-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+                            <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Button>
+                        <span className="text-muted-foreground min-w-[60px] text-center text-xs sm:text-sm">
+                            {pageNumber} / {numPages}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
+                            onClick={goToNextPage}
+                            disabled={pageNumber >= numPages}
+                        >
+                            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Button>
+                    </div>
 
- <div className="flex items-center gap-1 sm:gap-2">
- <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomOut} disabled={scale <= 0.4}>
- <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
- </Button>
- <span className="text-muted-foreground min-w-[40px] text-center text-xs sm:text-sm">{Math.round(scale * 100)}%</span>
- <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomIn} disabled={scale >= 3.0}>
- <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
- </Button>
- </div>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomOut} disabled={scale <= 0.4}>
+                            <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Button>
+                        <span className="text-muted-foreground min-w-[40px] text-center text-xs sm:text-sm">{Math.round(scale * 100)}%</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomIn} disabled={scale >= 3.0}>
+                            <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Button>
+                    </div>
 
- <div className="flex items-center gap-1 sm:gap-2">
- <Button
- variant="ghost"
- size="sm"
- className="h-7 text-xs sm:h-8"
- render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}
- >
- <Eye className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
- <span className="hidden sm:inline">Open</span>
- </Button>
- <Button variant="ghost" size="sm" className="h-7 text-xs sm:h-8" render={<a href={pdfUrl} download />}>
- <Download className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
- <span className="hidden sm:inline">Download</span>
- </Button>
- </div>
- </div>
- )}
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs sm:h-8"
+                            render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}
+                        >
+                            <Eye className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span className="hidden sm:inline">Open</span>
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs sm:h-8" render={<a href={pdfUrl} download />}>
+                            <Download className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span className="hidden sm:inline">Download</span>
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* PDF Content */}
             <div className="flex-1 overflow-auto" style={{ height: `${containerHeight}px`, maxHeight: 'calc(100dvh - 200px)' }}>

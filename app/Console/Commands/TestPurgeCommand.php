@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class TestPurgeCommand extends Command
 {
     protected $signature = 'test:purge {nodeId}';
+
     protected $description = 'Test purge operation on a node';
 
     public function handle(): int
@@ -18,6 +19,7 @@ class TestPurgeCommand extends Command
         $result = app(NodeOperationsService::class)->purgeAllFromNode($nodeId);
 
         $this->info(json_encode($result, JSON_PRETTY_PRINT));
+
         return $result['success'] ? 0 : 1;
     }
 }

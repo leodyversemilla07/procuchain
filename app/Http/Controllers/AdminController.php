@@ -12,15 +12,15 @@ use Inertia\Inertia;
 
 class AdminController extends BaseDashboardController
 {
- public function __construct(
- Manager $multichain,
- DashboardService $dashboardService,
- CacheStrategyInterface $cacheStrategy,
- ProcurementRepository $procurementRepository,
- private AdminAnalyticsService $analyticsService
- ) {
- parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
- }
+    public function __construct(
+        Manager $multichain,
+        DashboardService $dashboardService,
+        CacheStrategyInterface $cacheStrategy,
+        ProcurementRepository $procurementRepository,
+        private AdminAnalyticsService $analyticsService
+    ) {
+        parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
+    }
 
     /**
      * Get the role name for middleware and cache keys

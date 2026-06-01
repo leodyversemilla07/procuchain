@@ -21,12 +21,12 @@ use Inertia\Response;
 
 abstract class BaseDashboardController extends BaseController
 {
- public function __construct(
- protected Manager $multichain,
- protected DashboardService $dashboardService,
- protected CacheStrategyInterface $cacheStrategy,
- private ProcurementRepository $procurementRepository
- ) {}
+    public function __construct(
+        protected Manager $multichain,
+        protected DashboardService $dashboardService,
+        protected CacheStrategyInterface $cacheStrategy,
+        private ProcurementRepository $procurementRepository
+    ) {}
 
     /**
      * Display the dashboard for the role

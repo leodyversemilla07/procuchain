@@ -1,7 +1,7 @@
-import { useCallback } from 'react';
-import { usePage } from '@inertiajs/react';
-import type { BreadcrumbItem, SharedData } from '@/types';
 import type { VerificationStatusType } from '@/components/verification';
+import type { BreadcrumbItem, SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
+import { useCallback } from 'react';
 
 // =============================================================================
 // Types
@@ -140,13 +140,7 @@ export function useVerificationReport({ prNumber, report, procurementStatus }: V
     const getRoleBasedUrl = useCallback(
         (path: string) => {
             const rolePrefix =
-                userRole === 'admin'
-                    ? '/admin'
-                    : userRole === 'bac_chairman'
-                      ? '/bac-chairman'
-                      : userRole === 'hope'
-                        ? '/hope'
-                        : '/bac-secretariat';
+                userRole === 'admin' ? '/admin' : userRole === 'bac_chairman' ? '/bac-chairman' : userRole === 'hope' ? '/hope' : '/bac-secretariat';
             return `${rolePrefix}${path}`;
         },
         [userRole],
@@ -173,17 +167,17 @@ export function useVerificationReport({ prNumber, report, procurementStatus }: V
     const hasIssues = report ? report.summary.critical_issues > 0 || report.summary.warnings > 0 : false;
     const allValid = report?.overall_valid ?? false;
 
-  return {
-    userRole,
-    displayPrNumber,
-    breadcrumbs,
-    handleExport,
-    handleRefresh,
-    overallStatus,
-    hasIssues,
-    allValid,
-    getRoleBasedUrl,
-    report: report ?? null,
-    procurementStatus: procurementStatus ?? null,
-  };
+    return {
+        userRole,
+        displayPrNumber,
+        breadcrumbs,
+        handleExport,
+        handleRefresh,
+        overallStatus,
+        hasIssues,
+        allValid,
+        getRoleBasedUrl,
+        report: report ?? null,
+        procurementStatus: procurementStatus ?? null,
+    };
 }

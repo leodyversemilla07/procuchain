@@ -49,7 +49,7 @@ export function DocumentUploadList({
                     <div className="space-y-6">
                         {documentGuide &&
                             [...documentGuide.required_documents, ...documentGuide.optional_documents].map((document) => {
-		const isUploaded = Array.isArray(uploadedDocuments) && uploadedDocuments.includes(document.value);
+                                const isUploaded = Array.isArray(uploadedDocuments) && uploadedDocuments.includes(document.value);
                                 const isRequired = documentGuide.required_documents.some(
                                     (requiredDocument) => requiredDocument.value === document.value,
                                 );

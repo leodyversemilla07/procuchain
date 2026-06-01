@@ -1,7 +1,7 @@
 import type { ErrorStateProps } from '@/components/error-state';
 import { ErrorState } from '@/components/error-state';
-import { Badge, badgeVariants } from '@/components/ui/badge';
 import { TruncateBadge } from '@/components/truncate-badge';
+import { badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
@@ -115,14 +115,22 @@ export const RecentProcurementsTable = ({
                                                 {procurement.title}
                                             </span>
                                         </div>
- <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
- <TruncateBadge variant={stageBadgeVariant} className="text-[10px] transition-all duration-200 hover:shadow-sm" maxChars={18}>
- {procurement.stage}
- </TruncateBadge>
- <TruncateBadge variant={statusBadgeVariant} className="text-[10px] transition-all duration-200 hover:shadow-sm" maxChars={14}>
- {procurement.status}
- </TruncateBadge>
- </div>
+                                        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
+                                            <TruncateBadge
+                                                variant={stageBadgeVariant}
+                                                className="text-[10px] transition-all duration-200 hover:shadow-sm"
+                                                maxChars={18}
+                                            >
+                                                {procurement.stage}
+                                            </TruncateBadge>
+                                            <TruncateBadge
+                                                variant={statusBadgeVariant}
+                                                className="text-[10px] transition-all duration-200 hover:shadow-sm"
+                                                maxChars={14}
+                                            >
+                                                {procurement.status}
+                                            </TruncateBadge>
+                                        </div>
                                     </div>
                                     <Tooltip>
                                         <TooltipTrigger
@@ -164,16 +172,24 @@ export const RecentProcurementsTable = ({
                                             <TableCell className="max-w-[140px] truncate" title={procurement.title}>
                                                 {procurement.title}
                                             </TableCell>
- <TableCell>
- <TruncateBadge variant={stageBadgeVariant} className="transition-all duration-200 hover:shadow-sm" maxChars={18}>
- {procurement.stage}
- </TruncateBadge>
- </TableCell>
- <TableCell>
- <TruncateBadge variant={statusBadgeVariant} className="transition-all duration-200 hover:shadow-sm" maxChars={14}>
- {procurement.status}
- </TruncateBadge>
- </TableCell>
+                                            <TableCell>
+                                                <TruncateBadge
+                                                    variant={stageBadgeVariant}
+                                                    className="transition-all duration-200 hover:shadow-sm"
+                                                    maxChars={18}
+                                                >
+                                                    {procurement.stage}
+                                                </TruncateBadge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <TruncateBadge
+                                                    variant={statusBadgeVariant}
+                                                    className="transition-all duration-200 hover:shadow-sm"
+                                                    maxChars={14}
+                                                >
+                                                    {procurement.status}
+                                                </TruncateBadge>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <Tooltip>
                                                     <TooltipTrigger

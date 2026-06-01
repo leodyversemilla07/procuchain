@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Enums\StreamEnums;
-use App\Services\AuditLogger;
 use App\Services\BlockchainStorageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,9 +28,11 @@ class NodeOperationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
- public int $tries = 2;
- public int $timeout = 420;
- public array $backoff = [10, 30];
+    public int $tries = 2;
+
+    public int $timeout = 420;
+
+    public array $backoff = [10, 30];
 
     public function __construct(
         public readonly string $operation,   // 'purge' or 'resync'
@@ -50,12 +50,12 @@ class NodeOperationJob implements ShouldQueue
             'operation' => $this->operation,
             'node_id' => $this->nodeId,
             'user_id' => $this->userId,
- ], now()->addMinutes(20));
+        ], now()->addMinutes(20));
 
- try {
- $result = $this->operation === 'purge'
-                ? $storage->purgeAllFromNode($this->nodeId, $this->reason)
-                : $storage->resyncNode($this->nodeId, $this->reason);
+        try {
+            $result = $this->operation === 'purge'
+                           ? $storage->purgeAllFromNode($this->nodeId, $this->reason)
+                           : $storage->resyncNode($this->nodeId, $this->reason);
 
             Cache::put("node_operation:{$this->jobId}", [
                 'status' => $result['success'] ? 'done' : 'failed',
@@ -65,7 +65,7 @@ class NodeOperationJob implements ShouldQueue
                 'user_id' => $this->userId,
             ], now()->addMinutes(20));
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 Log::warning('NodeOperationJob returned failure', [
                     'job_id' => $this->jobId,
                     'operation' => $this->operation,
@@ -81,7 +81,7 @@ class NodeOperationJob implements ShouldQueue
                 'status' => 'failed',
                 'operation' => $this->operation,
                 'node_id' => $this->nodeId,
-                'message' => 'Job exception: ' . $e->getMessage(),
+                'message' => 'Job exception: '.$e->getMessage(),
                 'user_id' => $this->userId,
             ], now()->addMinutes(20));
 
@@ -105,7 +105,7 @@ class NodeOperationJob implements ShouldQueue
             'status' => 'failed',
             'operation' => $this->operation,
             'node_id' => $this->nodeId,
-            'message' => 'Job failed after all retries: ' . ($exception?->getMessage() ?? 'Unknown error'),
+            'message' => 'Job failed after all retries: '.($exception?->getMessage() ?? 'Unknown error'),
             'user_id' => $this->userId,
         ], now()->addMinutes(20));
 

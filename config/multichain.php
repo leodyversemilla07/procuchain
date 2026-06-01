@@ -86,50 +86,50 @@ return [
  |
  */
 
- 'nodes' => [
- [
- 'id' => 'admin',
- 'name' => env('MULTICHAIN_NODE_ADMIN_NAME', 'Primary Node'),
- 'role' => env('MULTICHAIN_NODE_ADMIN_ROLE', 'Administrator'),
- 'ip' => env('MULTICHAIN_NODE_ADMIN_IP', '127.0.0.1'),
- 'private_ip' => env('MULTICHAIN_NODE_ADMIN_PRIVATE_IP', '127.0.0.1'),
- 'instance_id' => env('MULTICHAIN_NODE_ADMIN_INSTANCE_ID', 'i-07cda06c53cfd2a04'),
- 'p2p_port' => (int) env('MULTICHAIN_NODE_ADMIN_P2P_PORT', 6835),
- 'rpc_port' => (int) env('MULTICHAIN_NODE_ADMIN_RPC_PORT', 6834),
- ],
- [
- 'id' => 'bac-secretariat',
- 'name' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_NAME', 'BAC Secretariat'),
- 'role' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_ROLE', 'Secretariat'),
- 'ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_IP', '127.0.0.1'),
- 'private_ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_PRIVATE_IP', '127.0.0.1'),
- 'instance_id' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_INSTANCE_ID', 'i-0aba884e70ad04588'),
- 'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_P2P_PORT', 6835),
- 'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_RPC_PORT', 6834),
- ],
- [
- 'id' => 'bac-chairman',
- 'name' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_NAME', 'BAC Chairman'),
- 'role' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_ROLE', 'Chairman'),
- 'ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_IP', '127.0.0.1'),
- 'private_ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_PRIVATE_IP', '127.0.0.1'),
- 'instance_id' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_INSTANCE_ID', 'i-0cd621d6c897b387c'),
- 'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_P2P_PORT', 6835),
- 'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_RPC_PORT', 6834),
- ],
- [
- 'id' => 'hope',
- 'name' => env('MULTICHAIN_NODE_HOPE_NAME', 'HOPE'),
- 'role' => env('MULTICHAIN_NODE_HOPE_ROLE', 'HOPE'),
- 'ip' => env('MULTICHAIN_NODE_HOPE_IP', '127.0.0.1'),
- 'private_ip' => env('MULTICHAIN_NODE_HOPE_PRIVATE_IP', '127.0.0.1'),
- 'instance_id' => env('MULTICHAIN_NODE_HOPE_INSTANCE_ID', 'i-0b2be6c5b43568c28'),
- 'p2p_port' => (int) env('MULTICHAIN_NODE_HOPE_P2P_PORT', 6835),
- 'rpc_port' => (int) env('MULTICHAIN_NODE_HOPE_RPC_PORT', 6834),
- ],
- ],
+    'nodes' => [
+        [
+            'id' => 'admin',
+            'name' => env('MULTICHAIN_NODE_ADMIN_NAME', 'Primary Node'),
+            'role' => env('MULTICHAIN_NODE_ADMIN_ROLE', 'Administrator'),
+            'ip' => env('MULTICHAIN_NODE_ADMIN_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_ADMIN_PRIVATE_IP', '127.0.0.1'),
+            'instance_id' => env('MULTICHAIN_NODE_ADMIN_INSTANCE_ID', 'i-07cda06c53cfd2a04'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_ADMIN_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_ADMIN_RPC_PORT', 6834),
+        ],
+        [
+            'id' => 'bac-secretariat',
+            'name' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_NAME', 'BAC Secretariat'),
+            'role' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_ROLE', 'Secretariat'),
+            'ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_PRIVATE_IP', '127.0.0.1'),
+            'instance_id' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_INSTANCE_ID', 'i-0aba884e70ad04588'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_RPC_PORT', 6834),
+        ],
+        [
+            'id' => 'bac-chairman',
+            'name' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_NAME', 'BAC Chairman'),
+            'role' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_ROLE', 'Chairman'),
+            'ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_PRIVATE_IP', '127.0.0.1'),
+            'instance_id' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_INSTANCE_ID', 'i-0cd621d6c897b387c'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_RPC_PORT', 6834),
+        ],
+        [
+            'id' => 'hope',
+            'name' => env('MULTICHAIN_NODE_HOPE_NAME', 'HOPE'),
+            'role' => env('MULTICHAIN_NODE_HOPE_ROLE', 'HOPE'),
+            'ip' => env('MULTICHAIN_NODE_HOPE_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_HOPE_PRIVATE_IP', '127.0.0.1'),
+            'instance_id' => env('MULTICHAIN_NODE_HOPE_INSTANCE_ID', 'i-0b2be6c5b43568c28'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_HOPE_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_HOPE_RPC_PORT', 6834),
+        ],
+    ],
 
- /*
+    /*
  |--------------------------------------------------------------------------
  | AWS SSM Configuration
  |--------------------------------------------------------------------------

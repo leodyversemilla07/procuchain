@@ -142,26 +142,26 @@ class ProcurementSearchService
             }
 
             if (! empty($filters['date_from']) || ! empty($filters['date_to'])) {
-                    $dateField = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
+                $dateField = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
 
-                    if (! $dateField) {
+                if (! $dateField) {
+                    return false;
+                }
+
+                // Guard against __PHP_Incomplete_Class from stale cache
+                // (Laravel 13 serializable_classes=false can break Carbon deserialization)
+                if ($dateField instanceof Carbon) {
+                    $timestamp = $dateField->timestamp;
+                } elseif (is_string($dateField)) {
+                    $timestamp = strtotime($dateField);
+
+                    if ($timestamp === false) {
                         return false;
                     }
-
-                    // Guard against __PHP_Incomplete_Class from stale cache
-                    // (Laravel 13 serializable_classes=false can break Carbon deserialization)
-                    if ($dateField instanceof Carbon) {
-                        $timestamp = $dateField->timestamp;
-                    } elseif (is_string($dateField)) {
-                        $timestamp = strtotime($dateField);
-
-                        if ($timestamp === false) {
-                            return false;
-                        }
-                    } else {
-                        // __PHP_Incomplete_Class or other non-string — skip date filtering
-                        return false;
-                    }
+                } else {
+                    // __PHP_Incomplete_Class or other non-string — skip date filtering
+                    return false;
+                }
 
                 if (! empty($filters['date_from'])) {
                     $dateFrom = strtotime($filters['date_from'].' 00:00:00');

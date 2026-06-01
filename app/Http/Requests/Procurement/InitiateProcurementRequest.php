@@ -33,7 +33,7 @@ class InitiateProcurementRequest extends FormRequest
             // Classification
             'category' => ['required', Rule::enum(ProcurementCategoryEnums::class)],
             'procurement_mode' => ['required', Rule::enum(ProcurementModeEnums::class)],
-            'negotiated_procurement_type' => ['nullable', 'string', 'in:' . implode(',', array_keys(ProcurementModeEnums::negotiatedProcurementSubTypes()))],
+            'negotiated_procurement_type' => ['nullable', 'string', 'in:'.implode(',', array_keys(ProcurementModeEnums::negotiatedProcurementSubTypes()))],
 
             // Municipal Office Information
             'office' => ['required', 'string', 'max:255'],

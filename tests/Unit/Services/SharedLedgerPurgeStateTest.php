@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Services\Manager;
 use App\Services\SharedLedgerService;
-use Mockery\MockInterface;
 
 beforeEach(function () {
     $this->managerMock = Mockery::mock(Manager::class);

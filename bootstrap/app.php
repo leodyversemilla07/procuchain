@@ -11,6 +11,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Sentry\Laravel\Integration;
 use Spatie\Permission\Middleware\PermissionMiddleware;
@@ -58,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
     })
     ->withSchedule(function (Schedule $schedule) {
-    // Clean up old cache and session data to optimize database storage
+        // Clean up old cache and session data to optimize database storage
         $schedule->command('cache:cleanup --hours=24')
             ->daily();
 
@@ -82,21 +83,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 return $response;
             }
 
- if (in_array($status, [500, 503, 404, 403, 401, 429])) {
- // Temporarily log 500 errors to daily log for debugging
- if ($status === 500) {
- \Illuminate\Support\Facades\Log::error('SHARED_LEDGER_500_DEBUG', [
- 'exception_class' => get_class($exception),
- 'message' => $exception->getMessage(),
- 'file' => $exception->getFile() . ':' . $exception->getLine(),
- 'url' => $request->fullUrl(),
- 'trace' => $exception->getTraceAsString(),
- ]);
- }
- return Inertia::render('error', ['status' => $status])
- ->toResponse($request)
- ->setStatusCode($status);
- }
+            if (in_array($status, [500, 503, 404, 403, 401, 429])) {
+                // Temporarily log 500 errors to daily log for debugging
+                if ($status === 500) {
+                    Log::error('SHARED_LEDGER_500_DEBUG', [
+                        'exception_class' => get_class($exception),
+                        'message' => $exception->getMessage(),
+                        'file' => $exception->getFile().':'.$exception->getLine(),
+                        'url' => $request->fullUrl(),
+                        'trace' => $exception->getTraceAsString(),
+                    ]);
+                }
+
+                return Inertia::render('error', ['status' => $status])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+            }
 
             return $response;
         });

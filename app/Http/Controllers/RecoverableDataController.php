@@ -34,18 +34,18 @@ use Inertia\Response;
  */
 class RecoverableDataController extends Controller
 {
- public function __construct(
- private BlockchainStorageService $storage,
- ) {}
+    public function __construct(
+        private BlockchainStorageService $storage,
+    ) {}
 
- /**
- * Prevent duplicate operations on the same node.
- * Returns true if the node is already locked (operation in progress).
- */
- private function isNodeLocked(string $nodeId): bool
- {
- return Cache::has("node_operation_lock:{$nodeId}");
- }
+    /**
+     * Prevent duplicate operations on the same node.
+     * Returns true if the node is already locked (operation in progress).
+     */
+    private function isNodeLocked(string $nodeId): bool
+    {
+        return Cache::has("node_operation_lock:{$nodeId}");
+    }
 
     private function lockNode(string $nodeId): void
     {
@@ -57,7 +57,7 @@ class RecoverableDataController extends Controller
         Cache::forget("node_operation_lock:{$nodeId}");
     }
 
- /**
+    /**
      * Display the Recoverable Data admin page.
      * Shows all currently-deleted files grouped by PR number,
      * plus available nodes for the purge/resync demo.
@@ -109,59 +109,59 @@ class RecoverableDataController extends Controller
         return redirect()->back()->with('error', 'Failed to restore file on blockchain.');
     }
 
- /**
- * Purge a node's data to demonstrate blockchain data resilience (async).
- *
- * In MultiChain CE, per-key deletion is not available — this performs
- * a full node purge (same as purgeAllFromNode). Data survives on all
- * other nodes. Manual resync is required to restore the purged node's local copy.
- *
- * Recorded on-chain as action: 'file_node_purge' for audit compliance.
- * Dispatched as async job because SSM takes 60-180s.
- */
- public function deleteFromNode(Request $request): JsonResponse
- {
- $this->authorize('manage-recoverable-data');
+    /**
+     * Purge a node's data to demonstrate blockchain data resilience (async).
+     *
+     * In MultiChain CE, per-key deletion is not available — this performs
+     * a full node purge (same as purgeAllFromNode). Data survives on all
+     * other nodes. Manual resync is required to restore the purged node's local copy.
+     *
+     * Recorded on-chain as action: 'file_node_purge' for audit compliance.
+     * Dispatched as async job because SSM takes 60-180s.
+     */
+    public function deleteFromNode(Request $request): JsonResponse
+    {
+        $this->authorize('manage-recoverable-data');
 
- $validated = $request->validate([
- 'file_key' => 'required|string',
- 'node_id' => 'required|string',
- 'reason' => 'nullable|string|max:500',
- ]);
+        $validated = $request->validate([
+            'file_key' => 'required|string',
+            'node_id' => 'required|string',
+            'reason' => 'nullable|string|max:500',
+        ]);
 
- if ($this->isNodeLocked($validated['node_id'])) {
- return response()->json([
- 'status' => 'rejected',
- 'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
- ], 409);
- }
+        if ($this->isNodeLocked($validated['node_id'])) {
+            return response()->json([
+                'status' => 'rejected',
+                'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
+            ], 409);
+        }
 
- $this->lockNode($validated['node_id']);
+        $this->lockNode($validated['node_id']);
 
- $jobId = Str::uuid()->toString();
+        $jobId = Str::uuid()->toString();
 
- Cache::put("node_operation:{$jobId}", [
- 'status' => 'pending',
- 'operation' => 'purge',
- 'node_id' => $validated['node_id'],
- 'message' => 'Purge request queued...',
- 'user_id' => $request->user()->id,
- ], now()->addMinutes(20));
+        Cache::put("node_operation:{$jobId}", [
+            'status' => 'pending',
+            'operation' => 'purge',
+            'node_id' => $validated['node_id'],
+            'message' => 'Purge request queued...',
+            'user_id' => $request->user()->id,
+        ], now()->addMinutes(20));
 
- NodeOperationJob::dispatch(
- operation: 'purge',
- nodeId: $validated['node_id'],
- reason: $validated['reason'] ?? 'Demo: single-node purge — data survives on peers, manual resync to restore',
- jobId: $jobId,
- userId: $request->user()->id,
- );
+        NodeOperationJob::dispatch(
+            operation: 'purge',
+            nodeId: $validated['node_id'],
+            reason: $validated['reason'] ?? 'Demo: single-node purge — data survives on peers, manual resync to restore',
+            jobId: $jobId,
+            userId: $request->user()->id,
+        );
 
- return response()->json([
- 'job_id' => $jobId,
- 'status' => 'pending',
- 'message' => 'Purge request queued. The SSM command will run in the background.',
- ], 202);
- }
+        return response()->json([
+            'job_id' => $jobId,
+            'status' => 'pending',
+            'message' => 'Purge request queued. The SSM command will run in the background.',
+        ], 202);
+    }
 
     /**
      * Purge ALL data from a single node's local storage (async).
@@ -170,35 +170,35 @@ class RecoverableDataController extends Controller
      * takes 60-120s, which exceeds nginx's fastcgi_read_timeout (90s).
      * Returns the job ID immediately; the frontend polls for status.
      */
- public function purgeAllFromNode(Request $request): JsonResponse
- {
-     $this->authorize('manage-recoverable-data');
+    public function purgeAllFromNode(Request $request): JsonResponse
+    {
+        $this->authorize('manage-recoverable-data');
 
-     $validated = $request->validate([
-         'node_id' => 'required|string',
-         'reason' => 'nullable|string|max:500',
-     ]);
+        $validated = $request->validate([
+            'node_id' => 'required|string',
+            'reason' => 'nullable|string|max:500',
+        ]);
 
-     if ($this->isNodeLocked($validated['node_id'])) {
-         return response()->json([
-             'status' => 'rejected',
-             'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
-         ], 409);
-     }
+        if ($this->isNodeLocked($validated['node_id'])) {
+            return response()->json([
+                'status' => 'rejected',
+                'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
+            ], 409);
+        }
 
-     // Guard: reject purge if node is already purged
-     $nodes = $this->storage->getAvailableNodes();
-     $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $validated['node_id']);
-     if ($targetNode && ($targetNode['is_purged'] ?? false)) {
-         return response()->json([
-             'status' => 'rejected',
-             'message' => "Node '{$targetNode['name']}' is already purged. Use Resync to restore its data first.",
-         ], 422);
-     }
+        // Guard: reject purge if node is already purged
+        $nodes = $this->storage->getAvailableNodes();
+        $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $validated['node_id']);
+        if ($targetNode && ($targetNode['is_purged'] ?? false)) {
+            return response()->json([
+                'status' => 'rejected',
+                'message' => "Node '{$targetNode['name']}' is already purged. Use Resync to restore its data first.",
+            ], 422);
+        }
 
-     $this->lockNode($validated['node_id']);
+        $this->lockNode($validated['node_id']);
 
- $jobId = Str::uuid()->toString();
+        $jobId = Str::uuid()->toString();
 
         // Store initial pending state
         Cache::put("node_operation:{$jobId}", [
@@ -207,12 +207,12 @@ class RecoverableDataController extends Controller
             'node_id' => $validated['node_id'],
             'message' => 'Purge request queued...',
             'user_id' => $request->user()->id,
- ], now()->addMinutes(20));
+        ], now()->addMinutes(20));
 
- NodeOperationJob::dispatch(
- operation: 'purge',
- nodeId: $validated['node_id'],
- reason: $validated['reason'] ?? 'Demo: full node purge',
+        NodeOperationJob::dispatch(
+            operation: 'purge',
+            nodeId: $validated['node_id'],
+            reason: $validated['reason'] ?? 'Demo: full node purge',
             jobId: $jobId,
             userId: $request->user()->id,
         );
@@ -230,35 +230,35 @@ class RecoverableDataController extends Controller
      * Dispatches a NodeOperationJob to the queue because the SSM command
      * takes 60-180s. Returns the job ID immediately; the frontend polls.
      */
- public function resyncNode(Request $request): JsonResponse
- {
-     $this->authorize('manage-recoverable-data');
+    public function resyncNode(Request $request): JsonResponse
+    {
+        $this->authorize('manage-recoverable-data');
 
-     $validated = $request->validate([
-         'node_id' => 'required|string',
-         'reason' => 'nullable|string|max:500',
-     ]);
+        $validated = $request->validate([
+            'node_id' => 'required|string',
+            'reason' => 'nullable|string|max:500',
+        ]);
 
-     if ($this->isNodeLocked($validated['node_id'])) {
-         return response()->json([
-             'status' => 'rejected',
-             'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
-         ], 409);
-     }
+        if ($this->isNodeLocked($validated['node_id'])) {
+            return response()->json([
+                'status' => 'rejected',
+                'message' => 'An operation is already in progress on this node. Please wait for it to finish.',
+            ], 409);
+        }
 
-     // Guard: reject resync if node is NOT purged (nothing to resync)
-     $nodes = $this->storage->getAvailableNodes();
-     $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $validated['node_id']);
-     if ($targetNode && !($targetNode['is_purged'] ?? false)) {
-         return response()->json([
-             'status' => 'rejected',
-             'message' => "Node '{$targetNode['name']}' is not purged — no resync needed. Data is already available.",
-         ], 422);
-     }
+        // Guard: reject resync if node is NOT purged (nothing to resync)
+        $nodes = $this->storage->getAvailableNodes();
+        $targetNode = collect($nodes)->first(fn ($n) => $n['id'] === $validated['node_id']);
+        if ($targetNode && ! ($targetNode['is_purged'] ?? false)) {
+            return response()->json([
+                'status' => 'rejected',
+                'message' => "Node '{$targetNode['name']}' is not purged — no resync needed. Data is already available.",
+            ], 422);
+        }
 
-     $this->lockNode($validated['node_id']);
+        $this->lockNode($validated['node_id']);
 
- $jobId = Str::uuid()->toString();
+        $jobId = Str::uuid()->toString();
 
         // Store initial pending state
         Cache::put("node_operation:{$jobId}", [
@@ -266,11 +266,11 @@ class RecoverableDataController extends Controller
             'operation' => 'resync',
             'node_id' => $validated['node_id'],
             'message' => 'Resync request queued...',
- 'user_id' => $request->user()->id,
- ], now()->addMinutes(20));
+            'user_id' => $request->user()->id,
+        ], now()->addMinutes(20));
 
- NodeOperationJob::dispatch(
- operation: 'resync',
+        NodeOperationJob::dispatch(
+            operation: 'resync',
             nodeId: $validated['node_id'],
             reason: $validated['reason'] ?? 'Manual resync — data restored from peers',
             jobId: $jobId,

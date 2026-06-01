@@ -16,15 +16,15 @@ use Inertia\Inertia;
 
 class BacSecretariatController extends BaseDashboardController
 {
- public function __construct(
- protected Manager $multichain,
- protected DashboardService $dashboardService,
- CacheStrategyInterface $cacheStrategy,
- ProcurementRepository $procurementRepository,
- private ProcurementStageTransitionService $stageTransitionService
- ) {
- parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
- }
+    public function __construct(
+        protected Manager $multichain,
+        protected DashboardService $dashboardService,
+        CacheStrategyInterface $cacheStrategy,
+        ProcurementRepository $procurementRepository,
+        private ProcurementStageTransitionService $stageTransitionService
+    ) {
+        parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
+    }
 
     protected function getRoleName(): string
     {

@@ -36,15 +36,11 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                     <Card className="w-full max-w-md">
                         <CardHeader>
                             <CardTitle>Something went wrong</CardTitle>
-                            <CardDescription>
-                                An unexpected error occurred while rendering this page.
-                            </CardDescription>
+                            <CardDescription>An unexpected error occurred while rendering this page.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {this.state.error && (
-                                <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                                    {this.state.error.message}
-                                </pre>
+                                <pre className="bg-muted text-muted-foreground overflow-auto rounded-lg p-3 text-xs">{this.state.error.message}</pre>
                             )}
                         </CardContent>
                         <CardFooter>
