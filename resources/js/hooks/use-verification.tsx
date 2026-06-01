@@ -132,7 +132,7 @@ export interface VerificationPageProps {
 // Hook
 // =============================================================================
 
-export function useVerification({ prNumber, report, procurementStatus }: VerificationPageProps) {
+export function useVerification({ prNumber, report }: VerificationPageProps) {
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.role || auth?.user?.role || 'guest';
 
