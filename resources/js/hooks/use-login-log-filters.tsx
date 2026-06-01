@@ -53,7 +53,7 @@ interface UseLoginLogFiltersOptions {
 
 export function useLoginLogFilters({ recentLogins, suspiciousActivities, flash }: UseLoginLogFiltersOptions) {
     const page = usePage<SharedData>();
-    const auth = (page.props as any).auth;
+    const auth = page.props.auth;
 
     // Search and filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -327,7 +327,11 @@ export function useLoginLogFilters({ recentLogins, suspiciousActivities, flash }
     const toggleLogSelection = useCallback((id: number) => {
         setSelectedLogs((prev) => {
             const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
             return next;
         });
     }, []);

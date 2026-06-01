@@ -38,7 +38,6 @@ export function UserManagementTable({
     isLoading,
     isRefreshing,
     filteredUsers,
-    totalUsers,
     searchQuery,
     roleFilter,
     verificationFilter,
@@ -48,7 +47,6 @@ export function UserManagementTable({
     onViewDetails,
     onViewLoginHistory,
     onResetPassword,
-    onCreateUser,
 }: UserManagementTableProps) {
     const { hasPermission } = usePermissions();
 

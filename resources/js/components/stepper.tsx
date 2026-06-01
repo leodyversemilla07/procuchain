@@ -15,13 +15,6 @@ export interface StepperProps {
     className?: string;
 }
 
-function truncateStepTitle(title: string, maxChars: number): string {
-    if (title.length <= maxChars) return title;
-    const cut = title.slice(0, maxChars);
-    const lastSpace = cut.lastIndexOf(' ');
-    return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
-}
-
 export function Stepper({ steps, currentStep, onStepClick, className }: StepperProps) {
     const [showAllSteps, setShowAllSteps] = useState(false);
     const currentStepIndex = steps.findIndex((s) => s.id === currentStep);

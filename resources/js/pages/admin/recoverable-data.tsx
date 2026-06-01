@@ -102,8 +102,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
     // Keep a ref for polling cleanup on unmount
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
     useEffect(() => {
+        const currentPolling = pollingRef.current;
         return () => {
-            if (pollingRef.current) clearInterval(pollingRef.current);
+            if (currentPolling) clearInterval(currentPolling);
         };
     }, []);
 
