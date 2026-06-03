@@ -302,8 +302,6 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                 </CardContent>
                             </Card>
                         )}
-
-
                     </div>
                 ) : (
                     <div className="space-y-4">

@@ -7,7 +7,7 @@ import { dashboard } from '@/routes/admin';
 import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 interface BreachDetail {
     id: number;
@@ -82,7 +82,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                 />
 
                 {error ? (
-                    <Card className="mt-4 border-destructive">
+                    <Card className="border-destructive mt-4">
                         <CardHeader>
                             <CardTitle className="text-destructive">Error</CardTitle>
                             <CardDescription>{error}</CardDescription>

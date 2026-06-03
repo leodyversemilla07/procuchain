@@ -82,16 +82,16 @@ jobs:
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
-          application: procuchain
-          environment: procuchain-prod
+          application: telehealth-app
+          environment: telehealth-api
           version_label: ${{ github.sha }}
           region: ${{ secrets.AWS_REGION }}
 
       - name: Wait for Deployment
         run: |
           aws elasticbeanstalk wait environment-updated \
-            --application-name procuchain \
-            --environment-names procuchain-prod \
+            --application-name telehealth-app \
+            --environment-names telehealth-api \
             --region ${{ secrets.AWS_REGION }}
 
       - name: Verify Deployment

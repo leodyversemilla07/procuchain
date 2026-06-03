@@ -16,7 +16,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -437,7 +445,10 @@ export default function IntegrityAuditLogs() {
                                                     <div className="flex gap-1">
                                                         {log.recovery_status === 'pending' && (
                                                             <AlertDialog>
-                                                                <AlertDialogTrigger render={<Button variant="outline" size="sm" disabled={repairing === log.id} />} nativeButton={false}>
+                                                                <AlertDialogTrigger
+                                                                    render={<Button variant="outline" size="sm" disabled={repairing === log.id} />}
+                                                                    nativeButton={false}
+                                                                >
                                                                     <Wrench data-icon="inline-start" />
                                                                     {repairing === log.id ? 'Repairing...' : 'Repair'}
                                                                 </AlertDialogTrigger>
@@ -462,10 +473,22 @@ export default function IntegrityAuditLogs() {
                                                                 </AlertDialogContent>
                                                             </AlertDialog>
                                                         )}
-                                                        <Button variant="ghost" size="sm" render={<Link href={integrityAuditLogs.detail.url(log.id)} />} nativeButton={false} title="View Details">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            render={<Link href={integrityAuditLogs.detail.url(log.id)} />}
+                                                            nativeButton={false}
+                                                            title="View Details"
+                                                        >
                                                             <FileSearch data-icon="inline-start" />
                                                         </Button>
-                                                        <Button variant="ghost" size="sm" render={<Link href={integrityAuditLogs.report.url(log.verification_run_id)} />} nativeButton={false} title="View Report">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            render={<Link href={integrityAuditLogs.report.url(log.verification_run_id)} />}
+                                                            nativeButton={false}
+                                                            title="View Report"
+                                                        >
                                                             <ScrollText data-icon="inline-start" />
                                                         </Button>
                                                     </div>
