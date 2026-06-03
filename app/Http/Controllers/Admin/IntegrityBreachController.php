@@ -356,8 +356,13 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
+        // Get a real PR from the database for demo
+        $procurement = Procurement::first();
+        $prNumber = $procurement?->pr_number ?? 'No PRs found';
+
         return Inertia::render('admin/integrity-demo', [
-            'prNumber' => 'DEMO-PR-2026-TEST',
+            'prNumber' => $prNumber,
+            'hasData' => Procurement::count() > 0,
         ]);
     }
 
@@ -366,7 +371,7 @@ class IntegrityBreachController extends Controller
         $this->authorize('update-audit-log');
 
         $action = $request->input('action');
-        $prNumber = $request->input('pr_number', 'DEMO-PR-2026-TEST');
+        $prNumber = $request->input('pr_number');
 
         try {
             if ($action === 'sync') {
@@ -379,6 +384,12 @@ class IntegrityBreachController extends Controller
                 $service = app(IntegrityVerificationService::class);
                 $result = $service->verifyAndRepair(false, 'demo');
                 return back()->with('success', 'Verification completed: ' . json_encode($result['violations']));
+            }
+
+            if ($action === 'verify_pr' && $prNumber) {
+                $service = app(IntegrityVerificationService::class);
+                $result = $service->verifyPr($prNumber, false);
+                return back()->with('success', "PR {$prNumber} verified: " . json_encode($result['violations']));
             }
 
             return back()->with('error', 'Unknown action');
