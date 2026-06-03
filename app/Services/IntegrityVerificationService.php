@@ -82,13 +82,18 @@ class IntegrityVerificationService
     {
         $this->reset($source);
 
-        Log::info('IntegrityVerification: starting', ['run_id' => $this->runId]);
+        Log::info('IntegrityVerification: starting', ['run_id' => $this->runId, 'auto_repair' => $autoRepair]);
 
         // Phase 1: Verify hashes on all normalized tables
         $this->verifyAllTables();
 
         // Phase 2: Detect deleted records (chain has it, DB doesn't)
         $this->detectDeletedRecords();
+
+        // Phase 3: Auto-repair if requested
+        if ($autoRepair) {
+            $this->autoRepair();
+        }
 
         $result = [
             'run_id' => $this->runId,
@@ -193,6 +198,7 @@ class IntegrityVerificationService
                 ->toArray();
         } catch (\Exception $e) {
             Log::warning('Failed to get blockchain PR numbers', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -348,6 +354,70 @@ class IntegrityVerificationService
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check deleted procurements', ['error' => $e->getMessage()]);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PHASE 3: AUTO-REPAIR
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Auto-repair all pending violations from this verification run.
+     *
+     * Re-syncs all data from blockchain (source of truth) back into
+     * normalized tables, then marks all pending violations for this
+     * run as restored.
+     */
+    private function autoRepair(): void
+    {
+        $pending = IntegrityAuditLog::forRun($this->runId)
+            ->where('recovery_status', 'pending')
+            ->get();
+
+        if ($pending->isEmpty()) {
+            Log::info('IntegrityVerification: auto-repair skipped — no pending violations', [
+                'run_id' => $this->runId,
+            ]);
+
+            return;
+        }
+
+        $count = $pending->count();
+        Log::info('IntegrityVerification: auto-repair starting', [
+            'run_id' => $this->runId,
+            'pending_violations' => $count,
+        ]);
+
+        try {
+            // Re-sync all data from blockchain (source of truth)
+            $this->syncService->syncAll();
+
+            // Mark all pending violations from this run as restored
+            foreach ($pending as $violation) {
+                $violation->markRestored([
+                    'restored_by' => 'system_auto_repair',
+                    'restored_at' => now()->toIso8601String(),
+                    'verification_run_id' => $this->runId,
+                ]);
+
+                $this->restoredCount++;
+            }
+
+            Log::info('IntegrityVerification: auto-repair completed', [
+                'run_id' => $this->runId,
+                'restored' => $this->restoredCount,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('IntegrityVerification: auto-repair failed', [
+                'run_id' => $this->runId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Mark all pending violations as failed
+            foreach ($pending as $violation) {
+                $violation->markFailed($e->getMessage());
+                $this->failedCount++;
+            }
         }
     }
 
