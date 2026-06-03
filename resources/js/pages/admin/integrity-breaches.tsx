@@ -35,6 +35,7 @@ import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Database, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
+import { toast } from 'sonner';
 import { useState } from 'react';
 
 interface BreachRecord {
@@ -139,6 +140,10 @@ export default function IntegrityBreaches() {
 
     const handleVerify = () => {
         setVerifying(true);
+        toast.info('Verification in progress…', {
+            description: 'Checking all records against the blockchain.',
+            duration: Infinity,
+        });
         router.post(integrityBreaches.verify.url(), {}, {
             preserveScroll: true,
             preserveState: false,
@@ -148,6 +153,10 @@ export default function IntegrityBreaches() {
 
     const handleVerifyAndRepair = () => {
         setVerifyAndRepairing(true);
+        toast.info('Verifying and repairing all breaches…', {
+            description: 'Checking records, repairing tampered data from the blockchain.',
+            duration: Infinity,
+        });
         router.post(integrityBreaches.verifyAndRepair.url(), {}, {
             preserveScroll: true,
             preserveState: false,
