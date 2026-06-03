@@ -303,7 +303,7 @@ export function MirrorStatusTab() {
                             <span className="text-muted-foreground">— Verify mirror integrity</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <code className="bg-muted rounded px-2 py-1">{"php artisan blockchain:repair {pr-number}"}</code>
+                            <code className="bg-muted rounded px-2 py-1">{'php artisan blockchain:repair {pr-number}'}</code>
                             <span className="text-muted-foreground">— Repair specific PR from chain (e.g. PR-2025-001)</span>
                         </div>
                     </div>

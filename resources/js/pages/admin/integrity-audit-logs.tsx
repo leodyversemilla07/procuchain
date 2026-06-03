@@ -22,7 +22,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
-import adminIntegrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Clock, FileSearch, ScrollText, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
@@ -62,10 +61,10 @@ interface PaginatedAuditLogs {
 import { type SharedData } from '@/types';
 
 interface AuditPageProps extends SharedData {
- violationTypes: Record<string, string>;
- recoveryStatuses: Record<string, string>;
- severityLevels: Record<string, string>;
- sources: Record<string, string>;
+    violationTypes: Record<string, string>;
+    recoveryStatuses: Record<string, string>;
+    severityLevels: Record<string, string>;
+    sources: Record<string, string>;
 }
 
 const breadcrumbs = [
@@ -206,8 +205,18 @@ export default function IntegrityAuditLogs() {
             <StatsGrid
                 items={[
                     { label: 'Total Records', value: logs?.total ?? 0, icon: ScrollText, iconClassName: 'bg-muted' },
-                    { label: 'Current Page Pending', value: pendingCount, icon: Clock, iconClassName: pendingCount > 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-muted' },
-                    { label: 'Critical on Page', value: criticalCount, icon: ShieldAlert, iconClassName: criticalCount > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted' },
+                    {
+                        label: 'Current Page Pending',
+                        value: pendingCount,
+                        icon: Clock,
+                        iconClassName: pendingCount > 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-muted',
+                    },
+                    {
+                        label: 'Critical on Page',
+                        value: criticalCount,
+                        icon: ShieldAlert,
+                        iconClassName: criticalCount > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted',
+                    },
                     { label: 'Navigate to Breaches', value: '→', icon: AlertTriangle, iconClassName: 'bg-muted' },
                 ]}
                 className="p-4"

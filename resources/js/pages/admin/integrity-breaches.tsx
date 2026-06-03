@@ -215,8 +215,18 @@ export default function IntegrityBreaches() {
             <StatsGrid
                 items={[
                     { label: 'Total Breaches', value: stats.total, icon: AlertTriangle, iconClassName: 'bg-muted' },
-                    { label: 'Unresolved', value: stats.unresolved, icon: ShieldAlert, iconClassName: stats.unresolved > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted' },
-                    { label: 'Critical', value: stats.critical, icon: Shield, iconClassName: stats.critical > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted' },
+                    {
+                        label: 'Unresolved',
+                        value: stats.unresolved,
+                        icon: ShieldAlert,
+                        iconClassName: stats.unresolved > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted',
+                    },
+                    {
+                        label: 'Critical',
+                        value: stats.critical,
+                        icon: Shield,
+                        iconClassName: stats.critical > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted',
+                    },
                     { label: 'Unauthorized', value: stats.unauthorized, icon: Fingerprint, iconClassName: 'bg-muted' },
                 ]}
                 className="p-4"

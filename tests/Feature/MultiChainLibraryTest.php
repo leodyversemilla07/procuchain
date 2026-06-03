@@ -291,7 +291,7 @@ describe('Stream Operations', function () {
         $streams = StreamEnums::cases();
 
         expect($streams)->toBeArray()
-            ->toHaveCount(10);  // 7 procurement + 3 file streams
+            ->toHaveCount(11);  // 7 procurement + 3 file + 1 user streams
 
         $values = array_map(fn ($case) => $case->value, $streams);
 
@@ -304,24 +304,28 @@ describe('Stream Operations', function () {
             ->toContain('procurement.archive')
             ->toContain('file.data')
             ->toContain('file.metadata')
-            ->toContain('file.chunks');
+            ->toContain('file.chunks')
+            ->toContain('user.registrations');
     });
 
     it('validates stream naming convention', function () {
         $streams = StreamEnums::cases();
 
         foreach ($streams as $stream) {
-            // Streams should follow either procurement.* or file.* pattern
+            // Streams should follow procurement.*, file.*, or user.* pattern
             $isProcurement = str_starts_with($stream->value, 'procurement.');
             $isFile = str_starts_with($stream->value, 'file.');
+            $isUser = str_starts_with($stream->value, 'user.');
 
-            expect($isProcurement || $isFile)
-                ->toBeTrue("Stream {$stream->value} should start with 'procurement.' or 'file.'");
+            expect($isProcurement || $isFile || $isUser)
+                ->toBeTrue("Stream {$stream->value} should start with 'procurement.', 'file.', or 'user.'");
 
             if ($isProcurement) {
                 expect($stream->value)->toMatch('/^procurement\.([a-z_]+\.?)+$/');
             } elseif ($isFile) {
                 expect($stream->value)->toMatch('/^file\.([a-z_]+\.?)+$/');
+            } elseif ($isUser) {
+                expect($stream->value)->toMatch('/^user\.([a-z_]+\.?)+$/');
             }
         }
     });
@@ -374,22 +378,25 @@ describe('Stream Operations', function () {
         $values = StreamEnums::values();
 
         expect($values)->toBeArray()
-            ->toHaveCount(10)
+            ->toHaveCount(11)
             ->toContain('procurement.metadata')
-            ->toContain('file.data');
+            ->toContain('file.data')
+            ->toContain('user.registrations');
     });
 
     it('provides static options method', function () {
         $options = StreamEnums::options();
 
         expect($options)->toBeArray()
-            ->toHaveCount(10)
+            ->toHaveCount(11)
             ->toHaveKey('procurement.metadata')
-            ->toHaveKey('file.data');
+            ->toHaveKey('file.data')
+            ->toHaveKey('user.registrations');
 
         // Check that values are display names
         expect($options['procurement.metadata'])->toBe('Procurement Metadata')
-            ->and($options['file.data'])->toBe('File Data');
+            ->and($options['file.data'])->toBe('File Data')
+            ->and($options['user.registrations'])->toBe('User Registrations');
     });
 });
 
