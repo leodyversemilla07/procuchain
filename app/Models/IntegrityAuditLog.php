@@ -48,8 +48,8 @@ class IntegrityAuditLog extends Model
     /** Append-only: no updates, no updated_at */
     const UPDATED_AT = null;
 
-    /** @var list<string> */
-    protected $appends = ['revision_history'];
+    // Note: revision_history is NOT appended by default for performance.
+    // Use makeVisible(['revision_history']) when needed for detail pages.
 
     /** @var list<string> */
     protected $fillable = [

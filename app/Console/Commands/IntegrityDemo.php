@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\ProcurementMirror;
+use App\Services\IntegrityVerificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -14,18 +15,22 @@ use Illuminate\Support\Facades\DB;
  * Integrity System Demonstration Command
  *
  * Demonstrates the data integrity and audit-tracking system by:
- * 1. Showing current mirror records
- * 2. Simulating a database tampering attack
- * 3. Running integrity verification
- * 4. Showing detected breaches and audit logs
+ * 1. Creating a test record in the mirror
+ * 2. Simulating database tampering (modification)
+ * 3. Simulating data deletion
+ * 4. Running integrity verification
+ * 5. Showing how data is restored from blockchain
  *
- * Usage: php artisan integrity:demo
+ * Usage:
+ *   php artisan integrity:demo              # Run full demo (modify + delete)
+ *   php artisan integrity:demo --restore    # Restore demo record
+ *   php artisan integrity:demo --delete     # Only show deletion scenario
  */
 class IntegrityDemo extends Command
 {
-    protected $signature = 'integrity:demo {--restore : Restore the demo record after demonstration}';
+    protected $signature = 'integrity:demo {--restore : Restore the demo record} {--delete : Only run deletion scenario}';
 
-    protected $description = 'Demonstrate the integrity verification system with a simulated tampering attack';
+    protected $description = 'Demonstrate the integrity verification system with simulated attacks';
 
     private string $demoKey = 'DEMO-PR-2026-TEST';
 
@@ -74,9 +79,9 @@ class IntegrityDemo extends Command
         );
 
         $this->info("  ✓ Created mirror record (ID: {$mirror->id})");
-        $this->info("  ✓ Stream: procurement.metadata");
+        $this->info('  ✓ Stream: procurement.metadata');
         $this->info("  ✓ Key: {$this->demoKey}");
-        $this->info("  ✓ Hash: " . substr($mirror->data_hash, 0, 16) . '...');
+        $this->info('  ✓ Hash: '.substr($mirror->data_hash, 0, 16).'...');
         $this->newLine();
 
         // Step 2: Verify initial integrity
@@ -85,10 +90,10 @@ class IntegrityDemo extends Command
         $computedHash = hash('sha256', json_encode($mirror->data_json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $hashValid = $computedHash === $mirror->data_hash;
 
-        $this->info("  Computed Hash: " . substr($computedHash, 0, 16) . '...');
-        $this->info("  Stored Hash:   " . substr($mirror->data_hash, 0, 16) . '...');
-        $this->info("  Hash Match: " . ($hashValid ? '✓ YES' : '✗ NO'));
-        $this->info("  Integrity Status: " . ($mirror->isBreached() ? '✗ BREACHED' : '✓ VALID'));
+        $this->info('  Computed Hash: '.substr($computedHash, 0, 16).'...');
+        $this->info('  Stored Hash:   '.substr($mirror->data_hash, 0, 16).'...');
+        $this->info('  Hash Match: '.($hashValid ? '✓ YES' : '✗ NO'));
+        $this->info('  Integrity Status: '.($mirror->isBreached() ? '✗ BREACHED' : '✓ VALID'));
         $this->newLine();
 
         // Step 3: Simulate tampering attack
@@ -120,22 +125,22 @@ class IntegrityDemo extends Command
         $computedHash = hash('sha256', json_encode($mirror->data_json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $hashValid = $computedHash === $mirror->data_hash;
 
-        $this->info("  Computed Hash: " . substr($computedHash, 0, 16) . '...');
-        $this->info("  Stored Hash:   " . substr($mirror->data_hash, 0, 16) . '...');
+        $this->info('  Computed Hash: '.substr($computedHash, 0, 16).'...');
+        $this->info('  Stored Hash:   '.substr($mirror->data_hash, 0, 16).'...');
 
         if (! $hashValid) {
-            $this->error("  ✗ Hash MISMATCH detected!");
+            $this->error('  ✗ Hash MISMATCH detected!');
         } else {
-            $this->warn("  ⚠ Hash matches (data was updated with new hash)");
+            $this->warn('  ⚠ Hash matches (data was updated with new hash)');
         }
 
         // Step 5: Field-level diff
         $this->step(5, 'Field-Level Difference Analysis');
 
-        $service = app(\App\Services\IntegrityVerificationService::class);
+        $service = app(IntegrityVerificationService::class);
         $fieldDiffs = $service->computeFieldDifferences($tamperedData, $originalData);
 
-        $this->info("  Detected " . count($fieldDiffs) . " field difference(s):");
+        $this->info('  Detected '.count($fieldDiffs).' field difference(s):');
         $this->newLine();
 
         $this->table(
@@ -155,7 +160,7 @@ class IntegrityDemo extends Command
             violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
             fieldDifferences: $fieldDiffs,
             chainSnapshot: $originalData,
-            runId: 'demo-run-' . time(),
+            runId: 'demo-run-'.time(),
             source: 'demo',
         );
 
@@ -176,14 +181,14 @@ class IntegrityDemo extends Command
 
         $this->info("  ✓ Breach Detected At: {$mirror->breach_detected_at}");
         $this->info("  ✓ Breach Type: {$mirror->breach_type}");
-        $this->info("  ✓ Is Breached: " . ($mirror->isBreached() ? 'YES' : 'NO'));
+        $this->info('  ✓ Is Breached: '.($mirror->isBreached() ? 'YES' : 'NO'));
         $this->newLine();
 
         // Step 8: Show recovery options
         $this->step(8, 'Recovery Options');
 
         $this->info('  To restore from blockchain, run:');
-        $this->info('  php artisan blockchain:repair --pr=' . $this->demoKey);
+        $this->info('  php artisan blockchain:repair --pr='.$this->demoKey);
         $this->newLine();
 
         $this->info('  Or restore this demo record:');
@@ -211,7 +216,181 @@ class IntegrityDemo extends Command
         $this->info('  4. Audit Log = Permanent Forensic Record');
         $this->newLine();
 
+        // Ask if user wants to see deletion scenario
+        if ($this->confirm('Would you also like to see the DELETION scenario?', false)) {
+            $this->runDeletionScenario($mirror);
+        }
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Run the deletion scenario - simulate deleting data from database.
+     */
+    private function runDeletionScenario(ProcurementMirror $mirror): void
+    {
+        $this->newLine();
+        $this->info('╔══════════════════════════════════════════════════════════════╗');
+        $this->info('║           DELETION SCENARIO DEMONSTRATION                  ║');
+        $this->info('╚══════════════════════════════════════════════════════════════╝');
+        $this->newLine();
+
+        // Step D1: Show current state
+        $this->step('D1', 'Current State Before Deletion');
+
+        $recordExists = ProcurementMirror::where('stream_key', $this->demoKey)
+            ->where('txid', 'demo_txid_001')
+            ->exists();
+
+        $this->info('  Record exists in database: '.($recordExists ? 'YES' : 'NO'));
+        $this->info("  Record ID: {$mirror->id}");
+        $this->info("  Stream: {$mirror->stream}");
+        $this->info("  Key: {$mirror->stream_key}");
+        $this->info("  TXID: {$mirror->txid}");
+        $this->newLine();
+
+        // Step D2: Simulate deletion
+        $this->step('D2', 'Simulating Data Deletion Attack');
+
+        $this->warn('  ⚠ Attacker deletes record from database...');
+        $this->warn('  ⚠ This could happen via SQL injection, compromised admin, etc.');
+        $this->newLine();
+
+        // Delete the record directly from database
+        $deleted = DB::table('procurement_mirror')
+            ->where('id', $mirror->id)
+            ->delete();
+
+        $this->info("  ✓ Deleted {$deleted} record(s) from database");
+        $this->newLine();
+
+        // Verify it's gone
+        $recordExistsAfter = ProcurementMirror::where('stream_key', $this->demoKey)
+            ->where('txid', 'demo_txid_001')
+            ->exists();
+
+        $this->info('  Record exists after deletion: '.($recordExistsAfter ? 'YES' : 'NO'));
+
+        if (! $recordExistsAfter) {
+            $this->error('  ✗ Record has been DELETED from database!');
+        }
+        $this->newLine();
+
+        // Step D3: What the blockchain still has
+        $this->step('D3', 'Blockchain Still Has The Data');
+
+        $this->info('  The blockchain is immutable - the data still exists there:');
+        $this->newLine();
+        $this->table(
+            ['Property', 'Value'],
+            [
+                ['Stream', 'procurement.metadata'],
+                ['Key', $this->demoKey],
+                ['TXID', 'demo_txid_001'],
+                ['Data', 'Still on blockchain (immutable)'],
+                ['Status', '✓ SAFE on blockchain'],
+            ]
+        );
+        $this->newLine();
+
+        // Step D4: Integrity verification would detect this
+        $this->step('D4', 'Integrity Verification Detects Deletion');
+
+        $this->info('  When the IntegrityVerificationService runs, it:');
+        $this->info('  1. Lists all items on blockchain for this stream');
+        $this->info('  2. Checks if each item exists in the mirror database');
+        $this->info('  3. Detects that demo_txid_001 is missing from database');
+        $this->info('  4. Creates an audit log with ROW_DELETED violation');
+        $this->info('  5. Can automatically restore from blockchain data');
+        $this->newLine();
+
+        // Create the audit log for deletion
+        $auditLog = IntegrityAuditLog::recordViolation(
+            stream: 'procurement.metadata',
+            streamKey: $this->demoKey,
+            violationType: BreachTypeEnums::ROW_DELETED->value,
+            txid: 'demo_txid_001',
+            chainSnapshot: [
+                'pr_number' => $this->demoKey,
+                'title' => 'Test Procurement for Integrity Demo',
+                'amount' => 150000.00,
+                'status' => 'pending',
+            ],
+            runId: 'demo-deletion-'.time(),
+            source: 'demo',
+            revisionNumber: 1,
+        );
+
+        $this->info('  ✓ Audit Log created:');
+        $this->info("    - ID: {$auditLog->id}");
+        $this->info("    - Violation Type: {$auditLog->violation_type}");
+        $this->info("    - Severity: {$auditLog->severity}");
+        $this->info("    - Status: {$auditLog->recovery_status}");
+        $this->newLine();
+
+        // Step D5: Restore from blockchain
+        $this->step('D5', 'Restoring Deleted Data from Blockchain');
+
+        $this->info('  The system can restore by reading from blockchain:');
+        $this->newLine();
+
+        // Simulate restoration
+        $restoredData = [
+            'pr_number' => $this->demoKey,
+            'title' => 'Test Procurement for Integrity Demo',
+            'amount' => 150000.00,
+            'status' => 'pending',
+            'category' => 'goods',
+            'created_by' => 'admin@procuchain.tech',
+            'blockchain_verified' => true,
+        ];
+
+        // Recreate the record (simulating blockchain restore)
+        $restored = ProcurementMirror::create([
+            'stream' => 'procurement.metadata',
+            'stream_key' => $this->demoKey,
+            'txid' => 'demo_txid_001',
+            'revision_number' => 1,
+            'parent_txid' => null,
+            'is_latest_revision' => true,
+            'publisher_address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+            'blocktime' => now(),
+            'data_json' => $restoredData,
+            'data_hash' => hash('sha256', json_encode($restoredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            'is_authorized' => true,
+            'repaired_at' => now(),
+            'synced_at' => now(),
+        ]);
+
+        $auditLog->markRestored([
+            'items_restored' => 1,
+            'restored_by' => 'demo',
+        ]);
+
+        $this->info('  ✓ Record restored from blockchain!');
+        $this->info("    - New ID: {$restored->id}");
+        $this->info("    - Data restored: {$restoredData['title']}");
+        $this->info("    - Amount: \${$restoredData['amount']}");
+        $this->newLine();
+
+        // Final summary
+        $this->info('╔══════════════════════════════════════════════════════════════╗');
+        $this->info('║              DELETION SCENARIO COMPLETE                     ║');
+        $this->info('╚══════════════════════════════════════════════════════════════╝');
+        $this->newLine();
+
+        $this->info('What happened:');
+        $this->info('  1. Record existed in both blockchain AND database');
+        $this->info('  2. Attacker deleted record from database only');
+        $this->info('  3. Blockchain still had the original data (immutable)');
+        $this->info('  4. Integrity verification detected the deletion');
+        $this->info('  5. System restored data from blockchain');
+        $this->newLine();
+
+        $this->info('Key Takeaway:');
+        $this->info('  ✓ Even if data is DELETED from database, it can be');
+        $this->info('    restored from the blockchain (source of truth)');
+        $this->newLine();
     }
 
     private function restoreDemoRecord(): int
@@ -244,17 +423,17 @@ class IntegrityDemo extends Command
         $mirror->markAsRepaired();
 
         $this->info('✓ Demo record restored successfully.');
-        $this->info('  Hash: ' . substr($mirror->data_hash, 0, 16) . '...');
-        $this->info('  Repaired At: ' . $mirror->repaired_at);
+        $this->info('  Hash: '.substr($mirror->data_hash, 0, 16).'...');
+        $this->info('  Repaired At: '.$mirror->repaired_at);
 
         return self::SUCCESS;
     }
 
     private function step(int $number, string $title): void
     {
-        $this->info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         $this->info("  Step {$number}: {$title}");
-        $this->info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         $this->newLine();
     }
 }

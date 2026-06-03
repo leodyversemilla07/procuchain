@@ -15,6 +15,7 @@ use App\Services\IntegrityVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -481,6 +482,9 @@ class IntegrityBreachController extends Controller
             ]);
         }
 
+        // Make revision_history visible for detail page
+        $log->makeVisible(['revision_history']);
+
         return Inertia::render('admin/audit-log-detail', [
             'logId' => $id,
             'log' => $log,
@@ -494,8 +498,33 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $service = app(IntegrityVerificationService::class);
-        $report = $service->generateReport($runId);
+        // Get audit logs for this run
+        $logs = IntegrityAuditLog::forRun($runId)
+            ->orderByDesc('severity')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $summary = [
+            'total_violations' => $logs->count(),
+            'critical' => $logs->where('severity', 'critical')->count(),
+            'high' => $logs->where('severity', 'high')->count(),
+            'medium' => $logs->where('severity', 'medium')->count(),
+            'low' => $logs->where('severity', 'low')->count(),
+            'restored' => $logs->where('recovery_status', 'restored')->count(),
+            'failed' => $logs->where('recovery_status', 'failed')->count(),
+            'pending' => $logs->where('recovery_status', 'pending')->count(),
+            'by_type' => $logs->groupBy('violation_type')->map->count()->toArray(),
+        ];
+
+        // Don't include revision_history in the list for performance
+        // The frontend will fetch it on demand when expanding a violation
+        $violations = $logs->map(fn ($log) => collect($log->toArray())->except(['revision_history'])->toArray())->toArray();
+
+        $report = [
+            'run_id' => $runId,
+            'summary' => $summary,
+            'violations' => $violations,
+        ];
 
         return Inertia::render('admin/verification-report', [
             'runId' => $runId,
@@ -539,6 +568,152 @@ class IntegrityBreachController extends Controller
             'breach' => array_merge($breach->toArray(), [
                 'revision_history' => $revisionHistory,
             ]),
+        ]);
+    }
+
+    // ─── Integrity Demo ───────────────────────────────────────────────
+
+    private string $demoKey = 'DEMO-PR-2026-TEST';
+
+    /**
+     * Render the Integrity Demo page.
+     */
+    public function demoPage(): Response
+    {
+        $this->authorize('view-audit-log');
+
+        $demoRecord = ProcurementMirror::where('stream_key', $this->demoKey)
+            ->where('txid', 'demo_txid_001')
+            ->first();
+
+        $blockchainData = [
+            'pr_number' => $this->demoKey,
+            'title' => 'Test Procurement for Integrity Demo',
+            'amount' => 150000.00,
+            'status' => 'pending',
+            'category' => 'goods',
+        ];
+
+        $status = $demoRecord ? 'initial' : 'deleted';
+
+        return Inertia::render('admin/integrity-demo', [
+            'demoRecord' => $demoRecord,
+            'blockchainData' => $blockchainData,
+            'status' => $status,
+        ]);
+    }
+
+    /**
+     * Handle demo actions (delete, restore, modify, reset).
+     */
+    public function demoAction(Request $request): RedirectResponse
+    {
+        $this->authorize('view-audit-log');
+
+        $action = $request->input('action');
+
+        match ($action) {
+            'delete' => $this->demoDelete(),
+            'restore' => $this->demoRestore(),
+            'modify' => $this->demoModify(),
+            'reset' => $this->demoReset(),
+            default => null,
+        };
+
+        return redirect()->route('integrity-demo.page');
+    }
+
+    private function demoDelete(): void
+    {
+        ProcurementMirror::where('stream_key', $this->demoKey)
+            ->where('txid', 'demo_txid_001')
+            ->delete();
+
+        // Record the deletion in audit log
+        IntegrityAuditLog::recordViolation(
+            stream: 'procurement.metadata',
+            streamKey: $this->demoKey,
+            violationType: BreachTypeEnums::ROW_DELETED->value,
+            txid: 'demo_txid_001',
+            chainSnapshot: [
+                'pr_number' => $this->demoKey,
+                'title' => 'Test Procurement for Integrity Demo',
+                'amount' => 150000.00,
+            ],
+            runId: 'demo-'.time(),
+            source: 'demo',
+        );
+    }
+
+    private function demoRestore(): void
+    {
+        $data = [
+            'pr_number' => $this->demoKey,
+            'title' => 'Test Procurement for Integrity Demo',
+            'amount' => 150000.00,
+            'status' => 'pending',
+            'category' => 'goods',
+        ];
+
+        ProcurementMirror::updateOrCreate(
+            [
+                'stream' => 'procurement.metadata',
+                'stream_key' => $this->demoKey,
+                'txid' => 'demo_txid_001',
+            ],
+            [
+                'revision_number' => 1,
+                'publisher_address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+                'data_json' => $data,
+                'data_hash' => hash('sha256', json_encode($data)),
+                'repaired_at' => now(),
+                'synced_at' => now(),
+            ]
+        );
+    }
+
+    private function demoModify(): void
+    {
+        $mirror = ProcurementMirror::where('stream_key', $this->demoKey)
+            ->where('txid', 'demo_txid_001')
+            ->first();
+
+        if ($mirror) {
+            $tamperedData = $mirror->data_json;
+            $tamperedData['amount'] = 999999.99;
+            $tamperedData['status'] = 'approved';
+
+            DB::table('procurement_mirror')
+                ->where('id', $mirror->id)
+                ->update(['data_json' => $tamperedData]);
+
+            $mirror->markAsBreached(BreachTypeEnums::CONTENT_MISMATCH->value, [
+                'demo' => true,
+            ]);
+        }
+    }
+
+    private function demoReset(): void
+    {
+        ProcurementMirror::where('stream_key', $this->demoKey)->delete();
+
+        $data = [
+            'pr_number' => $this->demoKey,
+            'title' => 'Test Procurement for Integrity Demo',
+            'amount' => 150000.00,
+            'status' => 'pending',
+            'category' => 'goods',
+        ];
+
+        ProcurementMirror::create([
+            'stream' => 'procurement.metadata',
+            'stream_key' => $this->demoKey,
+            'txid' => 'demo_txid_001',
+            'revision_number' => 1,
+            'publisher_address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+            'data_json' => $data,
+            'data_hash' => hash('sha256', json_encode($data)),
+            'synced_at' => now(),
         ]);
     }
 }

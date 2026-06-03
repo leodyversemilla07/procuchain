@@ -128,4 +128,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
 
     // Breach Detail Page
     Route::get('/integrity-breaches/detail/{id}', [IntegrityBreachController::class, 'breachDetailPage'])->name('integrity-breaches.detail');
+
+    // Integrity Demo
+    Route::get('/integrity-demo', [IntegrityBreachController::class, 'demoPage'])->name('integrity-demo.page');
+    Route::post('/integrity-demo', [IntegrityBreachController::class, 'demoAction'])->name('integrity-demo.action');
 });
