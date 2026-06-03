@@ -5,6 +5,7 @@ use App\DataTransferObjects\StatusData;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementArchiveRepository;
 use App\Repositories\ProcurementCorrectionRepository;
+use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use App\Services\Manager;
@@ -182,154 +183,147 @@ describe('ProcurementListAggregatorService', function () {
         $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
         $this->archiveRepository = Mockery::mock(ProcurementArchiveRepository::class);
         $this->userService = Mockery::mock(UserService::class);
+        $this->mirrorRepository = Mockery::mock(ProcurementMirrorRepository::class);
 
         $this->aggregator = new ProcurementListAggregatorService(
-            new StatusRepository($this->statusManager),
-            $this->documentRepository,
-            $this->procurementRepository,
-            $this->archiveRepository,
-            new ProcurementFormatterService,
-            new ProcurementActionService($this->procurementRepository),
-            new UserNameResolverService($this->userService),
+        $this->mirrorRepository,
+        new ProcurementFormatterService,
+        new ProcurementActionService($this->procurementRepository),
+        new UserNameResolverService($this->userService),
         );
     });
 
     describe('fetchAllProcurements', function () {
         it('returns empty array when no status items exist', function () {
-            // Mock the Manager liststreamitems to return empty
-            $this->statusManager
-                ->shouldReceive('liststreamitems')
-                ->andReturn([]);
+        $this->mirrorRepository
+        ->shouldReceive('getLatestStatusByProcurement')
+        ->andReturn([]);
 
-            $result = $this->aggregator->fetchAllProcurements();
+        $result = $this->aggregator->fetchAllProcurements();
 
-            expect($result)->toBeEmpty();
+        expect($result)->toBeEmpty();
         });
 
         it('fetches and processes procurements with skip actions', function () {
-            $timestamp = Carbon::now()->toIso8601String();
+        $timestamp = Carbon::now()->toIso8601String();
 
-            // Mock the Manager to return status data
-            $this->statusManager
-                ->shouldReceive('liststreamitems')
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-2025-001-0001',
-                                'procurement_title' => 'Test Procurement',
-                                'stage' => 'procurement_initiation',
-                                'current_status' => 'procurement_submitted',
-                                'user_address' => '1abc123',
-                                'timestamp' => $timestamp,
-                            ],
-                        ],
-                    ],
-                ]);
+        $statusDto = new StatusData(
+        prNumber: 'PR-2025-001-0001',
+        procurementTitle: 'Test Procurement',
+        stage: 'procurement_initiation',
+        currentStatus: 'procurement_submitted',
+        userAddress: '1abc123',
+        timestamp: Carbon::parse($timestamp),
+        );
 
-            $this->documentRepository
-                ->shouldReceive('all')
-                ->once()
-                ->andReturn([]);
+        $this->mirrorRepository
+        ->shouldReceive('getLatestStatusByProcurement')
+        ->once()
+        ->andReturn([$statusDto]);
 
-            $this->userService
-                ->shouldReceive('preloadUserNames')
-                ->once();
+        $this->mirrorRepository
+        ->shouldReceive('getAllDocuments')
+        ->once()
+        ->andReturn([]);
 
-            $this->userService
-                ->shouldReceive('getUserNameByAddress')
-                ->andReturn('Test User');
+        $this->userService
+        ->shouldReceive('preloadUserNames')
+        ->once();
 
-            $this->procurementRepository
-                ->shouldReceive('findManyByProcurement')
-                ->once()
-                ->andReturn([]);
+        $this->userService
+        ->shouldReceive('getUserNameByAddress')
+        ->andReturn('Test User');
 
-            $this->archiveRepository
-                ->shouldReceive('getArchivedPrNumbers')
-                ->once()
-                ->andReturn([]);
+        $this->mirrorRepository
+        ->shouldReceive('findManyByProcurement')
+        ->once()
+        ->andReturn([]);
 
-            $this->actingAs(createUserWithRole('admin'));
+        $this->mirrorRepository
+        ->shouldReceive('getArchivedPrNumbers')
+        ->once()
+        ->andReturn([]);
 
-            $result = $this->aggregator->fetchAllProcurements(skipActions: true);
+        $this->actingAs(createUserWithRole('admin'));
 
-            expect($result)->toHaveCount(1)
-                ->and($result[0]['id'])->toBe('PR-2025-001-0001')
-                ->and($result[0]['title'])->toBe('Test Procurement');
+        $result = $this->aggregator->fetchAllProcurements(skipActions: true);
+
+        expect($result)->toHaveCount(1)
+        ->and($result[0]['id'])->toBe('PR-2025-001-0001')
+        ->and($result[0]['title'])->toBe('Test Procurement');
         });
     });
 
     describe('filterByArchiveStatus', function () {
         it('filters correctly for active procurements', function () {
-            // Use reflection to test the private method
-            $method = new ReflectionMethod(ProcurementListAggregatorService::class, 'filterByArchiveStatus');
-            $method->setAccessible(true);
+        // Use reflection to test the private method
+        $method = new ReflectionMethod(ProcurementListAggregatorService::class, 'filterByArchiveStatus');
+        $method->setAccessible(true);
 
-            $activeDto = new StatusData(
-                prNumber: 'PR-2025-991-0001',
-                procurementTitle: 'Active',
-                stage: 'procurement_initiation',
-                currentStatus: 'procurement_submitted',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+        $activeDto = new StatusData(
+        prNumber: 'PR-2025-991-0001',
+        procurementTitle: 'Active',
+        stage: 'procurement_initiation',
+        currentStatus: 'procurement_submitted',
+        userAddress: '1abc',
+        timestamp: Carbon::now(),
+        );
 
-            $archivedDto = new StatusData(
-                prNumber: 'PR-2025-991-0002',
-                procurementTitle: 'Archived',
-                stage: 'completed',
-                currentStatus: 'completed',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+        $archivedDto = new StatusData(
+        prNumber: 'PR-2025-991-0002',
+        procurementTitle: 'Archived',
+        stage: 'completed',
+        currentStatus: 'completed',
+        userAddress: '1abc',
+        timestamp: Carbon::now(),
+        );
 
-            $collection = collect([$activeDto, $archivedDto]);
+        $collection = collect([$activeDto, $archivedDto]);
 
-            $this->archiveRepository
-                ->shouldReceive('getArchivedPrNumbers')
-                ->once()
-                ->andReturn(['PR-2025-991-0002']);
+        $this->mirrorRepository
+        ->shouldReceive('getArchivedPrNumbers')
+        ->once()
+        ->andReturn(['PR-2025-991-0002']);
 
-            $result = $method->invoke($this->aggregator, $collection, false);
+        $result = $method->invoke($this->aggregator, $collection, false);
 
-            expect($result)->toHaveCount(1)
-                ->and($result->first()->prNumber)->toBe('PR-2025-991-0001');
+        expect($result)->toHaveCount(1)
+        ->and($result->first()->prNumber)->toBe('PR-2025-991-0001');
         });
 
         it('filters correctly for archived procurements', function () {
-            $method = new ReflectionMethod(ProcurementListAggregatorService::class, 'filterByArchiveStatus');
-            $method->setAccessible(true);
+        $method = new ReflectionMethod(ProcurementListAggregatorService::class, 'filterByArchiveStatus');
+        $method->setAccessible(true);
 
-            $activeDto = new StatusData(
-                prNumber: 'PR-2025-991-0001',
-                procurementTitle: 'Active',
-                stage: 'procurement_initiation',
-                currentStatus: 'procurement_submitted',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+        $activeDto = new StatusData(
+        prNumber: 'PR-2025-991-0001',
+        procurementTitle: 'Active',
+        stage: 'procurement_initiation',
+        currentStatus: 'procurement_submitted',
+        userAddress: '1abc',
+        timestamp: Carbon::now(),
+        );
 
-            $archivedDto = new StatusData(
-                prNumber: 'PR-2025-991-0002',
-                procurementTitle: 'Archived',
-                stage: 'completed',
-                currentStatus: 'completed',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+        $archivedDto = new StatusData(
+        prNumber: 'PR-2025-991-0002',
+        procurementTitle: 'Archived',
+        stage: 'completed',
+        currentStatus: 'completed',
+        userAddress: '1abc',
+        timestamp: Carbon::now(),
+        );
 
-            $collection = collect([$activeDto, $archivedDto]);
+        $collection = collect([$activeDto, $archivedDto]);
 
-            $this->archiveRepository
-                ->shouldReceive('getArchivedPrNumbers')
-                ->once()
-                ->andReturn(['PR-2025-991-0002']);
+        $this->mirrorRepository
+        ->shouldReceive('getArchivedPrNumbers')
+        ->once()
+        ->andReturn(['PR-2025-991-0002']);
 
-            $result = $method->invoke($this->aggregator, $collection, true);
+        $result = $method->invoke($this->aggregator, $collection, true);
 
-            expect($result)->toHaveCount(1)
-                ->and($result->first()->prNumber)->toBe('PR-2025-991-0002');
+        expect($result)->toHaveCount(1)
+        ->and($result->first()->prNumber)->toBe('PR-2025-991-0002');
         });
     });
 });

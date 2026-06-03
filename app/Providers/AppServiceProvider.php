@@ -25,10 +25,13 @@ use App\Policies\UserPolicy;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
+use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\AuditLogger;
+use App\Services\BlockchainMirrorSyncService;
 use App\Services\BlockchainStorageService;
 use App\Services\CacheStrategyService;
+use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
 use App\Services\NotificationService;
 use App\Services\ProcurementStageTransitionService;
@@ -67,6 +70,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DocumentRepositoryInterface::class, DocumentRepository::class);
         $this->app->bind(CorrectionRepositoryInterface::class, CorrectionRepository::class);
         $this->app->bind(ProcurementCorrectionRepositoryInterface::class, ProcurementCorrectionRepository::class);
+
+        // Mirror repository (reads from MySQL mirror with blockchain fallback)
+        $this->app->singleton(ProcurementMirrorRepository::class);
+
+        // Integrity verification (mirror ↔ blockchain comparison + auto-repair)
+        $this->app->singleton(IntegrityVerificationService::class);
+
+        // Blockchain mirror sync (repair from chain, full rebuild)
+        $this->app->singleton(BlockchainMirrorSyncService::class);
 
         // Register interface bindings - Publishers
         $this->app->bind(DocumentPublisherInterface::class, DocumentPublisher::class);
@@ -165,6 +177,7 @@ class AppServiceProvider extends ServiceProvider
         // Audit Log Gates (delegated to AuditLogPolicy)
         // ──────────────────────────────────────────────────────────────
         Gate::define('view-audit-log', [AuditLogPolicy::class, 'viewAny']);
+        Gate::define('update-audit-log', [AuditLogPolicy::class, 'update']);
 
         // ──────────────────────────────────────────────────────────────
         // Login Log Gates (delegated to LoginLogPolicy)

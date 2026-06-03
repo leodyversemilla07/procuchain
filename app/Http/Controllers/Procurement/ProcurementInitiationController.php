@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller as BaseController;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
+use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use App\Services\AuditLogger;
@@ -29,12 +30,13 @@ use Inertia\Response;
 class ProcurementInitiationController extends BaseController
 {
     public function __construct(
-        private readonly ProcurementSupportService $procurementSupport,
-        private readonly ProcurementRepository $procurements,
-        private readonly ProcurementStagePageService $stagePageService,
-        private readonly ProcurementStageUploadService $stageUploadService,
-        private readonly ProcurementStageCompletionService $stageCompletionService,
-        private readonly AuditLogger $auditLogger,
+    private readonly ProcurementSupportService $procurementSupport,
+    private readonly ProcurementMirrorRepository $mirrorRepository,
+    private readonly ProcurementRepository $procurements,
+    private readonly ProcurementStagePageService $stagePageService,
+    private readonly ProcurementStageUploadService $stageUploadService,
+    private readonly ProcurementStageCompletionService $stageCompletionService,
+    private readonly AuditLogger $auditLogger,
     ) {}
 
     public function show(?string $id = null): Response
@@ -121,8 +123,9 @@ class ProcurementInitiationController extends BaseController
         $prNumber = $validated['pr_number'];
         $user = $request->user();
 
-        // Duplicate check stays synchronous
-        $existing = $this->procurements->findByProcurement($prNumber);
+        // Duplicate check: use mirror (MySQL) for 50x faster lookup.
+        // Falls back to blockchain automatically on mirror miss.
+        $existing = $this->mirrorRepository->procurementExists($prNumber);
         if ($existing) {
             return response()->json([
                 'errors' => ['pr_number' => "PR Number {$prNumber} already exists. Please use a different PR number."],

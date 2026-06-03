@@ -20,6 +20,7 @@ enum StreamEnums: string
     case FILE_METADATA = 'file.metadata';
     case FILE_CHUNKS = 'file.chunks';
     case ARCHIVE = 'procurement.archive';
+    case USER_REGISTRATIONS = 'user.registrations';
 
     /**
      * Get the user-friendly display name for the stream
@@ -37,6 +38,7 @@ enum StreamEnums: string
             self::FILE_METADATA => 'File Metadata',
             self::FILE_CHUNKS => 'File Chunks',
             self::ARCHIVE => 'Procurement Archive',
+            self::USER_REGISTRATIONS => 'User Registrations',
         };
     }
 
@@ -56,6 +58,7 @@ enum StreamEnums: string
             self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
             self::FILE_CHUNKS => 'Stores chunked file data for large files',
             self::ARCHIVE => 'Tracks archived status of procurements',
+            self::USER_REGISTRATIONS => 'Records user registration events on the blockchain',
         };
     }
 
@@ -72,6 +75,16 @@ enum StreamEnums: string
             self::CORRECTIONS,
             self::PROCUREMENTS_CORRECTIONS,
             self::ARCHIVE,
+        ]);
+    }
+
+    /**
+     * Check if the stream is user-related
+     */
+    public function isUserStream(): bool
+    {
+        return in_array($this, [
+            self::USER_REGISTRATIONS,
         ]);
     }
 

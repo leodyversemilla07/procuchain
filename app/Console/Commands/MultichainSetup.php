@@ -8,6 +8,7 @@ use App\Libraries\MultiChain\Client;
 use App\Models\User;
 use App\Services\BlockchainStorageService;
 use App\Services\Manager;
+use App\Services\UserRegistrationService;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\UploadedFile;
@@ -323,11 +324,17 @@ class MultichainSetup extends Command
             $users = User::role($role)->get();
 
             foreach ($users as $user) {
-                if ($user->blockchain_address !== $address) {
-                    $user->blockchain_address = $address;
-                    $user->save();
-                    $this->line("Updated blockchain address for {$user->email} ({$role})");
-                }
+            	if ($user->blockchain_address !== $address) {
+            		$user->blockchain_address = $address;
+            		$user->save();
+            		$this->line("Updated blockchain address for {$user->email} ({$role})");
+
+            		// Publish user registration to blockchain
+            		app(UserRegistrationService::class)->publishRegistration(
+            			$user,
+            			'MultichainSetup',
+            		);
+            	}
             }
         }
     }

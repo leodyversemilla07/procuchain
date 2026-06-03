@@ -5,6 +5,7 @@ use App\DataTransferObjects\StatusData;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementArchiveRepository;
+use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use App\Services\DashboardCacheKeys;
@@ -123,44 +124,48 @@ it('builds distinct dashboard cache keys for scoped and unscoped access', functi
  */
 function buildIsolationAggregator(array $repositoryFixtures = [], array $statusFixtures = []): ProcurementListAggregatorService
 {
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
-            $result = [];
-            foreach ($prNumbers as $prNumber) {
-                $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
-            }
+ $repository = mock(ProcurementRepository::class);
+ $repository->shouldReceive('findManyByProcurement')
+ ->zeroOrMoreTimes()
+ ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
+ $result = [];
+ foreach ($prNumbers as $prNumber) {
+ $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
+ }
 
-            return $result;
-        });
+ return $result;
+ });
 
-    $manager = mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function (string $stream) use ($statusFixtures): array {
-            if ($stream === 'procurement.status') {
-                return collect($statusFixtures)
-                    ->map(fn (StatusData $status) => [
-                        'keys' => [$status->prNumber],
-                        'data' => ['json' => $status->toBlockchainArray()],
-                        'blocktime' => $status->timestamp->timestamp,
-                    ])
-                    ->all();
-            }
+ $mirrorRepository = mock(ProcurementMirrorRepository::class);
+ $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
+ ->zeroOrMoreTimes()
+ ->andReturn($statusFixtures);
+ $mirrorRepository->shouldReceive('getAllDocuments')
+ ->zeroOrMoreTimes()
+ ->andReturn([]);
+ $mirrorRepository->shouldReceive('findManyByProcurement')
+ ->zeroOrMoreTimes()
+ ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
+ $result = [];
+ foreach ($prNumbers as $prNumber) {
+ $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
+ }
 
-            return [];
-        });
+ return $result;
+ });
+ $mirrorRepository->shouldReceive('getArchivedPrNumbers')
+ ->zeroOrMoreTimes()
+ ->andReturn([]);
+ $mirrorRepository->shouldReceive('procurementExists')
+ ->zeroOrMoreTimes()
+ ->andReturn(false);
 
-    return new ProcurementListAggregatorService(
-        new StatusRepository($manager),
-        new DocumentRepository($manager),
-        $repository,
-        new ProcurementArchiveRepository($manager),
-        new ProcurementFormatterService,
-        new ProcurementActionService($repository),
-        new UserNameResolverService(app(UserService::class)),
-    );
+ return new ProcurementListAggregatorService(
+ $mirrorRepository,
+ new ProcurementFormatterService,
+ new ProcurementActionService($repository),
+ new UserNameResolverService(app(UserService::class)),
+ );
 }
 
 function isolationProcurementFixture(string $prNumber, string $userId): ProcurementData

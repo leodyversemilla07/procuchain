@@ -9,6 +9,7 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\Manager;
+use App\Services\UserRegistrationService;
 use App\Traits\AuditContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +107,12 @@ class UserManagementController extends Controller
             // Assign role using Spatie Permission
             $user->assignRole($validated['role']);
 
+            // Publish user registration to blockchain
+            app(UserRegistrationService::class)->publishRegistration(
+            	$user,
+            	auth()->user()?->name ?? 'System',
+            );
+
             Log::info('Admin created new user', [
                 ...$this->auditContext($request),
                 'created_user_id' => $user->id,
@@ -154,6 +161,14 @@ class UserManagementController extends Controller
             }
 
             $user->update($updateData);
+
+            if ($user->wasChanged('blockchain_address')) {
+            	app(UserRegistrationService::class)->publishAddressChange(
+            		$user,
+            		$user->getOriginal('blockchain_address'),
+            		auth()->user()?->name ?? 'System',
+            	);
+            }
 
             if (! empty($validated['password'])) {
                 $user->save();

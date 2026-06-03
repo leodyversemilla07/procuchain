@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\StreamEnums;
 use App\Jobs\Handlers\CorrectionHandler;
 use App\Jobs\Handlers\DocumentUploadHandler;
 use App\Jobs\Handlers\ProcurementInitiationHandler;
@@ -12,6 +13,7 @@ use App\Jobs\Handlers\StageCompletionHandler;
 use App\Jobs\Handlers\StageTransitionHandler;
 use App\Models\User;
 use App\Notifications\BlockchainJobFailedNotification;
+use App\Services\BlockchainMirrorSyncService;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -75,6 +77,8 @@ class BlockchainWriteJob implements ShouldQueue
                 'user_id' => $this->userId,
             ], now()->addHour());
 
+            $this->syncToMirror($result, $this->data, $this->operation);
+
             Log::info("BlockchainWriteJob[{$this->operation}]: completed", [
                 'job_id' => $this->jobId,
                 'pr_number' => $this->data['pr_number'] ?? 'N/A',
@@ -100,6 +104,135 @@ class BlockchainWriteJob implements ShouldQueue
             ]);
 
             throw $e;
+        }
+    }
+
+    /**
+     * Sync blockchain write results to the procurement_mirror table.
+     *
+     * Iterates through the result transactions and calls
+     * BlockchainMirrorSyncService::upstream() for each entry.
+     * Mirror sync failure MUST never fail the job — all errors
+     * are caught, logged, and silently continued.
+     *
+     * @param array  $result    The handler result containing transactions
+     * @param array  $data      The original job data payload
+     * @param string $operation The blockchain operation type
+     */
+    private function syncToMirror(array $result, array $data, string $operation): void
+    {
+        try {
+            $syncService = app(BlockchainMirrorSyncService::class);
+
+            $userAddress = $data['user_address']
+                ?? $data['procurement_data']['user_address']
+                ?? '';
+
+            $prNumber = $result['pr_number']
+                ?? $data['pr_number']
+                ?? '';
+
+            if (empty($userAddress) || empty($prNumber)) {
+                Log::warning("BlockchainWriteJob[{$operation}]: mirror sync skipped — missing user_address or pr_number", [
+                    'job_id' => $this->jobId,
+                    'user_address' => $userAddress,
+                    'pr_number' => $prNumber,
+                ]);
+
+                return;
+            }
+
+            $transactions = $result['transactions'] ?? [];
+            $syncedCount = 0;
+
+            foreach ($transactions as $type => $txData) {
+                try {
+                    $stream = match ($type) {
+                        'metadata' => StreamEnums::METADATA,
+                        'status' => StreamEnums::STATUS,
+                        'event' => StreamEnums::EVENTS,
+                        'documents' => StreamEnums::DOCUMENTS,
+                        'correction' => StreamEnums::CORRECTIONS,
+                        'procurement_correction' => StreamEnums::PROCUREMENTS_CORRECTIONS,
+                        'decision' => StreamEnums::EVENTS,
+                        'archive' => StreamEnums::ARCHIVE,
+                        default => null,
+                    };
+
+                    if ($stream === null) {
+                        Log::debug("BlockchainWriteJob[{$operation}]: skipping unknown transaction type in mirror sync", [
+                            'type' => $type,
+                        ]);
+
+                        continue;
+                    }
+
+                    $txid = match ($type) {
+                        'status' => $txData['status_txid'] ?? '',
+                        'event' => $txData['event_txid'] ?? '',
+                        default => $txData['txid'] ?? '',
+                    };
+
+                    if (empty($txid)) {
+                        Log::debug("BlockchainWriteJob[{$operation}]: skipping mirror sync — missing txid", [
+                            'type' => $type,
+                        ]);
+
+                        continue;
+                    }
+
+                    // Documents is an array of individual document entries
+                    if ($type === 'documents' && isset($txData[0]) && is_array($txData[0])) {
+                        foreach ($txData as $docEntry) {
+                            $docTxid = $docEntry['txid'] ?? '';
+
+                            if (empty($docTxid)) {
+                                continue;
+                            }
+
+                            $syncService->upstream(
+                                $stream->value,
+                                $prNumber,
+                                $docTxid,
+                                $userAddress,
+                                null,
+                                $docEntry,
+                                true,
+                            );
+                            $syncedCount++;
+                        }
+                    } else {
+                        $syncService->upstream(
+                            $stream->value,
+                            $prNumber,
+                            $txid,
+                            $userAddress,
+                            null,
+                            is_array($txData) ? $txData : [],
+                            true,
+                        );
+                        $syncedCount++;
+                    }
+                } catch (Exception $e) {
+                    Log::error("BlockchainWriteJob[{$operation}]: mirror sync failed for transaction type", [
+                        'type' => $type,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    continue;
+                }
+            }
+
+            Log::info("BlockchainWriteJob[{$operation}]: mirror sync completed", [
+                'job_id' => $this->jobId,
+                'pr_number' => $prNumber,
+                'synced_count' => $syncedCount,
+            ]);
+        } catch (Exception $e) {
+            Log::error("BlockchainWriteJob[{$operation}]: mirror sync failed", [
+                'job_id' => $this->jobId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

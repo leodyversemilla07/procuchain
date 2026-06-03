@@ -9,6 +9,7 @@ use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
+use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Dashboard\ModeAnalyzer;
 use App\Services\Dashboard\StatisticsCalculator;
@@ -39,13 +40,14 @@ class DashboardService
     ];
 
     public function __construct(
-        private Manager $multichain,
-        private EventRepository $eventRepository,
-        private DocumentRepository $documentRepository,
-        private UserService $userService,
-        private ProcurementRepository $procurementRepository,
-        private StatisticsCalculator $statisticsCalculator,
-        private ModeAnalyzer $modeAnalyzer
+    private Manager $multichain,
+    private ProcurementMirrorRepository $mirrorRepository,
+    private EventRepository $eventRepository,
+    private DocumentRepository $documentRepository,
+    private UserService $userService,
+    private ProcurementRepository $procurementRepository,
+    private StatisticsCalculator $statisticsCalculator,
+    private ModeAnalyzer $modeAnalyzer
     ) {}
 
     /**
@@ -190,7 +192,7 @@ class DashboardService
             $limit = config('dashboard.display_limits.recent_activities_display');
             // Fetch only the required amount plus some buffer for filtering
             $fetchLimit = min($limit * 2, config('dashboard.stream_limits.recent_activities'));
-            $eventDtos = $this->eventRepository->findRecent($fetchLimit);
+            $eventDtos = $this->mirrorRepository->findRecentEvents($fetchLimit);
 
             if (empty($eventDtos)) {
                 Log::warning('No events found in repository');
@@ -241,9 +243,9 @@ class DashboardService
     public function getTotalDocuments(Collection $procurementsByKey): int
     {
         try {
-            // Only fetch recent documents to improve performance
+            // Only fetch recent documents to improve performance (from mirror)
             $documentLimit = config('dashboard.stream_limits.document_items', 500);
-            $documentDtos = $this->documentRepository->findRecent($documentLimit);
+            $documentDtos = $this->mirrorRepository->getAllDocuments($documentLimit);
 
             if (empty($documentDtos)) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
@@ -384,7 +386,7 @@ class DashboardService
         $modeMap = [];
 
         try {
-            $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
+        $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
 
             foreach ($prNumbers as $prNumber) {
                 $procurement = $procurements[$prNumber] ?? null;
