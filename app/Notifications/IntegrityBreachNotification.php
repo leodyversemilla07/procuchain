@@ -48,7 +48,7 @@ class IntegrityBreachNotification extends Notification
      * @param  string  $streamKey  The stream key (e.g. PR number)
      * @param  string  $txid  The transaction ID
      * @param  array  $breachData  Additional context about the breach
-     * @param  int|null  $mirrorId  The procurement_records record ID
+     * @param  int|null  $recordId  The procurement_records record ID
      */
     public function __construct(
         private readonly string $breachType,
@@ -56,7 +56,7 @@ class IntegrityBreachNotification extends Notification
         private readonly string $streamKey,
         private readonly string $txid,
         private readonly array $breachData = [],
-        private readonly ?int $mirrorId = null,
+        private readonly ?int $recordId = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -121,7 +121,7 @@ class IntegrityBreachNotification extends Notification
             'stream_key' => $this->streamKey,
             'txid' => $this->txid,
             'severity' => $this->severity(),
-            'mirror_id' => $this->mirrorId,
+            'record_id' => $this->recordId,
             'action_type' => 'integrity_breach',
         ]);
     }

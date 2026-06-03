@@ -307,7 +307,7 @@ class BlockchainAuditTrailService
                     'recovery_status' => $data['recovery_status'] ?? 'pending',
                     'recovered_at' => $data['recovered_at'] ?? null,
                     'recovery_result' => $data['recovery_result'] ?? null,
-                    'mirror_id' => null, // Original mirror may not exist
+                    'record_id' => null, // Original record may not exist
                     'verification_run_id' => $data['verification_run_id'] ?? null,
                     'source' => $data['source'] ?? 'chain_recovery',
                     'revision_lineage' => $data['revision_lineage'] ?? null,
@@ -353,7 +353,7 @@ class BlockchainAuditTrailService
             'mirror_snapshot' => $auditLog->mirror_snapshot,
             'chain_snapshot' => $auditLog->chain_snapshot,
             'recovery_status' => $auditLog->recovery_status,
-            'mirror_id' => $auditLog->mirror_id,
+            'record_id' => $auditLog->record_id,
             'verification_run_id' => $auditLog->verification_run_id,
             'source' => $auditLog->source,
             'revision_lineage' => $auditLog->revision_lineage,

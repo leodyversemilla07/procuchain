@@ -1,5 +1,4 @@
 import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
-import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +6,10 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
+import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { Head, Link, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, Wrench, XCircle } from 'lucide-react';
 
 interface AuditLogDetail {
     id: number;
@@ -24,7 +24,7 @@ interface AuditLogDetail {
     recovery_status: string;
     recovered_at: string | null;
     recovery_result: Record<string, unknown> | null;
-    mirror_id: number | null;
+    record_id: number | null;
     verification_run_id: string;
     source: string;
     revision_number: number | null;
@@ -175,10 +175,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                 </CardHeader>
                                 <CardContent>
                                     {log.revision_history && log.revision_history.length > 0 ? (
-                                        <RevisionTree
-                                            revisions={log.revision_history}
-                                            currentTxid={log.txid ?? undefined}
-                                        />
+                                        <RevisionTree revisions={log.revision_history} currentTxid={log.txid ?? undefined} />
                                     ) : log.revision_lineage && log.revision_lineage.length > 0 ? (
                                         <div className="space-y-2">
                                             <p className="text-muted-foreground text-sm">Revision Lineage:</p>
@@ -234,9 +231,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <span className="text-muted-foreground text-sm">Detected:</span>
-                                            <p className="text-sm">
-                                                {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
-                                            </p>
+                                            <p className="text-sm">{formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}</p>
                                         </div>
                                         <div>
                                             <span className="text-muted-foreground text-sm">Recovered:</span>
@@ -299,7 +294,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <pre className="bg-green-50/50 max-h-96 overflow-auto rounded-lg p-4 text-xs dark:bg-green-950/20">
+                                        <pre className="max-h-96 overflow-auto rounded-lg bg-green-50/50 p-4 text-xs dark:bg-green-950/20">
                                             {JSON.stringify(log.chain_snapshot, null, 2)}
                                         </pre>
                                     </CardContent>
@@ -308,12 +303,10 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                             {log.mirror_snapshot && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-red-700 dark:text-red-400">
-                                            Mirror Snapshot (Database - Tampered)
-                                        </CardTitle>
+                                        <CardTitle className="text-red-700 dark:text-red-400">Mirror Snapshot (Database - Tampered)</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <pre className="bg-red-50/50 max-h-96 overflow-auto rounded-lg p-4 text-xs dark:bg-red-950/20">
+                                        <pre className="max-h-96 overflow-auto rounded-lg bg-red-50/50 p-4 text-xs dark:bg-red-950/20">
                                             {JSON.stringify(log.mirror_snapshot, null, 2)}
                                         </pre>
                                     </CardContent>
@@ -342,19 +335,13 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                             </CardHeader>
                             <CardContent className="flex flex-wrap gap-3">
                                 <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.report.url(log.verification_run_id)}>
-                                        View Full Verification Report
-                                    </Link>
+                                    <Link href={integrityAuditLogs.report.url(log.verification_run_id)}>View Full Verification Report</Link>
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.index.url({ stream_key: log.stream_key })}>
-                                        View All for PR {log.stream_key}
-                                    </Link>
+                                    <Link href={integrityAuditLogs.index.url({ stream_key: log.stream_key })}>View All for PR {log.stream_key}</Link>
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.index.url()}>
-                                        Back to Audit Logs
-                                    </Link>
+                                    <Link href={integrityAuditLogs.index.url()}>Back to Audit Logs</Link>
                                 </Button>
                             </CardContent>
                         </Card>

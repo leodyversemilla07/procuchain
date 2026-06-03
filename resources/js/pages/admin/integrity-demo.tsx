@@ -1,11 +1,10 @@
-import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
-import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
+import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, Link, router } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Database, Download, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
@@ -65,9 +64,7 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                             <Database className="h-6 w-6" />
                             Integrity System Demonstration
                         </h1>
-                        <p className="text-muted-foreground text-sm">
-                            Test the blockchain-based data integrity and audit-tracking system
-                        </p>
+                        <p className="text-muted-foreground text-sm">Test the blockchain-based data integrity and audit-tracking system</p>
                     </div>
                 </div>
 
@@ -138,15 +135,13 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                             {blockchainData ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
-                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            ✓ Immutable
-                                        </Badge>
+                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">✓ Immutable</Badge>
                                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                             ✓ Always Available
                                         </Badge>
                                     </div>
                                     <Separator />
-                                    <pre className="bg-green-50/50 max-h-48 overflow-auto rounded p-3 text-xs dark:bg-green-950/20">
+                                    <pre className="max-h-48 overflow-auto rounded bg-green-50/50 p-3 text-xs dark:bg-green-950/20">
                                         {JSON.stringify(blockchainData, null, 2)}
                                     </pre>
                                     <p className="text-muted-foreground text-sm">
@@ -156,12 +151,8 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-8 text-center">
                                     <CheckCircle2 className="mb-3 h-12 w-12 text-green-500" />
-                                    <p className="font-medium text-green-700 dark:text-green-400">
-                                        Data exists on blockchain
-                                    </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        Ready to restore if needed
-                                    </p>
+                                    <p className="font-medium text-green-700 dark:text-green-400">Data exists on blockchain</p>
+                                    <p className="text-muted-foreground text-sm">Ready to restore if needed</p>
                                 </div>
                             )}
                         </CardContent>
@@ -178,48 +169,30 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                         <div className="flex flex-wrap gap-3">
                             {status === 'initial' && (
                                 <>
-                                    <Button
-                                        variant="destructive"
-                                        onClick={() => handleAction('delete')}
-                                        disabled={processing}
-                                    >
+                                    <Button variant="destructive" onClick={() => handleAction('delete')} disabled={processing}>
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         {processing ? 'Deleting...' : 'Delete from Database'}
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => handleAction('modify')}
-                                        disabled={processing}
-                                    >
+                                    <Button variant="outline" onClick={() => handleAction('modify')} disabled={processing}>
                                         <AlertTriangle className="mr-2 h-4 w-4" />
                                         {processing ? 'Modifying...' : 'Modify Data (Tamper)'}
                                     </Button>
                                 </>
                             )}
                             {status === 'deleted' && (
-                                <Button
-                                    onClick={() => handleAction('restore')}
-                                    disabled={processing}
-                                    className="bg-green-600 hover:bg-green-700"
-                                >
+                                <Button onClick={() => handleAction('restore')} disabled={processing} className="bg-green-600 hover:bg-green-700">
                                     <Download className="mr-2 h-4 w-4" />
                                     {processing ? 'Restoring...' : 'Restore from Blockchain'}
                                 </Button>
                             )}
                             {status === 'restored' && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleAction('reset')}
-                                    disabled={processing}
-                                >
+                                <Button variant="outline" onClick={() => handleAction('reset')} disabled={processing}>
                                     <Upload className="mr-2 h-4 w-4" />
                                     Reset Demo
                                 </Button>
                             )}
                             <Button variant="ghost" asChild>
-                                <Link href={integrityBreaches.index.url()}>
-                                    View Integrity Breaches
-                                </Link>
+                                <Link href={integrityBreaches.index.url()}>View Integrity Breaches</Link>
                             </Button>
                         </div>
                     </CardContent>

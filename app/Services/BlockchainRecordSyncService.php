@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Blockchain Mirror Sync Service
+ * Blockchain Record Sync Service
  *
  * Handles bidirectional synchronization between the MultiChain blockchain
  * and the procurement_records database table. Supports:
@@ -470,7 +470,7 @@ class BlockchainRecordSyncService
                 streamKey: $key,
                 txid: $txid,
                 breachData: $breachData,
-                mirrorId: $mirrorId,
+                recordId: $mirrorId,
             ));
 
             Log::info('BlockchainRecordSync: breach notification sent', [

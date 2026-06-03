@@ -1,15 +1,15 @@
 import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
-import integrityBreaches from '@/routes/admin/integrity-breaches';
-import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
+import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
+import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, Link, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { AlertTriangle, ArrowLeft, CheckCircle2, Database, Shield, ShieldAlert, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Database, ShieldAlert, Wrench } from 'lucide-react';
 
 interface BreachDetail {
     id: number;
@@ -186,10 +186,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                                 </CardHeader>
                                 <CardContent>
                                     {breach.revision_history && breach.revision_history.length > 0 ? (
-                                        <RevisionTree
-                                            revisions={breach.revision_history}
-                                            currentTxid={breach.txid}
-                                        />
+                                        <RevisionTree revisions={breach.revision_history} currentTxid={breach.txid} />
                                     ) : (
                                         <p className="text-muted-foreground text-sm">No revision history available</p>
                                     )}
@@ -289,9 +286,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                                     </Link>
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link href={integrityBreaches.index.url()}>
-                                        Back to Breaches List
-                                    </Link>
+                                    <Link href={integrityBreaches.index.url()}>Back to Breaches List</Link>
                                 </Button>
                             </CardContent>
                         </Card>

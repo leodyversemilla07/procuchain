@@ -60,7 +60,6 @@ class IntegrityBreach extends Model
             'synced_at' => 'datetime',
             'is_authorized' => 'boolean',
             'revision_number' => 'integer',
-            'revision_depth' => 'integer',
         ];
     }
 

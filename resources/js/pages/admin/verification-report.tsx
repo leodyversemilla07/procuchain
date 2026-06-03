@@ -1,5 +1,4 @@
 import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
-import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, Wrench, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { formatDistanceToNow, parseISO } from 'date-fns';
-import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
 
 interface VerificationReport {
     run_id: string;
@@ -222,7 +221,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                     {/* Violation Header */}
                                                     <button
                                                         onClick={() => setExpandedViolation(isExpanded ? null : violation.id)}
-                                                        className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
+                                                        className="hover:bg-muted/50 flex w-full items-center justify-between p-4 text-left"
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <Badge className={SEVERITY_COLORS[violation.severity]}>{violation.severity}</Badge>
@@ -275,7 +274,9 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                                             <TableBody>
                                                                                 {violation.field_differences.map((diff, i) => (
                                                                                     <TableRow key={i}>
-                                                                                        <TableCell className="font-mono text-xs">{diff.field}</TableCell>
+                                                                                        <TableCell className="font-mono text-xs">
+                                                                                            {diff.field}
+                                                                                        </TableCell>
                                                                                         <TableCell className="bg-green-50/50 text-xs dark:bg-green-950/20">
                                                                                             {typeof diff.old_value === 'object'
                                                                                                 ? JSON.stringify(diff.old_value)
@@ -303,7 +304,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                                         <h4 className="mb-2 text-sm font-medium text-green-700">
                                                                             Chain Snapshot (Blockchain - Source of Truth)
                                                                         </h4>
-                                                                        <pre className="bg-green-50/50 max-h-48 overflow-auto rounded-lg p-3 text-xs dark:bg-green-950/20">
+                                                                        <pre className="max-h-48 overflow-auto rounded-lg bg-green-50/50 p-3 text-xs dark:bg-green-950/20">
                                                                             {JSON.stringify(violation.chain_snapshot, null, 2)}
                                                                         </pre>
                                                                     </div>
@@ -313,7 +314,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                                         <h4 className="mb-2 text-sm font-medium text-red-700">
                                                                             Mirror Snapshot (Database - Tampered)
                                                                         </h4>
-                                                                        <pre className="bg-red-50/50 max-h-48 overflow-auto rounded-lg p-3 text-xs dark:bg-red-950/20">
+                                                                        <pre className="max-h-48 overflow-auto rounded-lg bg-red-50/50 p-3 text-xs dark:bg-red-950/20">
                                                                             {JSON.stringify(violation.mirror_snapshot, null, 2)}
                                                                         </pre>
                                                                     </div>
@@ -323,11 +324,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                             {/* Actions */}
                                                             <div className="mt-4 flex gap-2">
                                                                 {violation.recovery_status === 'pending' && (
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => handleRepair(violation.id)}
-                                                                    >
+                                                                    <Button variant="outline" size="sm" onClick={() => handleRepair(violation.id)}>
                                                                         <Wrench className="mr-2 h-4 w-4" />
                                                                         Repair from Blockchain
                                                                     </Button>

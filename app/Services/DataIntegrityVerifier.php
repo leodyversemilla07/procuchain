@@ -303,7 +303,7 @@ class DataIntegrityVerifier
                 streamKey: $key,
                 txid: $txid,
                 breachData: $breachData,
-                mirrorId: $mirrorId,
+                recordId: $mirrorId,
             ));
         } catch (\Exception $e) {
             Log::error('DataIntegrityVerifier: failed to send breach notification', [

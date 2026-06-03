@@ -1,5 +1,4 @@
 import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
-import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
@@ -24,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
+import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { Head, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Clock, FileSearch, ScrollText, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
@@ -42,7 +42,7 @@ interface AuditLogRecord {
     recovery_status: string;
     recovered_at: string | null;
     recovery_result: Record<string, unknown> | null;
-    mirror_id: number | null;
+    record_id: number | null;
     verification_run_id: string;
     source: string;
     revision_number: number | null;

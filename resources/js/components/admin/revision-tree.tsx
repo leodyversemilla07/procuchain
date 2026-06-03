@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { GitBranch, GitCommit, Clock, User, CheckCircle2, AlertTriangle, Circle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Circle, Clock, GitBranch, User } from 'lucide-react';
 
 export interface RevisionNode {
     txid: string;
@@ -76,15 +76,7 @@ const STATUS_STYLES = {
     },
 };
 
-function RevisionNodeCard({
-    revision,
-    isCurrent,
-    compact = false,
-}: {
-    revision: RevisionNode;
-    isCurrent?: boolean;
-    compact?: boolean;
-}) {
+function RevisionNodeCard({ revision, isCurrent, compact = false }: { revision: RevisionNode; isCurrent?: boolean; compact?: boolean }) {
     const status = getNodeStatus(revision);
     const styles = STATUS_STYLES[status];
     const StatusIcon = styles.icon;
@@ -113,9 +105,7 @@ function RevisionNodeCard({
                         {/* TXID */}
                         <div className="mb-1">
                             <span className="text-muted-foreground text-xs">TX:</span>
-                            <code className="bg-background/50 ml-1 rounded px-1 font-mono text-xs">
-                                {truncateHash(revision.txid, 6)}
-                            </code>
+                            <code className="bg-background/50 ml-1 rounded px-1 font-mono text-xs">{truncateHash(revision.txid, 6)}</code>
                         </div>
 
                         {/* Timestamp */}
@@ -150,7 +140,7 @@ function RevisionNodeCard({
                         <p>
                             <strong>Transaction ID:</strong>
                             <br />
-                            <code className="break-all text-xs">{revision.txid}</code>
+                            <code className="text-xs break-all">{revision.txid}</code>
                         </p>
                         {revision.blocktime && (
                             <p>
@@ -161,13 +151,13 @@ function RevisionNodeCard({
                             <p>
                                 <strong>Publisher:</strong>
                                 <br />
-                                <code className="break-all text-xs">{revision.publisher_address}</code>
+                                <code className="text-xs break-all">{revision.publisher_address}</code>
                             </p>
                         )}
                         <p>
                             <strong>Data Hash:</strong>
                             <br />
-                            <code className="break-all text-xs">{revision.data_hash}</code>
+                            <code className="text-xs break-all">{revision.data_hash}</code>
                         </p>
                         {revision.breach_type && (
                             <p className="text-red-600">
@@ -252,9 +242,7 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
             <CardContent>
                 {chains.map((chain, chainIndex) => (
                     <div key={chainIndex} className="relative">
-                        {chainIndex > 0 && (
-                            <div className="text-muted-foreground mb-2 text-xs italic">Alternative revision path:</div>
-                        )}
+                        {chainIndex > 0 && <div className="text-muted-foreground mb-2 text-xs italic">Alternative revision path:</div>}
 
                         <div className={cn('flex items-start', compact ? 'gap-1' : 'gap-2')}>
                             {chain.map((revision, index) => (
@@ -270,7 +258,13 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
                                     {index < chain.length - 1 && (
                                         <div className="flex flex-col items-center px-1">
                                             <div className="bg-border h-0.5 w-6" />
-                                            <svg className="text-border h-4 w-4 -ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <svg
+                                                className="text-border -ml-1 h-4 w-4"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                            >
                                                 <path d="M9 5l7 7-7 7" />
                                             </svg>
                                         </div>
@@ -282,7 +276,7 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
                 ))}
 
                 {/* Legend */}
-                <div className="border-t pt-3 mt-4">
+                <div className="mt-4 border-t pt-3">
                     <p className="text-muted-foreground mb-2 text-xs font-medium">Legend:</p>
                     <div className="flex flex-wrap gap-3">
                         {Object.entries(STATUS_STYLES).map(([key, style]) => {

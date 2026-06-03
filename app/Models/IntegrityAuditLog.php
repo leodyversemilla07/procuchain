@@ -35,7 +35,7 @@ use Illuminate\Support\Str;
  * @property string $recovery_status
  * @property Carbon|null $recovered_at
  * @property array|null $recovery_result
- * @property int|null $mirror_id
+ * @property int|null $record_id
  * @property string|null $verification_run_id
  * @property string $source
  * @property array|null $revision_lineage
@@ -68,7 +68,7 @@ class IntegrityAuditLog extends Model
         'recovery_status',
         'recovered_at',
         'recovery_result',
-        'mirror_id',
+        'record_id',
         'verification_run_id',
         'source',
         'revision_lineage',
@@ -208,7 +208,7 @@ class IntegrityAuditLog extends Model
         array $fieldDifferences = [],
         ?array $mirrorSnapshot = null,
         ?array $chainSnapshot = null,
-        ?int $mirrorId = null,
+        ?int $recordId = null,
         ?string $runId = null,
         string $source = 'scheduled',
         ?int $revisionNumber = null,
@@ -228,7 +228,7 @@ class IntegrityAuditLog extends Model
             'mirror_snapshot' => $mirrorSnapshot,
             'chain_snapshot' => $chainSnapshot,
             'recovery_status' => 'pending',
-            'mirror_id' => $mirrorId,
+            'record_id' => $recordId,
             'verification_run_id' => $runId ?? self::newRunId(),
             'source' => $source,
             'revision_lineage' => $revisionLineage,
@@ -263,7 +263,7 @@ class IntegrityAuditLog extends Model
             fieldDifferences: $fieldDifferences,
             mirrorSnapshot: $mirror->data_json,
             chainSnapshot: $chainSnapshot,
-            mirrorId: $mirror->id,
+            recordId: $mirror->id,
             runId: $runId,
             source: $source,
             revisionNumber: $mirror->revision_number,

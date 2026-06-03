@@ -1,4 +1,3 @@
-import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
@@ -22,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
+import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Database, Fingerprint, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
