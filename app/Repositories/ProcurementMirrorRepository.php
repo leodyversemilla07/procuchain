@@ -188,7 +188,7 @@ class ProcurementMirrorRepository
     /**
      * Find multiple procurements by PR numbers from mirror (batch fetch).
      *
-     * @param array<string> $prNumbers
+     * @param  array<string>  $prNumbers
      * @return array<string, ProcurementData|null>
      */
     public function findManyByProcurement(array $prNumbers): array

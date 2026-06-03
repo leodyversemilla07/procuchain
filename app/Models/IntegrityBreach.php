@@ -37,6 +37,7 @@ class IntegrityBreach extends Model
 
     /** No timestamps — use synced_at instead. */
     const CREATED_AT = null;
+
     const UPDATED_AT = null;
 
     /** @var list<string> */
@@ -49,30 +50,30 @@ class IntegrityBreach extends Model
      */
     protected function casts(): array
     {
-    return [
-    'data_json' => 'array',
-    'breach_data' => 'array',
-    'blocktime' => 'datetime',
-    'verified_at' => 'datetime',
-    'breach_detected_at' => 'datetime',
-    'repaired_at' => 'datetime',
-    'synced_at' => 'datetime',
-    'is_authorized' => 'boolean',
-    'revision_number' => 'integer',
-    'revision_depth' => 'integer',
-    ];
+        return [
+            'data_json' => 'array',
+            'breach_data' => 'array',
+            'blocktime' => 'datetime',
+            'verified_at' => 'datetime',
+            'breach_detected_at' => 'datetime',
+            'repaired_at' => 'datetime',
+            'synced_at' => 'datetime',
+            'is_authorized' => 'boolean',
+            'revision_number' => 'integer',
+            'revision_depth' => 'integer',
+        ];
     }
 
     /**
-    * The accessors to append to the model's array form.
-    *
-    * @var list<string>
-    */
+     * The accessors to append to the model's array form.
+     *
+     * @var list<string>
+     */
     protected $appends = ['is_latest_revision'];
 
     /**
-    * Boot the model and apply the global scope for breached records.
-    */
+     * Boot the model and apply the global scope for breached records.
+     */
     protected static function booted(): void
     {
         static::addGlobalScope('breached', function (Builder $builder): void {
@@ -113,33 +114,33 @@ class IntegrityBreach extends Model
     }
 
     /**
-    * Check if this breach has been resolved.
-    */
+     * Check if this breach has been resolved.
+     */
     public function isResolved(): bool
     {
-    return $this->repaired_at !== null;
+        return $this->repaired_at !== null;
     }
 
     /**
-    * Determine if this record is the latest revision for its stream+key.
-    * A record is the latest revision if no other mirror row for the same
-    * stream+key has a higher revision_number.
-    */
+     * Determine if this record is the latest revision for its stream+key.
+     * A record is the latest revision if no other mirror row for the same
+     * stream+key has a higher revision_number.
+     */
     public function getIsLatestRevisionAttribute(): bool
     {
-    if ($this->revision_number === null) {
-    return true;
-    }
+        if ($this->revision_number === null) {
+            return true;
+        }
 
-    return ! ProcurementMirror::where('stream', $this->stream)
-    ->where('stream_key', $this->stream_key)
-    ->where('revision_number', '>', $this->revision_number)
-    ->exists();
+        return ! ProcurementMirror::where('stream', $this->stream)
+            ->where('stream_key', $this->stream_key)
+            ->where('revision_number', '>', $this->revision_number)
+            ->exists();
     }
 
     /**
-    * Get the severity level based on breach type.
-    */
+     * Get the severity level based on breach type.
+     */
     public function severity(): string
     {
         return match ($this->breach_type) {

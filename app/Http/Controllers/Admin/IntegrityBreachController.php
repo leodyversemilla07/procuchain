@@ -177,7 +177,7 @@ class IntegrityBreachController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->back()->with('error', 'Failed to repair breach: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to repair breach: '.$e->getMessage());
         }
     }
 
@@ -210,7 +210,7 @@ class IntegrityBreachController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->back()->with('error', 'Failed to repair PR: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to repair PR: '.$e->getMessage());
         }
     }
 
@@ -230,13 +230,13 @@ class IntegrityBreachController extends Controller
             : 0;
 
             return response()->json([
-            'success' => true,
-            'run_id' => $result['run_id'],
-            'verified' => $result['verified'],
-            'breach_count' => $breachCount,
-            'violations' => $result['violations'],
-            'restored' => $result['restored'],
-            'failed' => $result['failed'],
+                'success' => true,
+                'run_id' => $result['run_id'],
+                'verified' => $result['verified'],
+                'breach_count' => $breachCount,
+                'violations' => $result['violations'],
+                'restored' => $result['restored'],
+                'failed' => $result['failed'],
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -262,13 +262,13 @@ class IntegrityBreachController extends Controller
             : 0;
 
             return response()->json([
-            'success' => true,
-            'run_id' => $result['run_id'],
-            'verified' => $result['verified'],
-            'breach_count' => $breachCount,
-            'violations' => $result['violations'],
-            'restored' => $result['restored'],
-            'failed' => $result['failed'],
+                'success' => true,
+                'run_id' => $result['run_id'],
+                'verified' => $result['verified'],
+                'breach_count' => $breachCount,
+                'violations' => $result['violations'],
+                'restored' => $result['restored'],
+                'failed' => $result['failed'],
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -322,51 +322,51 @@ class IntegrityBreachController extends Controller
     // ═══════════════════════════════════════════════════════════════════
 
     /**
-    * Render the Integrity Audit Logs Inertia page.
-    */
+     * Render the Integrity Audit Logs Inertia page.
+     */
     public function auditLogsPage(): Response
     {
-    $this->authorize('view-audit-log');
+        $this->authorize('view-audit-log');
 
-    $violationTypes = [
-    'hash_mismatch' => 'Hash Mismatch',
-    'content_mismatch' => 'Content Mismatch',
-    'user_address_tampered' => 'Address Tampered',
-    'unauthorized_publisher' => 'Unauthorized Publisher',
-    'row_deleted' => 'Row Deleted',
-    ];
+        $violationTypes = [
+            'hash_mismatch' => 'Hash Mismatch',
+            'content_mismatch' => 'Content Mismatch',
+            'user_address_tampered' => 'Address Tampered',
+            'unauthorized_publisher' => 'Unauthorized Publisher',
+            'row_deleted' => 'Row Deleted',
+        ];
 
-    $recoveryStatuses = [
-    'pending' => 'Pending',
-    'restored' => 'Restored',
-    'failed' => 'Failed',
-    'skipped' => 'Skipped',
-    ];
+        $recoveryStatuses = [
+            'pending' => 'Pending',
+            'restored' => 'Restored',
+            'failed' => 'Failed',
+            'skipped' => 'Skipped',
+        ];
 
-    $severityLevels = [
-    'critical' => 'Critical',
-    'high' => 'High',
-    'medium' => 'Medium',
-    'low' => 'Low',
-    ];
+        $severityLevels = [
+            'critical' => 'Critical',
+            'high' => 'High',
+            'medium' => 'Medium',
+            'low' => 'Low',
+        ];
 
-    $sources = [
-    'scheduled' => 'Scheduled',
-    'manual' => 'Manual',
-    'api' => 'API',
-    ];
+        $sources = [
+            'scheduled' => 'Scheduled',
+            'manual' => 'Manual',
+            'api' => 'API',
+        ];
 
-    return Inertia::render('admin/integrity-audit-logs', [
-    'violationTypes' => $violationTypes,
-    'recoveryStatuses' => $recoveryStatuses,
-    'severityLevels' => $severityLevels,
-    'sources' => $sources,
-    ]);
+        return Inertia::render('admin/integrity-audit-logs', [
+            'violationTypes' => $violationTypes,
+            'recoveryStatuses' => $recoveryStatuses,
+            'severityLevels' => $severityLevels,
+            'sources' => $sources,
+        ]);
     }
 
     /**
-    * List integrity audit logs with filtering and pagination (JSON API).
-    */
+     * List integrity audit logs with filtering and pagination (JSON API).
+     */
     public function auditLogsIndex(Request $request): JsonResponse
     {
         $this->authorize('view-audit-log');

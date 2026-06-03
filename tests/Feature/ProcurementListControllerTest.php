@@ -5,11 +5,8 @@ use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementArchiveRepository;
 use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
-use App\Repositories\StatusRepository;
 use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
@@ -388,29 +385,30 @@ function bindProcurementControllerMocks(
 
     $mirrorRepository = mock(ProcurementMirrorRepository::class);
     $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
-    ->zeroOrMoreTimes()
-    ->andReturnUsing(function () use ($listStatusFixtures): array {
-    $items = statusStreamItems($listStatusFixtures);
-    return array_map(fn ($item) => StatusData::fromBlockchainArray($item['data']['json']), $items);
-    });
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function () use ($listStatusFixtures): array {
+            $items = statusStreamItems($listStatusFixtures);
+
+            return array_map(fn ($item) => StatusData::fromBlockchainArray($item['data']['json']), $items);
+        });
     $mirrorRepository->shouldReceive('getAllDocuments')
-    ->zeroOrMoreTimes()
-    ->andReturn([]);
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
     $mirrorRepository->shouldReceive('findManyByProcurement')
-    ->zeroOrMoreTimes()
-    ->andReturn([]);
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
     $mirrorRepository->shouldReceive('getArchivedPrNumbers')
-    ->zeroOrMoreTimes()
-    ->andReturn([]);
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
     $mirrorRepository->shouldReceive('procurementExists')
-    ->zeroOrMoreTimes()
-    ->andReturn(false);
+        ->zeroOrMoreTimes()
+        ->andReturn(false);
 
     $aggregator = new ProcurementListAggregatorService(
-    $mirrorRepository,
-    new ProcurementFormatterService,
-    new ProcurementActionService($repository),
-    new UserNameResolverService(app(UserService::class)),
+        $mirrorRepository,
+        new ProcurementFormatterService,
+        new ProcurementActionService($repository),
+        new UserNameResolverService(app(UserService::class)),
     );
 
     $correctionRepository = mock(ProcurementCorrectionRepositoryInterface::class);

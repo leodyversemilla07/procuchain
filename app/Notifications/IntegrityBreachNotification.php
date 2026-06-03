@@ -43,12 +43,12 @@ class IntegrityBreachNotification extends Notification
     ];
 
     /**
-     * @param string $breachType The breach type (BreachTypeEnums value)
-     * @param string $stream The blockchain stream where the breach was detected
-     * @param string $streamKey The stream key (e.g. PR number)
-     * @param string $txid The transaction ID
-     * @param array $breachData Additional context about the breach
-     * @param int|null $mirrorId The procurement_mirror record ID
+     * @param  string  $breachType  The breach type (BreachTypeEnums value)
+     * @param  string  $stream  The blockchain stream where the breach was detected
+     * @param  string  $streamKey  The stream key (e.g. PR number)
+     * @param  string  $txid  The transaction ID
+     * @param  array  $breachData  Additional context about the breach
+     * @param  int|null  $mirrorId  The procurement_mirror record ID
      */
     public function __construct(
         private readonly string $breachType,
@@ -84,7 +84,7 @@ class IntegrityBreachNotification extends Notification
             ->greeting("Hello {$notifiable->name},")
             ->line('A data integrity breach has been detected in the procurement mirror system.')
             ->line("**Breach Type:** {$displayName}")
-            ->line("**Severity:** " . ucfirst($severity))
+            ->line('**Severity:** '.ucfirst($severity))
             ->line("**Stream:** {$this->stream}")
             ->line("**PR Number:** {$this->streamKey}")
             ->line("**Transaction ID:** `{$this->txid}`");
@@ -104,7 +104,7 @@ class IntegrityBreachNotification extends Notification
         }
 
         $mail->action('View Integrity Breaches', route('admin.integrity-breaches.index'))
-            ->line('Run `php artisan blockchain:repair ' . $this->streamKey . '` to auto-repair from the blockchain.');
+            ->line('Run `php artisan blockchain:repair '.$this->streamKey.'` to auto-repair from the blockchain.');
 
         return $mail;
     }
@@ -115,7 +115,7 @@ class IntegrityBreachNotification extends Notification
 
         return new DatabaseMessage([
             'title' => "Integrity Breach: {$displayName}",
-            'message' => "Breach detected in {$this->stream} for PR {$this->streamKey}. Severity: " . ucfirst($this->severity()),
+            'message' => "Breach detected in {$this->stream} for PR {$this->streamKey}. Severity: ".ucfirst($this->severity()),
             'breach_type' => $this->breachType,
             'stream' => $this->stream,
             'stream_key' => $this->streamKey,

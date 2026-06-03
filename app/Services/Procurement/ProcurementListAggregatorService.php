@@ -27,10 +27,10 @@ use Illuminate\Support\Facades\Log;
 final class ProcurementListAggregatorService
 {
     public function __construct(
-    private readonly ProcurementMirrorRepository $mirrorRepository,
-    private readonly ProcurementFormatterService $formatter,
-    private readonly ProcurementActionService $actionService,
-    private readonly UserNameResolverService $userNameResolver,
+        private readonly ProcurementMirrorRepository $mirrorRepository,
+        private readonly ProcurementFormatterService $formatter,
+        private readonly ProcurementActionService $actionService,
+        private readonly UserNameResolverService $userNameResolver,
     ) {}
 
     /**
@@ -114,21 +114,21 @@ final class ProcurementListAggregatorService
      */
     private function fetchStatusItems(): Collection
     {
-    $statusLimit = 50;
+        $statusLimit = 50;
 
-    Log::info('Fetching with limits', ['status_limit' => $statusLimit]);
+        Log::info('Fetching with limits', ['status_limit' => $statusLimit]);
 
-    try {
-    // Read from mirror (MySQL) first — 50x faster than blockchain RPC.
-    // Falls back to blockchain automatically on mirror miss.
-    return collect($this->mirrorRepository->getLatestStatusByProcurement($statusLimit));
-    } catch (\Exception $e) {
-    Log::error('Failed to fetch status items, returning empty', [
-    'error' => $e->getMessage(),
-    ]);
+        try {
+            // Read from mirror (MySQL) first — 50x faster than blockchain RPC.
+            // Falls back to blockchain automatically on mirror miss.
+            return collect($this->mirrorRepository->getLatestStatusByProcurement($statusLimit));
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch status items, returning empty', [
+                'error' => $e->getMessage(),
+            ]);
 
-    return collect();
-    }
+            return collect();
+        }
     }
 
     /**
@@ -138,21 +138,21 @@ final class ProcurementListAggregatorService
      */
     private function buildDocumentCountMap(): array
     {
-    // Use a limit large enough to cover all documents across all procurements.
-    // The procurement.documents stream may have hundreds of items (376+ as of May 2026);
-    // fetching only 100 (the previous default) missed items for older procurements,
-    // causing "Completed" ones to show document_count: 0.
-    $documentLimit = 5000;
+        // Use a limit large enough to cover all documents across all procurements.
+        // The procurement.documents stream may have hundreds of items (376+ as of May 2026);
+        // fetching only 100 (the previous default) missed items for older procurements,
+        // causing "Completed" ones to show document_count: 0.
+        $documentLimit = 5000;
 
-    try {
-    // Read from mirror (MySQL) first — falls back to blockchain on miss.
-    $documentDtos = $this->mirrorRepository->getAllDocuments($documentLimit);
-    } catch (\Exception $e) {
-    Log::warning('Failed to fetch documents, continuing without document counts', [
-    'error' => $e->getMessage(),
-    ]);
-    $documentDtos = [];
-    }
+        try {
+            // Read from mirror (MySQL) first — falls back to blockchain on miss.
+            $documentDtos = $this->mirrorRepository->getAllDocuments($documentLimit);
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch documents, continuing without document counts', [
+                'error' => $e->getMessage(),
+            ]);
+            $documentDtos = [];
+        }
 
         // Count unique document types per procurement (not raw record count)
         // to avoid inflating counts from duplicates or re-uploads
@@ -179,10 +179,10 @@ final class ProcurementListAggregatorService
      */
     private function buildProcurementModeMap(Collection $statusItems): array
     {
-    try {
-    $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
-    // Read from mirror (MySQL) first — falls back to blockchain on miss.
-    $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
+        try {
+            $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
+            // Read from mirror (MySQL) first — falls back to blockchain on miss.
+            $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
 
             $modeMap = [];
             foreach ($procurements as $prNumber => $procurement) {
@@ -218,9 +218,9 @@ final class ProcurementListAggregatorService
      */
     private function filterByArchiveStatus(Collection $statusItems, bool $archived): Collection
     {
-    try {
-    // Read from mirror (MySQL) first — falls back to blockchain on miss.
-    $archivedPrNumbers = $this->mirrorRepository->getArchivedPrNumbers();
+        try {
+            // Read from mirror (MySQL) first — falls back to blockchain on miss.
+            $archivedPrNumbers = $this->mirrorRepository->getArchivedPrNumbers();
         } catch (\Exception $e) {
             Log::warning('Failed to fetch archived procurements list', ['error' => $e->getMessage()]);
             $archivedPrNumbers = [];
@@ -260,13 +260,13 @@ final class ProcurementListAggregatorService
         }
 
         try {
-        // Read from mirror (MySQL) first — falls back to blockchain on miss.
-        $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
+            // Read from mirror (MySQL) first — falls back to blockchain on miss.
+            $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
         } catch (\Exception $e) {
-        Log::error('Failed to fetch procurement metadata for filtering, showing all', [
-        'error' => $e->getMessage(),
-        ]);
-        $procurements = [];
+            Log::error('Failed to fetch procurement metadata for filtering, showing all', [
+                'error' => $e->getMessage(),
+            ]);
+            $procurements = [];
         }
 
         $allowedPrNumbers = [];

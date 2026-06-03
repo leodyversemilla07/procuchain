@@ -20,14 +20,14 @@ import { Head, router } from '@inertiajs/react';
 import { Blocks, Database, RefreshCw } from 'lucide-react';
 
 const tabOptions = [
-  { value: 'overview', label: 'Overview', icon: Blocks },
-  { value: 'blocks', label: 'Blocks', icon: Blocks },
-  { value: 'streams', label: 'Streams', icon: Blocks },
-  { value: 'addresses', label: 'Addresses', icon: Blocks },
-  { value: 'peers', label: 'Peers', icon: Blocks },
-  { value: 'search', label: 'Search', icon: Blocks },
-  { value: 'health', label: 'Health', icon: Blocks },
-  { value: 'mirror', label: 'Mirror Status', icon: Database },
+    { value: 'overview', label: 'Overview', icon: Blocks },
+    { value: 'blocks', label: 'Blocks', icon: Blocks },
+    { value: 'streams', label: 'Streams', icon: Blocks },
+    { value: 'addresses', label: 'Addresses', icon: Blocks },
+    { value: 'peers', label: 'Peers', icon: Blocks },
+    { value: 'search', label: 'Search', icon: Blocks },
+    { value: 'health', label: 'Health', icon: Blocks },
+    { value: 'mirror', label: 'Mirror Status', icon: Database },
 ] as const;
 
 interface BlockchainExplorerProps {
@@ -190,17 +190,17 @@ export default function BlockchainExplorer({
                             onTogglePeerExpansion={togglePeerExpansion}
                         />
                         <TabsContent value="health">
-                          <HealthTab
-                            health={health}
-                            isHealthy={isHealthy}
-                            isCircuitOpen={isCircuitOpen}
-                            isResetDialogOpen={isResetDialogOpen}
-                            setIsResetDialogOpen={setIsResetDialogOpen}
-                            handleResetCircuitBreaker={handleResetCircuitBreaker}
-                          />
+                            <HealthTab
+                                health={health}
+                                isHealthy={isHealthy}
+                                isCircuitOpen={isCircuitOpen}
+                                isResetDialogOpen={isResetDialogOpen}
+                                setIsResetDialogOpen={setIsResetDialogOpen}
+                                handleResetCircuitBreaker={handleResetCircuitBreaker}
+                            />
                         </TabsContent>
                         <TabsContent value="mirror">
-                          <MirrorStatusTab />
+                            <MirrorStatusTab />
                         </TabsContent>
                     </div>
                 </Tabs>

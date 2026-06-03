@@ -25,8 +25,8 @@ class UserRegistrationService
      * Called after a new user is created and assigned a role.
      * Publishes to user.registrations stream and mirrors to procurement_mirror.
      *
-     * @param User   $user         The newly registered user
-     * @param string $registeredBy Who initiated the registration
+     * @param  User  $user  The newly registered user
+     * @param  string  $registeredBy  Who initiated the registration
      */
     public function publishRegistration(User $user, string $registeredBy): void
     {
@@ -86,9 +86,9 @@ class UserRegistrationService
      * Publishes to user.registrations stream with change metadata
      * and mirrors to procurement_mirror.
      *
-     * @param User   $user        The user whose address changed
-     * @param string $oldAddress  The previous blockchain address
-     * @param string $changedBy   Who initiated the address change
+     * @param  User  $user  The user whose address changed
+     * @param  string  $oldAddress  The previous blockchain address
+     * @param  string  $changedBy  Who initiated the address change
      */
     public function publishAddressChange(User $user, string $oldAddress, string $changedBy): void
     {

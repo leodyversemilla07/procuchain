@@ -31,132 +31,131 @@ class BlockchainMirrorSyncService
      * Called AFTER a successful blockchain publish to reflect the on-chain
      * data in the procurement_mirror table.
      *
-     * @param string $stream           The blockchain stream name
-     * @param string $key              The stream key (e.g. PR number)
-     * @param string $txid             The transaction ID from the publish
-     * @param string $publisherAddress The blockchain address of the publisher
-     * @param int|null $blocktime      The block timestamp from the chain
-     * @param array $data              The JSON payload that was published
-     * @param bool $isAuthorized       Whether the publisher is an authorized user
-     *
+     * @param  string  $stream  The blockchain stream name
+     * @param  string  $key  The stream key (e.g. PR number)
+     * @param  string  $txid  The transaction ID from the publish
+     * @param  string  $publisherAddress  The blockchain address of the publisher
+     * @param  int|null  $blocktime  The block timestamp from the chain
+     * @param  array  $data  The JSON payload that was published
+     * @param  bool  $isAuthorized  Whether the publisher is an authorized user
      * @return ProcurementMirror The upserted mirror record
      */
     public function upstream(
-    string $stream,
-    string $key,
-    string $txid,
-    string $publisherAddress,
-    ?int $blocktime,
-    array $data,
-    bool $isAuthorized = true,
+        string $stream,
+        string $key,
+        string $txid,
+        string $publisherAddress,
+        ?int $blocktime,
+        array $data,
+        bool $isAuthorized = true,
     ): ProcurementMirror {
-    $dataHash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $dataHash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-    Log::info('BlockchainMirrorSync: upstream sync started', [
-    'stream' => $stream,
-    'key' => $key,
-    'txid' => $txid,
-    'publisher' => $publisherAddress,
-    'data_hash' => $dataHash,
-    ]);
+        Log::info('BlockchainMirrorSync: upstream sync started', [
+            'stream' => $stream,
+            'key' => $key,
+            'txid' => $txid,
+            'publisher' => $publisherAddress,
+            'data_hash' => $dataHash,
+        ]);
 
-    $existing = ProcurementMirror::where('stream', $stream)
-    ->where('stream_key', $key)
-    ->where('txid', $txid)
-    ->first();
+        $existing = ProcurementMirror::where('stream', $stream)
+            ->where('stream_key', $key)
+            ->where('txid', $txid)
+            ->first();
 
-    // ─── Revision Tracking ──────────────────────────────────────────
-    // For a new record (txid not yet in mirror), compute revision lineage:
-    // - Find the previous latest revision for this stream+key
-    // - revision_number = previous.revision_number + 1 (or 1 if root)
-    // - parent_txid = previous.txid (or null if root)
-    // - Demote the previous latest revision
-    $revisionNumber = 1;
-    $parentTxid = null;
-    $isLatest = true;
+        // ─── Revision Tracking ──────────────────────────────────────────
+        // For a new record (txid not yet in mirror), compute revision lineage:
+        // - Find the previous latest revision for this stream+key
+        // - revision_number = previous.revision_number + 1 (or 1 if root)
+        // - parent_txid = previous.txid (or null if root)
+        // - Demote the previous latest revision
+        $revisionNumber = 1;
+        $parentTxid = null;
+        $isLatest = true;
 
-    if ($existing === null) {
-    $previousLatest = ProcurementMirror::where('stream', $stream)
-    ->where('stream_key', $key)
-    ->where('is_latest_revision', true)
-    ->first();
+        if ($existing === null) {
+            $previousLatest = ProcurementMirror::where('stream', $stream)
+                ->where('stream_key', $key)
+                ->where('is_latest_revision', true)
+                ->first();
 
-    if ($previousLatest !== null) {
-    $revisionNumber = $previousLatest->revision_number + 1;
-    $parentTxid = $previousLatest->txid;
+            if ($previousLatest !== null) {
+                $revisionNumber = $previousLatest->revision_number + 1;
+                $parentTxid = $previousLatest->txid;
 
-    // Demote previous latest — this record is now the latest
-    $previousLatest->demoteAsLatest();
-    $previousLatest->save();
+                // Demote previous latest — this record is now the latest
+                $previousLatest->demoteAsLatest();
+                $previousLatest->save();
 
-    Log::info('BlockchainMirrorSync: demoted previous latest revision', [
-    'stream' => $stream,
-    'key' => $key,
-    'previous_txid' => $previousLatest->txid,
-    'previous_revision' => $previousLatest->revision_number,
-    'new_revision' => $revisionNumber,
-    ]);
-    }
-    } else {
-    // Existing record: preserve its revision metadata
-    $revisionNumber = $existing->revision_number;
-    $parentTxid = $existing->parent_txid;
-    $isLatest = $existing->is_latest_revision;
-    }
+                Log::info('BlockchainMirrorSync: demoted previous latest revision', [
+                    'stream' => $stream,
+                    'key' => $key,
+                    'previous_txid' => $previousLatest->txid,
+                    'previous_revision' => $previousLatest->revision_number,
+                    'new_revision' => $revisionNumber,
+                ]);
+            }
+        } else {
+            // Existing record: preserve its revision metadata
+            $revisionNumber = $existing->revision_number;
+            $parentTxid = $existing->parent_txid;
+            $isLatest = $existing->is_latest_revision;
+        }
 
-    $mirror = ProcurementMirror::updateOrCreate(
-    [
-    'stream' => $stream,
-    'stream_key' => $key,
-    'txid' => $txid,
-    ],
-    [
-    'revision_number' => $revisionNumber,
-    'parent_txid' => $parentTxid,
-    'is_latest_revision' => $isLatest,
-    'data_json' => $data,
-    'data_hash' => $dataHash,
-    'publisher_address' => $publisherAddress,
-    'blocktime' => $blocktime ? Carbon::createFromTimestamp($blocktime) : null,
-    'is_authorized' => $isAuthorized,
-    'synced_at' => Carbon::now(),
-    ],
-    );
+        $mirror = ProcurementMirror::updateOrCreate(
+            [
+                'stream' => $stream,
+                'stream_key' => $key,
+                'txid' => $txid,
+            ],
+            [
+                'revision_number' => $revisionNumber,
+                'parent_txid' => $parentTxid,
+                'is_latest_revision' => $isLatest,
+                'data_json' => $data,
+                'data_hash' => $dataHash,
+                'publisher_address' => $publisherAddress,
+                'blocktime' => $blocktime ? Carbon::createFromTimestamp($blocktime) : null,
+                'is_authorized' => $isAuthorized,
+                'synced_at' => Carbon::now(),
+            ],
+        );
 
-    // If the existing row had a breach that is now resolved
-    // (we're overwriting with confirmed chain data), mark it repaired
-    if ($existing && $existing->isBreached()) {
-    $mirror->markAsRepaired();
+        // If the existing row had a breach that is now resolved
+        // (we're overwriting with confirmed chain data), mark it repaired
+        if ($existing && $existing->isBreached()) {
+            $mirror->markAsRepaired();
 
-    Log::info('BlockchainMirrorSync: breach resolved during upstream sync', [
-    'stream' => $stream,
-    'key' => $key,
-    'txid' => $txid,
-    ]);
-    }
+            Log::info('BlockchainMirrorSync: breach resolved during upstream sync', [
+                'stream' => $stream,
+                'key' => $key,
+                'txid' => $txid,
+            ]);
+        }
 
-    // Notify if unauthorized publisher detected during upstream
-    if (! $isAuthorized) {
-    $this->notifyBreach(
-    'unauthorized_publisher',
-    $stream,
-    $key,
-    $txid,
-    ['publisher_address' => $publisherAddress],
-    $mirror->id,
-    );
-    }
+        // Notify if unauthorized publisher detected during upstream
+        if (! $isAuthorized) {
+            $this->notifyBreach(
+                'unauthorized_publisher',
+                $stream,
+                $key,
+                $txid,
+                ['publisher_address' => $publisherAddress],
+                $mirror->id,
+            );
+        }
 
-    Log::info('BlockchainMirrorSync: upstream sync completed', [
-    'stream' => $stream,
-    'key' => $key,
-    'txid' => $txid,
-    'mirror_id' => $mirror->id,
-    'revision_number' => $revisionNumber,
-    'parent_txid' => $parentTxid,
-    ]);
+        Log::info('BlockchainMirrorSync: upstream sync completed', [
+            'stream' => $stream,
+            'key' => $key,
+            'txid' => $txid,
+            'mirror_id' => $mirror->id,
+            'revision_number' => $revisionNumber,
+            'parent_txid' => $parentTxid,
+        ]);
 
-    return $mirror;
+        return $mirror;
     }
 
     /**
@@ -165,9 +164,8 @@ class BlockchainMirrorSyncService
      * Called during blockchain:sync command to pull all items from a
      * given stream and mirror them to the procurement_mirror table.
      *
-     * @param string $stream           The blockchain stream name
-     * @param callable|null $progressCallback  Optional callback(count, total) for progress reporting
-     *
+     * @param  string  $stream  The blockchain stream name
+     * @param  callable|null  $progressCallback  Optional callback(count, total) for progress reporting
      * @return int Count of synced items
      */
     public function downstream(string $stream, ?callable $progressCallback = null): int
@@ -264,8 +262,7 @@ class BlockchainMirrorSyncService
      * Iterates through all StreamEnums cases that are procurement streams
      * and calls downstream() for each.
      *
-     * @param callable|null $progressCallback  Optional callback(stream, count, total) for progress reporting
-     *
+     * @param  callable|null  $progressCallback  Optional callback(stream, count, total) for progress reporting
      * @return array<string, int> Array of [stream => synced_count]
      */
     public function syncAll(?callable $progressCallback = null): array
@@ -304,9 +301,8 @@ class BlockchainMirrorSyncService
      * Reads the chain data for a given PR number and upserts each item
      * to the mirror table, marking any existing breaches as repaired.
      *
-     * @param string $prNumber  The PR number to repair
-     * @param string|null $stream  If specified, only repair that stream. Otherwise repair all procurement streams.
-     *
+     * @param  string  $prNumber  The PR number to repair
+     * @param  string|null  $stream  If specified, only repair that stream. Otherwise repair all procurement streams.
      * @return int Count of repaired items
      */
     public function repairFromChain(string $prNumber, ?string $stream = null): int
@@ -430,67 +426,67 @@ class BlockchainMirrorSyncService
         ]);
 
         return $count;
-        }
+    }
 
-        /**
-        * Send breach notifications to relevant authorities.
-        *
-        * Notifies BAC Chairman, HOPE, and admins about detected integrity breaches.
-        * Failures in notification are caught and logged — they MUST never block sync.
-        *
-        * @param string $breachType The BreachTypeEnums value
-        * @param string $stream The blockchain stream
-        * @param string $key The stream key
-        * @param string $txid The transaction ID
-        * @param array $breachData Additional breach context
-        * @param int|null $mirrorId The mirror record ID
-        */
-        private function notifyBreach(
+    /**
+     * Send breach notifications to relevant authorities.
+     *
+     * Notifies BAC Chairman, HOPE, and admins about detected integrity breaches.
+     * Failures in notification are caught and logged — they MUST never block sync.
+     *
+     * @param  string  $breachType  The BreachTypeEnums value
+     * @param  string  $stream  The blockchain stream
+     * @param  string  $key  The stream key
+     * @param  string  $txid  The transaction ID
+     * @param  array  $breachData  Additional breach context
+     * @param  int|null  $mirrorId  The mirror record ID
+     */
+    private function notifyBreach(
         string $breachType,
         string $stream,
         string $key,
         string $txid,
         array $breachData = [],
         ?int $mirrorId = null,
-        ): void {
+    ): void {
         try {
-        $recipients = User::whereHas('roles', function ($query): void {
-        $query->whereIn('name', ['bac_chairman', 'hope', 'admin']);
-        })->get();
+            $recipients = User::whereHas('roles', function ($query): void {
+                $query->whereIn('name', ['bac_chairman', 'hope', 'admin']);
+            })->get();
 
-        if ($recipients->isEmpty()) {
-        Log::warning('BlockchainMirrorSync: no recipients for breach notification', [
-        'breach_type' => $breachType,
-        'stream' => $stream,
-        'key' => $key,
-        ]);
+            if ($recipients->isEmpty()) {
+                Log::warning('BlockchainMirrorSync: no recipients for breach notification', [
+                    'breach_type' => $breachType,
+                    'stream' => $stream,
+                    'key' => $key,
+                ]);
 
-        return;
-        }
+                return;
+            }
 
-        Notification::send($recipients, new IntegrityBreachNotification(
-        breachType: $breachType,
-        stream: $stream,
-        streamKey: $key,
-        txid: $txid,
-        breachData: $breachData,
-        mirrorId: $mirrorId,
-        ));
+            Notification::send($recipients, new IntegrityBreachNotification(
+                breachType: $breachType,
+                stream: $stream,
+                streamKey: $key,
+                txid: $txid,
+                breachData: $breachData,
+                mirrorId: $mirrorId,
+            ));
 
-        Log::info('BlockchainMirrorSync: breach notification sent', [
-        'breach_type' => $breachType,
-        'stream' => $stream,
-        'key' => $key,
-        'txid' => $txid,
-        'recipient_count' => $recipients->count(),
-        ]);
+            Log::info('BlockchainMirrorSync: breach notification sent', [
+                'breach_type' => $breachType,
+                'stream' => $stream,
+                'key' => $key,
+                'txid' => $txid,
+                'recipient_count' => $recipients->count(),
+            ]);
         } catch (\Exception $e) {
-        Log::error('BlockchainMirrorSync: failed to send breach notification', [
-        'breach_type' => $breachType,
-        'stream' => $stream,
-        'key' => $key,
-        'error' => $e->getMessage(),
-        ]);
+            Log::error('BlockchainMirrorSync: failed to send breach notification', [
+                'breach_type' => $breachType,
+                'stream' => $stream,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
         }
-        }
-        }
+    }
+}

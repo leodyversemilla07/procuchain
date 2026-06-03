@@ -324,17 +324,17 @@ class MultichainSetup extends Command
             $users = User::role($role)->get();
 
             foreach ($users as $user) {
-            	if ($user->blockchain_address !== $address) {
-            		$user->blockchain_address = $address;
-            		$user->save();
-            		$this->line("Updated blockchain address for {$user->email} ({$role})");
+                if ($user->blockchain_address !== $address) {
+                    $user->blockchain_address = $address;
+                    $user->save();
+                    $this->line("Updated blockchain address for {$user->email} ({$role})");
 
-            		// Publish user registration to blockchain
-            		app(UserRegistrationService::class)->publishRegistration(
-            			$user,
-            			'MultichainSetup',
-            		);
-            	}
+                    // Publish user registration to blockchain
+                    app(UserRegistrationService::class)->publishRegistration(
+                        $user,
+                        'MultichainSetup',
+                    );
+                }
             }
         }
     }

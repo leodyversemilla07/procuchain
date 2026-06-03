@@ -9,13 +9,13 @@ import { dashboard as adminDashboard } from '@/routes/admin';
 import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
 import adminAuditLog from '@/routes/admin/audit-log';
 import adminBlockchain from '@/routes/admin/blockchain';
+import adminIntegrityAuditLogs from '@/routes/admin/integrity-audit-logs';
+import adminIntegrityBreaches from '@/routes/admin/integrity-breaches';
 import { index as adminInvitations } from '@/routes/admin/invitations';
 import adminLoginLogs from '@/routes/admin/login-logs';
 import adminNetwork from '@/routes/admin/network';
 import { index as adminProcurementsList } from '@/routes/admin/procurements';
 import adminRecoverableData from '@/routes/admin/recoverable-data';
-import adminIntegrityBreaches from '@/routes/admin/integrity-breaches';
-import adminIntegrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { index as stageDocumentsIndex } from '@/routes/admin/stage-documents';
 import adminUsers from '@/routes/admin/users';
 import { index as workflowConfigIndex, preview as workflowPreview } from '@/routes/admin/workflow-config';
@@ -30,24 +30,24 @@ import { index as hopeProcurementsList } from '@/routes/hope/procurements';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
- BarChart3,
- Bell,
- Blocks,
- BookOpen,
- Database,
- Eye,
- FileText,
- GitBranch,
- LayoutGrid,
- Mail,
- ScrollText,
- Share2,
- Shield,
- ShieldAlert,
- ShieldOff,
- Table2,
- Upload,
- Users,
+    BarChart3,
+    Bell,
+    Blocks,
+    BookOpen,
+    Database,
+    Eye,
+    FileText,
+    GitBranch,
+    LayoutGrid,
+    Mail,
+    ScrollText,
+    Share2,
+    Shield,
+    ShieldAlert,
+    ShieldOff,
+    Table2,
+    Upload,
+    Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -211,21 +211,21 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         });
 
         items.push({
-        title: 'Blockchain Explorer',
-        href: adminBlockchain.explorer.index.url(),
-        icon: Blocks,
+            title: 'Blockchain Explorer',
+            href: adminBlockchain.explorer.index.url(),
+            icon: Blocks,
         });
 
         items.push({
-        title: 'Integrity Breaches',
-        href: adminIntegrityBreaches.index.url(),
-        icon: ShieldAlert,
+            title: 'Integrity Breaches',
+            href: adminIntegrityBreaches.index.url(),
+            icon: ShieldAlert,
         });
 
         items.push({
-        title: 'Integrity Audit Logs',
-        href: adminIntegrityAuditLogs.index.url(),
-        icon: ScrollText,
+            title: 'Integrity Audit Logs',
+            href: adminIntegrityAuditLogs.index.url(),
+            icon: ScrollText,
         });
 
         items.push({

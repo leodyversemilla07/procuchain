@@ -40,14 +40,14 @@ class DashboardService
     ];
 
     public function __construct(
-    private Manager $multichain,
-    private ProcurementMirrorRepository $mirrorRepository,
-    private EventRepository $eventRepository,
-    private DocumentRepository $documentRepository,
-    private UserService $userService,
-    private ProcurementRepository $procurementRepository,
-    private StatisticsCalculator $statisticsCalculator,
-    private ModeAnalyzer $modeAnalyzer
+        private Manager $multichain,
+        private ProcurementMirrorRepository $mirrorRepository,
+        private EventRepository $eventRepository,
+        private DocumentRepository $documentRepository,
+        private UserService $userService,
+        private ProcurementRepository $procurementRepository,
+        private StatisticsCalculator $statisticsCalculator,
+        private ModeAnalyzer $modeAnalyzer
     ) {}
 
     /**
@@ -386,7 +386,7 @@ class DashboardService
         $modeMap = [];
 
         try {
-        $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
+            $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
 
             foreach ($prNumbers as $prNumber) {
                 $procurement = $procurements[$prNumber] ?? null;

@@ -3,13 +3,9 @@
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementArchiveRepository;
 use App\Repositories\ProcurementMirrorRepository;
 use App\Repositories\ProcurementRepository;
-use App\Repositories\StatusRepository;
 use App\Services\DashboardCacheKeys;
-use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
@@ -124,48 +120,48 @@ it('builds distinct dashboard cache keys for scoped and unscoped access', functi
  */
 function buildIsolationAggregator(array $repositoryFixtures = [], array $statusFixtures = []): ProcurementListAggregatorService
 {
- $repository = mock(ProcurementRepository::class);
- $repository->shouldReceive('findManyByProcurement')
- ->zeroOrMoreTimes()
- ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
- $result = [];
- foreach ($prNumbers as $prNumber) {
- $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
- }
+    $repository = mock(ProcurementRepository::class);
+    $repository->shouldReceive('findManyByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
+            $result = [];
+            foreach ($prNumbers as $prNumber) {
+                $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
+            }
 
- return $result;
- });
+            return $result;
+        });
 
- $mirrorRepository = mock(ProcurementMirrorRepository::class);
- $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
- ->zeroOrMoreTimes()
- ->andReturn($statusFixtures);
- $mirrorRepository->shouldReceive('getAllDocuments')
- ->zeroOrMoreTimes()
- ->andReturn([]);
- $mirrorRepository->shouldReceive('findManyByProcurement')
- ->zeroOrMoreTimes()
- ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
- $result = [];
- foreach ($prNumbers as $prNumber) {
- $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
- }
+    $mirrorRepository = mock(ProcurementMirrorRepository::class);
+    $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturn($statusFixtures);
+    $mirrorRepository->shouldReceive('getAllDocuments')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $mirrorRepository->shouldReceive('findManyByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
+            $result = [];
+            foreach ($prNumbers as $prNumber) {
+                $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
+            }
 
- return $result;
- });
- $mirrorRepository->shouldReceive('getArchivedPrNumbers')
- ->zeroOrMoreTimes()
- ->andReturn([]);
- $mirrorRepository->shouldReceive('procurementExists')
- ->zeroOrMoreTimes()
- ->andReturn(false);
+            return $result;
+        });
+    $mirrorRepository->shouldReceive('getArchivedPrNumbers')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $mirrorRepository->shouldReceive('procurementExists')
+        ->zeroOrMoreTimes()
+        ->andReturn(false);
 
- return new ProcurementListAggregatorService(
- $mirrorRepository,
- new ProcurementFormatterService,
- new ProcurementActionService($repository),
- new UserNameResolverService(app(UserService::class)),
- );
+    return new ProcurementListAggregatorService(
+        $mirrorRepository,
+        new ProcurementFormatterService,
+        new ProcurementActionService($repository),
+        new UserNameResolverService(app(UserService::class)),
+    );
 }
 
 function isolationProcurementFixture(string $prNumber, string $userId): ProcurementData

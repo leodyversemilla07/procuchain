@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -41,6 +42,7 @@ class ProcurementMirror extends Model
 
     /** No timestamps — use synced_at instead. */
     const CREATED_AT = null;
+
     const UPDATED_AT = null;
 
     /** @var list<string> */
@@ -162,7 +164,7 @@ class ProcurementMirror extends Model
     /**
      * Get all revisions for the same stream key, ordered by revision number.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getRevisionHistory()
     {
@@ -281,8 +283,8 @@ class ProcurementMirror extends Model
     /**
      * Mark this record as breached with the given type and supplementary data.
      *
-     * @param string $type The breach type (typically a BreachTypeEnums value)
-     * @param array $data Additional breach context data
+     * @param  string  $type  The breach type (typically a BreachTypeEnums value)
+     * @param  array  $data  Additional breach context data
      */
     public function markAsBreached(string $type, array $data): void
     {

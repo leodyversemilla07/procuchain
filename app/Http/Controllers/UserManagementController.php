@@ -109,8 +109,8 @@ class UserManagementController extends Controller
 
             // Publish user registration to blockchain
             app(UserRegistrationService::class)->publishRegistration(
-            	$user,
-            	auth()->user()?->name ?? 'System',
+                $user,
+                auth()->user()?->name ?? 'System',
             );
 
             Log::info('Admin created new user', [
@@ -163,11 +163,11 @@ class UserManagementController extends Controller
             $user->update($updateData);
 
             if ($user->wasChanged('blockchain_address')) {
-            	app(UserRegistrationService::class)->publishAddressChange(
-            		$user,
-            		$user->getOriginal('blockchain_address'),
-            		auth()->user()?->name ?? 'System',
-            	);
+                app(UserRegistrationService::class)->publishAddressChange(
+                    $user,
+                    $user->getOriginal('blockchain_address'),
+                    auth()->user()?->name ?? 'System',
+                );
             }
 
             if (! empty($validated['password'])) {

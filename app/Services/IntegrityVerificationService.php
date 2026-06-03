@@ -39,13 +39,16 @@ use Illuminate\Support\Facades\Notification;
 class IntegrityVerificationService
 {
     private string $runId;
+
     private string $source;
 
     /** @var array<string, int> Violation counts by type */
     private array $violationCounts = [];
 
     private int $verifiedCount = 0;
+
     private int $restoredCount = 0;
+
     private int $failedCount = 0;
 
     public function __construct(
@@ -63,8 +66,8 @@ class IntegrityVerificationService
      * Phase 2: Detect missing rows (on chain but not in mirror)
      * Phase 3: Auto-repair detected violations
      *
-     * @param bool $autoRepair Whether to automatically restore from blockchain
-     * @param string $source Source label: 'scheduled', 'manual', 'read_time'
+     * @param  bool  $autoRepair  Whether to automatically restore from blockchain
+     * @param  string  $source  Source label: 'scheduled', 'manual', 'read_time'
      * @return array{run_id: string, verified: int, violations: array<string, int>, restored: int, failed: int}
      */
     public function verifyAndRepair(bool $autoRepair = false, string $source = 'scheduled'): array
@@ -152,12 +155,12 @@ class IntegrityVerificationService
             $fieldDiffs = $this->computeFieldDifferences($mirror->data_json, []);
 
             $auditLog = IntegrityAuditLog::recordViolationFromMirror(
-            mirror: $mirror,
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
-            fieldDifferences: $fieldDiffs,
-            chainSnapshot: null, // Don't hit chain on read
-            runId: $this->runId,
-            source: 'read_time',
+                mirror: $mirror,
+                violationType: BreachTypeEnums::HASH_MISMATCH->value,
+                fieldDifferences: $fieldDiffs,
+                chainSnapshot: null, // Don't hit chain on read
+                runId: $this->runId,
+                source: 'read_time',
             );
 
             if (! $mirror->isBreached()) {
@@ -184,10 +187,10 @@ class IntegrityVerificationService
             }
 
             $auditLog = IntegrityAuditLog::recordViolationFromMirror(
-            mirror: $mirror,
-            violationType: BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value,
-            runId: $this->runId,
-            source: 'read_time',
+                mirror: $mirror,
+                violationType: BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value,
+                runId: $this->runId,
+                source: 'read_time',
             );
 
             $this->notifyBreach(BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value, $mirror->stream, $mirror->stream_key, $mirror->txid);
@@ -207,7 +210,7 @@ class IntegrityVerificationService
     /**
      * Restore a specific violation from the blockchain.
      *
-     * @param IntegrityAuditLog $auditLog The violation to restore
+     * @param  IntegrityAuditLog  $auditLog  The violation to restore
      * @return array{success: bool, items_restored: int, error: ?string}
      */
     public function restoreViolation(IntegrityAuditLog $auditLog): array
@@ -301,9 +304,9 @@ class IntegrityVerificationService
         $bar = null; // Progress tracking for CLI
 
         ProcurementMirror::chunk(200, function ($mirrors) use ($autoRepair) {
-        foreach ($mirrors as $mirror) {
-        $this->verifyAndCompareMirrorRow($mirror, $autoRepair);
-        }
+            foreach ($mirrors as $mirror) {
+                $this->verifyAndCompareMirrorRow($mirror, $autoRepair);
+            }
         });
     }
 
@@ -332,12 +335,12 @@ class IntegrityVerificationService
                 : [];
 
             $auditLog = IntegrityAuditLog::recordViolationFromMirror(
-            mirror: $mirror,
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
-            fieldDifferences: $fieldDiffs,
-            chainSnapshot: $chainData,
-            runId: $this->runId,
-            source: $this->source,
+                mirror: $mirror,
+                violationType: BreachTypeEnums::HASH_MISMATCH->value,
+                fieldDifferences: $fieldDiffs,
+                chainSnapshot: $chainData,
+                runId: $this->runId,
+                source: $this->source,
             );
 
             $this->incrementViolation(BreachTypeEnums::HASH_MISMATCH->value);
@@ -374,16 +377,16 @@ class IntegrityVerificationService
             $fieldDiffs = $this->computeFieldDifferences($mirror->data_json, $chainData);
 
             if (! empty($fieldDiffs)) {
-            $auditLog = IntegrityAuditLog::recordViolationFromMirror(
-            mirror: $mirror,
-            violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
-            fieldDifferences: $fieldDiffs,
-            chainSnapshot: $chainData,
-            runId: $this->runId,
-            source: $this->source,
-            );
+                $auditLog = IntegrityAuditLog::recordViolationFromMirror(
+                    mirror: $mirror,
+                    violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+                    fieldDifferences: $fieldDiffs,
+                    chainSnapshot: $chainData,
+                    runId: $this->runId,
+                    source: $this->source,
+                );
 
-            $this->incrementViolation(BreachTypeEnums::CONTENT_MISMATCH->value);
+                $this->incrementViolation(BreachTypeEnums::CONTENT_MISMATCH->value);
 
                 if (! $mirror->isBreached()) {
                     $mirror->markAsBreached(BreachTypeEnums::CONTENT_MISMATCH->value, [
@@ -412,10 +415,10 @@ class IntegrityVerificationService
             $mirror->update(['is_authorized' => false]);
 
             $auditLog = IntegrityAuditLog::recordViolationFromMirror(
-            mirror: $mirror,
-            violationType: BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value,
-            runId: $this->runId,
-            source: $this->source,
+                mirror: $mirror,
+                violationType: BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value,
+                runId: $this->runId,
+                source: $this->source,
             );
 
             $this->incrementViolation(BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value);
@@ -533,28 +536,28 @@ class IntegrityVerificationService
             ->exists();
 
         if (! $exists) {
-        $chainData = $item['data']['json'] ?? [];
+            $chainData = $item['data']['json'] ?? [];
 
-        // Look up the latest revision for this stream+key to determine revision context.
-        // If the row was deleted, there may still be older revisions in the mirror.
-        $latestExisting = ProcurementMirror::where('stream', $stream)
-        ->where('stream_key', $key)
-        ->orderByDesc('revision_number')
-        ->first();
+            // Look up the latest revision for this stream+key to determine revision context.
+            // If the row was deleted, there may still be older revisions in the mirror.
+            $latestExisting = ProcurementMirror::where('stream', $stream)
+                ->where('stream_key', $key)
+                ->orderByDesc('revision_number')
+                ->first();
 
-        $auditLog = IntegrityAuditLog::recordViolation(
-        stream: $stream,
-        streamKey: $key,
-        violationType: BreachTypeEnums::ROW_DELETED->value,
-        txid: $txid,
-        chainSnapshot: is_array($chainData) ? $chainData : [],
-        runId: $this->runId,
-        source: $this->source,
-        revisionNumber: $latestExisting?->revision_number,
-        parentTxid: $latestExisting?->parent_txid,
-        );
+            $auditLog = IntegrityAuditLog::recordViolation(
+                stream: $stream,
+                streamKey: $key,
+                violationType: BreachTypeEnums::ROW_DELETED->value,
+                txid: $txid,
+                chainSnapshot: is_array($chainData) ? $chainData : [],
+                runId: $this->runId,
+                source: $this->source,
+                revisionNumber: $latestExisting?->revision_number,
+                parentTxid: $latestExisting?->parent_txid,
+            );
 
-        $this->incrementViolation(BreachTypeEnums::ROW_DELETED->value);
+            $this->incrementViolation(BreachTypeEnums::ROW_DELETED->value);
 
             Log::warning('IntegrityVerification: deleted row detected', [
                 'stream' => $stream,
@@ -627,25 +630,25 @@ class IntegrityVerificationService
 
             // Check: user deleted from MySQL but registration exists on chain
             if (! $user) {
-            // Look up mirror revision context for this user registration
-            $userMirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
-            ->where('stream_key', (string) $userId)
-            ->orderByDesc('revision_number')
-            ->first();
+                // Look up mirror revision context for this user registration
+                $userMirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
+                    ->where('stream_key', (string) $userId)
+                    ->orderByDesc('revision_number')
+                    ->first();
 
-            $auditLog = IntegrityAuditLog::recordViolation(
-            stream: StreamEnums::USER_REGISTRATIONS->value,
-            streamKey: (string) $userId,
-            violationType: BreachTypeEnums::ROW_DELETED->value,
-            txid: $item['txid'] ?? '',
-            chainSnapshot: $data,
-            runId: $this->runId,
-            source: $this->source,
-            revisionNumber: $userMirror?->revision_number,
-            parentTxid: $userMirror?->parent_txid,
-            );
+                $auditLog = IntegrityAuditLog::recordViolation(
+                    stream: StreamEnums::USER_REGISTRATIONS->value,
+                    streamKey: (string) $userId,
+                    violationType: BreachTypeEnums::ROW_DELETED->value,
+                    txid: $item['txid'] ?? '',
+                    chainSnapshot: $data,
+                    runId: $this->runId,
+                    source: $this->source,
+                    revisionNumber: $userMirror?->revision_number,
+                    parentTxid: $userMirror?->parent_txid,
+                );
 
-            $this->incrementViolation(BreachTypeEnums::ROW_DELETED->value);
+                $this->incrementViolation(BreachTypeEnums::ROW_DELETED->value);
 
                 $this->notifyBreach(BreachTypeEnums::ROW_DELETED->value, StreamEnums::USER_REGISTRATIONS->value, (string) $userId, $item['txid'] ?? '');
 
@@ -657,33 +660,33 @@ class IntegrityVerificationService
 
             // Check: blockchain_address tampered in MySQL
             if ($user->blockchain_address !== $chainAddress) {
-            $fieldDiffs = [[
-            'field' => 'blockchain_address',
-            'old_value' => $chainAddress,
-            'new_value' => $user->blockchain_address,
-            ]];
+                $fieldDiffs = [[
+                    'field' => 'blockchain_address',
+                    'old_value' => $chainAddress,
+                    'new_value' => $user->blockchain_address,
+                ]];
 
-            // Look up mirror revision context for this user registration
-            $userMirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
-            ->where('stream_key', (string) $userId)
-            ->orderByDesc('revision_number')
-            ->first();
+                // Look up mirror revision context for this user registration
+                $userMirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
+                    ->where('stream_key', (string) $userId)
+                    ->orderByDesc('revision_number')
+                    ->first();
 
-            $auditLog = IntegrityAuditLog::recordViolation(
-            stream: StreamEnums::USER_REGISTRATIONS->value,
-            streamKey: (string) $userId,
-            violationType: BreachTypeEnums::USER_ADDRESS_TAMPERED->value,
-            txid: $item['txid'] ?? '',
-            fieldDifferences: $fieldDiffs,
-            mirrorSnapshot: ['blockchain_address' => $user->blockchain_address],
-            chainSnapshot: ['blockchain_address' => $chainAddress],
-            runId: $this->runId,
-            source: $this->source,
-            revisionNumber: $userMirror?->revision_number,
-            parentTxid: $userMirror?->parent_txid,
-            );
+                $auditLog = IntegrityAuditLog::recordViolation(
+                    stream: StreamEnums::USER_REGISTRATIONS->value,
+                    streamKey: (string) $userId,
+                    violationType: BreachTypeEnums::USER_ADDRESS_TAMPERED->value,
+                    txid: $item['txid'] ?? '',
+                    fieldDifferences: $fieldDiffs,
+                    mirrorSnapshot: ['blockchain_address' => $user->blockchain_address],
+                    chainSnapshot: ['blockchain_address' => $chainAddress],
+                    runId: $this->runId,
+                    source: $this->source,
+                    revisionNumber: $userMirror?->revision_number,
+                    parentTxid: $userMirror?->parent_txid,
+                );
 
-            $this->incrementViolation(BreachTypeEnums::USER_ADDRESS_TAMPERED->value);
+                $this->incrementViolation(BreachTypeEnums::USER_ADDRESS_TAMPERED->value);
 
                 $this->notifyBreach(BreachTypeEnums::USER_ADDRESS_TAMPERED->value, StreamEnums::USER_REGISTRATIONS->value, (string) $userId, $item['txid'] ?? '');
 
@@ -719,8 +722,8 @@ class IntegrityVerificationService
      * - old_value: the blockchain (trusted) value
      * - new_value: the mirror (potentially tampered) value
      *
-     * @param array $mirrorData Current DB state
-     * @param array $chainData Blockchain state (trusted)
+     * @param  array  $mirrorData  Current DB state
+     * @param  array  $chainData  Blockchain state (trusted)
      * @return array<int, array{field: string, old_value: mixed, new_value: mixed}>
      */
     public function computeFieldDifferences(array $mirrorData, array $chainData): array

@@ -1,9 +1,8 @@
 <?php
 
-use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\DocumentData;
+use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\StreamEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
@@ -32,30 +31,30 @@ beforeEach(function () {
 
     // Default mock: return null for any batch procurement lookup (no mode info)
     $this->mirrorRepository
-    ->shouldReceive('findManyByProcurement')
-    ->andReturn([])
-    ->byDefault();
+        ->shouldReceive('findManyByProcurement')
+        ->andReturn([])
+        ->byDefault();
 
     // Default mock: return empty for events and documents
     $this->mirrorRepository
-    ->shouldReceive('findRecentEvents')
-    ->andReturn([])
-    ->byDefault();
+        ->shouldReceive('findRecentEvents')
+        ->andReturn([])
+        ->byDefault();
 
     $this->mirrorRepository
-    ->shouldReceive('getAllDocuments')
-    ->andReturn([])
-    ->byDefault();
+        ->shouldReceive('getAllDocuments')
+        ->andReturn([])
+        ->byDefault();
 
     $this->service = new DashboardService(
-    $this->manager,
-    $this->mirrorRepository,
-    $this->eventRepository,
-    $this->documentRepository,
-    $this->userService,
-    $this->procurementRepository,
-    new StatisticsCalculator,
-    new ModeAnalyzer
+        $this->manager,
+        $this->mirrorRepository,
+        $this->eventRepository,
+        $this->documentRepository,
+        $this->userService,
+        $this->procurementRepository,
+        new StatisticsCalculator,
+        new ModeAnalyzer
     );
 });
 describe('DashboardService', function () {
@@ -191,7 +190,7 @@ describe('DashboardService', function () {
             ]);
 
             $this->mirrorRepository
-                        ->shouldReceive('findManyByProcurement')
+                ->shouldReceive('findManyByProcurement')
                 ->with(['PR-001', 'PR-002'])
                 ->andReturn([
                     'PR-001' => $procurementOne,
@@ -536,9 +535,9 @@ describe('DashboardService', function () {
             );
 
             $this->mirrorRepository
-            	->shouldReceive('findRecentEvents')
-            	->with(16)
-            	->andReturn([$eventData]);
+                ->shouldReceive('findRecentEvents')
+                ->with(16)
+                ->andReturn([$eventData]);
 
             $result = $this->service->getRecentActivities();
 
@@ -564,9 +563,9 @@ describe('DashboardService', function () {
             );
 
             $this->mirrorRepository
-            	->shouldReceive('findRecentEvents')
-            	->with(16)
-            	->andReturn([$validEvent]);
+                ->shouldReceive('findRecentEvents')
+                ->with(16)
+                ->andReturn([$validEvent]);
 
             $result = $this->service->getRecentActivities();
 
@@ -575,17 +574,17 @@ describe('DashboardService', function () {
 
         test('it returns empty array when no events found', function () {
             $this->mirrorRepository
-            	->shouldReceive('findRecentEvents')
-            	->with(16)
-            	->andReturn([]);
+                ->shouldReceive('findRecentEvents')
+                ->with(16)
+                ->andReturn([]);
 
             $result = $this->service->getRecentActivities();
 
             expect($result)->toBeEmpty();
 
             Log::shouldHaveReceived('warning')
-            	->with('No events found in repository')
-            	->once();
+                ->with('No events found in repository')
+                ->once();
         });
 
         test('it sorts activities by timestamp descending', function () {
@@ -627,9 +626,9 @@ describe('DashboardService', function () {
             );
 
             $this->mirrorRepository
-            	->shouldReceive('findRecentEvents')
-            	->with(16)
-            	->andReturn([$event1, $event2, $event3]);
+                ->shouldReceive('findRecentEvents')
+                ->with(16)
+                ->andReturn([$event1, $event2, $event3]);
 
             $result = $this->service->getRecentActivities();
 
@@ -639,240 +638,240 @@ describe('DashboardService', function () {
         });
 
         test('it limits results to configured display limit', function () {
-        	// Generate more activities than display limit (8)
-        	$events = [];
-        	for ($i = 1; $i <= 15; $i++) {
-        		$events[] = new EventData(
-        			prNumber: "PR-{$i}",
-        			procurementTitle: "Procurement {$i}",
-        			stage: 'Pre-Procurement',
-        			eventType: 'test',
-        			category: 'test',
-        			severity: 'info',
-        			details: 'test',
-        			documentCount: 0,
-        			userAddress: '1ABC123XYZ',
-        			timestamp: Carbon::parse("2024-01-{$i}T10:00:00Z"),
-        		);
-        	}
+            // Generate more activities than display limit (8)
+            $events = [];
+            for ($i = 1; $i <= 15; $i++) {
+                $events[] = new EventData(
+                    prNumber: "PR-{$i}",
+                    procurementTitle: "Procurement {$i}",
+                    stage: 'Pre-Procurement',
+                    eventType: 'test',
+                    category: 'test',
+                    severity: 'info',
+                    details: 'test',
+                    documentCount: 0,
+                    userAddress: '1ABC123XYZ',
+                    timestamp: Carbon::parse("2024-01-{$i}T10:00:00Z"),
+                );
+            }
 
-        	$this->mirrorRepository
-        		->shouldReceive('findRecentEvents')
-        		->with(16)
-        		->andReturn($events);
+            $this->mirrorRepository
+                ->shouldReceive('findRecentEvents')
+                ->with(16)
+                ->andReturn($events);
 
-        	$result = $this->service->getRecentActivities();
+            $result = $this->service->getRecentActivities();
 
-        	expect($result)->toHaveCount(8); // Config default
+            expect($result)->toHaveCount(8); // Config default
         });
 
         test('it handles blockchain service exceptions', function () {
-        	$this->mirrorRepository
-        		->shouldReceive('findRecentEvents')
-        		->with(16)
-        		->andThrow(new Exception('Repository failed'));
+            $this->mirrorRepository
+                ->shouldReceive('findRecentEvents')
+                ->with(16)
+                ->andThrow(new Exception('Repository failed'));
 
-        	$result = $this->service->getRecentActivities();
+            $result = $this->service->getRecentActivities();
 
-        	expect($result)->toBeEmpty();
+            expect($result)->toBeEmpty();
 
-        	Log::shouldHaveReceived('error')
-        		->with('Failed to retrieve recent activities', Mockery::type('array'))
-        		->once();
+            Log::shouldHaveReceived('error')
+                ->with('Failed to retrieve recent activities', Mockery::type('array'))
+                ->once();
         });
     });
 
     describe('getTotalDocuments', function () {
         test('it calculates total documents for dashboard procurements', function () {
-        	$procurements = collect([
-        		'PR-001' => ['prNumber' => 'PR-001'],
-        		'PR-002' => ['prNumber' => 'PR-002'],
-        	]);
+            $procurements = collect([
+                'PR-001' => ['prNumber' => 'PR-001'],
+                'PR-002' => ['prNumber' => 'PR-002'],
+            ]);
 
-        	$doc1 = new DocumentData(
-        		prNumber: 'PR-001',
-        		procurementTitle: 'Test Procurement 1',
-        		userAddress: '1ABC123XYZ',
-        		stage: 'Pre-Procurement',
-        		status: 'Active',
-        		documentType: 'Contract',
-        		fileKey: 'key1',
-        		fileName: 'doc1.pdf',
-        		fileSize: 1000,
-        		mimeType: 'application/pdf',
-        		hash: 'hash1',
-        		dataTxid: 'tx1',
-        		metadataTxid: 'mtx1',
-        		uploadedBy: 'user1',
-        		timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-        	);
-        	$doc2 = new DocumentData(
-        		prNumber: 'PR-001',
-        		procurementTitle: 'Test Procurement 1',
-        		userAddress: '1ABC123XYZ',
-        		stage: 'Pre-Procurement',
-        		status: 'Active',
-        		documentType: 'Contract',
-        		fileKey: 'key2',
-        		fileName: 'doc2.pdf',
-        		fileSize: 1000,
-        		mimeType: 'application/pdf',
-        		hash: 'hash2',
-        		dataTxid: 'tx2',
-        		metadataTxid: 'mtx2',
-        		uploadedBy: 'user1',
-        		timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-        	);
-        	$doc3 = new DocumentData(
-        		prNumber: 'PR-002',
-        		procurementTitle: 'Test Procurement 2',
-        		userAddress: '1DEF456ABC',
-        		stage: 'Bidding',
-        		status: 'Active',
-        		documentType: 'Bid',
-        		fileKey: 'key3',
-        		fileName: 'doc3.pdf',
-        		fileSize: 1000,
-        		mimeType: 'application/pdf',
-        		hash: 'hash3',
-        		dataTxid: 'tx3',
-        		metadataTxid: 'mtx3',
-        		uploadedBy: 'user2',
-        		timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-        	);
+            $doc1 = new DocumentData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Test Procurement 1',
+                userAddress: '1ABC123XYZ',
+                stage: 'Pre-Procurement',
+                status: 'Active',
+                documentType: 'Contract',
+                fileKey: 'key1',
+                fileName: 'doc1.pdf',
+                fileSize: 1000,
+                mimeType: 'application/pdf',
+                hash: 'hash1',
+                dataTxid: 'tx1',
+                metadataTxid: 'mtx1',
+                uploadedBy: 'user1',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
+            $doc2 = new DocumentData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Test Procurement 1',
+                userAddress: '1ABC123XYZ',
+                stage: 'Pre-Procurement',
+                status: 'Active',
+                documentType: 'Contract',
+                fileKey: 'key2',
+                fileName: 'doc2.pdf',
+                fileSize: 1000,
+                mimeType: 'application/pdf',
+                hash: 'hash2',
+                dataTxid: 'tx2',
+                metadataTxid: 'mtx2',
+                uploadedBy: 'user1',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
+            $doc3 = new DocumentData(
+                prNumber: 'PR-002',
+                procurementTitle: 'Test Procurement 2',
+                userAddress: '1DEF456ABC',
+                stage: 'Bidding',
+                status: 'Active',
+                documentType: 'Bid',
+                fileKey: 'key3',
+                fileName: 'doc3.pdf',
+                fileSize: 1000,
+                mimeType: 'application/pdf',
+                hash: 'hash3',
+                dataTxid: 'tx3',
+                metadataTxid: 'mtx3',
+                uploadedBy: 'user2',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
 
-        	$this->mirrorRepository->shouldReceive('getAllDocuments')
-        		->with(500)
-        		->andReturn([$doc1, $doc2, $doc3]);
+            $this->mirrorRepository->shouldReceive('getAllDocuments')
+                ->with(500)
+                ->andReturn([$doc1, $doc2, $doc3]);
 
-        	$result = $this->service->getTotalDocuments($procurements);
+            $result = $this->service->getTotalDocuments($procurements);
 
-        	// 2 unique hashes from PR-001, 1 unique hash from PR-002 = 3 total
-        	expect($result)->toBe(3);
+            // 2 unique hashes from PR-001, 1 unique hash from PR-002 = 3 total
+            expect($result)->toBe(3);
 
-        	Log::shouldHaveReceived('info')
-        		->with('Dashboard document count calculated', Mockery::on(function ($data) {
-        			return isset($data['total_documents']) && $data['total_documents'] === 3;
-        		}))
-        		->once();
+            Log::shouldHaveReceived('info')
+                ->with('Dashboard document count calculated', Mockery::on(function ($data) {
+                    return isset($data['total_documents']) && $data['total_documents'] === 3;
+                }))
+                ->once();
         });
 
         test('it handles duplicate document hashes correctly', function () {
-        	$procurements = collect([
-        		'PR-001' => ['prNumber' => 'PR-001'],
-        	]);
+            $procurements = collect([
+                'PR-001' => ['prNumber' => 'PR-001'],
+            ]);
 
-        	$doc1 = new DocumentData(
-        		prNumber: 'PR-001',
-        		procurementTitle: 'Test Procurement',
-        		userAddress: '1ABC123XYZ',
-        		stage: 'Pre-Procurement',
-        		status: 'Active',
-        		documentType: 'Contract',
-        		fileKey: 'key1',
-        		fileName: 'doc1.pdf',
-        		fileSize: 1000,
-        		mimeType: 'application/pdf',
-        		hash: 'duplicate_hash',
-        		dataTxid: 'tx1',
-        		metadataTxid: 'mtx1',
-        		uploadedBy: 'user1',
-        		timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-        	);
-        	$doc2 = new DocumentData(
-        		prNumber: 'PR-001',
-        		procurementTitle: 'Test Procurement',
-        		userAddress: '1ABC123XYZ',
-        		stage: 'Pre-Procurement',
-        		status: 'Active',
-        		documentType: 'Contract',
-        		fileKey: 'key2',
-        		fileName: 'doc2.pdf',
-        		fileSize: 1000,
-        		mimeType: 'application/pdf',
-        		hash: 'duplicate_hash', // Same hash
-        		dataTxid: 'tx2',
-        		metadataTxid: 'mtx2',
-        		uploadedBy: 'user1',
-        		timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-        	);
+            $doc1 = new DocumentData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Test Procurement',
+                userAddress: '1ABC123XYZ',
+                stage: 'Pre-Procurement',
+                status: 'Active',
+                documentType: 'Contract',
+                fileKey: 'key1',
+                fileName: 'doc1.pdf',
+                fileSize: 1000,
+                mimeType: 'application/pdf',
+                hash: 'duplicate_hash',
+                dataTxid: 'tx1',
+                metadataTxid: 'mtx1',
+                uploadedBy: 'user1',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
+            $doc2 = new DocumentData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Test Procurement',
+                userAddress: '1ABC123XYZ',
+                stage: 'Pre-Procurement',
+                status: 'Active',
+                documentType: 'Contract',
+                fileKey: 'key2',
+                fileName: 'doc2.pdf',
+                fileSize: 1000,
+                mimeType: 'application/pdf',
+                hash: 'duplicate_hash', // Same hash
+                dataTxid: 'tx2',
+                metadataTxid: 'mtx2',
+                uploadedBy: 'user1',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
 
-        	$this->mirrorRepository->shouldReceive('getAllDocuments')
-        		->with(500)
-        		->andReturn([$doc1, $doc2]);
+            $this->mirrorRepository->shouldReceive('getAllDocuments')
+                ->with(500)
+                ->andReturn([$doc1, $doc2]);
 
-        	$result = $this->service->getTotalDocuments($procurements);
+            $result = $this->service->getTotalDocuments($procurements);
 
-        	expect($result)->toBe(1); // Duplicates counted once
+            expect($result)->toBe(1); // Duplicates counted once
         });
 
         test('it returns zero when document stream is empty', function () {
-        	$procurements = collect([
-        		'PR-001' => ['prNumber' => 'PR-001'],
-        	]);
+            $procurements = collect([
+                'PR-001' => ['prNumber' => 'PR-001'],
+            ]);
 
-        	$this->mirrorRepository->shouldReceive('getAllDocuments')
-        		->with(500)
-        		->andReturn([]);
+            $this->mirrorRepository->shouldReceive('getAllDocuments')
+                ->with(500)
+                ->andReturn([]);
 
-        	$result = $this->service->getTotalDocuments($procurements);
+            $result = $this->service->getTotalDocuments($procurements);
 
-        	expect($result)->toBe(0);
+            expect($result)->toBe(0);
 
-        	Log::shouldHaveReceived('warning')
-        		->with('Failed to retrieve document stream items for dashboard stats.')
-        		->once();
+            Log::shouldHaveReceived('warning')
+                ->with('Failed to retrieve document stream items for dashboard stats.')
+                ->once();
         });
 
         test('it filters documents missing required fields', function () {
-        $procurements = collect([
-        'PR-001' => ['prNumber' => 'PR-001'],
-        ]);
+            $procurements = collect([
+                'PR-001' => ['prNumber' => 'PR-001'],
+            ]);
 
-        $doc1 = new DocumentData(
-        prNumber: 'PR-001',
-        procurementTitle: 'Test Procurement',
-        userAddress: '1ABC123XYZ',
-        stage: 'Pre-Procurement',
-        status: 'Active',
-        documentType: 'Contract',
-        fileKey: 'key1',
-        fileName: 'doc1.pdf',
-        fileSize: 1000,
-        mimeType: 'application/pdf',
-        hash: 'valid_hash',
-        dataTxid: 'tx1',
-        metadataTxid: 'mtx1',
-        uploadedBy: 'user1',
-        timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-        );
+            $doc1 = new DocumentData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Test Procurement',
+                userAddress: '1ABC123XYZ',
+                stage: 'Pre-Procurement',
+                status: 'Active',
+                documentType: 'Contract',
+                fileKey: 'key1',
+                fileName: 'doc1.pdf',
+                fileSize: 1000,
+                mimeType: 'application/pdf',
+                hash: 'valid_hash',
+                dataTxid: 'tx1',
+                metadataTxid: 'mtx1',
+                uploadedBy: 'user1',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
 
-        $this->mirrorRepository->shouldReceive('getAllDocuments')
-        ->with(500)
-        ->andReturn([$doc1]);
+            $this->mirrorRepository->shouldReceive('getAllDocuments')
+                ->with(500)
+                ->andReturn([$doc1]);
 
-        $result = $this->service->getTotalDocuments($procurements);
-        expect($result)->toBe(1); // Only valid document counted
+            $result = $this->service->getTotalDocuments($procurements);
+            expect($result)->toBe(1); // Only valid document counted
         });
 
         test('it handles exceptions gracefully', function () {
-        $procurements = collect([
-        'PR-001' => ['prNumber' => 'PR-001'],
-        ]);
+            $procurements = collect([
+                'PR-001' => ['prNumber' => 'PR-001'],
+            ]);
 
-        $this->mirrorRepository->shouldReceive('getAllDocuments')
-        ->with(500)
-        ->andThrow(new Exception('Repository error'));
+            $this->mirrorRepository->shouldReceive('getAllDocuments')
+                ->with(500)
+                ->andThrow(new Exception('Repository error'));
 
-        $result = $this->service->getTotalDocuments($procurements);
+            $result = $this->service->getTotalDocuments($procurements);
 
-        expect($result)->toBe(0);
+            expect($result)->toBe(0);
 
-        Log::shouldHaveReceived('error')
-        ->with('Failed to calculate total documents for dashboard', Mockery::type('array'))
-        ->once();
+            Log::shouldHaveReceived('error')
+                ->with('Failed to calculate total documents for dashboard', Mockery::type('array'))
+                ->once();
         });
-        });
+    });
 
     describe('countOngoingProjects', function () {
         test('it excludes completed monitoring projects', function () {

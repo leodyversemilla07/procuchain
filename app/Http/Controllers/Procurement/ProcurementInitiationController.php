@@ -30,13 +30,13 @@ use Inertia\Response;
 class ProcurementInitiationController extends BaseController
 {
     public function __construct(
-    private readonly ProcurementSupportService $procurementSupport,
-    private readonly ProcurementMirrorRepository $mirrorRepository,
-    private readonly ProcurementRepository $procurements,
-    private readonly ProcurementStagePageService $stagePageService,
-    private readonly ProcurementStageUploadService $stageUploadService,
-    private readonly ProcurementStageCompletionService $stageCompletionService,
-    private readonly AuditLogger $auditLogger,
+        private readonly ProcurementSupportService $procurementSupport,
+        private readonly ProcurementMirrorRepository $mirrorRepository,
+        private readonly ProcurementRepository $procurements,
+        private readonly ProcurementStagePageService $stagePageService,
+        private readonly ProcurementStageUploadService $stageUploadService,
+        private readonly ProcurementStageCompletionService $stageCompletionService,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     public function show(?string $id = null): Response

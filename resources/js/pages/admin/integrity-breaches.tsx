@@ -1,5 +1,15 @@
-import { HeroCard } from '@/components/hero-card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { StatsGrid } from '@/components/stats-grid';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,32 +17,31 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import { Head, router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { AlertTriangle, ArrowLeftRight, CheckCircle2, Database, Fingerprint, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Database, Fingerprint, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
 import { useState } from 'react';
 
 interface BreachRecord {
- id: number;
- stream: string;
- stream_key: string;
- txid: string;
- publisher_address: string;
- is_authorized: boolean;
- breach_type: string;
- breach_data: Record<string, unknown> | null;
- breach_detected_at: string | null;
- repaired_at: string | null;
- verified_at: string | null;
- synced_at: string;
- revision_number: number | null;
- parent_txid: string | null;
- is_latest_revision: boolean | null;
+    id: number;
+    stream: string;
+    stream_key: string;
+    txid: string;
+    publisher_address: string;
+    is_authorized: boolean;
+    breach_type: string;
+    breach_data: Record<string, unknown> | null;
+    breach_detected_at: string | null;
+    repaired_at: string | null;
+    verified_at: string | null;
+    synced_at: string;
+    revision_number: number | null;
+    parent_txid: string | null;
+    is_latest_revision: boolean | null;
 }
 
 interface PaginatedBreaches {
@@ -107,75 +116,85 @@ export default function IntegrityBreaches() {
     const handleRepair = async (id: number) => {
         setRepairing(id);
         try {
-            await router.post(`/admin/integrity-breaches/${id}/repair`, {}, {
-                preserveScroll: true,
-                preserveState: false,
-            });
+            await router.post(
+                `/admin/integrity-breaches/${id}/repair`,
+                {},
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                },
+            );
         } finally {
             setRepairing(null);
         }
     };
 
     const handleVerify = async () => {
-    setVerifying(true);
-    setVerifyResult(null);
-    try {
-    const res = await fetch('/admin/integrity-breaches/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '' },
-    credentials: 'same-origin',
-    });
-    const data = await res.json();
-    if (data.success) {
-    setVerifyResult({ verified: data.verified, breach_count: data.breach_count });
-    }
-    } finally {
-    setVerifying(false);
-    }
+        setVerifying(true);
+        setVerifyResult(null);
+        try {
+            const res = await fetch('/admin/integrity-breaches/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+                credentials: 'same-origin',
+            });
+            const data = await res.json();
+            if (data.success) {
+                setVerifyResult({ verified: data.verified, breach_count: data.breach_count });
+            }
+        } finally {
+            setVerifying(false);
+        }
     };
 
     const handleVerifyAndRepair = async () => {
-    setVerifyAndRepairing(true);
-    setVerifyResult(null);
-    try {
-    const res = await fetch('/admin/integrity-breaches/verify-and-repair', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '' },
-    credentials: 'same-origin',
-    });
-    const data = await res.json();
-    if (data.success) {
-    setVerifyResult({ verified: data.verified, breach_count: data.breach_count });
-    router.reload({ preserveState: false });
-    }
-    } finally {
-    setVerifyAndRepairing(false);
-    }
+        setVerifyAndRepairing(true);
+        setVerifyResult(null);
+        try {
+            const res = await fetch('/admin/integrity-breaches/verify-and-repair', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+                credentials: 'same-origin',
+            });
+            const data = await res.json();
+            if (data.success) {
+                setVerifyResult({ verified: data.verified, breach_count: data.breach_count });
+                router.reload({ preserveState: false });
+            }
+        } finally {
+            setVerifyAndRepairing(false);
+        }
     };
 
     const handleRepairPr = async () => {
-    if (!filters.pr_number) return;
-    setRepairingPr(true);
-    setPrRepairResult(null);
-    try {
-    const res = await fetch('/admin/integrity-breaches/repair-pr', {
-    method: 'POST',
-    headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-    Accept: 'application/json',
-    },
-    credentials: 'same-origin',
-    body: JSON.stringify({ pr_number: filters.pr_number }),
-    });
-    const data = await res.json();
-    setPrRepairResult(data);
-    if (data.success) {
-    router.reload({ preserveState: false });
-    }
-    } finally {
-    setRepairingPr(false);
-    }
+        if (!filters.pr_number) return;
+        setRepairingPr(true);
+        setPrRepairResult(null);
+        try {
+            const res = await fetch('/admin/integrity-breaches/repair-pr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                    Accept: 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ pr_number: filters.pr_number }),
+            });
+            const data = await res.json();
+            setPrRepairResult(data);
+            if (data.success) {
+                router.reload({ preserveState: false });
+            }
+        } finally {
+            setRepairingPr(false);
+        }
     };
 
     const handleFilter = (key: string, value: string | null) => {
@@ -193,57 +212,48 @@ export default function IntegrityBreaches() {
             <Head title="Integrity Breaches" />
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
-                <HeroCard
-                    title="Total Breaches"
-                    value={stats.total}
-                    icon={<AlertTriangle className="h-4 w-4" />}
-                    description="All time"
-                />
-                <HeroCard
-                    title="Unresolved"
-                    value={stats.unresolved}
-                    icon={<ShieldAlert className="h-4 w-4" />}
-                    description="Needs attention"
-                    className={stats.unresolved > 0 ? 'border-red-200 dark:border-red-900' : undefined}
-                />
-                <HeroCard
-                    title="Critical"
-                    value={stats.critical}
-                    icon={<Shield className="h-4 w-4" />}
-                    description="Hash/content mismatch"
-                    className={stats.critical > 0 ? 'border-red-200 dark:border-red-900' : undefined}
-                />
-                <HeroCard
-                    title="Unauthorized"
-                    value={stats.unauthorized}
-                    icon={<Fingerprint className="h-4 w-4" />}
-                    description="Unknown publishers"
-                />
-            </div>
+            <StatsGrid
+                items={[
+                    { label: 'Total Breaches', value: stats.total, icon: AlertTriangle, iconClassName: 'bg-muted' },
+                    { label: 'Unresolved', value: stats.unresolved, icon: ShieldAlert, iconClassName: stats.unresolved > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted' },
+                    { label: 'Critical', value: stats.critical, icon: Shield, iconClassName: stats.critical > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted' },
+                    { label: 'Unauthorized', value: stats.unauthorized, icon: Fingerprint, iconClassName: 'bg-muted' },
+                ]}
+                className="p-4"
+            />
 
             {/* Filters + Actions */}
             <div className="flex flex-wrap items-center gap-3 p-4">
                 <Select value={filters.breach_type ?? ''} onValueChange={(v) => handleFilter('breach_type', v || null)}>
-                    <SelectTrigger className="w-48"><SelectValue placeholder="Breach Type" /></SelectTrigger>
+                    <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Breach Type" />
+                    </SelectTrigger>
                     <SelectContent>
                         {Object.entries(breachTypes).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                            <SelectItem key={value} value={value}>
+                                {label}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
 
                 <Select value={filters.stream ?? ''} onValueChange={(v) => handleFilter('stream', v || null)}>
-                    <SelectTrigger className="w-52"><SelectValue placeholder="Stream" /></SelectTrigger>
+                    <SelectTrigger className="w-52">
+                        <SelectValue placeholder="Stream" />
+                    </SelectTrigger>
                     <SelectContent>
                         {Object.entries(streams).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                            <SelectItem key={value} value={value}>
+                                {label}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
 
                 <Select value={filters.status ?? ''} onValueChange={(v) => handleFilter('status', v || null)}>
-                    <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="unresolved">Unresolved</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>
@@ -258,93 +268,96 @@ export default function IntegrityBreaches() {
                 />
 
                 <div className="ml-auto flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleVerify} disabled={verifying || verifyAndRepairing}>
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                {verifying ? 'Verifying...' : 'Run Verification'}
-                </Button>
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing}>
-                <Wrench className="mr-2 h-4 w-4" />
-                {verifyAndRepairing ? 'Running...' : 'Verify & Repair All'}
-                </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Verify & Repair All?</AlertDialogTitle>
-                <AlertDialogDescription>
-                This will run a full verification and automatically repair all detected breaches from the blockchain.
-                This action overwrites tampered mirror records with on-chain data.
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleVerifyAndRepair}>
-                Verify & Repair
-                </AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-                </AlertDialog>
-                {filters.pr_number && (
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" disabled={repairingPr}>
-                <Wrench className="mr-2 h-4 w-4" />
-                {repairingPr ? 'Repairing...' : `Repair PR ${filters.pr_number}`}
-                </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Repair PR {filters.pr_number}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                This will repair all breaches for PR <code>{filters.pr_number}</code> by re-syncing from the blockchain.
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleRepairPr}>
-                Repair PR
-                </AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-                </AlertDialog>
-                )}
-                {(filters.breach_type || filters.stream || filters.status || filters.pr_number) && (
-                <Button variant="ghost" size="sm" onClick={() => router.get('/admin/integrity-breaches')}>
-                Clear Filters
-                </Button>
-                )}
+                    <Button variant="outline" size="sm" onClick={handleVerify} disabled={verifying || verifyAndRepairing}>
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        {verifying ? 'Verifying...' : 'Run Verification'}
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing}>
+                                <Wrench className="mr-2 h-4 w-4" />
+                                {verifyAndRepairing ? 'Running...' : 'Verify & Repair All'}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Verify & Repair All?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will run a full verification and automatically repair all detected breaches from the blockchain. This action
+                                    overwrites tampered mirror records with on-chain data.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleVerifyAndRepair}>Verify & Repair</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    {filters.pr_number && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" disabled={repairingPr}>
+                                    <Wrench className="mr-2 h-4 w-4" />
+                                    {repairingPr ? 'Repairing...' : `Repair PR ${filters.pr_number}`}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Repair PR {filters.pr_number}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will repair all breaches for PR <code>{filters.pr_number}</code> by re-syncing from the blockchain.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleRepairPr}>Repair PR</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    {(filters.breach_type || filters.stream || filters.status || filters.pr_number) && (
+                        <Button variant="ghost" size="sm" onClick={() => router.get('/admin/integrity-breaches')}>
+                            Clear Filters
+                        </Button>
+                    )}
                 </div>
             </div>
 
             {/* Verify Result Toast */}
             {verifyResult && (
-            <Card className="mx-4 border-blue-200 dark:border-blue-900">
-            <CardContent className="flex items-center gap-3 p-4">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <span>Verification complete: <strong>{verifyResult.verified}</strong> records checked, <strong>{verifyResult.breach_count}</strong> new breaches found.</span>
-            <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setVerifyResult(null)}>Dismiss</Button>
-            </CardContent>
-            </Card>
+                <Card className="mx-4 border-blue-200 dark:border-blue-900">
+                    <CardContent className="flex items-center gap-3 p-4">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span>
+                            Verification complete: <strong>{verifyResult.verified}</strong> records checked,{' '}
+                            <strong>{verifyResult.breach_count}</strong> new breaches found.
+                        </span>
+                        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setVerifyResult(null)}>
+                            Dismiss
+                        </Button>
+                    </CardContent>
+                </Card>
             )}
 
             {/* PR Repair Result Toast */}
             {prRepairResult && (
-            <Card className={`mx-4 ${prRepairResult.success ? 'border-green-200 dark:border-green-900' : 'border-red-200 dark:border-red-900'}`}>
-            <CardContent className="flex items-center gap-3 p-4">
-            {prRepairResult.success ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            ) : (
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            )}
-            <span>
-            {prRepairResult.success
-            ? `PR repair successful: ${prRepairResult.repaired_count} breach(es) repaired.`
-            : `PR repair failed: ${prRepairResult.error}`}
-            </span>
-            <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setPrRepairResult(null)}>Dismiss</Button>
-            </CardContent>
-            </Card>
+                <Card className={`mx-4 ${prRepairResult.success ? 'border-green-200 dark:border-green-900' : 'border-red-200 dark:border-red-900'}`}>
+                    <CardContent className="flex items-center gap-3 p-4">
+                        {prRepairResult.success ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        ) : (
+                            <AlertTriangle className="h-5 w-5 text-red-600" />
+                        )}
+                        <span>
+                            {prRepairResult.success
+                                ? `PR repair successful: ${prRepairResult.repaired_count} breach(es) repaired.`
+                                : `PR repair failed: ${prRepairResult.error}`}
+                        </span>
+                        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setPrRepairResult(null)}>
+                            Dismiss
+                        </Button>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Flash Messages */}
@@ -363,8 +376,12 @@ export default function IntegrityBreaches() {
             <div className="p-4">
                 {breaches.data.length === 0 ? (
                     <Empty>
-                        <EmptyMedia><ShieldCheck className="h-16 w-16 text-green-500" /></EmptyMedia>
-                        <EmptyHeader><EmptyTitle>No Integrity Breaches</EmptyTitle></EmptyHeader>
+                        <EmptyMedia>
+                            <ShieldCheck className="h-16 w-16 text-green-500" />
+                        </EmptyMedia>
+                        <EmptyHeader>
+                            <EmptyTitle>No Integrity Breaches</EmptyTitle>
+                        </EmptyHeader>
                         <EmptyDescription>All mirror data matches the blockchain. No tampering detected.</EmptyDescription>
                     </Empty>
                 ) : (
@@ -399,19 +416,21 @@ export default function IntegrityBreaches() {
                                                 <TableCell>
                                                     <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
                                                 </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {breachTypes[breach.breach_type] ?? breach.breach_type}
-                                                </TableCell>
+                                                <TableCell className="font-medium">{breachTypes[breach.breach_type] ?? breach.breach_type}</TableCell>
                                                 <TableCell>
                                                     <code className="text-xs">{breach.stream_key}</code>
                                                 </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">
-                                                {streams[breach.stream] ?? breach.stream}
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    {streams[breach.stream] ?? breach.stream}
                                                 </TableCell>
                                                 <TableCell className="text-center">
-                                                {breach.revision_number !== null && breach.revision_number !== undefined
-                                                ? <Badge variant="outline" className="font-mono text-xs">#{breach.revision_number}</Badge>
-                                                : '—'}
+                                                    {breach.revision_number !== null && breach.revision_number !== undefined ? (
+                                                        <Badge variant="outline" className="font-mono text-xs">
+                                                            #{breach.revision_number}
+                                                        </Badge>
+                                                    ) : (
+                                                        '—'
+                                                    )}
                                                 </TableCell>
                                                 <TableCell>
                                                     <TooltipProvider>
@@ -419,7 +438,9 @@ export default function IntegrityBreaches() {
                                                             <TooltipTrigger>
                                                                 <code className="text-xs">{truncateHash(breach.txid, 8)}</code>
                                                             </TooltipTrigger>
-                                                            <TooltipContent><code className="text-xs break-all">{breach.txid}</code></TooltipContent>
+                                                            <TooltipContent>
+                                                                <code className="text-xs break-all">{breach.txid}</code>
+                                                            </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 </TableCell>
@@ -429,7 +450,7 @@ export default function IntegrityBreaches() {
                                                         <code className="text-xs">{truncateHash(breach.publisher_address, 6)}</code>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">
+                                                <TableCell className="text-muted-foreground text-sm">
                                                     {breach.breach_detected_at
                                                         ? formatDistanceToNow(parseISO(breach.breach_detected_at), { addSuffix: true })
                                                         : '—'}
@@ -460,8 +481,9 @@ export default function IntegrityBreaches() {
                                                                     <AlertDialogHeader>
                                                                         <AlertDialogTitle>Repair this breach?</AlertDialogTitle>
                                                                         <AlertDialogDescription>
-                                                                            This will re-sync the data from the blockchain, overwriting the tampered mirror record.
-                                                                            The original blockchain data will be used as the source of truth.
+                                                                            This will re-sync the data from the blockchain, overwriting the tampered
+                                                                            mirror record. The original blockchain data will be used as the source of
+                                                                            truth.
                                                                         </AlertDialogDescription>
                                                                     </AlertDialogHeader>
                                                                     <AlertDialogFooter>
@@ -509,40 +531,73 @@ export default function IntegrityBreaches() {
                             <ShieldAlert className="h-5 w-5" />
                             Breach Details
                         </DialogTitle>
-                        <DialogDescription>
-                            Full details for breach #{selectedBreach?.id}
-                        </DialogDescription>
+                        <DialogDescription>Full details for breach #{selectedBreach?.id}</DialogDescription>
                     </DialogHeader>
                     {selectedBreach && (
                         <div className="space-y-3 text-sm">
                             <div className="grid grid-cols-2 gap-2">
-                                <div><span className="text-muted-foreground">Breach Type:</span><br /><strong>{breachTypes[selectedBreach.breach_type] ?? selectedBreach.breach_type}</strong></div>
-                                <div><span className="text-muted-foreground">Severity:</span><br /><Badge className={SEVERITY_COLORS[severityLabel(selectedBreach.breach_type)]}>{severityLabel(selectedBreach.breach_type)}</Badge></div>
-                                <div><span className="text-muted-foreground">PR Number:</span><br /><code>{selectedBreach.stream_key}</code></div>
-                                <div><span className="text-muted-foreground">Stream:</span><br />{streams[selectedBreach.stream] ?? selectedBreach.stream}</div>
+                                <div>
+                                    <span className="text-muted-foreground">Breach Type:</span>
+                                    <br />
+                                    <strong>{breachTypes[selectedBreach.breach_type] ?? selectedBreach.breach_type}</strong>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Severity:</span>
+                                    <br />
+                                    <Badge className={SEVERITY_COLORS[severityLabel(selectedBreach.breach_type)]}>
+                                        {severityLabel(selectedBreach.breach_type)}
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">PR Number:</span>
+                                    <br />
+                                    <code>{selectedBreach.stream_key}</code>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Stream:</span>
+                                    <br />
+                                    {streams[selectedBreach.stream] ?? selectedBreach.stream}
+                                </div>
                             </div>
                             <div>
-                                <span className="text-muted-foreground">Transaction ID:</span><br />
-                                <code className="break-all text-xs">{selectedBreach.txid}</code>
+                                <span className="text-muted-foreground">Transaction ID:</span>
+                                <br />
+                                <code className="text-xs break-all">{selectedBreach.txid}</code>
                             </div>
                             <div>
-                                <span className="text-muted-foreground">Publisher Address:</span><br />
-                                <code className="break-all text-xs">{selectedBreach.publisher_address}</code>
+                                <span className="text-muted-foreground">Publisher Address:</span>
+                                <br />
+                                <code className="text-xs break-all">{selectedBreach.publisher_address}</code>
                                 {!selectedBreach.is_authorized && (
-                                    <Badge variant="destructive" className="ml-2">Unauthorized</Badge>
+                                    <Badge variant="destructive" className="ml-2">
+                                        Unauthorized
+                                    </Badge>
                                 )}
                             </div>
                             {selectedBreach.breach_data && (
                                 <div>
-                                    <span className="text-muted-foreground">Breach Data:</span><br />
-                                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+                                    <span className="text-muted-foreground">Breach Data:</span>
+                                    <br />
+                                    <pre className="bg-muted mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
                                         {JSON.stringify(selectedBreach.breach_data, null, 2)}
                                     </pre>
                                 </div>
                             )}
                             <div className="grid grid-cols-2 gap-2">
-                                <div><span className="text-muted-foreground">Detected:</span><br />{selectedBreach.breach_detected_at ? formatDistanceToNow(parseISO(selectedBreach.breach_detected_at), { addSuffix: true }) : '—'}</div>
-                                <div><span className="text-muted-foreground">Repaired:</span><br />{selectedBreach.repaired_at ? formatDistanceToNow(parseISO(selectedBreach.repaired_at), { addSuffix: true }) : 'Not repaired'}</div>
+                                <div>
+                                    <span className="text-muted-foreground">Detected:</span>
+                                    <br />
+                                    {selectedBreach.breach_detected_at
+                                        ? formatDistanceToNow(parseISO(selectedBreach.breach_detected_at), { addSuffix: true })
+                                        : '—'}
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Repaired:</span>
+                                    <br />
+                                    {selectedBreach.repaired_at
+                                        ? formatDistanceToNow(parseISO(selectedBreach.repaired_at), { addSuffix: true })
+                                        : 'Not repaired'}
+                                </div>
                             </div>
                         </div>
                     )}

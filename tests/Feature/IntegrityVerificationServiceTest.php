@@ -1,13 +1,11 @@
 <?php
 
 use App\Enums\BreachTypeEnums;
-use App\Enums\StreamEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\ProcurementMirror;
 use App\Models\User;
 use App\Services\BlockchainMirrorSyncService;
 use App\Services\IntegrityVerificationService;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
@@ -475,7 +473,7 @@ describe('Restore Violation', function () {
 
         $syncMock = $this->mock(BlockchainMirrorSyncService::class);
         $syncMock->shouldReceive('repairFromChain')
-            ->andThrow(new \Exception('Blockchain node unreachable'));
+            ->andThrow(new Exception('Blockchain node unreachable'));
 
         $service = new IntegrityVerificationService($syncMock);
         $result = $service->restoreViolation($auditLog);

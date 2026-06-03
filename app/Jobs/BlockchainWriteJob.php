@@ -115,9 +115,9 @@ class BlockchainWriteJob implements ShouldQueue
      * Mirror sync failure MUST never fail the job — all errors
      * are caught, logged, and silently continued.
      *
-     * @param array  $result    The handler result containing transactions
-     * @param array  $data      The original job data payload
-     * @param string $operation The blockchain operation type
+     * @param  array  $result  The handler result containing transactions
+     * @param  array  $data  The original job data payload
+     * @param  string  $operation  The blockchain operation type
      */
     private function syncToMirror(array $result, array $data, string $operation): void
     {

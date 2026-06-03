@@ -144,7 +144,7 @@ class BlockchainAudit extends Command
         $this->line("  Low:       <fg=white>{$summary['low']}</>");
         $this->newLine();
 
-        $this->line("  Recovery status:");
+        $this->line('  Recovery status:');
         $this->line("    Restored: <fg=green>{$summary['restored']}</>");
         $this->line("    Failed:   <fg=red>{$summary['failed']}</>");
         $this->line("    Pending:  <fg=yellow>{$summary['pending']}</>");

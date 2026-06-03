@@ -114,6 +114,6 @@ class BlockchainSync extends Command
         }
 
         $this->newLine();
-        $this->info("Total: {$total} items synced across " . count($results) . ' streams');
+        $this->info("Total: {$total} items synced across ".count($results).' streams');
     }
 }

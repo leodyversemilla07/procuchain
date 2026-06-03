@@ -17,20 +17,20 @@ use App\Models\User;
  */
 class AuditLogPolicy
 {
- /**
- * Determine whether the user can view audit logs.
- */
- public function viewAny(User $user): bool
- {
- return $user->can('manage users');
- }
+    /**
+     * Determine whether the user can view audit logs.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->can('manage users');
+    }
 
- /**
- * Determine whether the user can update/repair audit log entries.
- * Only users who can manage users (admins) may trigger repairs.
- */
- public function update(User $user): bool
- {
- return $user->can('manage users');
- }
+    /**
+     * Determine whether the user can update/repair audit log entries.
+     * Only users who can manage users (admins) may trigger repairs.
+     */
+    public function update(User $user): bool
+    {
+        return $user->can('manage users');
+    }
 }

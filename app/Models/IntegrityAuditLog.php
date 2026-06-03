@@ -183,12 +183,12 @@ class IntegrityAuditLog extends Model
     /**
      * Record a violation with field-level differences and revision context.
      *
-     * @param array $fieldDifferences [{field, old_value, new_value}]
-     * @param array|null $mirrorSnapshot DB state at detection time
-     * @param array|null $chainSnapshot Blockchain state at detection time
-     * @param int|null $revisionNumber The revision number of the affected mirror record
-     * @param string|null $parentTxid The parent revision's txid
-     * @param string[]|null $revisionLineage Full lineage from root to this revision
+     * @param  array  $fieldDifferences  [{field, old_value, new_value}]
+     * @param  array|null  $mirrorSnapshot  DB state at detection time
+     * @param  array|null  $chainSnapshot  Blockchain state at detection time
+     * @param  int|null  $revisionNumber  The revision number of the affected mirror record
+     * @param  string|null  $parentTxid  The parent revision's txid
+     * @param  string[]|null  $revisionLineage  Full lineage from root to this revision
      */
     public static function recordViolation(
         string $stream,

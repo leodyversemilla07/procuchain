@@ -3,26 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { AlertTriangle, CheckCircle2, Database, RefreshCw, Shield, ShieldAlert } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CheckCircle2, Database, RefreshCw, Shield, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface MirrorStatus {
- total_records: number;
- unresolved_breaches: number;
- last_sync: string | null;
- last_verified: string | null;
- last_audit_run: string | null;
- pending_repairs: number;
- stream_counts: Record<string, number>;
- breach_counts: Record<string, number>;
+    total_records: number;
+    unresolved_breaches: number;
+    last_sync: string | null;
+    last_verified: string | null;
+    last_audit_run: string | null;
+    pending_repairs: number;
+    stream_counts: Record<string, number>;
+    breach_counts: Record<string, number>;
 }
 
 const STREAM_DISPLAY_NAMES: Record<string, string> = {
@@ -106,9 +99,7 @@ export function MirrorStatusTab() {
 
     if (!status) return null;
 
-    const breachRatio = status.total_records > 0
-        ? (status.unresolved_breaches / status.total_records) * 100
-        : 0;
+    const breachRatio = status.total_records > 0 ? (status.unresolved_breaches / status.total_records) * 100 : 0;
     const healthPercentage = Math.max(0, 100 - breachRatio);
 
     return (
@@ -121,53 +112,45 @@ export function MirrorStatusTab() {
                         Mirror Health
                     </CardTitle>
                     <CardDescription>
-                        The procurement mirror caches blockchain data in MySQL for fast queries.
-                        Health measures how well the mirror matches the blockchain source of truth.
+                        The procurement mirror caches blockchain data in MySQL for fast queries. Health measures how well the mirror matches the
+                        blockchain source of truth.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Total Records</p>
+                            <p className="text-muted-foreground text-sm">Total Records</p>
                             <p className="text-2xl font-bold">{status.total_records.toLocaleString()}</p>
                         </div>
                         <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Unresolved Breaches</p>
-                            <p className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                            <p className="text-muted-foreground text-sm">Unresolved Breaches</p>
+                            <p
+                                className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                            >
                                 {status.unresolved_breaches}
                             </p>
                         </div>
                         <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Last Sync</p>
+                            <p className="text-muted-foreground text-sm">Last Sync</p>
+                            <p className="text-sm font-medium">{status.last_sync ? new Date(status.last_sync).toLocaleString() : 'Never'}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-muted-foreground text-sm">Last Verified</p>
+                            <p className="text-sm font-medium">{status.last_verified ? new Date(status.last_verified).toLocaleString() : 'Never'}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-muted-foreground text-sm">Last Audit Run</p>
                             <p className="text-sm font-medium">
-                                {status.last_sync
-                                    ? new Date(status.last_sync).toLocaleString()
-                                    : 'Never'}
+                                {status.last_audit_run ? new Date(status.last_audit_run).toLocaleString() : 'Never'}
                             </p>
                         </div>
                         <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Last Verified</p>
-                        <p className="text-sm font-medium">
-                        {status.last_verified
-                        ? new Date(status.last_verified).toLocaleString()
-                        : 'Never'}
-                        </p>
+                            <p className="text-muted-foreground text-sm">Pending Repairs</p>
+                            <p className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
+                                {status.pending_repairs}
+                            </p>
                         </div>
-                        <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Last Audit Run</p>
-                        <p className="text-sm font-medium">
-                        {status.last_audit_run
-                        ? new Date(status.last_audit_run).toLocaleString()
-                        : 'Never'}
-                        </p>
-                        </div>
-                        <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Pending Repairs</p>
-                        <p className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
-                        {status.pending_repairs}
-                        </p>
-                        </div>
-                        </div>
+                    </div>
 
                     <div className="mt-6 space-y-2">
                         <div className="flex items-center justify-between text-sm">
@@ -175,12 +158,12 @@ export function MirrorStatusTab() {
                             <span className="font-medium">{healthPercentage.toFixed(1)}%</span>
                         </div>
                         <Progress value={healthPercentage} className="h-3" />
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                             {healthPercentage >= 100
                                 ? '✅ All mirror records match blockchain data'
                                 : healthPercentage >= 95
-                                    ? '⚠ Minor breaches detected — review recommended'
-                                    : '🚨 Significant breaches detected — immediate action required'}
+                                  ? '⚠ Minor breaches detected — review recommended'
+                                  : '🚨 Significant breaches detected — immediate action required'}
                         </p>
                     </div>
                 </CardContent>
@@ -205,7 +188,7 @@ export function MirrorStatusTab() {
                 </CardHeader>
                 <CardContent>
                     {Object.keys(status.stream_counts).length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                        <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
                             <Database className="mb-2 h-10 w-10" />
                             <p>No mirror records yet. Run `php artisan blockchain:sync` to populate.</p>
                         </div>
@@ -223,14 +206,10 @@ export function MirrorStatusTab() {
                                     .sort(([, a], [, b]) => b - a)
                                     .map(([stream, count]) => (
                                         <TableRow key={stream}>
-                                            <TableCell className="font-medium">
-                                                {STREAM_DISPLAY_NAMES[stream] ?? stream}
-                                            </TableCell>
+                                            <TableCell className="font-medium">{STREAM_DISPLAY_NAMES[stream] ?? stream}</TableCell>
                                             <TableCell className="text-right">{count.toLocaleString()}</TableCell>
                                             <TableCell className="text-right">
-                                                {status.total_records > 0
-                                                    ? `${((count / status.total_records) * 100).toFixed(1)}%`
-                                                    : '0%'}
+                                                {status.total_records > 0 ? `${((count / status.total_records) * 100).toFixed(1)}%` : '0%'}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -248,13 +227,13 @@ export function MirrorStatusTab() {
                         Unresolved Breaches by Type
                     </CardTitle>
                     <CardDescription>
-                        Breach types indicate how the mirror diverges from the blockchain.
-                        Critical breaches (hash/content mismatch) suggest database tampering.
+                        Breach types indicate how the mirror diverges from the blockchain. Critical breaches (hash/content mismatch) suggest database
+                        tampering.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {Object.keys(status.breach_counts).length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                        <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
                             <CheckCircle2 className="mb-2 h-10 w-10 text-green-500" />
                             <p>No unresolved breaches. Mirror is in sync with blockchain.</p>
                         </div>
@@ -269,22 +248,19 @@ export function MirrorStatusTab() {
                             </TableHeader>
                             <TableBody>
                                 {Object.entries(status.breach_counts).map(([type, count]) => {
-                                    const severity = type === 'hash_mismatch' || type === 'content_mismatch'
-                                        ? 'critical'
-                                        : type === 'user_address_tampered'
-                                            ? 'high'
-                                            : type === 'unauthorized_publisher'
+                                    const severity =
+                                        type === 'hash_mismatch' || type === 'content_mismatch'
+                                            ? 'critical'
+                                            : type === 'user_address_tampered'
+                                              ? 'high'
+                                              : type === 'unauthorized_publisher'
                                                 ? 'medium'
                                                 : 'low';
                                     return (
                                         <TableRow key={type}>
-                                            <TableCell className="font-medium">
-                                                {BREACH_TYPE_LABELS[type] ?? type}
-                                            </TableCell>
+                                            <TableCell className="font-medium">{BREACH_TYPE_LABELS[type] ?? type}</TableCell>
                                             <TableCell className="text-right">
-                                                <Badge variant={severity === 'critical' ? 'destructive' : 'secondary'}>
-                                                    {count}
-                                                </Badge>
+                                                <Badge variant={severity === 'critical' ? 'destructive' : 'secondary'}>{count}</Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
@@ -292,10 +268,10 @@ export function MirrorStatusTab() {
                                                         severity === 'critical'
                                                             ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                                             : severity === 'high'
-                                                                ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-                                                                : severity === 'medium'
-                                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                                                              : severity === 'medium'
+                                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                                                     }
                                                 >
                                                     {severity}
@@ -319,16 +295,16 @@ export function MirrorStatusTab() {
                 <CardContent>
                     <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
-                            <code className="rounded bg-muted px-2 py-1">php artisan blockchain:sync</code>
+                            <code className="bg-muted rounded px-2 py-1">php artisan blockchain:sync</code>
                             <span className="text-muted-foreground">— Full rebuild from blockchain</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <code className="rounded bg-muted px-2 py-1">php artisan blockchain:audit</code>
+                            <code className="bg-muted rounded px-2 py-1">php artisan blockchain:audit</code>
                             <span className="text-muted-foreground">— Verify mirror integrity</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <code className="rounded bg-muted px-2 py-1">php artisan blockchain:repair {pr-number}</code>
-                            <span className="text-muted-foreground">— Repair specific PR from chain</span>
+                            <code className="bg-muted rounded px-2 py-1">{"php artisan blockchain:repair {pr-number}"}</code>
+                            <span className="text-muted-foreground">— Repair specific PR from chain (e.g. PR-2025-001)</span>
                         </div>
                     </div>
                 </CardContent>
