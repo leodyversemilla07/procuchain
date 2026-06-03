@@ -31,6 +31,9 @@ class AuditLog extends Model
         'new_values',
         'ip_address',
         'user_agent',
+        'txid',
+        'data_hash',
+        'blockchain_synced_at',
     ];
 
     /** Audit logs are never updated — only created. */
@@ -41,6 +44,7 @@ class AuditLog extends Model
         return [
             'old_values' => 'array',
             'new_values' => 'array',
+            'blockchain_synced_at' => 'datetime',
         ];
     }
 

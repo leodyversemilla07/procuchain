@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Enums\BreachTypeEnums;
 use App\Enums\StreamEnums;
 use App\Models\IntegrityAuditLog;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
 use Illuminate\Support\Facades\Log;
@@ -52,7 +52,7 @@ class IntegrityVerificationService
     private int $failedCount = 0;
 
     public function __construct(
-        private readonly BlockchainMirrorSyncService $syncService,
+        private readonly BlockchainRecordSyncService $syncService,
     ) {}
 
     // ═══════════════════════════════════════════════════════════════════
@@ -116,7 +116,7 @@ class IntegrityVerificationService
         ]);
 
         // Verify existing mirror rows for this PR
-        $mirrors = ProcurementMirror::forKey($prNumber)->get();
+        $mirrors = ProcurementRecord::forKey($prNumber)->get();
 
         foreach ($mirrors as $mirror) {
             $this->verifyAndCompareMirrorRow($mirror, $autoRepair);
@@ -138,13 +138,13 @@ class IntegrityVerificationService
     /**
      * Verify a single mirror record on read (lightweight, reactive).
      *
-     * Called by ProcurementMirrorRepository when reading individual records.
+     * Called by ProcurementRecordRepository when reading individual records.
      * Only does Layer 1 (hash check) + Layer 5 (publisher auth).
      * Does NOT do full chain comparison — that's for scheduled runs.
      *
      * @return array{valid: bool, audit_log_id: ?int}
      */
-    public function verifyOnRead(ProcurementMirror $mirror): array
+    public function verifyOnRead(ProcurementRecord $mirror): array
     {
         $this->reset('read_time');
 
@@ -233,7 +233,7 @@ class IntegrityVerificationService
 
             // Also mark mirror breach as repaired
             if ($auditLog->mirror_id) {
-                $mirror = ProcurementMirror::find($auditLog->mirror_id);
+                $mirror = ProcurementRecord::find($auditLog->mirror_id);
                 if ($mirror && $mirror->isBreached()) {
                     $mirror->markAsRepaired();
                 }
@@ -303,7 +303,7 @@ class IntegrityVerificationService
 
         $bar = null; // Progress tracking for CLI
 
-        ProcurementMirror::chunk(200, function ($mirrors) use ($autoRepair) {
+        ProcurementRecord::chunk(200, function ($mirrors) use ($autoRepair) {
             foreach ($mirrors as $mirror) {
                 $this->verifyAndCompareMirrorRow($mirror, $autoRepair);
             }
@@ -318,7 +318,7 @@ class IntegrityVerificationService
      * Layer 3: Content comparison against chain (authoritative)
      * Layer 5: Publisher authorization
      */
-    private function verifyAndCompareMirrorRow(ProcurementMirror $mirror, bool $autoRepair): void
+    private function verifyAndCompareMirrorRow(ProcurementRecord $mirror, bool $autoRepair): void
     {
         $this->verifiedCount++;
 
@@ -530,7 +530,7 @@ class IntegrityVerificationService
 
         $this->verifiedCount++;
 
-        $exists = ProcurementMirror::where('stream', $stream)
+        $exists = ProcurementRecord::where('stream', $stream)
             ->where('stream_key', $key)
             ->where('txid', $txid)
             ->exists();
@@ -540,7 +540,7 @@ class IntegrityVerificationService
 
             // Look up the latest revision for this stream+key to determine revision context.
             // If the row was deleted, there may still be older revisions in the mirror.
-            $latestExisting = ProcurementMirror::where('stream', $stream)
+            $latestExisting = ProcurementRecord::where('stream', $stream)
                 ->where('stream_key', $key)
                 ->orderByDesc('revision_number')
                 ->first();
@@ -631,7 +631,7 @@ class IntegrityVerificationService
             // Check: user deleted from MySQL but registration exists on chain
             if (! $user) {
                 // Look up mirror revision context for this user registration
-                $userMirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
+                $userMirror = ProcurementRecord::where('stream', StreamEnums::USER_REGISTRATIONS->value)
                     ->where('stream_key', (string) $userId)
                     ->orderByDesc('revision_number')
                     ->first();
@@ -667,7 +667,7 @@ class IntegrityVerificationService
                 ]];
 
                 // Look up mirror revision context for this user registration
-                $userMirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
+                $userMirror = ProcurementRecord::where('stream', StreamEnums::USER_REGISTRATIONS->value)
                     ->where('stream_key', (string) $userId)
                     ->orderByDesc('revision_number')
                     ->first();

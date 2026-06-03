@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
-use App\Services\BlockchainMirrorSyncService;
+use App\Services\BlockchainRecordSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Blockchain Sync Command
  *
- * Syncs blockchain stream data to the procurement_mirror database table.
+ * Syncs blockchain stream data to the procurement_records database table.
  * Supports syncing individual streams, all procurement streams, or all
  * streams including user registration streams.
  */
@@ -30,7 +30,7 @@ class BlockchainSync extends Command
         $this->newLine();
 
         try {
-            $syncService = app(BlockchainMirrorSyncService::class);
+            $syncService = app(BlockchainRecordSyncService::class);
 
             if ($stream = $this->option('stream')) {
                 return $this->syncSingleStream($syncService, $stream);
@@ -49,7 +49,7 @@ class BlockchainSync extends Command
         }
     }
 
-    private function syncSingleStream(BlockchainMirrorSyncService $syncService, string $stream): int
+    private function syncSingleStream(BlockchainRecordSyncService $syncService, string $stream): int
     {
         $this->info("Syncing stream: {$stream}");
 
@@ -65,7 +65,7 @@ class BlockchainSync extends Command
         return self::SUCCESS;
     }
 
-    private function syncProcurementStreams(BlockchainMirrorSyncService $syncService): int
+    private function syncProcurementStreams(BlockchainRecordSyncService $syncService): int
     {
         $results = $syncService->syncAll(function (string $stream, int $count, int $completed): void {
             $this->info("  ✓ {$stream}: {$count} items");
@@ -77,7 +77,7 @@ class BlockchainSync extends Command
         return self::SUCCESS;
     }
 
-    private function syncAllStreams(BlockchainMirrorSyncService $syncService): int
+    private function syncAllStreams(BlockchainRecordSyncService $syncService): int
     {
         $results = $syncService->syncAll(function (string $stream, int $count, int $completed): void {
             $this->info("  ✓ {$stream}: {$count} items");

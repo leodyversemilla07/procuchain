@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * ProcurementMirror Model
+ * Procurement Record Model
  *
- * Represents a mirrored record from the blockchain procurement streams.
- * Each record stores the blockchain stream data, its integrity hash,
- * breach tracking information, and revision lineage for hierarchical
- * change tracking.
+ * Stores procurement data backed by blockchain.
+ * Each record contains the blockchain stream data, integrity hash,
+ * breach tracking, and revision lineage.
+ *
+ * Blockchain = source of truth (immutable)
+ * This table = query cache (mutable, verifiable)
  *
  * @property int $id
  * @property string $stream
@@ -35,10 +37,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $repaired_at
  * @property Carbon $synced_at
  */
-class ProcurementMirror extends Model
+class ProcurementRecord extends Model
 {
     /** @var string */
-    protected $table = 'procurement_mirror';
+    protected $table = 'procurement_records';
 
     /** No timestamps — use synced_at instead. */
     const CREATED_AT = null;
@@ -103,7 +105,7 @@ class ProcurementMirror extends Model
      */
     public function parentRevision(): BelongsTo
     {
-        return $this->belongsTo(ProcurementMirror::class, 'parent_txid', 'txid')
+        return $this->belongsTo(ProcurementRecord::class, 'parent_txid', 'txid')
             ->where('stream', $this->stream)
             ->where('stream_key', $this->stream_key);
     }
@@ -113,7 +115,7 @@ class ProcurementMirror extends Model
      */
     public function childRevisions(): HasMany
     {
-        return $this->hasMany(ProcurementMirror::class, 'parent_txid', 'txid')
+        return $this->hasMany(ProcurementRecord::class, 'parent_txid', 'txid')
             ->where('stream', $this->stream)
             ->where('stream_key', $this->stream_key)
             ->orderBy('revision_number');
@@ -124,7 +126,7 @@ class ProcurementMirror extends Model
      */
     public function latestRevision(): BelongsTo
     {
-        return $this->belongsTo(ProcurementMirror::class, 'stream_key', 'stream_key')
+        return $this->belongsTo(ProcurementRecord::class, 'stream_key', 'stream_key')
             ->where('stream', $this->stream)
             ->where('is_latest_revision', true);
     }
@@ -145,7 +147,7 @@ class ProcurementMirror extends Model
         $current = $this;
 
         while ($current->parent_txid !== null) {
-            $parent = ProcurementMirror::where('txid', $current->parent_txid)
+            $parent = ProcurementRecord::where('txid', $current->parent_txid)
                 ->where('stream', $this->stream)
                 ->where('stream_key', $this->stream_key)
                 ->first();
@@ -168,7 +170,7 @@ class ProcurementMirror extends Model
      */
     public function getRevisionHistory()
     {
-        return ProcurementMirror::where('stream', $this->stream)
+        return ProcurementRecord::where('stream', $this->stream)
             ->where('stream_key', $this->stream_key)
             ->orderBy('revision_number')
             ->get();

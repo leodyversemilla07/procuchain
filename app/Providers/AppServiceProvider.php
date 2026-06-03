@@ -12,6 +12,16 @@ use App\Contracts\NotificationServiceInterface;
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\Contracts\StatusPublisherInterface;
+use App\Models\AuditLog;
+use App\Models\DocumentView;
+use App\Models\ProcurementWorkflowConfig;
+use App\Models\StageDocumentConfig;
+use App\Models\UserLoginLog;
+use App\Observers\AuditLogObserver;
+use App\Observers\DocumentViewObserver;
+use App\Observers\ProcurementWorkflowConfigObserver;
+use App\Observers\StageDocumentConfigObserver;
+use App\Observers\UserLoginLogObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BlockchainPolicy;
 use App\Policies\DashboardPolicy;
@@ -25,10 +35,10 @@ use App\Policies\UserPolicy;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\AuditLogger;
-use App\Services\BlockchainMirrorSyncService;
+use App\Services\BlockchainRecordSyncService;
 use App\Services\BlockchainStorageService;
 use App\Services\CacheStrategyService;
 use App\Services\IntegrityVerificationService;
@@ -72,13 +82,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ProcurementCorrectionRepositoryInterface::class, ProcurementCorrectionRepository::class);
 
         // Mirror repository (reads from MySQL mirror with blockchain fallback)
-        $this->app->singleton(ProcurementMirrorRepository::class);
+        $this->app->singleton(ProcurementRecordRepository::class);
 
         // Integrity verification (mirror ↔ blockchain comparison + auto-repair)
         $this->app->singleton(IntegrityVerificationService::class);
 
         // Blockchain mirror sync (repair from chain, full rebuild)
-        $this->app->singleton(BlockchainMirrorSyncService::class);
+        $this->app->singleton(BlockchainRecordSyncService::class);
 
         // Register interface bindings - Publishers
         $this->app->bind(DocumentPublisherInterface::class, DocumentPublisher::class);
@@ -92,6 +102,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Register observers for blockchain-backed tables
+        AuditLog::observe(AuditLogObserver::class);
+        DocumentView::observe(DocumentViewObserver::class);
+        UserLoginLog::observe(UserLoginLogObserver::class);
+        ProcurementWorkflowConfig::observe(ProcurementWorkflowConfigObserver::class);
+        StageDocumentConfig::observe(StageDocumentConfigObserver::class);
+
         if (config('app.env') === 'production' && config('app.force_https', false)) {
             URL::forceScheme('https');
         }

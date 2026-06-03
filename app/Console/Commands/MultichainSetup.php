@@ -41,6 +41,11 @@ class MultichainSetup extends Command
         StreamEnums::PROCUREMENTS_CORRECTIONS->value,
         StreamEnums::ARCHIVE->value,
         StreamEnums::INTEGRITY_VIOLATIONS->value,
+        StreamEnums::AUDIT_TRAIL->value,
+        StreamEnums::DOCUMENT_ACCESS->value,
+        StreamEnums::CONFIG_WORKFLOWS->value,
+        StreamEnums::CONFIG_STAGE_DOCS->value,
+        StreamEnums::USER_LOGIN_SESSIONS->value,
     ];
 
     /**

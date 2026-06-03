@@ -9,9 +9,9 @@ use Illuminate\Support\Carbon;
 /**
  * IntegrityBreach Model
  *
- * A read-only model that reads from the procurement_mirror table,
+ * A read-only model that reads from the procurement_records table,
  * filtered to only include records where a breach has been detected.
- * Records are created and managed via ProcurementMirror — this model
+ * Records are created and managed via ProcurementRecord — this model
  * exists for convenient querying of breached records.
  *
  * @property int $id
@@ -33,7 +33,7 @@ use Illuminate\Support\Carbon;
 class IntegrityBreach extends Model
 {
     /** @var string */
-    protected $table = 'procurement_mirror';
+    protected $table = 'procurement_records';
 
     /** No timestamps — use synced_at instead. */
     const CREATED_AT = null;
@@ -132,7 +132,7 @@ class IntegrityBreach extends Model
             return true;
         }
 
-        return ! ProcurementMirror::where('stream', $this->stream)
+        return ! ProcurementRecord::where('stream', $this->stream)
             ->where('stream_key', $this->stream_key)
             ->where('revision_number', '>', $this->revision_number)
             ->exists();

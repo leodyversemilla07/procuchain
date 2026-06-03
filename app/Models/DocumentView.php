@@ -40,11 +40,15 @@ class DocumentView extends Model
         'view_duration',
         'metadata',
         'viewed_at',
+        'txid',
+        'data_hash',
+        'blockchain_synced_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'viewed_at' => 'datetime',
+        'blockchain_synced_at' => 'datetime',
     ];
 
     /**

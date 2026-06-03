@@ -9,8 +9,8 @@ use App\Enums\StreamEnums;
 use App\Http\Controllers\Controller;
 use App\Models\IntegrityAuditLog;
 use App\Models\IntegrityBreach;
-use App\Models\ProcurementMirror;
-use App\Services\BlockchainMirrorSyncService;
+use App\Models\ProcurementRecord;
+use App\Services\BlockchainRecordSyncService;
 use App\Services\IntegrityVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +27,7 @@ use Inertia\Response;
  * and integrity audit logs in the procurement mirror system.
  *
  * Two data sources:
- * - IntegrityBreach (procurement_mirror with breach) — active breach status
+ * - IntegrityBreach (procurement_records with breach) — active breach status
  * - IntegrityAuditLog — permanent forensic record (append-only)
  */
 class IntegrityBreachController extends Controller
@@ -148,7 +148,7 @@ class IntegrityBreachController extends Controller
 
         try {
             $service = app(IntegrityVerificationService::class);
-            $syncService = app(BlockchainMirrorSyncService::class);
+            $syncService = app(BlockchainRecordSyncService::class);
             $count = $syncService->repairFromChain($breach->stream_key, $breach->stream);
 
             $breach->markAsRepaired();
@@ -196,7 +196,7 @@ class IntegrityBreachController extends Controller
         }
 
         try {
-            $syncService = app(BlockchainMirrorSyncService::class);
+            $syncService = app(BlockchainRecordSyncService::class);
             $count = $syncService->repairFromChain($prNumber);
 
             Log::info('IntegrityBreachController: PR breaches repaired via admin UI', [
@@ -286,12 +286,12 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $totalRecords = ProcurementMirror::count();
+        $totalRecords = ProcurementRecord::count();
         $unresolvedBreaches = IntegrityBreach::unresolved()->count();
-        $lastSync = ProcurementMirror::max('synced_at');
-        $lastVerified = ProcurementMirror::max('verified_at');
+        $lastSync = ProcurementRecord::max('synced_at');
+        $lastVerified = ProcurementRecord::max('verified_at');
 
-        $streamCounts = ProcurementMirror::selectRaw('stream, count(*) as count')
+        $streamCounts = ProcurementRecord::selectRaw('stream, count(*) as count')
             ->groupBy('stream')
             ->pluck('count', 'stream')
             ->toArray();
@@ -539,7 +539,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $breach = ProcurementMirror::find($id);
+        $breach = ProcurementRecord::find($id);
 
         if (! $breach) {
             return Inertia::render('admin/breach-detail', [
@@ -582,7 +582,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $demoRecord = ProcurementMirror::where('stream_key', $this->demoKey)
+        $demoRecord = ProcurementRecord::where('stream_key', $this->demoKey)
             ->where('txid', 'demo_txid_001')
             ->first();
 
@@ -625,7 +625,7 @@ class IntegrityBreachController extends Controller
 
     private function demoDelete(): void
     {
-        ProcurementMirror::where('stream_key', $this->demoKey)
+        ProcurementRecord::where('stream_key', $this->demoKey)
             ->where('txid', 'demo_txid_001')
             ->delete();
 
@@ -655,7 +655,7 @@ class IntegrityBreachController extends Controller
             'category' => 'goods',
         ];
 
-        ProcurementMirror::updateOrCreate(
+        ProcurementRecord::updateOrCreate(
             [
                 'stream' => 'procurement.metadata',
                 'stream_key' => $this->demoKey,
@@ -674,7 +674,7 @@ class IntegrityBreachController extends Controller
 
     private function demoModify(): void
     {
-        $mirror = ProcurementMirror::where('stream_key', $this->demoKey)
+        $mirror = ProcurementRecord::where('stream_key', $this->demoKey)
             ->where('txid', 'demo_txid_001')
             ->first();
 
@@ -683,7 +683,7 @@ class IntegrityBreachController extends Controller
             $tamperedData['amount'] = 999999.99;
             $tamperedData['status'] = 'approved';
 
-            DB::table('procurement_mirror')
+            DB::table('procurement_records')
                 ->where('id', $mirror->id)
                 ->update(['data_json' => $tamperedData]);
 
@@ -695,7 +695,7 @@ class IntegrityBreachController extends Controller
 
     private function demoReset(): void
     {
-        ProcurementMirror::where('stream_key', $this->demoKey)->delete();
+        ProcurementRecord::where('stream_key', $this->demoKey)->delete();
 
         $data = [
             'pr_number' => $this->demoKey,
@@ -705,7 +705,7 @@ class IntegrityBreachController extends Controller
             'category' => 'goods',
         ];
 
-        ProcurementMirror::create([
+        ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => $this->demoKey,
             'txid' => 'demo_txid_001',

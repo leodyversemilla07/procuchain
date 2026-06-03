@@ -5,7 +5,7 @@ use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
@@ -383,7 +383,7 @@ function bindProcurementControllerMocks(
             };
         });
 
-    $mirrorRepository = mock(ProcurementMirrorRepository::class);
+    $mirrorRepository = mock(ProcurementRecordRepository::class);
     $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
         ->zeroOrMoreTimes()
         ->andReturnUsing(function () use ($listStatusFixtures): array {

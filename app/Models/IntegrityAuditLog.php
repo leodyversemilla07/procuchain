@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
  * Append-only audit trail for all integrity verification results,
  * detected violations, and recovery operations.
  *
- * This table is separated from procurement_mirror so that:
+ * This table is separated from procurement_records so that:
  * - Audit records survive mirror row deletion
  * - Forensic analysis is possible even after recovery
  * - Compliance with RA 12009 Sec. 3 (accountability) and Sec. 20 (electronic records)
@@ -243,11 +243,11 @@ class IntegrityAuditLog extends Model
     }
 
     /**
-     * Record a violation from a ProcurementMirror model, automatically
+     * Record a violation from a ProcurementRecord model, automatically
      * extracting revision context (revision_number, parent_txid, lineage).
      */
     public static function recordViolationFromMirror(
-        ProcurementMirror $mirror,
+        ProcurementRecord $mirror,
         string $violationType,
         array $fieldDifferences = [],
         ?array $chainSnapshot = null,
@@ -278,7 +278,7 @@ class IntegrityAuditLog extends Model
     /**
      * Get the full revision history for the affected record.
      *
-     * Returns an array of ProcurementMirror records representing the
+     * Returns an array of ProcurementRecord records representing the
      * complete revision tree for this stream + stream_key combination.
      *
      * @return array<int, array{txid: string, revision_number: int, parent_txid: string|null, is_latest_revision: bool, blocktime: string|null, publisher_address: string|null, data_hash: string, breach_detected_at: string|null, breach_type: string|null, repaired_at: string|null}>
@@ -289,7 +289,7 @@ class IntegrityAuditLog extends Model
             return [];
         }
 
-        $revisions = ProcurementMirror::where('stream', $this->stream)
+        $revisions = ProcurementRecord::where('stream', $this->stream)
             ->where('stream_key', $this->stream_key)
             ->orderBy('revision_number')
             ->get();

@@ -37,12 +37,16 @@ class ProcurementWorkflowConfig extends Model
         'optional_stages',
         'is_active',
         'updated_by',
+        'txid',
+        'data_hash',
+        'blockchain_synced_at',
     ];
 
     protected $casts = [
         'stages' => 'array',
         'optional_stages' => 'array',
         'is_active' => 'boolean',
+        'blockchain_synced_at' => 'datetime',
     ];
 
     /**

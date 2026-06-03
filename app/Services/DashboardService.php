@@ -9,7 +9,7 @@ use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Dashboard\ModeAnalyzer;
 use App\Services\Dashboard\StatisticsCalculator;
@@ -41,7 +41,7 @@ class DashboardService
 
     public function __construct(
         private Manager $multichain,
-        private ProcurementMirrorRepository $mirrorRepository,
+        private ProcurementRecordRepository $mirrorRepository,
         private EventRepository $eventRepository,
         private DocumentRepository $documentRepository,
         private UserService $userService,

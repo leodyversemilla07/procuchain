@@ -5,7 +5,7 @@ use App\DataTransferObjects\StatusData;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementArchiveRepository;
 use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
@@ -182,7 +182,7 @@ describe('ProcurementListAggregatorService', function () {
         $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
         $this->archiveRepository = Mockery::mock(ProcurementArchiveRepository::class);
         $this->userService = Mockery::mock(UserService::class);
-        $this->mirrorRepository = Mockery::mock(ProcurementMirrorRepository::class);
+        $this->mirrorRepository = Mockery::mock(ProcurementRecordRepository::class);
 
         $this->aggregator = new ProcurementListAggregatorService(
             $this->mirrorRepository,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\StreamEnums;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
 use Illuminate\Support\Carbon;
@@ -16,20 +16,20 @@ use Illuminate\Support\Facades\Notification;
  * Blockchain Mirror Sync Service
  *
  * Handles bidirectional synchronization between the MultiChain blockchain
- * and the procurement_mirror database table. Supports:
+ * and the procurement_records database table. Supports:
  *
  * - upstream(): mirrors data to the DB after a successful blockchain publish
  * - downstream(): reads all items from a stream on chain and upserts to mirror
  * - syncAll(): syncs all procurement streams from chain to mirror
  * - repairFromChain(): repairs a specific PR's mirror data from chain
  */
-class BlockchainMirrorSyncService
+class BlockchainRecordSyncService
 {
     /**
      * Mirror data to the database after a successful blockchain publish.
      *
      * Called AFTER a successful blockchain publish to reflect the on-chain
-     * data in the procurement_mirror table.
+     * data in the procurement_records table.
      *
      * @param  string  $stream  The blockchain stream name
      * @param  string  $key  The stream key (e.g. PR number)
@@ -38,7 +38,7 @@ class BlockchainMirrorSyncService
      * @param  int|null  $blocktime  The block timestamp from the chain
      * @param  array  $data  The JSON payload that was published
      * @param  bool  $isAuthorized  Whether the publisher is an authorized user
-     * @return ProcurementMirror The upserted mirror record
+     * @return ProcurementRecord The upserted mirror record
      */
     public function upstream(
         string $stream,
@@ -48,10 +48,10 @@ class BlockchainMirrorSyncService
         ?int $blocktime,
         array $data,
         bool $isAuthorized = true,
-    ): ProcurementMirror {
+    ): ProcurementRecord {
         $dataHash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        Log::info('BlockchainMirrorSync: upstream sync started', [
+        Log::info('BlockchainRecordSync: upstream sync started', [
             'stream' => $stream,
             'key' => $key,
             'txid' => $txid,
@@ -59,7 +59,7 @@ class BlockchainMirrorSyncService
             'data_hash' => $dataHash,
         ]);
 
-        $existing = ProcurementMirror::where('stream', $stream)
+        $existing = ProcurementRecord::where('stream', $stream)
             ->where('stream_key', $key)
             ->where('txid', $txid)
             ->first();
@@ -75,7 +75,7 @@ class BlockchainMirrorSyncService
         $isLatest = true;
 
         if ($existing === null) {
-            $previousLatest = ProcurementMirror::where('stream', $stream)
+            $previousLatest = ProcurementRecord::where('stream', $stream)
                 ->where('stream_key', $key)
                 ->where('is_latest_revision', true)
                 ->first();
@@ -88,7 +88,7 @@ class BlockchainMirrorSyncService
                 $previousLatest->demoteAsLatest();
                 $previousLatest->save();
 
-                Log::info('BlockchainMirrorSync: demoted previous latest revision', [
+                Log::info('BlockchainRecordSync: demoted previous latest revision', [
                     'stream' => $stream,
                     'key' => $key,
                     'previous_txid' => $previousLatest->txid,
@@ -103,7 +103,7 @@ class BlockchainMirrorSyncService
             $isLatest = $existing->is_latest_revision;
         }
 
-        $mirror = ProcurementMirror::updateOrCreate(
+        $mirror = ProcurementRecord::updateOrCreate(
             [
                 'stream' => $stream,
                 'stream_key' => $key,
@@ -127,7 +127,7 @@ class BlockchainMirrorSyncService
         if ($existing && $existing->isBreached()) {
             $mirror->markAsRepaired();
 
-            Log::info('BlockchainMirrorSync: breach resolved during upstream sync', [
+            Log::info('BlockchainRecordSync: breach resolved during upstream sync', [
                 'stream' => $stream,
                 'key' => $key,
                 'txid' => $txid,
@@ -146,7 +146,7 @@ class BlockchainMirrorSyncService
             );
         }
 
-        Log::info('BlockchainMirrorSync: upstream sync completed', [
+        Log::info('BlockchainRecordSync: upstream sync completed', [
             'stream' => $stream,
             'key' => $key,
             'txid' => $txid,
@@ -162,7 +162,7 @@ class BlockchainMirrorSyncService
      * Read all items from a stream on chain and upsert to mirror.
      *
      * Called during blockchain:sync command to pull all items from a
-     * given stream and mirror them to the procurement_mirror table.
+     * given stream and mirror them to the procurement_records table.
      *
      * @param  string  $stream  The blockchain stream name
      * @param  callable|null  $progressCallback  Optional callback(count, total) for progress reporting
@@ -170,13 +170,13 @@ class BlockchainMirrorSyncService
      */
     public function downstream(string $stream, ?callable $progressCallback = null): int
     {
-        Log::info('BlockchainMirrorSync: downstream sync started', ['stream' => $stream]);
+        Log::info('BlockchainRecordSync: downstream sync started', ['stream' => $stream]);
 
         try {
             $manager = app(Manager::class);
             $items = $manager->liststreamitems($stream, true, 10000);
         } catch (\Exception $e) {
-            Log::error('BlockchainMirrorSync: failed to list stream items', [
+            Log::error('BlockchainRecordSync: failed to list stream items', [
                 'stream' => $stream,
                 'error' => $e->getMessage(),
             ]);
@@ -185,7 +185,7 @@ class BlockchainMirrorSyncService
         }
 
         if (! is_array($items) || empty($items)) {
-            Log::info('BlockchainMirrorSync: no items found in stream', ['stream' => $stream]);
+            Log::info('BlockchainRecordSync: no items found in stream', ['stream' => $stream]);
 
             return 0;
         }
@@ -193,7 +193,7 @@ class BlockchainMirrorSyncService
         $total = count($items);
         $count = 0;
 
-        Log::info('BlockchainMirrorSync: processing stream items', [
+        Log::info('BlockchainRecordSync: processing stream items', [
             'stream' => $stream,
             'total_items' => $total,
         ]);
@@ -207,7 +207,7 @@ class BlockchainMirrorSyncService
                 $data = $item['data']['json'] ?? [];
 
                 if (! $key || ! $txid || ! $publisher) {
-                    Log::warning('BlockchainMirrorSync: skipping item with missing fields', [
+                    Log::warning('BlockchainRecordSync: skipping item with missing fields', [
                         'stream' => $stream,
                         'txid' => $txid,
                         'key' => $key,
@@ -233,7 +233,7 @@ class BlockchainMirrorSyncService
 
                 $count++;
             } catch (\Exception $e) {
-                Log::error('BlockchainMirrorSync: error processing item', [
+                Log::error('BlockchainRecordSync: error processing item', [
                     'stream' => $stream,
                     'txid' => $item['txid'] ?? 'unknown',
                     'error' => $e->getMessage(),
@@ -247,7 +247,7 @@ class BlockchainMirrorSyncService
             }
         }
 
-        Log::info('BlockchainMirrorSync: downstream sync completed', [
+        Log::info('BlockchainRecordSync: downstream sync completed', [
             'stream' => $stream,
             'synced_count' => $count,
             'total_items' => $total,
@@ -267,7 +267,7 @@ class BlockchainMirrorSyncService
      */
     public function syncAll(?callable $progressCallback = null): array
     {
-        Log::info('BlockchainMirrorSync: syncAll started');
+        Log::info('BlockchainRecordSync: syncAll started');
 
         $results = [];
 
@@ -278,7 +278,7 @@ class BlockchainMirrorSyncService
 
             $stream = $case->value;
 
-            Log::info('BlockchainMirrorSync: syncing procurement stream', ['stream' => $stream]);
+            Log::info('BlockchainRecordSync: syncing procurement stream', ['stream' => $stream]);
 
             $count = $this->downstream($stream);
             $results[$stream] = $count;
@@ -288,7 +288,7 @@ class BlockchainMirrorSyncService
             }
         }
 
-        Log::info('BlockchainMirrorSync: syncAll completed', [
+        Log::info('BlockchainRecordSync: syncAll completed', [
             'results' => $results,
         ]);
 
@@ -307,7 +307,7 @@ class BlockchainMirrorSyncService
      */
     public function repairFromChain(string $prNumber, ?string $stream = null): int
     {
-        Log::info('BlockchainMirrorSync: repairFromChain started', [
+        Log::info('BlockchainRecordSync: repairFromChain started', [
             'pr_number' => $prNumber,
             'stream' => $stream,
         ]);
@@ -328,7 +328,7 @@ class BlockchainMirrorSyncService
 
         foreach ($streams as $currentStream) {
             try {
-                Log::info('BlockchainMirrorSync: repairing stream for PR', [
+                Log::info('BlockchainRecordSync: repairing stream for PR', [
                     'pr_number' => $prNumber,
                     'stream' => $currentStream,
                 ]);
@@ -336,7 +336,7 @@ class BlockchainMirrorSyncService
                 $manager = app(Manager::class);
                 $items = $manager->liststreamkeyitems($currentStream, $prNumber);
             } catch (\Exception $e) {
-                Log::error('BlockchainMirrorSync: failed to list stream key items for repair', [
+                Log::error('BlockchainRecordSync: failed to list stream key items for repair', [
                     'pr_number' => $prNumber,
                     'stream' => $currentStream,
                     'error' => $e->getMessage(),
@@ -346,7 +346,7 @@ class BlockchainMirrorSyncService
             }
 
             if (! is_array($items) || empty($items)) {
-                Log::info('BlockchainMirrorSync: no items found for PR in stream', [
+                Log::info('BlockchainRecordSync: no items found for PR in stream', [
                     'pr_number' => $prNumber,
                     'stream' => $currentStream,
                 ]);
@@ -363,7 +363,7 @@ class BlockchainMirrorSyncService
                     $data = $item['data']['json'] ?? [];
 
                     if (! $key || ! $txid || ! $publisher) {
-                        Log::warning('BlockchainMirrorSync: skipping repair item with missing fields', [
+                        Log::warning('BlockchainRecordSync: skipping repair item with missing fields', [
                             'pr_number' => $prNumber,
                             'stream' => $currentStream,
                             'txid' => $txid,
@@ -387,7 +387,7 @@ class BlockchainMirrorSyncService
                     );
 
                     // Mark any existing breaches as repaired for this item
-                    $existingBreaches = ProcurementMirror::where('stream', $currentStream)
+                    $existingBreaches = ProcurementRecord::where('stream', $currentStream)
                         ->where('stream_key', $key)
                         ->where('txid', $txid)
                         ->whereNotNull('breach_detected_at')
@@ -397,7 +397,7 @@ class BlockchainMirrorSyncService
                     foreach ($existingBreaches as $breach) {
                         $breach->markAsRepaired();
 
-                        Log::info('BlockchainMirrorSync: breach repaired during repairFromChain', [
+                        Log::info('BlockchainRecordSync: breach repaired during repairFromChain', [
                             'pr_number' => $prNumber,
                             'stream' => $currentStream,
                             'txid' => $txid,
@@ -407,7 +407,7 @@ class BlockchainMirrorSyncService
 
                     $count++;
                 } catch (\Exception $e) {
-                    Log::error('BlockchainMirrorSync: error repairing item', [
+                    Log::error('BlockchainRecordSync: error repairing item', [
                         'pr_number' => $prNumber,
                         'stream' => $currentStream,
                         'txid' => $item['txid'] ?? 'unknown',
@@ -419,7 +419,7 @@ class BlockchainMirrorSyncService
             }
         }
 
-        Log::info('BlockchainMirrorSync: repairFromChain completed', [
+        Log::info('BlockchainRecordSync: repairFromChain completed', [
             'pr_number' => $prNumber,
             'stream' => $stream,
             'repaired_count' => $count,
@@ -455,7 +455,7 @@ class BlockchainMirrorSyncService
             })->get();
 
             if ($recipients->isEmpty()) {
-                Log::warning('BlockchainMirrorSync: no recipients for breach notification', [
+                Log::warning('BlockchainRecordSync: no recipients for breach notification', [
                     'breach_type' => $breachType,
                     'stream' => $stream,
                     'key' => $key,
@@ -473,7 +473,7 @@ class BlockchainMirrorSyncService
                 mirrorId: $mirrorId,
             ));
 
-            Log::info('BlockchainMirrorSync: breach notification sent', [
+            Log::info('BlockchainRecordSync: breach notification sent', [
                 'breach_type' => $breachType,
                 'stream' => $stream,
                 'key' => $key,
@@ -481,7 +481,7 @@ class BlockchainMirrorSyncService
                 'recipient_count' => $recipients->count(),
             ]);
         } catch (\Exception $e) {
-            Log::error('BlockchainMirrorSync: failed to send breach notification', [
+            Log::error('BlockchainRecordSync: failed to send breach notification', [
                 'breach_type' => $breachType,
                 'stream' => $stream,
                 'key' => $key,

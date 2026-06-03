@@ -12,7 +12,7 @@ use App\Http\Controllers\Controller as BaseController;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use App\Services\AuditLogger;
@@ -31,7 +31,7 @@ class ProcurementInitiationController extends BaseController
 {
     public function __construct(
         private readonly ProcurementSupportService $procurementSupport,
-        private readonly ProcurementMirrorRepository $mirrorRepository,
+        private readonly ProcurementRecordRepository $mirrorRepository,
         private readonly ProcurementRepository $procurements,
         private readonly ProcurementStagePageService $stagePageService,
         private readonly ProcurementStageUploadService $stageUploadService,

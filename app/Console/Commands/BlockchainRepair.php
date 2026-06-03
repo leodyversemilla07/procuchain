@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\ProcurementMirror;
-use App\Services\BlockchainMirrorSyncService;
+use App\Models\ProcurementRecord;
+use App\Services\BlockchainRecordSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -40,7 +40,7 @@ class BlockchainRepair extends Command
 
         try {
             // Step 1: Count unresolved breaches before repair
-            $unresolvedBefore = ProcurementMirror::forKey($prNumber)
+            $unresolvedBefore = ProcurementRecord::forKey($prNumber)
                 ->unresolved()
                 ->count();
 
@@ -49,11 +49,11 @@ class BlockchainRepair extends Command
             }
 
             // Step 2: Repair from chain
-            $syncService = app(BlockchainMirrorSyncService::class);
+            $syncService = app(BlockchainRecordSyncService::class);
             $repairedCount = $syncService->repairFromChain($prNumber, $stream);
 
             // Step 3: Mark any remaining unresolved breaches as repaired
-            $remainingBreaches = ProcurementMirror::forKey($prNumber)
+            $remainingBreaches = ProcurementRecord::forKey($prNumber)
                 ->unresolved()
                 ->get();
 
@@ -72,7 +72,7 @@ class BlockchainRepair extends Command
             }
 
             // Step 4: Verify no unresolved breaches remain
-            $unresolvedAfter = ProcurementMirror::forKey($prNumber)
+            $unresolvedAfter = ProcurementRecord::forKey($prNumber)
                 ->unresolved()
                 ->count();
 

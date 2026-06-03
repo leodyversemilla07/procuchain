@@ -13,7 +13,7 @@ use App\Jobs\Handlers\StageCompletionHandler;
 use App\Jobs\Handlers\StageTransitionHandler;
 use App\Models\User;
 use App\Notifications\BlockchainJobFailedNotification;
-use App\Services\BlockchainMirrorSyncService;
+use App\Services\BlockchainRecordSyncService;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -108,10 +108,10 @@ class BlockchainWriteJob implements ShouldQueue
     }
 
     /**
-     * Sync blockchain write results to the procurement_mirror table.
+     * Sync blockchain write results to the procurement_records table.
      *
      * Iterates through the result transactions and calls
-     * BlockchainMirrorSyncService::upstream() for each entry.
+     * BlockchainRecordSyncService::upstream() for each entry.
      * Mirror sync failure MUST never fail the job — all errors
      * are caught, logged, and silently continued.
      *
@@ -122,7 +122,7 @@ class BlockchainWriteJob implements ShouldQueue
     private function syncToMirror(array $result, array $data, string $operation): void
     {
         try {
-            $syncService = app(BlockchainMirrorSyncService::class);
+            $syncService = app(BlockchainRecordSyncService::class);
 
             $userAddress = $data['user_address']
                 ?? $data['procurement_data']['user_address']

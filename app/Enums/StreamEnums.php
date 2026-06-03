@@ -22,6 +22,11 @@ enum StreamEnums: string
     case ARCHIVE = 'procurement.archive';
     case USER_REGISTRATIONS = 'user.registrations';
     case INTEGRITY_VIOLATIONS = 'integrity.violations';
+    case AUDIT_TRAIL = 'audit.trail';
+    case DOCUMENT_ACCESS = 'document.access';
+    case CONFIG_WORKFLOWS = 'config.workflows';
+    case CONFIG_STAGE_DOCS = 'config.stage_docs';
+    case USER_LOGIN_SESSIONS = 'user.login_sessions';
 
     /**
      * Get the user-friendly display name for the stream
@@ -41,6 +46,11 @@ enum StreamEnums: string
             self::ARCHIVE => 'Procurement Archive',
             self::USER_REGISTRATIONS => 'User Registrations',
             self::INTEGRITY_VIOLATIONS => 'Integrity Violations',
+            self::AUDIT_TRAIL => 'Audit Trail',
+            self::DOCUMENT_ACCESS => 'Document Access',
+            self::CONFIG_WORKFLOWS => 'Workflow Configurations',
+            self::CONFIG_STAGE_DOCS => 'Stage Document Configurations',
+            self::USER_LOGIN_SESSIONS => 'User Login Sessions',
         };
     }
 
@@ -62,6 +72,11 @@ enum StreamEnums: string
             self::ARCHIVE => 'Tracks archived status of procurements',
             self::USER_REGISTRATIONS => 'Records user registration events on the blockchain',
             self::INTEGRITY_VIOLATIONS => 'Permanent append-only audit trail of all integrity violations and recovery operations',
+            self::AUDIT_TRAIL => 'Immutable record of all user actions (create, update, delete) for accountability',
+            self::DOCUMENT_ACCESS => 'Immutable record of who accessed which documents and when',
+            self::CONFIG_WORKFLOWS => 'Immutable record of workflow configuration changes',
+            self::CONFIG_STAGE_DOCS => 'Immutable record of stage document requirement changes',
+            self::USER_LOGIN_SESSIONS => 'Immutable record of user login and logout events for forensics',
         };
     }
 
@@ -136,5 +151,21 @@ enum StreamEnums: string
     public static function integrityStreams(): array
     {
         return [self::INTEGRITY_VIOLATIONS];
+    }
+
+    /**
+     * Get all audit/compliance stream cases that require blockchain backing.
+     *
+     * @return list<self>
+     */
+    public static function auditStreams(): array
+    {
+        return [
+            self::AUDIT_TRAIL,
+            self::DOCUMENT_ACCESS,
+            self::CONFIG_WORKFLOWS,
+            self::CONFIG_STAGE_DOCS,
+            self::USER_LOGIN_SESSIONS,
+        ];
     }
 }

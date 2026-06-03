@@ -6,7 +6,7 @@ namespace Tests\Feature;
 
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use App\Services\IntegrityVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +36,7 @@ class IntegrityBreachSimulationTest extends TestCase
             'status' => 'pending',
         ];
 
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => 'PR-2026-001',
             'txid' => 'abc123def456',
@@ -56,7 +56,7 @@ class IntegrityBreachSimulationTest extends TestCase
         $tamperedData['amount'] = 999999; // Change the amount
 
         // Directly update the data_json without updating the hash
-        DB::table('procurement_mirror')
+        DB::table('procurement_records')
             ->where('id', $mirror->id)
             ->update(['data_json' => $tamperedData]);
 
@@ -145,7 +145,7 @@ class IntegrityBreachSimulationTest extends TestCase
     public function test_tracks_revision_lineage_correctly(): void
     {
         // Arrange: Create a chain of revisions
-        $root = ProcurementMirror::create([
+        $root = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => 'PR-2026-002',
             'txid' => 'tx_root_001',
@@ -158,7 +158,7 @@ class IntegrityBreachSimulationTest extends TestCase
             'synced_at' => now(),
         ]);
 
-        $revision2 = ProcurementMirror::create([
+        $revision2 = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => 'PR-2026-002',
             'txid' => 'tx_rev_002',
@@ -171,7 +171,7 @@ class IntegrityBreachSimulationTest extends TestCase
             'synced_at' => now(),
         ]);
 
-        $revision3 = ProcurementMirror::create([
+        $revision3 = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => 'PR-2026-002',
             'txid' => 'tx_rev_003',
@@ -210,7 +210,7 @@ class IntegrityBreachSimulationTest extends TestCase
     public function test_marks_breach_and_repair_correctly(): void
     {
         // Arrange
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => 'PR-2026-003',
             'txid' => 'tx_test_breach',
@@ -250,7 +250,7 @@ class IntegrityBreachSimulationTest extends TestCase
     public function test_records_field_differences_in_audit_log(): void
     {
         // Arrange
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => 'PR-2026-004',
             'txid' => 'tx_audit_test',

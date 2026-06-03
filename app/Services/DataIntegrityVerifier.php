@@ -6,7 +6,7 @@ namespace App\Services;
 
 use App\Enums\BreachTypeEnums;
 use App\Enums\StreamEnums;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
 use Illuminate\Support\Facades\Log;
@@ -35,7 +35,7 @@ class DataIntegrityVerifier
      * Verify all mirror rows for integrity.
      *
      * Checks hash integrity and publisher authorization for every
-     * row in the procurement_mirror table.
+     * row in the procurement_records table.
      *
      * @return array{verified: int, breaches: array}
      */
@@ -43,7 +43,7 @@ class DataIntegrityVerifier
     {
         $this->reset();
 
-        $mirrors = ProcurementMirror::all();
+        $mirrors = ProcurementRecord::all();
 
         foreach ($mirrors as $mirror) {
             $this->verifyMirrorRow($mirror);
@@ -64,7 +64,7 @@ class DataIntegrityVerifier
     {
         $this->reset();
 
-        $mirrors = ProcurementMirror::forKey($prNumber)->get();
+        $mirrors = ProcurementRecord::forKey($prNumber)->get();
 
         foreach ($mirrors as $mirror) {
             $this->verifyMirrorRow($mirror);
@@ -85,7 +85,7 @@ class DataIntegrityVerifier
     {
         $this->reset();
 
-        $mirrors = ProcurementMirror::forStream($stream)->get();
+        $mirrors = ProcurementRecord::forStream($stream)->get();
 
         foreach ($mirrors as $mirror) {
             $this->verifyMirrorRow($mirror);
@@ -110,7 +110,7 @@ class DataIntegrityVerifier
     {
         $this->reset();
 
-        $syncService = app(BlockchainMirrorSyncService::class);
+        $syncService = app(BlockchainRecordSyncService::class);
 
         try {
             $manager = app(Manager::class);
@@ -167,7 +167,7 @@ class DataIntegrityVerifier
 
             // Check if the blockchain_address in MySQL matches the one on chain
             if ($user->blockchain_address !== $chainAddress) {
-                $mirror = ProcurementMirror::where('stream', StreamEnums::USER_REGISTRATIONS->value)
+                $mirror = ProcurementRecord::where('stream', StreamEnums::USER_REGISTRATIONS->value)
                     ->where('stream_key', (string) $userId)
                     ->where('txid', $item['txid'] ?? '')
                     ->first();
@@ -190,7 +190,7 @@ class DataIntegrityVerifier
     /**
      * Verify a single mirror row.
      */
-    private function verifyMirrorRow(ProcurementMirror $mirror): void
+    private function verifyMirrorRow(ProcurementRecord $mirror): void
     {
         $this->verifiedCount++;
 

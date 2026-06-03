@@ -8,7 +8,7 @@ use App\DataTransferObjects\StatusData;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Log;
 final class ProcurementListAggregatorService
 {
     public function __construct(
-        private readonly ProcurementMirrorRepository $mirrorRepository,
+        private readonly ProcurementRecordRepository $mirrorRepository,
         private readonly ProcurementFormatterService $formatter,
         private readonly ProcurementActionService $actionService,
         private readonly UserNameResolverService $userNameResolver,

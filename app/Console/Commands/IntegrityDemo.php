@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use App\Services\IntegrityVerificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +59,7 @@ class IntegrityDemo extends Command
             'blockchain_verified' => true,
         ];
 
-        $mirror = ProcurementMirror::updateOrCreate(
+        $mirror = ProcurementRecord::updateOrCreate(
             [
                 'stream' => 'procurement.metadata',
                 'stream_key' => $this->demoKey,
@@ -108,7 +108,7 @@ class IntegrityDemo extends Command
         $tamperedData['title'] = 'HACKED - Procurement Modified';
 
         // Direct database update (simulating SQL injection or compromised DB)
-        DB::table('procurement_mirror')
+        DB::table('procurement_records')
             ->where('id', $mirror->id)
             ->update(['data_json' => $tamperedData]);
 
@@ -238,7 +238,7 @@ class IntegrityDemo extends Command
     /**
      * Run the deletion scenario - simulate deleting data from database.
      */
-    private function runDeletionScenario(ProcurementMirror $mirror): void
+    private function runDeletionScenario(ProcurementRecord $mirror): void
     {
         $this->newLine();
         $this->info('╔══════════════════════════════════════════════════════════════╗');
@@ -249,7 +249,7 @@ class IntegrityDemo extends Command
         // Step D1: Show current state
         $this->step('D1', 'Current State Before Deletion');
 
-        $recordExists = ProcurementMirror::where('stream_key', $this->demoKey)
+        $recordExists = ProcurementRecord::where('stream_key', $this->demoKey)
             ->where('txid', 'demo_txid_001')
             ->exists();
 
@@ -268,7 +268,7 @@ class IntegrityDemo extends Command
         $this->newLine();
 
         // Delete the record directly from database
-        $deleted = DB::table('procurement_mirror')
+        $deleted = DB::table('procurement_records')
             ->where('id', $mirror->id)
             ->delete();
 
@@ -276,7 +276,7 @@ class IntegrityDemo extends Command
         $this->newLine();
 
         // Verify it's gone
-        $recordExistsAfter = ProcurementMirror::where('stream_key', $this->demoKey)
+        $recordExistsAfter = ProcurementRecord::where('stream_key', $this->demoKey)
             ->where('txid', 'demo_txid_001')
             ->exists();
 
@@ -357,7 +357,7 @@ class IntegrityDemo extends Command
         ];
 
         // Recreate the record (simulating blockchain restore)
-        $restored = ProcurementMirror::create([
+        $restored = ProcurementRecord::create([
             'stream' => 'procurement.metadata',
             'stream_key' => $this->demoKey,
             'txid' => 'demo_txid_001',
@@ -413,7 +413,7 @@ class IntegrityDemo extends Command
     {
         $this->info('Restoring demo record...');
 
-        $mirror = ProcurementMirror::where('stream_key', $this->demoKey)->first();
+        $mirror = ProcurementRecord::where('stream_key', $this->demoKey)->first();
 
         if (! $mirror) {
             $this->error('Demo record not found.');

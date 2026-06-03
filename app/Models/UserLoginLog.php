@@ -38,12 +38,16 @@ class UserLoginLog extends Model
         'successful',
         'login_at',
         'logout_at',
+        'txid',
+        'data_hash',
+        'blockchain_synced_at',
     ];
 
     protected $casts = [
         'login_at' => 'datetime',
         'logout_at' => 'datetime',
         'successful' => 'boolean',
+        'blockchain_synced_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

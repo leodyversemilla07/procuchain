@@ -9,7 +9,7 @@ use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
 use App\Enums\StreamEnums;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -24,16 +24,16 @@ use Illuminate\Support\Facades\Log;
  *
  * Architecture: Blockchain = source of truth, Mirror = materialized view
  *
- * Write path: chain-first, mirror-second (upstream in BlockchainMirrorSyncService)
+ * Write path: chain-first, mirror-second (upstream in BlockchainRecordSyncService)
  * Read path: mirror-first, chain-fallback (this repository)
  *
  * Each read method:
- * 1. Queries the procurement_mirror table
+ * 1. Queries the procurement_records table
  * 2. Verifies data_hash integrity on read (lightweight SHA-256 check)
  * 3. Returns DTOs using existing fromBlockchainArray() methods
  * 4. On mirror miss or hash mismatch, falls back to blockchain repository
  */
-class ProcurementMirrorRepository
+class ProcurementRecordRepository
 {
     public function __construct(
         private readonly ProcurementRepository $blockchainProcurement,
@@ -56,7 +56,7 @@ class ProcurementMirrorRepository
     public function findStatusByProcurement(string $prNumber): array
     {
         try {
-            $mirrors = ProcurementMirror::forStream(StreamEnums::STATUS->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::STATUS->value)
                 ->forKey($prNumber)
                 ->authorized()
                 ->orderByDesc('blocktime')
@@ -101,7 +101,7 @@ class ProcurementMirrorRepository
     {
         try {
             // Subquery: get the max blocktime per stream_key
-            $latestIds = ProcurementMirror::forStream(StreamEnums::STATUS->value)
+            $latestIds = ProcurementRecord::forStream(StreamEnums::STATUS->value)
                 ->authorized()
                 ->selectRaw('MAX(id) as id')
                 ->groupBy('stream_key')
@@ -113,7 +113,7 @@ class ProcurementMirrorRepository
                 return $this->blockchainStatus->getLatestByProcurement($limit);
             }
 
-            $mirrors = ProcurementMirror::forStream(StreamEnums::STATUS->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::STATUS->value)
                 ->authorized()
                 ->whereIn('id', $latestIds)
                 ->orderByDesc('blocktime')
@@ -151,7 +151,7 @@ class ProcurementMirrorRepository
     public function findProcurementByPrNumber(string $prNumber): ?ProcurementData
     {
         try {
-            $mirror = ProcurementMirror::forStream(StreamEnums::METADATA->value)
+            $mirror = ProcurementRecord::forStream(StreamEnums::METADATA->value)
                 ->forKey($prNumber)
                 ->authorized()
                 ->orderByDesc('blocktime')
@@ -199,14 +199,14 @@ class ProcurementMirrorRepository
 
         try {
             // Subquery: get the max blocktime (latest version) per stream_key
-            $latestIds = ProcurementMirror::forStream(StreamEnums::METADATA->value)
+            $latestIds = ProcurementRecord::forStream(StreamEnums::METADATA->value)
                 ->authorized()
                 ->whereIn('stream_key', $prNumbers)
                 ->selectRaw('MAX(id) as id')
                 ->groupBy('stream_key')
                 ->pluck('id');
 
-            $mirrors = ProcurementMirror::forStream(StreamEnums::METADATA->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::METADATA->value)
                 ->authorized()
                 ->whereIn('id', $latestIds)
                 ->get()
@@ -265,7 +265,7 @@ class ProcurementMirrorRepository
     public function procurementExists(string $prNumber): bool
     {
         try {
-            return ProcurementMirror::forStream(StreamEnums::METADATA->value)
+            return ProcurementRecord::forStream(StreamEnums::METADATA->value)
                 ->forKey($prNumber)
                 ->exists();
         } catch (\Exception $e) {
@@ -290,7 +290,7 @@ class ProcurementMirrorRepository
     public function findDocumentsByProcurement(string $prNumber): Collection
     {
         try {
-            $mirrors = ProcurementMirror::forStream(StreamEnums::DOCUMENTS->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::DOCUMENTS->value)
                 ->forKey($prNumber)
                 ->authorized()
                 ->orderByDesc('blocktime')
@@ -326,7 +326,7 @@ class ProcurementMirrorRepository
     public function getAllDocuments(int $limit = 5000): array
     {
         try {
-            $mirrors = ProcurementMirror::forStream(StreamEnums::DOCUMENTS->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::DOCUMENTS->value)
                 ->authorized()
                 ->orderByDesc('blocktime')
                 ->limit($limit)
@@ -365,7 +365,7 @@ class ProcurementMirrorRepository
     public function findRecentEvents(int $limit = 10): array
     {
         try {
-            $mirrors = ProcurementMirror::forStream(StreamEnums::EVENTS->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::EVENTS->value)
                 ->authorized()
                 ->orderByDesc('blocktime')
                 ->limit($limit)
@@ -415,7 +415,7 @@ class ProcurementMirrorRepository
     {
         try {
             // Get the latest archive/restore action per PR number
-            $latestIds = ProcurementMirror::forStream(StreamEnums::ARCHIVE->value)
+            $latestIds = ProcurementRecord::forStream(StreamEnums::ARCHIVE->value)
                 ->authorized()
                 ->selectRaw('MAX(id) as id')
                 ->groupBy('stream_key')
@@ -425,7 +425,7 @@ class ProcurementMirrorRepository
                 return $this->blockchainArchive->getArchivedPrNumbers();
             }
 
-            $mirrors = ProcurementMirror::forStream(StreamEnums::ARCHIVE->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::ARCHIVE->value)
                 ->authorized()
                 ->whereIn('id', $latestIds)
                 ->get();
@@ -456,7 +456,7 @@ class ProcurementMirrorRepository
     public function isArchived(string $prNumber): bool
     {
         try {
-            $mirror = ProcurementMirror::forStream(StreamEnums::ARCHIVE->value)
+            $mirror = ProcurementRecord::forStream(StreamEnums::ARCHIVE->value)
                 ->forKey($prNumber)
                 ->authorized()
                 ->orderByDesc('blocktime')
@@ -493,7 +493,7 @@ class ProcurementMirrorRepository
     public function findCorrectionsByProcurement(string $prNumber): array
     {
         try {
-            $mirrors = ProcurementMirror::forStream(StreamEnums::CORRECTIONS->value)
+            $mirrors = ProcurementRecord::forStream(StreamEnums::CORRECTIONS->value)
                 ->forKey($prNumber)
                 ->authorized()
                 ->orderByDesc('blocktime')
@@ -538,7 +538,7 @@ class ProcurementMirrorRepository
      * On failure, the mirror record is marked as breached and the
      * caller should fall back to the blockchain repository.
      */
-    private function verifyMirrorRecord(ProcurementMirror $mirror): bool
+    private function verifyMirrorRecord(ProcurementRecord $mirror): bool
     {
         $computedHash = hash('sha256', json_encode($mirror->data_json));
         $isValid = $computedHash === $mirror->data_hash;
@@ -573,13 +573,13 @@ class ProcurementMirrorRepository
      */
     public function getMirrorStats(): array
     {
-        $totalRecords = ProcurementMirror::count();
-        $breachedRecords = ProcurementMirror::unresolved()->count();
-        $unauthorizedRecords = ProcurementMirror::where('is_authorized', false)->count();
-        $lastSync = ProcurementMirror::max('synced_at');
-        $lastVerified = ProcurementMirror::max('verified_at');
+        $totalRecords = ProcurementRecord::count();
+        $breachedRecords = ProcurementRecord::unresolved()->count();
+        $unauthorizedRecords = ProcurementRecord::where('is_authorized', false)->count();
+        $lastSync = ProcurementRecord::max('synced_at');
+        $lastVerified = ProcurementRecord::max('verified_at');
 
-        $streamCounts = ProcurementMirror::selectRaw('stream, count(*) as count')
+        $streamCounts = ProcurementRecord::selectRaw('stream, count(*) as count')
             ->groupBy('stream')
             ->pluck('count', 'stream')
             ->toArray();

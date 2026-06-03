@@ -38,12 +38,16 @@ class StageDocumentConfig extends Model
         'optional_documents',
         'is_active',
         'updated_by',
+        'txid',
+        'data_hash',
+        'blockchain_synced_at',
     ];
 
     protected $casts = [
         'required_documents' => 'array',
         'optional_documents' => 'array',
         'is_active' => 'boolean',
+        'blockchain_synced_at' => 'datetime',
     ];
 
     /**

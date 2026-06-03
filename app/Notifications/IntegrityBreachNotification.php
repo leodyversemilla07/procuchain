@@ -48,7 +48,7 @@ class IntegrityBreachNotification extends Notification
      * @param  string  $streamKey  The stream key (e.g. PR number)
      * @param  string  $txid  The transaction ID
      * @param  array  $breachData  Additional context about the breach
-     * @param  int|null  $mirrorId  The procurement_mirror record ID
+     * @param  int|null  $mirrorId  The procurement_records record ID
      */
     public function __construct(
         private readonly string $breachType,

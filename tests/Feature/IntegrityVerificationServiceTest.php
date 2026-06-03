@@ -2,9 +2,9 @@
 
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
-use App\Models\ProcurementMirror;
+use App\Models\ProcurementRecord;
 use App\Models\User;
-use App\Services\BlockchainMirrorSyncService;
+use App\Services\BlockchainRecordSyncService;
 use App\Services\IntegrityVerificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -320,7 +320,7 @@ describe('Read-Time Verification', function () {
         $data = ['title' => 'Test PR', 'amount' => 50000];
         $hash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'pr.initiation',
             'stream_key' => 'PR-2024-100',
             'txid' => 'test-txid-clean',
@@ -349,7 +349,7 @@ describe('Read-Time Verification', function () {
         $originalData = ['title' => 'Test PR', 'amount' => 50000];
         $hash = hash('sha256', json_encode($originalData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'pr.initiation',
             'stream_key' => 'PR-2024-101',
             'txid' => 'test-txid-mismatch',
@@ -377,7 +377,7 @@ describe('Read-Time Verification', function () {
         $data = ['title' => 'Test PR'];
         $hash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'pr.initiation',
             'stream_key' => 'PR-2024-102',
             'txid' => 'test-txid-unauth',
@@ -409,7 +409,7 @@ describe('Read-Time Verification', function () {
         $data = ['title' => 'Test PR'];
         $hash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'pr.initiation',
             'stream_key' => 'PR-2024-103',
             'txid' => 'test-txid-nouser',
@@ -445,7 +445,7 @@ describe('Restore Violation', function () {
             txid: 'restore-txid-1',
         );
 
-        $syncMock = $this->mock(BlockchainMirrorSyncService::class);
+        $syncMock = $this->mock(BlockchainRecordSyncService::class);
         $syncMock->shouldReceive('repairFromChain')
             ->with('PR-2024-200', 'pr.initiation')
             ->andReturn(1);
@@ -471,7 +471,7 @@ describe('Restore Violation', function () {
             txid: 'restore-txid-2',
         );
 
-        $syncMock = $this->mock(BlockchainMirrorSyncService::class);
+        $syncMock = $this->mock(BlockchainRecordSyncService::class);
         $syncMock->shouldReceive('repairFromChain')
             ->andThrow(new Exception('Blockchain node unreachable'));
 
@@ -536,7 +536,7 @@ describe('Restore Violation', function () {
         $data = ['title' => 'Breached PR'];
         $hash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        $mirror = ProcurementMirror::create([
+        $mirror = ProcurementRecord::create([
             'stream' => 'pr.initiation',
             'stream_key' => 'PR-2024-205',
             'txid' => 'restore-txid-3',
@@ -558,7 +558,7 @@ describe('Restore Violation', function () {
             mirrorId: $mirror->id,
         );
 
-        $syncMock = $this->mock(BlockchainMirrorSyncService::class);
+        $syncMock = $this->mock(BlockchainRecordSyncService::class);
         $syncMock->shouldReceive('repairFromChain')
             ->andReturn(1);
 

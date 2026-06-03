@@ -23,7 +23,7 @@ class UserRegistrationService
      * Publish a user registration receipt to the blockchain.
      *
      * Called after a new user is created and assigned a role.
-     * Publishes to user.registrations stream and mirrors to procurement_mirror.
+     * Publishes to user.registrations stream and mirrors to procurement_records.
      *
      * @param  User  $user  The newly registered user
      * @param  string  $registeredBy  Who initiated the registration
@@ -54,9 +54,9 @@ class UserRegistrationService
                 'txid' => $txid,
             ]);
 
-            // Mirror to procurement_mirror
+            // Mirror to procurement_records
             try {
-                $syncService = app(BlockchainMirrorSyncService::class);
+                $syncService = app(BlockchainRecordSyncService::class);
                 $syncService->upstream(
                     stream: StreamEnums::USER_REGISTRATIONS->value,
                     key: (string) $user->id,
@@ -84,7 +84,7 @@ class UserRegistrationService
      *
      * Called when a user's blockchain_address is updated.
      * Publishes to user.registrations stream with change metadata
-     * and mirrors to procurement_mirror.
+     * and mirrors to procurement_records.
      *
      * @param  User  $user  The user whose address changed
      * @param  string  $oldAddress  The previous blockchain address
@@ -118,9 +118,9 @@ class UserRegistrationService
                 'txid' => $txid,
             ]);
 
-            // Mirror to procurement_mirror
+            // Mirror to procurement_records
             try {
-                $syncService = app(BlockchainMirrorSyncService::class);
+                $syncService = app(BlockchainRecordSyncService::class);
                 $syncService->upstream(
                     stream: StreamEnums::USER_REGISTRATIONS->value,
                     key: (string) $user->id,

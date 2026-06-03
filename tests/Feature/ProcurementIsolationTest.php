@@ -3,7 +3,7 @@
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
 use App\Models\User;
-use App\Repositories\ProcurementMirrorRepository;
+use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\DashboardCacheKeys;
 use App\Services\Procurement\ProcurementActionService;
@@ -132,7 +132,7 @@ function buildIsolationAggregator(array $repositoryFixtures = [], array $statusF
             return $result;
         });
 
-    $mirrorRepository = mock(ProcurementMirrorRepository::class);
+    $mirrorRepository = mock(ProcurementRecordRepository::class);
     $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
         ->zeroOrMoreTimes()
         ->andReturn($statusFixtures);
