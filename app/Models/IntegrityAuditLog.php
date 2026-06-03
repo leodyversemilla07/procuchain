@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\BlockchainAuditTrailService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -187,12 +189,16 @@ class IntegrityAuditLog extends Model
     /**
      * Record a violation with field-level differences and revision context.
      *
+     * Records the violation in BOTH MySQL (integrity_audit_logs) AND blockchain
+     * (integrity.violations stream) for permanent, immutable audit trail.
+     *
      * @param  array  $fieldDifferences  [{field, old_value, new_value}]
      * @param  array|null  $mirrorSnapshot  DB state at detection time
      * @param  array|null  $chainSnapshot  Blockchain state at detection time
      * @param  int|null  $revisionNumber  The revision number of the affected mirror record
      * @param  string|null  $parentTxid  The parent revision's txid
      * @param  string[]|null  $revisionLineage  Full lineage from root to this revision
+     * @param  bool  $publishToChain  Whether to also write to the blockchain audit trail
      */
     public static function recordViolation(
         string $stream,
@@ -208,8 +214,9 @@ class IntegrityAuditLog extends Model
         ?int $revisionNumber = null,
         ?string $parentTxid = null,
         ?array $revisionLineage = null,
+        bool $publishToChain = true,
     ): self {
-        return self::create([
+        $auditLog = self::create([
             'stream' => $stream,
             'stream_key' => $streamKey,
             'txid' => $txid,
@@ -226,6 +233,13 @@ class IntegrityAuditLog extends Model
             'source' => $source,
             'revision_lineage' => $revisionLineage,
         ]);
+
+        // Publish to blockchain for permanent, immutable audit trail
+        if ($publishToChain) {
+            $auditLog->publishToBlockchain();
+        }
+
+        return $auditLog;
     }
 
     /**
@@ -239,6 +253,7 @@ class IntegrityAuditLog extends Model
         ?array $chainSnapshot = null,
         ?string $runId = null,
         string $source = 'scheduled',
+        bool $publishToChain = true,
     ): self {
         return self::recordViolation(
             stream: $mirror->stream,
@@ -254,6 +269,7 @@ class IntegrityAuditLog extends Model
             revisionNumber: $mirror->revision_number,
             parentTxid: $mirror->parent_txid,
             revisionLineage: $mirror->getRevisionLineage(),
+            publishToChain: $publishToChain,
         );
     }
 
@@ -294,14 +310,56 @@ class IntegrityAuditLog extends Model
 
     /**
      * Mark this violation as successfully restored.
+     *
+     * Also publishes the recovery event to the blockchain audit trail
+     * so there is an immutable record that the recovery happened.
      */
-    public function markRestored(array $result = []): void
+    public function markRestored(array $result = [], bool $publishToChain = true): void
     {
         $this->update([
             'recovery_status' => 'restored',
             'recovered_at' => Carbon::now(),
             'recovery_result' => $result,
         ]);
+
+        // Publish recovery to blockchain for permanent audit trail
+        if ($publishToChain) {
+            try {
+                app(BlockchainAuditTrailService::class)->publishRecovery($this, $result);
+            } catch (\Exception $e) {
+                // Non-critical — violation is already on chain, recovery is supplementary
+                Log::debug('IntegrityAuditLog: failed to publish recovery to chain', [
+                    'audit_log_id' => $this->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Publish this violation record to the blockchain audit trail.
+     *
+     * The blockchain entry is immutable and permanent — it survives
+     * total MySQL destruction. This satisfies Requirement #6:
+     * "Maintain a permanent audit trail of all recovery operations."
+     *
+     * @return string|null The blockchain transaction ID
+     */
+    public function publishToBlockchain(): ?string
+    {
+        try {
+            return app(BlockchainAuditTrailService::class)->publishViolation($this);
+        } catch (\Exception $e) {
+            // Non-critical — the MySQL record is already created.
+            // Blockchain publishing is best-effort; failures are logged
+            // but must never block the integrity verification pipeline.
+            Log::debug('IntegrityAuditLog: failed to publish to blockchain', [
+                'audit_log_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

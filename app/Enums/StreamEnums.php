@@ -21,6 +21,7 @@ enum StreamEnums: string
     case FILE_CHUNKS = 'file.chunks';
     case ARCHIVE = 'procurement.archive';
     case USER_REGISTRATIONS = 'user.registrations';
+    case INTEGRITY_VIOLATIONS = 'integrity.violations';
 
     /**
      * Get the user-friendly display name for the stream
@@ -39,6 +40,7 @@ enum StreamEnums: string
             self::FILE_CHUNKS => 'File Chunks',
             self::ARCHIVE => 'Procurement Archive',
             self::USER_REGISTRATIONS => 'User Registrations',
+            self::INTEGRITY_VIOLATIONS => 'Integrity Violations',
         };
     }
 
@@ -59,6 +61,7 @@ enum StreamEnums: string
             self::FILE_CHUNKS => 'Stores chunked file data for large files',
             self::ARCHIVE => 'Tracks archived status of procurements',
             self::USER_REGISTRATIONS => 'Records user registration events on the blockchain',
+            self::INTEGRITY_VIOLATIONS => 'Permanent append-only audit trail of all integrity violations and recovery operations',
         };
     }
 
@@ -123,5 +126,15 @@ enum StreamEnums: string
         }
 
         return $options;
+    }
+
+    /**
+     * Get all integrity-related stream cases.
+     *
+     * @return list<self>
+     */
+    public static function integrityStreams(): array
+    {
+        return [self::INTEGRITY_VIOLATIONS];
     }
 }

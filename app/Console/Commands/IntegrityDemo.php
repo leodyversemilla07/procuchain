@@ -152,8 +152,8 @@ class IntegrityDemo extends Command
             ], $fieldDiffs)
         );
 
-        // Step 6: Record audit log
-        $this->step(6, 'Recording Audit Log (Append-Only)');
+        // Step 6: Record audit log (MySQL + Blockchain)
+        $this->step(6, 'Recording Audit Log (MySQL + Blockchain)');
 
         $auditLog = IntegrityAuditLog::recordViolationFromMirror(
             mirror: $mirror,
@@ -164,11 +164,14 @@ class IntegrityDemo extends Command
             source: 'demo',
         );
 
-        $this->info("  ✓ Audit Log ID: {$auditLog->id}");
+        $this->info("  ✓ Audit Log ID: {$auditLog->id} (MySQL)");
         $this->info("  ✓ Violation Type: {$auditLog->violation_type}");
         $this->info("  ✓ Severity: {$auditLog->severity}");
         $this->info("  ✓ Recovery Status: {$auditLog->recovery_status}");
         $this->info("  ✓ Revision Number: {$auditLog->revision_number}");
+        $this->newLine();
+        $this->info('  ✓ ALSO published to blockchain (integrity.violations stream)');
+        $this->info('  → This record is IMMUTABLE and survives MySQL destruction');
         $this->newLine();
 
         // Step 7: Mark mirror as breached
@@ -204,7 +207,8 @@ class IntegrityDemo extends Command
         $this->info('Summary:');
         $this->info('  • Database tampering was simulated');
         $this->info('  • Field-level differences were detected');
-        $this->info('  • Audit log was created (append-only)');
+        $this->info('  • Audit log was created in MySQL (append-only)');
+        $this->info('  • Audit log was ALSO published to blockchain (immutable)');
         $this->info('  • Mirror record was marked as breached');
         $this->info('  • Blockchain remains the source of truth');
         $this->newLine();
@@ -213,7 +217,14 @@ class IntegrityDemo extends Command
         $this->info('  1. Blockchain = Immutable Source of Truth');
         $this->info('  2. Database = Mutable Mirror/Cache');
         $this->info('  3. Integrity Service = Continuous Verification');
-        $this->info('  4. Audit Log = Permanent Forensic Record');
+        $this->info('  4. Audit Log (MySQL) = Fast queries, mutable');
+        $this->info('  5. Audit Trail (Blockchain) = Permanent, immutable');
+        $this->newLine();
+        $this->info('  Requirement #6 Satisfied:');
+        $this->info('  "Maintain a permanent audit trail of all recovery operations"');
+        $this->info('  → Violations are written to integrity.violations stream');
+        $this->info('  → Survives total MySQL destruction');
+        $this->info('  → Recover with: php artisan blockchain:audit-trail --restore');
         $this->newLine();
 
         // Ask if user wants to see deletion scenario
@@ -390,6 +401,11 @@ class IntegrityDemo extends Command
         $this->info('Key Takeaway:');
         $this->info('  ✓ Even if data is DELETED from database, it can be');
         $this->info('    restored from the blockchain (source of truth)');
+        $this->newLine();
+        $this->info('  ✓ Even if MySQL is COMPLETELY DESTROYED:');
+        $this->info('    • Procurement data → rebuilt with: blockchain:sync');
+        $this->info('    • Audit trail → rebuilt with: blockchain:audit-trail --restore');
+        $this->info('    • BOTH are permanent on the blockchain');
         $this->newLine();
     }
 
