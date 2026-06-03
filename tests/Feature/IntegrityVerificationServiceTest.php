@@ -49,7 +49,7 @@ describe('IntegrityAuditLog Model', function () {
             ],
             mirrorSnapshot: ['title' => 'Tampered'],
             chainSnapshot: ['title' => 'Original'],
-            mirrorId: 5,
+            recordId: 5,
             runId: $runId,
             source: 'scheduled',
         );
@@ -62,7 +62,7 @@ describe('IntegrityAuditLog Model', function () {
         expect($log->mirror_snapshot)->toBe(['title' => 'Tampered']);
         expect($log->chain_snapshot)->toBe(['title' => 'Original']);
         expect($log->recovery_status)->toBe('pending');
-        expect($log->mirror_id)->toBe(5);
+        expect($log->record_id)->toBe(5);
         expect($log->verification_run_id)->toBe($runId);
         expect($log->source)->toBe('scheduled');
     });
@@ -79,7 +79,7 @@ describe('IntegrityAuditLog Model', function () {
         expect($log->mirror_snapshot)->toBeNull();
         expect($log->chain_snapshot)->toBeNull();
         expect($log->txid)->toBeNull();
-        expect($log->mirror_id)->toBeNull();
+        expect($log->record_id)->toBeNull();
     });
 
     it('marks a violation as restored', function () {
@@ -555,7 +555,7 @@ describe('Restore Violation', function () {
             streamKey: 'PR-2024-205',
             violationType: BreachTypeEnums::HASH_MISMATCH->value,
             txid: 'restore-txid-3',
-            mirrorId: $mirror->id,
+            recordId: $mirror->id,
         );
 
         $syncMock = $this->mock(BlockchainRecordSyncService::class);

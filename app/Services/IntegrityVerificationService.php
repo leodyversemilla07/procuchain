@@ -232,8 +232,8 @@ class IntegrityVerificationService
             ]);
 
             // Also mark mirror breach as repaired
-            if ($auditLog->mirror_id) {
-                $mirror = ProcurementRecord::find($auditLog->mirror_id);
+            if ($auditLog->record_id) {
+                $mirror = ProcurementRecord::find($auditLog->record_id);
                 if ($mirror && $mirror->isBreached()) {
                     $mirror->markAsRepaired();
                 }
