@@ -120,14 +120,12 @@ export default function IntegrityBreaches() {
     const [repairingPr, setRepairingPr] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [verifyAndRepairing, setVerifyAndRepairing] = useState(false);
-    const [verifyResult, setVerifyResult] = useState<{ verified: number; breach_count: number } | null>(null);
-    const [prRepairResult, setPrRepairResult] = useState<{ success: boolean; repaired_count?: number; error?: string } | null>(null);
 
     const handleRepair = async (id: number) => {
         setRepairing(id);
         try {
             await router.post(
-                `/admin/integrity-breaches/${id}/repair`,
+                integrityBreaches.repair.url(id),
                 {},
                 {
                     preserveScroll: true,
@@ -139,72 +137,32 @@ export default function IntegrityBreaches() {
         }
     };
 
-    const handleVerify = async () => {
+    const handleVerify = () => {
         setVerifying(true);
-        setVerifyResult(null);
-        try {
-            const res = await fetch('/admin/integrity-breaches/verify', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                },
-                credentials: 'same-origin',
-            });
-            const data = await res.json();
-            if (data.success) {
-                setVerifyResult({ verified: data.verified, breach_count: data.breach_count });
-            }
-        } finally {
-            setVerifying(false);
-        }
+        router.post(integrityBreaches.verify.url(), {}, {
+            preserveScroll: true,
+            preserveState: false,
+            onFinish: () => setVerifying(false),
+        });
     };
 
-    const handleVerifyAndRepair = async () => {
+    const handleVerifyAndRepair = () => {
         setVerifyAndRepairing(true);
-        setVerifyResult(null);
-        try {
-            const res = await fetch('/admin/integrity-breaches/verify-and-repair', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                },
-                credentials: 'same-origin',
-            });
-            const data = await res.json();
-            if (data.success) {
-                setVerifyResult({ verified: data.verified, breach_count: data.breach_count });
-                router.reload({ preserveState: false });
-            }
-        } finally {
-            setVerifyAndRepairing(false);
-        }
+        router.post(integrityBreaches.verifyAndRepair.url(), {}, {
+            preserveScroll: true,
+            preserveState: false,
+            onFinish: () => setVerifyAndRepairing(false),
+        });
     };
 
-    const handleRepairPr = async () => {
+    const handleRepairPr = () => {
         if (!filters.pr_number) return;
         setRepairingPr(true);
-        setPrRepairResult(null);
-        try {
-            const res = await fetch('/admin/integrity-breaches/repair-pr', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                    Accept: 'application/json',
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ pr_number: filters.pr_number }),
-            });
-            const data = await res.json();
-            setPrRepairResult(data);
-            if (data.success) {
-                router.reload({ preserveState: false });
-            }
-        } finally {
-            setRepairingPr(false);
-        }
+        router.post(integrityBreaches.repairPr.url(), { pr_number: filters.pr_number }, {
+            preserveScroll: true,
+            preserveState: false,
+            onFinish: () => setRepairingPr(false),
+        });
     };
 
     const handleFilter = (key: string, value: string | null) => {
@@ -214,7 +172,7 @@ export default function IntegrityBreaches() {
         } else {
             params.delete(key);
         }
-        router.get(`/admin/integrity-breaches?${params.toString()}`, {}, { preserveState: true });
+        router.get(integrityBreaches.index.url({ query: Object.fromEntries(params) }), {}, { preserveState: true });
     };
 
     return (
@@ -333,49 +291,12 @@ export default function IntegrityBreaches() {
                         </AlertDialog>
                     )}
                     {(filters.violation_type || filters.stream || filters.status || filters.pr_number) && (
-                        <Button variant="ghost" size="sm" onClick={() => router.get('/admin/integrity-breaches')}>
+                        <Button variant="ghost" size="sm" onClick={() => router.get(integrityBreaches.index.url())}>
                             Clear Filters
                         </Button>
                     )}
                 </div>
             </div>
-
-            {/* Verify Result Toast */}
-            {verifyResult && (
-                <Card className="mx-4 border-blue-200 dark:border-blue-900">
-                    <CardContent className="flex items-center gap-3 p-4">
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <span>
-                            Verification complete: <strong>{verifyResult.verified}</strong> records checked,{' '}
-                            <strong>{verifyResult.breach_count}</strong> new breaches found.
-                        </span>
-                        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setVerifyResult(null)}>
-                            Dismiss
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* PR Repair Result Toast */}
-            {prRepairResult && (
-                <Card className={`mx-4 ${prRepairResult.success ? 'border-green-200 dark:border-green-900' : 'border-red-200 dark:border-red-900'}`}>
-                    <CardContent className="flex items-center gap-3 p-4">
-                        {prRepairResult.success ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        ) : (
-                            <AlertTriangle className="h-5 w-5 text-red-600" />
-                        )}
-                        <span>
-                            {prRepairResult.success
-                                ? `PR repair successful: ${prRepairResult.repaired_count} breach(es) repaired.`
-                                : `PR repair failed: ${prRepairResult.error}`}
-                        </span>
-                        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setPrRepairResult(null)}>
-                            Dismiss
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Flash Messages */}
             {success && (

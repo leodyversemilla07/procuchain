@@ -9,6 +9,9 @@ use App\Enums\StreamEnums;
 use App\Http\Controllers\Controller;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
+use App\Models\ProcurementDocument;
+use App\Models\ProcurementEvent;
+use App\Models\ProcurementStage;
 use App\Services\BlockchainRecordSyncService;
 use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
@@ -18,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * Integrity Breach Controller
@@ -183,7 +187,7 @@ class IntegrityBreachController extends Controller
     /**
      * Run integrity verification.
      */
-    public function verify(): JsonResponse
+    public function verify(): SymfonyResponse
     {
         $this->authorize('view-audit-log');
 
@@ -191,22 +195,20 @@ class IntegrityBreachController extends Controller
             $service = app(IntegrityVerificationService::class);
             $result = $service->verifyAndRepair(false, 'manual');
 
-            return response()->json([
-                'success' => true,
-                'run_id' => $result['run_id'],
-                'verified' => $result['verified'],
-                'breach_count' => array_sum($result['violations']),
-                'violations' => $result['violations'],
-            ]);
+            return back()->with('success', sprintf(
+                'Verification complete: %d records checked, %d new breaches found.',
+                $result['verified'],
+                array_sum($result['violations'])
+            ));
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            return back()->with('error', 'Verification failed: '.$e->getMessage());
         }
     }
 
     /**
      * Run verification with auto-repair.
      */
-    public function verifyAndRepair(): JsonResponse
+    public function verifyAndRepair(): SymfonyResponse
     {
         $this->authorize('update-audit-log');
 
@@ -214,15 +216,14 @@ class IntegrityBreachController extends Controller
             $service = app(IntegrityVerificationService::class);
             $result = $service->verifyAndRepair(true, 'manual');
 
-            return response()->json([
-                'success' => true,
-                'run_id' => $result['run_id'],
-                'verified' => $result['verified'],
-                'breach_count' => array_sum($result['violations']),
-                'restored' => $result['restored'],
-            ]);
+            return back()->with('success', sprintf(
+                'Verification complete: %d records checked, %d breaches found, %d restored.',
+                $result['verified'],
+                array_sum($result['violations']),
+                $result['restored']
+            ));
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            return back()->with('error', 'Verification failed: '.$e->getMessage());
         }
     }
 
@@ -255,9 +256,9 @@ class IntegrityBreachController extends Controller
             'unresolved_breaches' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
             'stream_counts' => [
                 'procurements' => Procurement::count(),
-                'stages' => \App\Models\ProcurementStage::count(),
-                'documents' => \App\Models\ProcurementDocument::count(),
-                'events' => \App\Models\ProcurementEvent::count(),
+                'stages' => ProcurementStage::count(),
+                'documents' => ProcurementDocument::count(),
+                'events' => ProcurementEvent::count(),
             ],
         ]);
     }
@@ -307,6 +308,7 @@ class IntegrityBreachController extends Controller
         try {
             $service = app(IntegrityVerificationService::class);
             $result = $service->restoreViolation($log);
+
             return $result['success']
                 ? back()->with('success', 'Restored from blockchain.')
                 : back()->with('error', $result['error'] ?? 'Failed');
@@ -377,19 +379,22 @@ class IntegrityBreachController extends Controller
             if ($action === 'sync') {
                 $syncService = app(NormalizedTableSyncService::class);
                 $counts = $syncService->syncAll();
-                return back()->with('success', 'Sync completed: ' . json_encode($counts));
+
+                return back()->with('success', 'Sync completed: '.json_encode($counts));
             }
 
             if ($action === 'verify') {
                 $service = app(IntegrityVerificationService::class);
                 $result = $service->verifyAndRepair(false, 'demo');
-                return back()->with('success', 'Verification completed: ' . json_encode($result['violations']));
+
+                return back()->with('success', 'Verification completed: '.json_encode($result['violations']));
             }
 
             if ($action === 'verify_pr' && $prNumber) {
                 $service = app(IntegrityVerificationService::class);
                 $result = $service->verifyPr($prNumber, false);
-                return back()->with('success', "PR {$prNumber} verified: " . json_encode($result['violations']));
+
+                return back()->with('success', "PR {$prNumber} verified: ".json_encode($result['violations']));
             }
 
             return back()->with('error', 'Unknown action');
