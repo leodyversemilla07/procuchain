@@ -1,4 +1,4 @@
-import { HeroCard } from '@/components/hero-card';
+import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -203,30 +203,15 @@ export default function IntegrityAuditLogs() {
             <Head title="Integrity Audit Logs" />
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
-                <HeroCard title="Total Records" value={logs?.total ?? 0} icon={<ScrollText className="h-4 w-4" />} description="All audit entries" />
-                <HeroCard
-                    title="Current Page Pending"
-                    value={pendingCount}
-                    icon={<Clock className="h-4 w-4" />}
-                    description="Needs repair"
-                    className={pendingCount > 0 ? 'border-yellow-200 dark:border-yellow-900' : undefined}
-                />
-                <HeroCard
-                    title="Critical on Page"
-                    value={criticalCount}
-                    icon={<ShieldAlert className="h-4 w-4" />}
-                    description="Hash/content mismatch"
-                    className={criticalCount > 0 ? 'border-red-200 dark:border-red-900' : undefined}
-                />
-                <HeroCard
-                    title="Navigate to Breaches"
-                    value="→"
-                    icon={<AlertTriangle className="h-4 w-4" />}
-                    description="Active breach records"
-                    onClick={() => (window.location.href = adminIntegrityBreaches.index.url())}
-                />
-            </div>
+            <StatsGrid
+                items={[
+                    { label: 'Total Records', value: logs?.total ?? 0, icon: ScrollText, iconClassName: 'bg-muted' },
+                    { label: 'Current Page Pending', value: pendingCount, icon: Clock, iconClassName: pendingCount > 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-muted' },
+                    { label: 'Critical on Page', value: criticalCount, icon: ShieldAlert, iconClassName: criticalCount > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted' },
+                    { label: 'Navigate to Breaches', value: '→', icon: AlertTriangle, iconClassName: 'bg-muted' },
+                ]}
+                className="p-4"
+            />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 p-4">
