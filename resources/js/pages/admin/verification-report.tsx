@@ -4,15 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 interface VerificationReport {
     run_id: string;
@@ -50,6 +48,8 @@ interface VerificationReport {
 
 interface VerificationReportPageProps {
     runId: string;
+    report: VerificationReport | null;
+    error?: string;
 }
 
 const breadcrumbs = [
@@ -80,60 +80,25 @@ const VIOLATION_TYPE_LABELS: Record<string, string> = {
     user_address_tampered: 'User Address Tampered',
 };
 
-function truncateHash(hash: string, len = 12): string {
-    if (!hash) return '—';
-    if (hash.length <= len * 2 + 3) return hash;
-    return `${hash.slice(0, len)}...${hash.slice(-len)}`;
-}
+export default function VerificationReportPage({ runId, report, error }: VerificationReportPageProps) {
+    const [expandedViolation, setExpandedViolation] = React.useState<number | null>(null);
 
-export default function VerificationReportPage({ runId }: VerificationReportPageProps) {
-    const [report, setReport] = useState<VerificationReport | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [expandedViolation, setExpandedViolation] = useState<number | null>(null);
-
-    useEffect(() => {
-        fetchReport();
-    }, [runId]);
-
-    const fetchReport = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/admin/integrity-audit-logs/report/${encodeURIComponent(runId)}`, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+    const handleRepair = (violationId: number) => {
+        router.post(
+            integrityAuditLogs.api.repair.url(violationId),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    // Reload the page to get fresh data
+                    router.reload({ only: ['report'] });
                 },
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            setReport(data);
-            setError(null);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load report');
-        } finally {
-            setLoading(false);
-        }
+            },
+        );
     };
 
-    const handleRepair = async (violationId: number) => {
-        try {
-            const res = await fetch(`/admin/integrity-audit-logs/${violationId}/repair`, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                },
-            });
-            const data = await res.json();
-            if (data.success) {
-                fetchReport(); // Refresh report
-            }
-        } catch (err) {
-            console.error('Repair failed:', err);
-        }
+    const handleRefresh = () => {
+        router.reload({ only: ['report'] });
     };
 
     return (
@@ -148,7 +113,7 @@ export default function VerificationReportPage({ runId }: VerificationReportPage
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                     </Button>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="flex items-center gap-2 text-2xl font-bold">
                             <FileSearch className="h-6 w-6" />
                             Verification Run Report
@@ -157,21 +122,19 @@ export default function VerificationReportPage({ runId }: VerificationReportPage
                             Run ID: <code className="text-xs">{runId}</code>
                         </p>
                     </div>
+                    <Button onClick={handleRefresh} variant="outline">
+                        Refresh
+                    </Button>
                 </div>
 
-                {loading ? (
-                    <div className="space-y-4">
-                        <Skeleton className="h-32 w-full" />
-                        <Skeleton className="h-64 w-full" />
-                    </div>
-                ) : error ? (
+                {error ? (
                     <Card className="border-destructive">
                         <CardHeader>
                             <CardTitle className="text-destructive">Error Loading Report</CardTitle>
                             <CardDescription>{error}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button onClick={fetchReport} variant="outline">
+                            <Button onClick={handleRefresh} variant="outline">
                                 Retry
                             </Button>
                         </CardContent>
@@ -217,7 +180,7 @@ export default function VerificationReportPage({ runId }: VerificationReportPage
                         {/* Severity Breakdown */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Severity Breakdown</CardTitle>
+                                <CardTitle>Violation Types</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-3">
@@ -308,23 +271,23 @@ export default function VerificationReportPage({ runId }: VerificationReportPage
                                                                                     <TableHead>Modified (DB)</TableHead>
                                                                                 </TableRow>
                                                                             </TableHeader>
-                                                            <TableBody>
-                                                                {violation.field_differences.map((diff, i) => (
-                                                                    <TableRow key={i}>
-                                                                        <TableCell className="font-mono text-xs">{diff.field}</TableCell>
-                                                                        <TableCell className="bg-green-50/50 text-xs dark:bg-green-950/20">
-                                                                            {typeof diff.old_value === 'object'
-                                                                                ? JSON.stringify(diff.old_value)
-                                                                                : String(diff.old_value ?? '—')}
-                                                                        </TableCell>
-                                                                        <TableCell className="bg-red-50/50 text-xs dark:bg-red-950/20">
-                                                                            {typeof diff.new_value === 'object'
-                                                                                ? JSON.stringify(diff.new_value)
-                                                                                : String(diff.new_value ?? '—')}
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
+                                                                            <TableBody>
+                                                                                {violation.field_differences.map((diff, i) => (
+                                                                                    <TableRow key={i}>
+                                                                                        <TableCell className="font-mono text-xs">{diff.field}</TableCell>
+                                                                                        <TableCell className="bg-green-50/50 text-xs dark:bg-green-950/20">
+                                                                                            {typeof diff.old_value === 'object'
+                                                                                                ? JSON.stringify(diff.old_value)
+                                                                                                : String(diff.old_value ?? '—')}
+                                                                                        </TableCell>
+                                                                                        <TableCell className="bg-red-50/50 text-xs dark:bg-red-950/20">
+                                                                                            {typeof diff.new_value === 'object'
+                                                                                                ? JSON.stringify(diff.new_value)
+                                                                                                : String(diff.new_value ?? '—')}
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                ))}
+                                                                            </TableBody>
                                                                         </Table>
                                                                     ) : (
                                                                         <p className="text-muted-foreground text-sm">No field differences recorded</p>
@@ -384,7 +347,12 @@ export default function VerificationReportPage({ runId }: VerificationReportPage
                             </CardContent>
                         </Card>
                     </div>
-                ) : null}
+                ) : (
+                    <div className="space-y-4">
+                        <Skeleton className="h-32 w-full" />
+                        <Skeleton className="h-64 w-full" />
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

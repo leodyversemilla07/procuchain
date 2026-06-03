@@ -471,8 +471,19 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
+        $log = IntegrityAuditLog::find($id);
+
+        if (! $log) {
+            return Inertia::render('admin/audit-log-detail', [
+                'logId' => $id,
+                'log' => null,
+                'error' => 'Audit log not found.',
+            ]);
+        }
+
         return Inertia::render('admin/audit-log-detail', [
             'logId' => $id,
+            'log' => $log,
         ]);
     }
 
@@ -483,8 +494,12 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
+        $service = app(IntegrityVerificationService::class);
+        $report = $service->generateReport($runId);
+
         return Inertia::render('admin/verification-report', [
             'runId' => $runId,
+            'report' => $report,
         ]);
     }
 
@@ -495,8 +510,35 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
+        $breach = ProcurementMirror::find($id);
+
+        if (! $breach) {
+            return Inertia::render('admin/breach-detail', [
+                'breachId' => $id,
+                'breach' => null,
+                'error' => 'Breach not found.',
+            ]);
+        }
+
+        // Get revision history
+        $revisionHistory = $breach->getRevisionHistory()->map(fn ($r) => [
+            'txid' => $r->txid,
+            'revision_number' => $r->revision_number,
+            'parent_txid' => $r->parent_txid,
+            'is_latest_revision' => $r->is_latest_revision,
+            'blocktime' => $r->blocktime?->toIso8601String(),
+            'publisher_address' => $r->publisher_address,
+            'data_hash' => $r->data_hash,
+            'breach_detected_at' => $r->breach_detected_at?->toIso8601String(),
+            'breach_type' => $r->breach_type,
+            'repaired_at' => $r->repaired_at?->toIso8601String(),
+        ]);
+
         return Inertia::render('admin/breach-detail', [
             'breachId' => $id,
+            'breach' => array_merge($breach->toArray(), [
+                'revision_history' => $revisionHistory,
+            ]),
         ]);
     }
 }

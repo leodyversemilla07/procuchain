@@ -4,14 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 interface AuditLogDetail {
     id: number;
@@ -38,6 +36,8 @@ interface AuditLogDetail {
 
 interface AuditLogDetailPageProps {
     logId: number;
+    log: AuditLogDetail | null;
+    error?: string;
 }
 
 const breadcrumbs = [
@@ -68,58 +68,19 @@ const VIOLATION_TYPE_LABELS: Record<string, string> = {
     user_address_tampered: 'User Address Tampered',
 };
 
-export default function AuditLogDetailPage({ logId }: AuditLogDetailPageProps) {
-    const [log, setLog] = useState<AuditLogDetail | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [repairing, setRepairing] = useState(false);
-
-    useEffect(() => {
-        fetchLog();
-    }, [logId]);
-
-    const fetchLog = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/admin/integrity-audit-logs/${logId}`, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                },
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            setLog(data);
-            setError(null);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load audit log');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRepair = async () => {
+export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetailPageProps) {
+    const handleRepair = () => {
         if (!log) return;
-        setRepairing(true);
-        try {
-            const res = await fetch(`/admin/integrity-audit-logs/${log.id}/repair`, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+        router.post(
+            integrityAuditLogs.api.repair.url(log.id),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    router.reload({ only: ['log'] });
                 },
-            });
-            const data = await res.json();
-            if (data.success) {
-                fetchLog(); // Refresh
-            }
-        } catch (err) {
-            console.error('Repair failed:', err);
-        } finally {
-            setRepairing(false);
-        }
+            },
+        );
     };
 
     const RecoveryIcon = log ? (RECOVERY_STATUS_STYLES[log.recovery_status]?.icon ?? Clock) : Clock;
@@ -132,7 +93,7 @@ export default function AuditLogDetailPage({ logId }: AuditLogDetailPageProps) {
                 {/* Header */}
                 <div className="mb-6 flex items-center gap-4">
                     <Button variant="ghost" size="icon" asChild>
-                        <Link href="/admin/integrity-audit-logs">
+                        <Link href={integrityAuditLogs.index.url()}>
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                     </Button>
@@ -144,26 +105,21 @@ export default function AuditLogDetailPage({ logId }: AuditLogDetailPageProps) {
                         <p className="text-muted-foreground text-sm">Permanent forensic record for this violation</p>
                     </div>
                     {log && log.recovery_status === 'pending' && (
-                        <Button onClick={handleRepair} disabled={repairing} variant="destructive">
+                        <Button onClick={handleRepair} variant="destructive">
                             <Wrench className="mr-2 h-4 w-4" />
-                            {repairing ? 'Repairing...' : 'Repair from Blockchain'}
+                            Repair from Blockchain
                         </Button>
                     )}
                 </div>
 
-                {loading ? (
-                    <div className="space-y-4">
-                        <Skeleton className="h-32 w-full" />
-                        <Skeleton className="h-64 w-full" />
-                    </div>
-                ) : error ? (
+                {error ? (
                     <Card className="border-destructive">
                         <CardHeader>
                             <CardTitle className="text-destructive">Error Loading Audit Log</CardTitle>
                             <CardDescription>{error}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button onClick={fetchLog} variant="outline">
+                            <Button onClick={() => router.reload({ only: ['log'] })} variant="outline">
                                 Retry
                             </Button>
                         </CardContent>
@@ -386,24 +342,29 @@ export default function AuditLogDetailPage({ logId }: AuditLogDetailPageProps) {
                             </CardHeader>
                             <CardContent className="flex flex-wrap gap-3">
                                 <Button variant="outline" asChild>
-                                    <Link href={`/admin/integrity-audit-logs/report/${log.verification_run_id}`}>
+                                    <Link href={integrityAuditLogs.report.url(log.verification_run_id)}>
                                         View Full Verification Report
                                     </Link>
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link href={`/admin/integrity-audit-logs?stream_key=${log.stream_key}`}>
+                                    <Link href={integrityAuditLogs.index.url({ stream_key: log.stream_key })}>
                                         View All for PR {log.stream_key}
                                     </Link>
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link href="/admin/integrity-audit-logs">
+                                    <Link href={integrityAuditLogs.index.url()}>
                                         Back to Audit Logs
                                     </Link>
                                 </Button>
                             </CardContent>
                         </Card>
                     </div>
-                ) : null}
+                ) : (
+                    <div className="space-y-4">
+                        <div className="h-32 w-full animate-pulse rounded bg-gray-200" />
+                        <div className="h-64 w-full animate-pulse rounded bg-gray-200" />
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

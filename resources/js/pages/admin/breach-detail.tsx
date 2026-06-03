@@ -5,14 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Database, Shield, ShieldAlert, Wrench } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 interface BreachDetail {
     id: number;
@@ -37,11 +34,13 @@ interface BreachDetail {
 
 interface BreachDetailPageProps {
     breachId: number;
+    breach: BreachDetail | null;
+    error?: string;
 }
 
 const breadcrumbs = [
     { title: 'Admin Dashboard', href: dashboard.url() },
-    { title: 'Integrity Breaches', href: '/admin/integrity-breaches' },
+    { title: 'Integrity Breaches', href: integrityBreaches.index.url() },
     { title: 'Breach Detail', href: '#' },
 ];
 
@@ -74,58 +73,19 @@ function truncateHash(hash: string, len = 12): string {
     return `${hash.slice(0, len)}...${hash.slice(-len)}`;
 }
 
-export default function BreachDetailPage({ breachId }: BreachDetailPageProps) {
-    const [breach, setBreach] = useState<BreachDetail | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [repairing, setRepairing] = useState(false);
-
-    useEffect(() => {
-        fetchBreach();
-    }, [breachId]);
-
-    const fetchBreach = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/admin/integrity-breaches/${breachId}`, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                },
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            setBreach(data);
-            setError(null);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load breach details');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRepair = async () => {
+export default function BreachDetailPage({ breachId, breach, error }: BreachDetailPageProps) {
+    const handleRepair = () => {
         if (!breach) return;
-        setRepairing(true);
-        try {
-            const res = await fetch(`/admin/integrity-breaches/${breach.id}/repair`, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+        router.post(
+            integrityBreaches.repair.url(breach.id),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    router.reload({ only: ['breach'] });
                 },
-            });
-            const data = await res.json();
-            if (data.success) {
-                fetchBreach(); // Refresh
-            }
-        } catch (err) {
-            console.error('Repair failed:', err);
-        } finally {
-            setRepairing(false);
-        }
+            },
+        );
     };
 
     const severity = breach ? (BREACH_SEVERITY[breach.breach_type] ?? 'medium') : 'medium';
@@ -138,7 +98,7 @@ export default function BreachDetailPage({ breachId }: BreachDetailPageProps) {
                 {/* Header */}
                 <div className="mb-6 flex items-center gap-4">
                     <Button variant="ghost" size="icon" asChild>
-                        <Link href="/admin/integrity-breaches">
+                        <Link href={integrityBreaches.index.url()}>
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                     </Button>
@@ -150,26 +110,21 @@ export default function BreachDetailPage({ breachId }: BreachDetailPageProps) {
                         <p className="text-muted-foreground text-sm">Integrity breach #{breachId}</p>
                     </div>
                     {breach && !breach.repaired_at && (
-                        <Button onClick={handleRepair} disabled={repairing} variant="destructive">
+                        <Button onClick={handleRepair} variant="destructive">
                             <Wrench className="mr-2 h-4 w-4" />
-                            {repairing ? 'Repairing...' : 'Repair from Blockchain'}
+                            Repair from Blockchain
                         </Button>
                     )}
                 </div>
 
-                {loading ? (
-                    <div className="space-y-4">
-                        <Skeleton className="h-32 w-full" />
-                        <Skeleton className="h-64 w-full" />
-                    </div>
-                ) : error ? (
+                {error ? (
                     <Card className="border-destructive">
                         <CardHeader>
                             <CardTitle className="text-destructive">Error Loading Breach</CardTitle>
                             <CardDescription>{error}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button onClick={fetchBreach} variant="outline">
+                            <Button onClick={() => router.reload({ only: ['breach'] })} variant="outline">
                                 Retry
                             </Button>
                         </CardContent>
@@ -329,7 +284,7 @@ export default function BreachDetailPage({ breachId }: BreachDetailPageProps) {
                             </CardHeader>
                             <CardContent className="flex flex-wrap gap-3">
                                 <Button variant="outline" asChild>
-                                    <Link href={`/admin/integrity-audit-logs?stream_key=${breach.stream_key}`}>
+                                    <Link href={integrityAuditLogs.index.url({ stream_key: breach.stream_key })}>
                                         View Audit Logs for PR {breach.stream_key}
                                     </Link>
                                 </Button>
@@ -341,7 +296,12 @@ export default function BreachDetailPage({ breachId }: BreachDetailPageProps) {
                             </CardContent>
                         </Card>
                     </div>
-                ) : null}
+                ) : (
+                    <div className="space-y-4">
+                        <div className="h-32 w-full animate-pulse rounded bg-gray-200" />
+                        <div className="h-64 w-full animate-pulse rounded bg-gray-200" />
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
