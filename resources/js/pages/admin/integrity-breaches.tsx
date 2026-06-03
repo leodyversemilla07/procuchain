@@ -34,7 +34,7 @@ import { dashboard } from '@/routes/admin';
 import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { AlertTriangle, CheckCircle2, Database, Fingerprint, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Database, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
 import { useState } from 'react';
 
 interface BreachRecord {
@@ -107,7 +107,8 @@ function severityLabel(type: string): string {
     return BREACH_SEVERITY[type] ?? 'medium';
 }
 
-function truncateHash(hash: string, len = 12): string {
+function truncateHash(hash: string | null | undefined, len = 12): string {
+    if (!hash) return '—';
     if (hash.length <= len * 2 + 3) return hash;
     return `${hash.slice(0, len)}...${hash.slice(-len)}`;
 }
@@ -235,7 +236,6 @@ export default function IntegrityBreaches() {
                     { label: 'Total Breaches', value: stats.total, icon: AlertTriangle },
                     { label: 'Unresolved', value: stats.unresolved, icon: ShieldAlert },
                     { label: 'Critical', value: stats.critical, icon: Shield },
-                    { label: 'Unauthorized', value: stats.unauthorized, icon: Fingerprint },
                 ]}
                 className="p-4"
             />
@@ -291,7 +291,10 @@ export default function IntegrityBreaches() {
                         {verifying ? 'Verifying...' : 'Run Verification'}
                     </Button>
                     <AlertDialog>
-                        <AlertDialogTrigger render={<Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing} />} nativeButton={false}>
+                        <AlertDialogTrigger
+                            render={<Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing} />}
+                            nativeButton={false}
+                        >
                             <Wrench data-icon="inline-start" />
                             {verifyAndRepairing ? 'Running...' : 'Verify & Repair All'}
                         </AlertDialogTrigger>
@@ -388,7 +391,7 @@ export default function IntegrityBreaches() {
 
             {/* Breach Table */}
             <div className="p-4">
-                {breaches.data.length === 0 ? (
+                {!breaches?.data || breaches.data.length === 0 ? (
                     <Empty>
                         <EmptyMedia>
                             <ShieldCheck className="h-16 w-16 text-green-500" />
@@ -421,20 +424,23 @@ export default function IntegrityBreaches() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {breaches.data.map((breach) => {
+                                    {(breaches?.data ?? []).map((breach) => {
                                         const severity = breach.severity ?? 'medium';
                                         return (
-                                            <TableRow key={breach.id} className={breach.recovery_status === 'pending' ? 'bg-red-50/50 dark:bg-red-950/20' : ''}>
+                                            <TableRow
+                                                key={breach.id}
+                                                className={breach.recovery_status === 'pending' ? 'bg-red-50/50 dark:bg-red-950/20' : ''}
+                                            >
                                                 <TableCell>
                                                     <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
                                                 </TableCell>
-                                                <TableCell className="font-medium">{breachTypes[breach.violation_type] ?? breach.violation_type}</TableCell>
+                                                <TableCell className="font-medium">
+                                                    {breachTypes[breach.violation_type] ?? breach.violation_type}
+                                                </TableCell>
                                                 <TableCell>
                                                     <code className="text-xs">{breach.stream_key}</code>
                                                 </TableCell>
-                                                <TableCell className="text-muted-foreground text-sm">
-                                                    {breach.stream}
-                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">{breach.stream}</TableCell>
                                                 <TableCell>
                                                     <TooltipProvider>
                                                         <Tooltip>
@@ -448,9 +454,7 @@ export default function IntegrityBreaches() {
                                                     </TooltipProvider>
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground text-sm">
-                                                    {breach.created_at
-                                                        ? formatDistanceToNow(parseISO(breach.created_at), { addSuffix: true })
-                                                        : '—'}
+                                                    {breach.created_at ? formatDistanceToNow(parseISO(breach.created_at), { addSuffix: true }) : '—'}
                                                 </TableCell>
                                                 <TableCell>
                                                     {breach.recovery_status === 'restored' ? (
@@ -463,12 +467,21 @@ export default function IntegrityBreaches() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-1">
-                                                        <Button variant="ghost" size="sm" render={<a href={integrityBreaches.detail.url(breach.id)} />} nativeButton={false} title="View Details">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            render={<a href={integrityBreaches.detail.url(breach.id)} />}
+                                                            nativeButton={false}
+                                                            title="View Details"
+                                                        >
                                                             <Database data-icon="inline-start" />
                                                         </Button>
                                                         {breach.recovery_status === 'pending' && (
                                                             <AlertDialog>
-                                                                <AlertDialogTrigger render={<Button variant="outline" size="sm" disabled={repairing === breach.id} />} nativeButton={false}>
+                                                                <AlertDialogTrigger
+                                                                    render={<Button variant="outline" size="sm" disabled={repairing === breach.id} />}
+                                                                    nativeButton={false}
+                                                                >
                                                                     <Wrench data-icon="inline-start" />
                                                                     {repairing === breach.id ? 'Repairing...' : 'Repair'}
                                                                 </AlertDialogTrigger>
@@ -499,7 +512,7 @@ export default function IntegrityBreaches() {
                             </Table>
 
                             {/* Pagination */}
-                            {breaches.last_page > 1 && (
+                            {(breaches?.last_page ?? 0) > 1 && (
                                 <div className="mt-4">
                                     <Pagination>
                                         <PaginationContent>
@@ -667,9 +680,7 @@ export default function IntegrityBreaches() {
                                 <div>
                                     <span className="text-muted-foreground">Detected:</span>
                                     <br />
-                                    {selectedBreach.created_at
-                                        ? formatDistanceToNow(parseISO(selectedBreach.created_at), { addSuffix: true })
-                                        : '—'}
+                                    {selectedBreach.created_at ? formatDistanceToNow(parseISO(selectedBreach.created_at), { addSuffix: true }) : '—'}
                                 </div>
                                 <div>
                                     <span className="text-muted-foreground">Restored:</span>

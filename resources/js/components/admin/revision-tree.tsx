@@ -287,9 +287,7 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
                                             isCurrent={revision.txid === currentTxid || revision.is_latest_revision}
                                             compact={compact}
                                             isSelected={selectedRevision?.txid === revision.txid}
-                                            onSelect={() =>
-                                                setSelectedRevision(selectedRevision?.txid === revision.txid ? null : revision)
-                                            }
+                                            onSelect={() => setSelectedRevision(selectedRevision?.txid === revision.txid ? null : revision)}
                                         />
 
                                         {/* Connector Arrow */}
@@ -316,7 +314,7 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
 
                 {/* Selected node details */}
                 {selectedRevision && (
-                    <div className="rounded-lg border bg-muted/30 p-4">
+                    <div className="bg-muted/30 rounded-lg border p-4">
                         <RevisionDetails revision={selectedRevision} />
                     </div>
                 )}

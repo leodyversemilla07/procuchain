@@ -207,14 +207,16 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                 { label: 'High', value: report.summary.high, color: 'text-orange-600 dark:text-orange-400' },
                                                 { label: 'Medium', value: report.summary.medium, color: 'text-yellow-600 dark:text-yellow-400' },
                                                 { label: 'Low', value: report.summary.low, color: 'text-blue-600 dark:text-blue-400' },
-                                            ].filter((s) => s.value > 0).map((severity) => (
-                                                <div key={severity.label} className="flex items-center justify-between">
-                                                    <span className="text-sm">{severity.label}</span>
-                                                    <Badge variant="outline" className={`font-mono ${severity.color}`}>
-                                                        {severity.value}
-                                                    </Badge>
-                                                </div>
-                                            ))}
+                                            ]
+                                                .filter((s) => s.value > 0)
+                                                .map((severity) => (
+                                                    <div key={severity.label} className="flex items-center justify-between">
+                                                        <span className="text-sm">{severity.label}</span>
+                                                        <Badge variant="outline" className={`font-mono ${severity.color}`}>
+                                                            {severity.value}
+                                                        </Badge>
+                                                    </div>
+                                                ))}
                                         </div>
                                     </div>
                                 </div>
@@ -357,7 +359,18 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                                         Repair from Blockchain
                                                                     </Button>
                                                                 )}
-                                                                <Button variant="ghost" size="sm" render={<Link href={integrityAuditLogs.index.url({ query: { stream_key: violation.stream_key } })} />} nativeButton={false}>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    render={
+                                                                        <Link
+                                                                            href={integrityAuditLogs.index.url({
+                                                                                query: { stream_key: violation.stream_key },
+                                                                            })}
+                                                                        />
+                                                                    }
+                                                                    nativeButton={false}
+                                                                >
                                                                     View All for PR {violation.stream_key}
                                                                 </Button>
                                                             </div>
