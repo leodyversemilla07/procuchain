@@ -229,6 +229,12 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         });
 
         items.push({
+            title: 'Integrity Demo',
+            href: '/admin/integrity-demo',
+            icon: ShieldCheck,
+        });
+
+        items.push({
             title: 'Network View',
             href: adminNetwork.index.url(),
             icon: Share2,
