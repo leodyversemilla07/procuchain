@@ -1,3 +1,5 @@
+import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
+import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
@@ -46,6 +48,7 @@ interface AuditLogRecord {
     revision_number: number | null;
     parent_txid: string | null;
     revision_lineage: string[] | null;
+    revision_history: RevisionNode[] | null;
     created_at: string;
 }
 
@@ -476,8 +479,15 @@ export default function IntegrityAuditLogs() {
                                                                     </AlertDialogContent>
                                                                 </AlertDialog>
                                                             )}
-                                                            <Button variant="ghost" size="sm" onClick={() => handleReport(log.verification_run_id)}>
-                                                                <ScrollText className="h-4 w-4" />
+                                                            <Button variant="ghost" size="sm" asChild>
+                                                                <a href={integrityAuditLogs.detail.url(log.id)} title="View Details">
+                                                                    <FileSearch className="h-4 w-4" />
+                                                                </a>
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" asChild>
+                                                                <a href={integrityAuditLogs.report.url(log.verification_run_id)} title="View Report">
+                                                                    <ScrollText className="h-4 w-4" />
+                                                                </a>
                                                             </Button>
                                                         </div>
                                                     </TableCell>
@@ -570,36 +580,47 @@ export default function IntegrityAuditLogs() {
                                 <code className="text-xs break-all">{selectedLog.txid ?? '—'}</code>
                             </div>
 
-                            {/* Revision Tracking */}
+                            {/* Revision Tracking - Visual Tree */}
                             {selectedLog.revision_number !== null && selectedLog.revision_number !== undefined && (
                                 <div>
-                                    <span className="text-muted-foreground">Revision:</span>
-                                    <br />
-                                    <div className="mt-1 flex items-center gap-2">
-                                        <Badge variant="outline" className="font-mono">
-                                            Rev #{selectedLog.revision_number}
-                                        </Badge>
-                                        {selectedLog.parent_txid && (
-                                            <>
-                                                <span className="text-muted-foreground text-xs">← parent</span>
-                                                <code className="text-muted-foreground text-xs break-all">
-                                                    {selectedLog.parent_txid.slice(0, 16)}…
-                                                </code>
-                                            </>
+                                    <span className="text-muted-foreground">Revision Tracking:</span>
+                                    <div className="mt-2">
+                                        {selectedLog.revision_history && selectedLog.revision_history.length > 0 ? (
+                                            <RevisionTree
+                                                revisions={selectedLog.revision_history}
+                                                currentTxid={selectedLog.txid ?? undefined}
+                                                compact
+                                            />
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="font-mono">
+                                                        Rev #{selectedLog.revision_number}
+                                                    </Badge>
+                                                    {selectedLog.parent_txid && (
+                                                        <>
+                                                            <span className="text-muted-foreground text-xs">← parent</span>
+                                                            <code className="text-muted-foreground text-xs break-all">
+                                                                {selectedLog.parent_txid.slice(0, 16)}…
+                                                            </code>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {selectedLog.revision_lineage && selectedLog.revision_lineage.length > 1 && (
+                                                    <div className="flex flex-wrap items-center gap-1">
+                                                        {selectedLog.revision_lineage.map((txid, i) => (
+                                                            <span key={i} className="flex items-center gap-1">
+                                                                {i > 0 && <span className="text-muted-foreground text-xs">→</span>}
+                                                                <code className="text-muted-foreground text-xs" title={txid}>
+                                                                    {txid.slice(0, 12)}…
+                                                                </code>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
-                                    {selectedLog.revision_lineage && selectedLog.revision_lineage.length > 1 && (
-                                        <div className="mt-2 flex flex-wrap items-center gap-1">
-                                            {selectedLog.revision_lineage.map((txid, i) => (
-                                                <span key={i} className="flex items-center gap-1">
-                                                    {i > 0 && <span className="text-muted-foreground text-xs">→</span>}
-                                                    <code className="text-muted-foreground text-xs" title={txid}>
-                                                        {txid.slice(0, 12)}…
-                                                    </code>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             )}
 

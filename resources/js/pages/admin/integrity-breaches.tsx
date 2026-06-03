@@ -1,3 +1,4 @@
+import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
@@ -476,8 +477,10 @@ export default function IntegrityBreaches() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-1">
-                                                        <Button variant="ghost" size="sm" onClick={() => setSelectedBreach(breach)}>
-                                                            <Database className="h-4 w-4" />
+                                                        <Button variant="ghost" size="sm" asChild>
+                                                            <a href={integrityBreaches.detail.url(breach.id)} title="View Details">
+                                                                <Database className="h-4 w-4" />
+                                                            </a>
                                                         </Button>
                                                         {!breach.repaired_at && (
                                                             <AlertDialog>

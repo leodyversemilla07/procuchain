@@ -461,4 +461,42 @@ class IntegrityBreachController extends Controller
 
         return response()->json($report);
     }
+
+    // ─── Detail Pages (Inertia) ──────────────────────────────────────
+
+    /**
+     * Render the Audit Log Detail page.
+     */
+    public function auditLogDetailPage(int $id): Response
+    {
+        $this->authorize('view-audit-log');
+
+        return Inertia::render('admin/audit-log-detail', [
+            'logId' => $id,
+        ]);
+    }
+
+    /**
+     * Render the Verification Run Report page.
+     */
+    public function verificationReportPage(string $runId): Response
+    {
+        $this->authorize('view-audit-log');
+
+        return Inertia::render('admin/verification-report', [
+            'runId' => $runId,
+        ]);
+    }
+
+    /**
+     * Render the Breach Detail page.
+     */
+    public function breachDetailPage(int $id): Response
+    {
+        $this->authorize('view-audit-log');
+
+        return Inertia::render('admin/breach-detail', [
+            'breachId' => $id,
+        ]);
+    }
 }

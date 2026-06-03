@@ -119,8 +119,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
     Route::prefix('integrity-audit-logs')->name('integrity-audit-logs.')->group(function () {
         Route::get('/', [IntegrityBreachController::class, 'auditLogsPage'])->name('index');
         Route::get('/api', [IntegrityBreachController::class, 'auditLogsIndex'])->name('api.index');
-        Route::get('/{id}', [IntegrityBreachController::class, 'auditLogsShow'])->name('show');
-        Route::post('/{id}/repair', [IntegrityBreachController::class, 'auditLogsRepair'])->name('repair');
-        Route::get('/report/{runId}', [IntegrityBreachController::class, 'auditLogsReport'])->name('report');
+        Route::get('/detail/{id}', [IntegrityBreachController::class, 'auditLogDetailPage'])->name('detail');
+        Route::get('/report/{runId}', [IntegrityBreachController::class, 'verificationReportPage'])->name('report');
+        Route::get('/api/{id}', [IntegrityBreachController::class, 'auditLogsShow'])->name('api.show');
+        Route::post('/api/{id}/repair', [IntegrityBreachController::class, 'auditLogsRepair'])->name('api.repair');
+        Route::get('/api/report/{runId}', [IntegrityBreachController::class, 'auditLogsReport'])->name('api.report');
     });
+
+    // Breach Detail Page
+    Route::get('/integrity-breaches/detail/{id}', [IntegrityBreachController::class, 'breachDetailPage'])->name('integrity-breaches.detail');
 });

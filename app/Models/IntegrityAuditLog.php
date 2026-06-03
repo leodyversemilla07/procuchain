@@ -38,6 +38,7 @@ use Illuminate\Support\Str;
  * @property string $source
  * @property array|null $revision_lineage
  * @property Carbon $created_at
+ * @property array $revision_history
  */
 class IntegrityAuditLog extends Model
 {
@@ -46,6 +47,9 @@ class IntegrityAuditLog extends Model
 
     /** Append-only: no updates, no updated_at */
     const UPDATED_AT = null;
+
+    /** @var list<string> */
+    protected $appends = ['revision_history'];
 
     /** @var list<string> */
     protected $fillable = [
@@ -251,6 +255,41 @@ class IntegrityAuditLog extends Model
             parentTxid: $mirror->parent_txid,
             revisionLineage: $mirror->getRevisionLineage(),
         );
+    }
+
+    // ─── Revision History Accessor ─────────────────────────────────────
+
+    /**
+     * Get the full revision history for the affected record.
+     *
+     * Returns an array of ProcurementMirror records representing the
+     * complete revision tree for this stream + stream_key combination.
+     *
+     * @return array<int, array{txid: string, revision_number: int, parent_txid: string|null, is_latest_revision: bool, blocktime: string|null, publisher_address: string|null, data_hash: string, breach_detected_at: string|null, breach_type: string|null, repaired_at: string|null}>
+     */
+    public function getRevisionHistoryAttribute(): array
+    {
+        if (! $this->stream || ! $this->stream_key) {
+            return [];
+        }
+
+        $revisions = ProcurementMirror::where('stream', $this->stream)
+            ->where('stream_key', $this->stream_key)
+            ->orderBy('revision_number')
+            ->get();
+
+        return $revisions->map(fn ($r) => [
+            'txid' => $r->txid,
+            'revision_number' => $r->revision_number,
+            'parent_txid' => $r->parent_txid,
+            'is_latest_revision' => $r->is_latest_revision,
+            'blocktime' => $r->blocktime?->toIso8601String(),
+            'publisher_address' => $r->publisher_address,
+            'data_hash' => $r->data_hash,
+            'breach_detected_at' => $r->breach_detected_at?->toIso8601String(),
+            'breach_type' => $r->breach_type,
+            'repaired_at' => $r->repaired_at?->toIso8601String(),
+        ])->toArray();
     }
 
     /**
