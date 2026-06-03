@@ -329,12 +329,28 @@ class IntegrityVerificationService
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // PHASE 2: DETECT DELETED RECORDS
+    // PHASE 2: DETECT ALL INCONSISTENCIES
     // ═══════════════════════════════════════════════════════════════════
 
+    /**
+     * Detect all inconsistencies between DB and blockchain.
+     *
+     * Two-way check:
+     *   A. Items on chain but not in DB → ROW_DELETED (unauthorized deletion)
+     *   B. Items in DB but not on chain → UNAUTHORIZED_RECORD (injected fake data)
+     */
     private function detectDeletedRecords(): void
     {
-        // Check procurements
+        $this->detectMissingFromDb();
+        $this->detectUnauthorizedInDb();
+    }
+
+    /**
+     * Detect records on blockchain that are missing from DB.
+     * (Unauthorized deletion)
+     */
+    private function detectMissingFromDb(): void
+    {
         try {
             $chainItems = $this->manager->liststreamitems(StreamEnums::METADATA->value, false, 10000);
             foreach ($chainItems as $item) {
@@ -354,6 +370,49 @@ class IntegrityVerificationService
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check deleted procurements', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Detect records in DB that do NOT exist on blockchain.
+     * (Unauthorized injection / fake records)
+     *
+     * Per the user's interpretation of Requirement 5:
+     * "Records not on blockchain but in DB should be removed"
+     * First we detect them here, then autoRepair handles removal.
+     */
+    private function detectUnauthorizedInDb(): void
+    {
+        try {
+            $blockchainPrNumbers = $this->getBlockchainPrNumbers();
+
+            if (empty($blockchainPrNumbers)) {
+                return;
+            }
+
+            // Find procurements in DB that don't exist on chain
+            $fakeRecords = Procurement::whereNotIn('pr_number', $blockchainPrNumbers)->get();
+
+            foreach ($fakeRecords as $record) {
+                $this->recordViolation(
+                    type: BreachTypeEnums::CONTENT_MISMATCH->value,
+                    severity: 'critical',
+                    tableName: 'procurements',
+                    record: $record,
+                    prNumber: $record->pr_number,
+                    message: 'Record exists in database but not on blockchain — unauthorized injection',
+                    chainData: null,
+                );
+            }
+
+            if ($fakeRecords->isNotEmpty()) {
+                Log::warning('IntegrityVerification: detected unauthorized DB records', [
+                    'count' => $fakeRecords->count(),
+                    'pr_numbers' => $fakeRecords->pluck('pr_number')->toArray(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('IntegrityVerification: failed to check unauthorized records', ['error' => $e->getMessage()]);
         }
     }
 
@@ -389,10 +448,33 @@ class IntegrityVerificationService
         ]);
 
         try {
-            // Re-sync all data from blockchain (source of truth)
+            // Step 1: Get all PR numbers known to blockchain (source of truth)
+            $blockchainPrNumbers = $this->getBlockchainPrNumbers();
+            $previousRestoredCount = $this->restoredCount;
+
+            // Step 2: Delete DB records that don't exist on blockchain
+            // Requirement 5: "Restore original records from trusted blockchain data."
+            // Records in DB not on chain = unauthorized injection → must be removed
+            if (! empty($blockchainPrNumbers)) {
+                $deletedCount = Procurement::whereNotIn('pr_number', $blockchainPrNumbers)->delete();
+
+                // Also clean up related child records for deleted procurements
+                // (handled by cascade or orphan cleanup below)
+                ProcurementStage::whereDoesntHave('procurement')->delete();
+                ProcurementDocument::whereDoesntHave('procurement')->delete();
+                ProcurementEvent::whereDoesntHave('procurement')->delete();
+
+                if ($deletedCount > 0) {
+                    Log::info('IntegrityVerification: removed unauthorized DB records', [
+                        'deleted_procurements' => $deletedCount,
+                    ]);
+                }
+            }
+
+            // Step 3: Re-sync all data FROM blockchain to populate what's authentic
             $this->syncService->syncAll();
 
-            // Mark all pending violations from this run as restored
+            // Step 4: Mark all pending violations from this run as restored
             foreach ($pending as $violation) {
                 $violation->markRestored([
                     'restored_by' => 'system_auto_repair',
@@ -413,7 +495,6 @@ class IntegrityVerificationService
                 'error' => $e->getMessage(),
             ]);
 
-            // Mark all pending violations as failed
             foreach ($pending as $violation) {
                 $violation->markFailed($e->getMessage());
                 $this->failedCount++;
