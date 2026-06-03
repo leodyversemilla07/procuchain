@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, ShieldAlert, Wrench, XCircle } from 'lucide-react';
 
@@ -81,7 +82,7 @@ const VIOLATION_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function VerificationReportPage({ runId, report, error }: VerificationReportPageProps) {
-    const [expandedViolation, setExpandedViolation] = React.useState<number | null>(null);
+    const [expandedViolation, setExpandedViolation] = useState<number | null>(null);
 
     const handleRepair = (violationId: number) => {
         router.post(
