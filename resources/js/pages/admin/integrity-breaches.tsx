@@ -107,7 +107,8 @@ function severityLabel(type: string): string {
     return BREACH_SEVERITY[type] ?? 'medium';
 }
 
-function truncateHash(hash: string, len = 12): string {
+function truncateHash(hash: string | null | undefined, len = 12): string {
+    if (!hash) return '—';
     if (hash.length <= len * 2 + 3) return hash;
     return `${hash.slice(0, len)}...${hash.slice(-len)}`;
 }

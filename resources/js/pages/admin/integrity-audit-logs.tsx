@@ -160,9 +160,9 @@ export default function IntegrityAuditLogs() {
         );
     };
 
-    const pendingCount = logs.data.filter((l) => l.recovery_status === 'pending').length;
-    const criticalCount = logs.data.filter((l) => l.severity === 'critical').length;
-    const restoredCount = logs.data.filter((l) => l.recovery_status === 'restored').length;
+    const pendingCount = (logs?.data ?? []).filter((l) => l.recovery_status === 'pending').length;
+    const criticalCount = (logs?.data ?? []).filter((l) => l.severity === 'critical').length;
+    const restoredCount = (logs?.data ?? []).filter((l) => l.recovery_status === 'restored').length;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -338,7 +338,7 @@ export default function IntegrityAuditLogs() {
 
             {/* Table */}
             <div className="p-4">
-                {logs.data.length === 0 ? (
+                {!logs?.data || logs.data.length === 0 ? (
                     <Empty>
                         <EmptyMedia>
                             <FileSearch className="text-muted-foreground h-16 w-16" />
@@ -374,7 +374,7 @@ export default function IntegrityAuditLogs() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {logs.data.map((log) => {
+                                    {(logs?.data ?? []).map((log) => {
                                         const severityColor = SEVERITY_COLORS[log.severity] ?? SEVERITY_COLORS.medium;
                                         const statusBadge = RECOVERY_STATUS_BADGE[log.recovery_status] ?? RECOVERY_STATUS_BADGE.pending;
                                         const StatusIcon = statusBadge.icon;
