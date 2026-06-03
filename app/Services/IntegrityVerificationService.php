@@ -148,22 +148,52 @@ class IntegrityVerificationService
         }
 
         try {
+            // Get all PR numbers from blockchain
+            $blockchainPrNumbers = $this->getBlockchainPrNumbers();
+
+            // Delete records that don't exist on blockchain
+            $deletedCount = Procurement::whereNotIn('pr_number', $blockchainPrNumbers)->delete();
+
             // Re-sync from blockchain to restore
             $this->syncService->syncAll();
 
             $auditLog->markRestored([
                 'restored_by' => 'system',
                 'restored_at' => now()->toIso8601String(),
+                'deleted_records' => $deletedCount,
             ]);
 
             $this->restoredCount++;
 
-            return ['success' => true, 'items_restored' => 1, 'error' => null];
+            return ['success' => true, 'items_restored' => 1, 'deleted' => $deletedCount, 'error' => null];
         } catch (\Exception $e) {
             $auditLog->markFailed($e->getMessage());
             $this->failedCount++;
 
             return ['success' => false, 'items_restored' => 0, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get all PR numbers that exist on blockchain.
+     */
+    private function getBlockchainPrNumbers(): array
+    {
+        try {
+            $items = $this->manager->liststreamitems(StreamEnums::METADATA->value, false, 10000);
+            if (! is_array($items)) {
+                return [];
+            }
+
+            return collect($items)
+                ->map(fn ($item) => $item['data']['json']['pr_number'] ?? null)
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+        } catch (\Exception $e) {
+            Log::warning('Failed to get blockchain PR numbers', ['error' => $e->getMessage()]);
+            return [];
         }
     }
 
