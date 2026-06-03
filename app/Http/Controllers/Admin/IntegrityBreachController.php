@@ -349,4 +349,41 @@ class IntegrityBreachController extends Controller
             'log' => $log,
         ]);
     }
+
+    // ─── Integrity Demo ───────────────────────────────────────────────
+
+    public function demoPage(): Response
+    {
+        $this->authorize('view-audit-log');
+
+        return Inertia::render('admin/integrity-demo', [
+            'prNumber' => 'DEMO-PR-2026-TEST',
+        ]);
+    }
+
+    public function demoAction(Request $request): RedirectResponse
+    {
+        $this->authorize('update-audit-log');
+
+        $action = $request->input('action');
+        $prNumber = $request->input('pr_number', 'DEMO-PR-2026-TEST');
+
+        try {
+            if ($action === 'sync') {
+                $syncService = app(NormalizedTableSyncService::class);
+                $counts = $syncService->syncAll();
+                return back()->with('success', 'Sync completed: ' . json_encode($counts));
+            }
+
+            if ($action === 'verify') {
+                $service = app(IntegrityVerificationService::class);
+                $result = $service->verifyAndRepair(false, 'demo');
+                return back()->with('success', 'Verification completed: ' . json_encode($result['violations']));
+            }
+
+            return back()->with('error', 'Unknown action');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
 }
