@@ -44,6 +44,7 @@ import {
     Share2,
     Shield,
     ShieldAlert,
+    ShieldCheck,
     ShieldOff,
     Table2,
     Upload,
