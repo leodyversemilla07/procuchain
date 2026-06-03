@@ -35,7 +35,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
             {/* Desktop Stepper - Horizontal with scroll */}
             <div className="hidden md:block">
                 <div className="overflow-x-auto pb-2">
-                    <ol className="flex min-w-max items-start justify-between gap-2">
+                    <ol className="flex items-start gap-4">
                         {steps.map((step, index) => {
                             const isCompleted = step.id < currentStep;
                             const isCurrent = step.id === currentStep;
@@ -78,9 +78,9 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                                         </div>
 
                                         {/* Step Label — truncates on narrow viewports */}
-                                        <div className="mt-2 text-center">
+                                        <div className="mt-2 w-16 text-center sm:w-20 lg:w-24">
                                             <p
-                                                className={cn('max-w-[6rem] truncate text-xs font-medium lg:max-w-none lg:text-sm', {
+                                                className={cn('truncate text-xs font-medium lg:text-sm', {
                                                     'text-primary': isCurrent,
                                                     'text-foreground': isCompleted,
                                                     'text-muted-foreground': !isCurrent && !isCompleted,

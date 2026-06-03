@@ -54,10 +54,8 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
             <div className="p-4 sm:p-6">
                 {/* Header */}
                 <div className="mb-6 flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={dashboard.url()}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
+                    <Button variant="ghost" size="icon" render={<Link href={dashboard.url()} />} nativeButton={false}>
+                        <ArrowLeft data-icon="inline-start" />
                     </Button>
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold">
@@ -187,12 +185,12 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                             )}
                             {status === 'restored' && (
                                 <Button variant="outline" onClick={() => handleAction('reset')} disabled={processing}>
-                                    <Upload className="mr-2 h-4 w-4" />
+                                    <Upload data-icon="inline-start" />
                                     Reset Demo
                                 </Button>
                             )}
-                            <Button variant="ghost" asChild>
-                                <Link href={integrityBreaches.index.url()}>View Integrity Breaches</Link>
+                            <Button variant="ghost" render={<Link href={integrityBreaches.index.url()} />} nativeButton={false}>
+                                View Integrity Breaches
                             </Button>
                         </div>
                     </CardContent>

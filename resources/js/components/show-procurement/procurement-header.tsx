@@ -57,7 +57,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
     const progress = calculateProgress(status?.stage_formatted || status?.stage);
 
     return (
-        <Card className="mb-4 overflow-hidden shadow-sm transition-shadow duration-200 hover:shadow-md sm:mb-6">
+        <Card className="mb-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:mb-6">
             <CardHeader className="space-y-4 p-4 pb-4 sm:space-y-6 sm:p-6 sm:pb-6">
                 {/* Title and ID Section */}
                 <div className="space-y-1.5 sm:space-y-2">

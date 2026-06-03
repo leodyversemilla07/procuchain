@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Circle, Clock, GitBranch, User } from 'lucide-react';
+import { useState } from 'react';
 
 export interface RevisionNode {
     txid: string;
@@ -76,102 +76,134 @@ const STATUS_STYLES = {
     },
 };
 
-function RevisionNodeCard({ revision, isCurrent, compact = false }: { revision: RevisionNode; isCurrent?: boolean; compact?: boolean }) {
+function RevisionNodeCard({
+    revision,
+    isCurrent,
+    compact = false,
+    isSelected,
+    onSelect,
+}: {
+    revision: RevisionNode;
+    isCurrent?: boolean;
+    compact?: boolean;
+    isSelected?: boolean;
+    onSelect?: () => void;
+}) {
     const status = getNodeStatus(revision);
     const styles = STATUS_STYLES[status];
     const StatusIcon = styles.icon;
 
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div
-                        className={cn(
-                            'relative rounded-lg border-2 p-3 transition-all hover:shadow-md',
-                            styles.border,
-                            styles.bg,
-                            isCurrent && 'ring-2 ring-green-500/20 ring-offset-2 dark:ring-offset-gray-900',
-                            compact ? 'min-w-[180px]' : 'min-w-[220px]',
-                        )}
-                    >
-                        {/* Status Badge */}
-                        <div className="mb-2 flex items-center justify-between">
-                            <Badge variant="outline" className={cn('font-mono text-xs', styles.badgeClass)}>
-                                Rev #{revision.revision_number}
-                            </Badge>
-                            <StatusIcon className={cn('h-4 w-4', styles.iconColor)} />
-                        </div>
+        <button
+            type="button"
+            onClick={onSelect}
+            className={cn(
+                'relative min-w-[160px] cursor-pointer rounded-lg border-2 p-3 text-left transition-all hover:shadow-md',
+                styles.border,
+                styles.bg,
+                isCurrent && 'ring-2 ring-green-500/20 ring-offset-2 dark:ring-offset-gray-900',
+                isSelected && 'ring-2 ring-blue-500/40 ring-offset-2 dark:ring-offset-gray-900',
+            )}
+        >
+            {/* Status Badge */}
+            <div className="mb-2 flex items-center justify-between">
+                <Badge variant="outline" className={cn('font-mono text-xs', styles.badgeClass)}>
+                    Rev #{revision.revision_number}
+                </Badge>
+                <StatusIcon className={cn('h-4 w-4', styles.iconColor)} />
+            </div>
 
-                        {/* TXID */}
-                        <div className="mb-1">
-                            <span className="text-muted-foreground text-xs">TX:</span>
-                            <code className="bg-background/50 ml-1 rounded px-1 font-mono text-xs">{truncateHash(revision.txid, 6)}</code>
-                        </div>
+            {/* TXID */}
+            <div className="mb-1">
+                <code className="bg-background/50 rounded px-1 font-mono text-xs">{truncateHash(revision.txid, 6)}</code>
+            </div>
 
-                        {/* Timestamp */}
-                        {revision.blocktime && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <Clock className="h-3 w-3" />
-                                <span>{formatDistanceToNow(parseISO(revision.blocktime), { addSuffix: true })}</span>
-                            </div>
-                        )}
+            {/* Timestamp */}
+            {revision.blocktime && (
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDistanceToNow(parseISO(revision.blocktime), { addSuffix: true })}</span>
+                </div>
+            )}
 
-                        {/* Publisher */}
-                        {!compact && revision.publisher_address && (
-                            <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-                                <User className="h-3 w-3" />
-                                <span className="truncate" title={revision.publisher_address}>
-                                    {truncateHash(revision.publisher_address, 4)}
-                                </span>
-                            </div>
-                        )}
+            {/* Publisher (non-compact) */}
+            {!compact && revision.publisher_address && (
+                <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                    <User className="h-3 w-3" />
+                    <span className="truncate" title={revision.publisher_address}>
+                        {truncateHash(revision.publisher_address, 4)}
+                    </span>
+                </div>
+            )}
 
-                        {/* Hash */}
-                        {!compact && (
-                            <div className="bg-background/30 mt-2 rounded px-2 py-1">
-                                <span className="text-muted-foreground text-[10px]">Hash:</span>
-                                <code className="ml-1 font-mono text-[10px]">{truncateHash(revision.data_hash, 8)}</code>
-                            </div>
-                        )}
+            {/* Hash (non-compact) */}
+            {!compact && (
+                <div className="bg-background/30 mt-2 rounded px-2 py-1">
+                    <code className="font-mono text-[10px]">{truncateHash(revision.data_hash, 8)}</code>
+                </div>
+            )}
+        </button>
+    );
+}
+
+function RevisionDetails({ revision }: { revision: RevisionNode }) {
+    const status = getNodeStatus(revision);
+    const styles = STATUS_STYLES[status];
+
+    return (
+        <div className="space-y-3 text-sm">
+            <div className="flex items-center gap-2">
+                <Badge variant="outline" className={cn('font-mono text-xs', styles.badgeClass)}>
+                    Rev #{revision.revision_number}
+                </Badge>
+                <span className={cn('text-xs font-medium', styles.iconColor)}>{styles.label}</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
+                    <span className="text-muted-foreground text-xs">Transaction ID</span>
+                    <code className="mt-0.5 block text-xs break-all">{revision.txid}</code>
+                </div>
+                {revision.blocktime && (
+                    <div>
+                        <span className="text-muted-foreground text-xs">Block Time</span>
+                        <p className="mt-0.5 text-xs">{new Date(revision.blocktime).toLocaleString()}</p>
                     </div>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
-                    <div className="space-y-1 text-sm">
-                        <p>
-                            <strong>Transaction ID:</strong>
-                            <br />
-                            <code className="text-xs break-all">{revision.txid}</code>
-                        </p>
-                        {revision.blocktime && (
-                            <p>
-                                <strong>Block Time:</strong> {new Date(revision.blocktime).toLocaleString()}
-                            </p>
-                        )}
-                        {revision.publisher_address && (
-                            <p>
-                                <strong>Publisher:</strong>
-                                <br />
-                                <code className="text-xs break-all">{revision.publisher_address}</code>
-                            </p>
-                        )}
-                        <p>
-                            <strong>Data Hash:</strong>
-                            <br />
-                            <code className="text-xs break-all">{revision.data_hash}</code>
-                        </p>
-                        {revision.breach_type && (
-                            <p className="text-red-600">
-                                <strong>Breach:</strong> {revision.breach_type}
-                            </p>
-                        )}
+                )}
+                {revision.publisher_address && (
+                    <div>
+                        <span className="text-muted-foreground text-xs">Publisher</span>
+                        <code className="mt-0.5 block text-xs break-all">{revision.publisher_address}</code>
                     </div>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+                )}
+                <div>
+                    <span className="text-muted-foreground text-xs">Data Hash</span>
+                    <code className="mt-0.5 block text-xs break-all">{revision.data_hash}</code>
+                </div>
+            </div>
+
+            {revision.breach_type && (
+                <div className="rounded-md bg-red-50 p-2 text-xs dark:bg-red-950/30">
+                    <span className="font-medium text-red-700 dark:text-red-400">Breach:</span>{' '}
+                    <span className="text-red-600 dark:text-red-400">{revision.breach_type}</span>
+                </div>
+            )}
+
+            {revision.repaired_at && (
+                <div className="rounded-md bg-green-50 p-2 text-xs dark:bg-green-950/30">
+                    <span className="font-medium text-green-700 dark:text-green-400">Repaired:</span>{' '}
+                    <span className="text-green-600 dark:text-green-400">
+                        {formatDistanceToNow(parseISO(revision.repaired_at), { addSuffix: true })}
+                    </span>
+                </div>
+            )}
+        </div>
     );
 }
 
 export function RevisionTree({ revisions, currentTxid, className, compact = false }: RevisionTreeProps) {
+    const [selectedRevision, setSelectedRevision] = useState<RevisionNode | null>(null);
+
     // Sort revisions by revision number
     const sortedRevisions = [...revisions].sort((a, b) => a.revision_number - b.revision_number);
 
@@ -239,44 +271,58 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
                     {revisions.length} revision{revisions.length !== 1 ? 's' : ''} • Click nodes for details
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                {chains.map((chain, chainIndex) => (
-                    <div key={chainIndex} className="relative">
-                        {chainIndex > 0 && <div className="text-muted-foreground mb-2 text-xs italic">Alternative revision path:</div>}
+            <CardContent className="space-y-4">
+                {/* Scrollable tree */}
+                <div className="overflow-x-auto pb-2">
+                    {chains.map((chain, chainIndex) => (
+                        <div key={chainIndex} className="relative">
+                            {chainIndex > 0 && <div className="text-muted-foreground mb-2 text-xs italic">Alternative revision path:</div>}
 
-                        <div className={cn('flex items-start', compact ? 'gap-1' : 'gap-2')}>
-                            {chain.map((revision, index) => (
-                                <div key={revision.txid} className="flex items-start">
-                                    {/* Node */}
-                                    <RevisionNodeCard
-                                        revision={revision}
-                                        isCurrent={revision.txid === currentTxid || revision.is_latest_revision}
-                                        compact={compact}
-                                    />
+                            <div className={cn('flex items-start', compact ? 'gap-1' : 'gap-2')}>
+                                {chain.map((revision, index) => (
+                                    <div key={revision.txid} className="flex items-start">
+                                        {/* Node */}
+                                        <RevisionNodeCard
+                                            revision={revision}
+                                            isCurrent={revision.txid === currentTxid || revision.is_latest_revision}
+                                            compact={compact}
+                                            isSelected={selectedRevision?.txid === revision.txid}
+                                            onSelect={() =>
+                                                setSelectedRevision(selectedRevision?.txid === revision.txid ? null : revision)
+                                            }
+                                        />
 
-                                    {/* Connector Arrow */}
-                                    {index < chain.length - 1 && (
-                                        <div className="flex flex-col items-center px-1">
-                                            <div className="bg-border h-0.5 w-6" />
-                                            <svg
-                                                className="text-border -ml-1 h-4 w-4"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                            >
-                                                <path d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                        {/* Connector Arrow */}
+                                        {index < chain.length - 1 && (
+                                            <div className="flex flex-col items-center px-1 pt-4">
+                                                <div className="bg-border h-0.5 w-6" />
+                                                <svg
+                                                    className="text-border -ml-1 h-4 w-4"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                >
+                                                    <path d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                    ))}
+                </div>
+
+                {/* Selected node details */}
+                {selectedRevision && (
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                        <RevisionDetails revision={selectedRevision} />
                     </div>
-                ))}
+                )}
 
                 {/* Legend */}
-                <div className="mt-4 border-t pt-3">
+                <div className="border-t pt-3">
                     <p className="text-muted-foreground mb-2 text-xs font-medium">Legend:</p>
                     <div className="flex flex-wrap gap-3">
                         {Object.entries(STATUS_STYLES).map(([key, style]) => {

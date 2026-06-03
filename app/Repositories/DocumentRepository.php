@@ -7,12 +7,14 @@ namespace App\Repositories;
 use App\Contracts\DocumentRepositoryInterface;
 use App\DataTransferObjects\DocumentData;
 use App\Enums\StreamEnums;
+use App\Models\ProcurementDocument;
 use App\Services\Manager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Repository for managing procurement.documents stream
+ * Repository for procurement documents
+ * Reads from DB (mirror of blockchain).
  */
 class DocumentRepository implements DocumentRepositoryInterface
 {
@@ -21,7 +23,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     ) {}
 
     /**
-     * Create a new document record
+     * Create a new document record (writes to blockchain)
      */
     public function create(DocumentData $data): string
     {
@@ -32,190 +34,175 @@ class DocumentRepository implements DocumentRepositoryInterface
                 ['json' => $data->toBlockchainArray()]
             );
 
-            Log::info('Document published to blockchain', [
-                'pr_number' => $data->prNumber,
-                'file_key' => $data->fileKey,
-                'stream' => StreamEnums::DOCUMENTS->value,
-                'txid' => $txid,
-            ]);
-
+            Log::info('Document published to blockchain', ['txid' => $txid]);
             return $txid ?? '';
         } catch (\Exception $e) {
-            Log::error('Failed to publish document to blockchain', [
-                'pr_number' => $data->prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Failed to publish document', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
     /**
-     * Find recent documents (limit)
-     *
-     * @return DocumentData[]
-     */
-    public function findRecent(int $limit = 10): array
-    {
-        $allDocuments = $this->all();
-
-        usort($allDocuments, fn ($a, $b) => $b->timestamp->timestamp - $a->timestamp->timestamp);
-
-        return array_slice($allDocuments, 0, $limit);
-    }
-
-    /**
-     * Find documents by procurement ID
-     *
-     * @return Collection<int, DocumentData>
+     * Find documents by PR number from DB.
+     * Returns Collection of DocumentData objects.
      */
     public function findByProcurement(string $prNumber): Collection
     {
-        $allDocuments = $this->all();
-
-        return collect(array_filter(
-            $allDocuments,
-            fn (DocumentData $document): bool => $document->prNumber === $prNumber
-        ));
+        return ProcurementDocument::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('uploaded_at')
+            ->get()
+            ->map(fn ($d) => DocumentData::fromBlockchainArray([
+                'pr_number' => $d->procurement->pr_number ?? '',
+                'procurement_title' => $d->procurement->title ?? '',
+                'user_address' => $d->user_address ?? '',
+                'stage' => $d->stage,
+                'status' => '',
+                'document_type' => $d->document_type,
+                'file_key' => $d->file_key,
+                'file_name' => $d->filename,
+                'file_size' => $d->file_size,
+                'mime_type' => $d->mime_type ?? '',
+                'hash' => $d->hash,
+                'data_txid' => $d->txid ?? '',
+                'metadata_txid' => '',
+                'uploaded_by' => $d->uploaded_by,
+                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'description' => $d->description,
+            ]));
     }
 
     /**
-     * Find documents by stage
-     *
-     * @return Collection<int, DocumentData>
+     * Find documents by stage from DB.
      */
     public function findByStage(string $prNumber, string $stage): Collection
     {
-        return $this->findByProcurement($prNumber)
-            ->filter(fn (DocumentData $doc) => $doc->stage === $stage);
+        return ProcurementDocument::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->where('stage', $stage)
+            ->orderByDesc('uploaded_at')
+            ->get()
+            ->map(fn ($d) => DocumentData::fromBlockchainArray([
+                'pr_number' => $d->procurement->pr_number ?? '',
+                'procurement_title' => $d->procurement->title ?? '',
+                'user_address' => $d->user_address ?? '',
+                'stage' => $d->stage,
+                'status' => '',
+                'document_type' => $d->document_type,
+                'file_key' => $d->file_key,
+                'file_name' => $d->filename,
+                'file_size' => $d->file_size,
+                'mime_type' => $d->mime_type ?? '',
+                'hash' => $d->hash,
+                'data_txid' => $d->txid ?? '',
+                'metadata_txid' => '',
+                'uploaded_by' => $d->uploaded_by,
+                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'description' => $d->description,
+            ]));
     }
 
     /**
-     * Find a document by transaction ID
-     */
-    public function findByTxid(string $txid): ?DocumentData
-    {
-        $allDocuments = $this->all();
-
-        foreach ($allDocuments as $document) {
-            if ($document->dataTxid === $txid) {
-                return $document;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Find a document by file key
-     *
-     * Note: Blockchain streams don't support indexed queries,
-     * so this iterates through all documents. Consider caching
-     * for high-frequency lookups.
-     */
-    public function findByFileKey(string $fileKey): ?DocumentData
-    {
-        $allDocuments = $this->all();
-
-        foreach ($allDocuments as $document) {
-            if ($document->fileKey === $fileKey) {
-                return $document;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Get all documents
-     *
-     * Optimizations applied per MultiChain docs:
-     * - verbose=false (60% faster data transfer)
-     * - local-ordering=true (faster query execution)
-     *
-     * @return DocumentData[]
-     */
-    public function all(int $limit = 10000, int $offset = 0): array
-    {
-        try {
-            // OPTIMIZATION: verbose=false for faster response (60% faster)
-            // OPTIMIZATION: local-ordering=true for faster execution
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::DOCUMENTS->value,
-                false,  // verbose=false - we only need the data
-                $limit,
-                $offset,
-                true    // local-ordering for faster queries
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $documents = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $documents[] = DocumentData::fromBlockchainArray($item['data']['json']);
-                }
-            }
-
-            return $documents;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve all documents', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
-    }
-
-    /**
-     * Find a document by file hash
+     * Find a document by hash from DB.
      */
     public function findByHash(string $hash): ?DocumentData
     {
-        $allDocuments = $this->all();
+        $doc = ProcurementDocument::where('hash', $hash)->first();
 
-        foreach ($allDocuments as $document) {
-            if ($document->fileHash === $hash) {
-                return $document;
-            }
+        if (! $doc) {
+            return null;
         }
 
-        return null;
+        return DocumentData::fromBlockchainArray([
+            'pr_number' => $doc->procurement->pr_number ?? '',
+            'procurement_title' => $doc->procurement->title ?? '',
+            'user_address' => $doc->user_address ?? '',
+            'stage' => $doc->stage,
+            'status' => '',
+            'document_type' => $doc->document_type,
+            'file_key' => $doc->file_key,
+            'file_name' => $doc->filename,
+            'file_size' => $doc->file_size,
+            'mime_type' => $doc->mime_type ?? '',
+            'hash' => $doc->hash,
+            'data_txid' => $doc->txid ?? '',
+            'metadata_txid' => '',
+            'uploaded_by' => $doc->uploaded_by,
+            'timestamp' => $doc->uploaded_at->toIso8601String(),
+            'description' => $doc->description,
+        ]);
     }
 
     /**
-     * Count documents for a procurement
+     * Count documents by PR number from DB.
      */
     public function countByProcurement(string $prNumber): int
     {
-        return $this->findByProcurement($prNumber)->count();
+        return ProcurementDocument::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->count();
     }
 
     /**
-     * Verify document integrity by comparing hash
+     * Verify document integrity from DB.
      */
     public function verifyIntegrity(string $prNumber, string $expectedHash): bool
     {
-        $documents = $this->findByProcurement($prNumber);
-
-        foreach ($documents as $document) {
-            if ($document->fileHash === $expectedHash) {
-                return true;
-            }
-        }
-
-        return false;
+        return ProcurementDocument::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->where('hash', $expectedHash)
+            ->exists();
     }
 
     /**
-     * Get document history for a procurement
-     *
-     * @return DocumentData[]
+     * Find recent documents from DB.
      */
-    public function getHistory(string $prNumber): array
+    public function findRecent(int $limit = 10): Collection
     {
-        return $this->findByProcurement($prNumber)->all();
+        return ProcurementDocument::orderByDesc('uploaded_at')
+            ->take($limit)
+            ->get()
+            ->map(fn ($d) => DocumentData::fromBlockchainArray([
+                'pr_number' => $d->procurement->pr_number ?? '',
+                'procurement_title' => $d->procurement->title ?? '',
+                'user_address' => $d->user_address ?? '',
+                'stage' => $d->stage,
+                'status' => '',
+                'document_type' => $d->document_type,
+                'file_key' => $d->file_key,
+                'file_name' => $d->filename,
+                'file_size' => $d->file_size,
+                'mime_type' => $d->mime_type ?? '',
+                'hash' => $d->hash,
+                'data_txid' => $d->txid ?? '',
+                'metadata_txid' => '',
+                'uploaded_by' => $d->uploaded_by,
+                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'description' => $d->description,
+            ]));
+    }
+
+    /**
+     * Get all documents from DB.
+     */
+    public function all(int $limit = 5000): Collection
+    {
+        return ProcurementDocument::orderByDesc('uploaded_at')
+            ->take($limit)
+            ->get()
+            ->map(fn ($d) => DocumentData::fromBlockchainArray([
+                'pr_number' => $d->procurement->pr_number ?? '',
+                'procurement_title' => $d->procurement->title ?? '',
+                'user_address' => $d->user_address ?? '',
+                'stage' => $d->stage,
+                'status' => '',
+                'document_type' => $d->document_type,
+                'file_key' => $d->file_key,
+                'file_name' => $d->filename,
+                'file_size' => $d->file_size,
+                'mime_type' => $d->mime_type ?? '',
+                'hash' => $d->hash,
+                'data_txid' => $d->txid ?? '',
+                'metadata_txid' => '',
+                'uploaded_by' => $d->uploaded_by,
+                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'description' => $d->description,
+            ]));
     }
 }

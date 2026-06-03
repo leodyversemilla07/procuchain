@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
-use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
 use App\Http\Controllers\Controller as BaseController;
+use App\Models\Procurement;
+use App\Models\ProcurementStage;
 use App\Repositories\ProcurementRepository;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
@@ -25,7 +26,7 @@ abstract class BaseDashboardController extends BaseController
         protected Manager $multichain,
         protected DashboardService $dashboardService,
         protected CacheStrategyInterface $cacheStrategy,
-        private ProcurementRepository $procurementRepository
+        private ProcurementRepository $procurementRepository,
     ) {}
 
     /**
@@ -128,13 +129,19 @@ abstract class BaseDashboardController extends BaseController
 
         try {
             Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
-            $states = $this->multichain->liststreamitems(
-                StreamEnums::STATUS->value,
-                true,
-                config('dashboard.stream_limits.status_items'),
-                0,
-                false
-            );
+            // Read from normalized DB tables
+            $states = ProcurementStage::orderByDesc('entered_at')
+                ->take(config('dashboard.stream_limits.status_items'))
+                ->get()
+                ->map(fn ($stage) => [
+                    'pr_number' => $stage->procurement->pr_number ?? null,
+                    'procurement_title' => $stage->procurement->title ?? null,
+                    'stage' => $stage->stage,
+                    'current_status' => $stage->status,
+                    'user_address' => $stage->user_address,
+                    'timestamp' => $stage->entered_at,
+                ])
+                ->toArray();
 
             if ($states === null) {
                 throw new Exception("Failed to retrieve status stream items for {$roleLabel} procurementsByKey cache");
@@ -242,8 +249,10 @@ abstract class BaseDashboardController extends BaseController
         // Get procurement IDs from the collection
         $prNumbers = $procurementsByKey->keys()->all();
 
-        // Fetch procurement metadata to check ownership
-        $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
+        // Fetch procurement metadata to check ownership (from normalized DB)
+        $procurements = Procurement::whereIn('pr_number', $prNumbers)
+            ->get()
+            ->keyBy('pr_number');
 
         // Filter to only include procurements owned by the user
         $allowedPrNumbers = [];

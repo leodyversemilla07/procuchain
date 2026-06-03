@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, Wrench, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, FileSearch, Shield, XCircle } from 'lucide-react';
 
 interface AuditLogDetail {
     id: number;
@@ -69,20 +69,6 @@ const VIOLATION_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetailPageProps) {
-    const handleRepair = () => {
-        if (!log) return;
-        router.post(
-            integrityAuditLogs.api.repair.url(log.id),
-            {},
-            {
-                preserveScroll: true,
-                onFinish: () => {
-                    router.reload({ only: ['log'] });
-                },
-            },
-        );
-    };
-
     const RecoveryIcon = log ? (RECOVERY_STATUS_STYLES[log.recovery_status]?.icon ?? Clock) : Clock;
 
     return (
@@ -92,11 +78,6 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
             <div className="p-4 sm:p-6">
                 {/* Header */}
                 <div className="mb-6 flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={integrityAuditLogs.index.url()}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
-                    </Button>
                     <div className="flex-1">
                         <h1 className="flex items-center gap-2 text-2xl font-bold">
                             <FileSearch className="h-6 w-6" />
@@ -104,12 +85,6 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                         </h1>
                         <p className="text-muted-foreground text-sm">Permanent forensic record for this violation</p>
                     </div>
-                    {log && log.recovery_status === 'pending' && (
-                        <Button onClick={handleRepair} variant="destructive">
-                            <Wrench className="mr-2 h-4 w-4" />
-                            Repair from Blockchain
-                        </Button>
-                    )}
                 </div>
 
                 {error ? (
@@ -150,7 +125,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                 </CardHeader>
                                 <CardContent>
                                     <Badge className={RECOVERY_STATUS_STYLES[log.recovery_status]?.className}>
-                                        <RecoveryIcon className="mr-1 h-3 w-3" />
+                                        <RecoveryIcon data-icon="inline-start" />
                                         {RECOVERY_STATUS_STYLES[log.recovery_status]?.label}
                                     </Badge>
                                 </CardContent>
@@ -328,23 +303,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                             </Card>
                         )}
 
-                        {/* Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-wrap gap-3">
-                                <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.report.url(log.verification_run_id)}>View Full Verification Report</Link>
-                                </Button>
-                                <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.index.url({ stream_key: log.stream_key })}>View All for PR {log.stream_key}</Link>
-                                </Button>
-                                <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.index.url()}>Back to Audit Logs</Link>
-                                </Button>
-                            </CardContent>
-                        </Card>
+
                     </div>
                 ) : (
                     <div className="space-y-4">

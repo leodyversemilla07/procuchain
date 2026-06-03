@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Enums\StreamEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementArchive;
 use App\Services\DashboardCacheKeys;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Log;
@@ -12,16 +14,8 @@ use Illuminate\Support\Facades\Log;
 /**
  * Procurement Archive Repository
  *
- * Handles archiving and restoring procurements using the 'procurement.archive' stream.
- *
- * Data Structure:
- * key: pr_number
- * data: {
- *   "action": "archive" | "restore",
- *   "timestamp": "ISO8601",
- *   "user_id": "user_id",
- *   "reason": "optional reason"
- * }
+ * Handles archiving and restoring procurements.
+ * Reads from DB, writes to blockchain.
  */
 class ProcurementArchiveRepository
 {
@@ -30,7 +24,7 @@ class ProcurementArchiveRepository
     ) {}
 
     /**
-     * Archive a procurement
+     * Archive a procurement (writes to blockchain)
      */
     public function archive(string $prNumber, string $userId, ?string $reason = null): void
     {
@@ -47,17 +41,12 @@ class ProcurementArchiveRepository
             ['json' => $data]
         );
 
-        Log::info('Procurement archived on blockchain', [
-            'pr_number' => $prNumber,
-            'user_id' => $userId,
-        ]);
-
-        // Clear caches
+        Log::info('Procurement archived', ['pr_number' => $prNumber]);
         DashboardCacheKeys::clearAllProcurementCaches();
     }
 
     /**
-     * Restore a procurement
+     * Restore a procurement (writes to blockchain)
      */
     public function restore(string $prNumber, string $userId): void
     {
@@ -73,78 +62,29 @@ class ProcurementArchiveRepository
             ['json' => $data]
         );
 
-        Log::info('Procurement restored on blockchain', [
-            'pr_number' => $prNumber,
-            'user_id' => $userId,
-        ]);
-
-        // Clear caches
+        Log::info('Procurement restored', ['pr_number' => $prNumber]);
         DashboardCacheKeys::clearAllProcurementCaches();
     }
 
     /**
-     * Get all archived procurement IDs
-     *
-     * @return array<string> List of PR numbers that are currently archived
+     * Get archived PR numbers from DB.
      */
     public function getArchivedPrNumbers(): array
     {
-        try {
-            // Fetch all items from archive stream
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::ARCHIVE->value,
-                false,  // verbose
-                10000,  // limit - high number to catch all
-                0,      // start
-                false   // local-ordering
-            );
-
-            // Group by PR number (key) and get latest action
-            $currentStatus = collect($items)
-                ->groupBy('keys.0')
-                ->map(function ($group) {
-                    // Use the last item in the list, as liststreamitems returns in chronological order by default
-                    // unless 'local-ordering' is true (which we set to false)
-                    // The last item is the most recent one.
-                    $latest = collect($group)->last();
-
-                    return $latest['data']['json']['action'] ?? 'restore';
-                });
-
-            // Filter only those where latest action is 'archive'
-            return $currentStatus
-                ->filter(fn ($status) => $status === 'archive')
-                ->keys()
-                ->toArray();
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch archived procurements', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementArchive::where('action', 'archive')
+            ->pluck('procurement_id')
+            ->map(fn ($id) => Procurement::find($id)?->pr_number)
+            ->filter()
+            ->toArray();
     }
 
     /**
-     * Check if a specific procurement is archived
+     * Check if a PR is archived in DB.
      */
     public function isArchived(string $prNumber): bool
     {
-        try {
-            $items = $this->multichain->liststreamkeyitems(StreamEnums::ARCHIVE->value, $prNumber);
-
-            if (empty($items)) {
-                return false;
-            }
-
-            // Get latest item - liststreamkeyitems returns in chronological order
-            $latest = collect($items)->last();
-            $action = $latest['data']['json']['action'] ?? 'restore';
-
-            return $action === 'archive';
-        } catch (\Exception $e) {
-            // If stream doesn't exist or error, assume not archived
-            return false;
-        }
+        return ProcurementArchive::where('action', 'archive')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->exists();
     }
 }

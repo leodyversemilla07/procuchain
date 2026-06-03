@@ -6,12 +6,12 @@ use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Models\ProcurementEvent;
+use App\Models\ProcurementDocument;
+use App\Models\Procurement;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\EventRepository;
-use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Dashboard\ModeAnalyzer;
+use App\Services\Dashboard\ModeAnalyzer as ModeAnalyzerService;
 use App\Services\Dashboard\StatisticsCalculator;
 use Exception;
 use Illuminate\Support\Collection;
@@ -41,13 +41,10 @@ class DashboardService
 
     public function __construct(
         private Manager $multichain,
-        private ProcurementRecordRepository $mirrorRepository,
-        private EventRepository $eventRepository,
-        private DocumentRepository $documentRepository,
-        private UserService $userService,
         private ProcurementRepository $procurementRepository,
         private StatisticsCalculator $statisticsCalculator,
-        private ModeAnalyzer $modeAnalyzer
+        private ModeAnalyzerService $modeAnalyzer,
+        private UserService $userService
     ) {}
 
     /**
@@ -74,7 +71,7 @@ class DashboardService
         try {
             // First pass: collect all PR numbers
             $prNumbers = collect($allStates)
-                ->map(fn ($item) => $item['data']['json']['pr_number'] ?? null)
+                ->map(fn ($item) => $item['pr_number'] ?? null)
                 ->filter()
                 ->unique()
                 ->values()
@@ -85,25 +82,24 @@ class DashboardService
 
             return collect($allStates)
                 ->map(function ($item) use ($modeMap) {
-                    $data = $item['data']['json'] ?? [];
-                    if (! isset($data['pr_number'], $data['procurement_title'])) {
-                        Log::warning('Invalid procurement data structure', ['data' => $data]);
+                    $prNumber = $item['pr_number'] ?? null;
+                    if (! $prNumber || ! isset($item['procurement_title'])) {
+                        Log::warning('Invalid procurement data structure', ['data' => $item]);
 
                         return null;
                     }
 
-                    $prNumber = $data['pr_number'];
                     $modeInfo = $modeMap[$prNumber] ?? null;
 
                     return [
                         'id' => $prNumber,
-                        'title' => $data['procurement_title'],
-                        'stage' => $data['stage'] ?? '',
-                        'status' => $data['current_status'] ?? $data['stage'] ?? '',
-                        'user_address' => $data['user_address'] ?? '',
-                        'user' => $this->getUserName($data['user_address'] ?? ''),
-                        'timestamp' => $data['timestamp'] ?? '',
-                        'blockchain_time' => $item['time'] ?? 0,
+                        'title' => $item['procurement_title'],
+                        'stage' => $item['stage'] ?? '',
+                        'status' => $item['current_status'] ?? $item['stage'] ?? '',
+                        'user_address' => $item['user_address'] ?? '',
+                        'user' => $this->getUserName($item['user_address'] ?? ''),
+                        'timestamp' => $item['timestamp'] ?? '',
+                        'blockchain_time' => $item['timestamp'] ?? 0,
                         'procurement_mode' => $modeInfo['value'] ?? null,
                         'procurement_mode_label' => $modeInfo['label'] ?? null,
                         'is_alternative_mode' => $modeInfo['is_alternative'] ?? null,
@@ -192,7 +188,22 @@ class DashboardService
             $limit = config('dashboard.display_limits.recent_activities_display');
             // Fetch only the required amount plus some buffer for filtering
             $fetchLimit = min($limit * 2, config('dashboard.stream_limits.recent_activities'));
-            $eventDtos = $this->mirrorRepository->findRecentEvents($fetchLimit);
+            $eventDtos = ProcurementEvent::orderByDesc('occurred_at')
+                ->take($fetchLimit)
+                ->get()
+                ->map(fn ($event) => EventData::fromBlockchainArray([
+                    'pr_number' => $event->procurement->pr_number ?? '',
+                    'procurement_title' => $event->procurement->title ?? '',
+                    'stage' => $event->stage,
+                    'event_type' => $event->event_type,
+                    'category' => $event->category,
+                    'severity' => $event->severity,
+                    'details' => $event->details,
+                    'document_count' => $event->document_count,
+                    'user_address' => $event->user_address ?? '',
+                    'timestamp' => $event->occurred_at->toIso8601String(),
+                    'metadata' => $event->metadata,
+                ]));
 
             if (empty($eventDtos)) {
                 Log::warning('No events found in repository');
@@ -245,7 +256,27 @@ class DashboardService
         try {
             // Only fetch recent documents to improve performance (from mirror)
             $documentLimit = config('dashboard.stream_limits.document_items', 500);
-            $documentDtos = $this->mirrorRepository->getAllDocuments($documentLimit);
+            $documentDtos = ProcurementDocument::orderByDesc('uploaded_at')
+                ->take($documentLimit)
+                ->get()
+                ->map(fn ($d) => DocumentData::fromBlockchainArray([
+                    'pr_number' => $d->procurement->pr_number ?? '',
+                    'procurement_title' => $d->procurement->title ?? '',
+                    'user_address' => $d->user_address ?? '',
+                    'stage' => $d->stage,
+                    'status' => '',
+                    'document_type' => $d->document_type,
+                    'file_key' => $d->file_key,
+                    'file_name' => $d->filename,
+                    'file_size' => $d->file_size,
+                    'mime_type' => $d->mime_type ?? '',
+                    'hash' => $d->hash,
+                    'data_txid' => $d->txid ?? '',
+                    'metadata_txid' => '',
+                    'uploaded_by' => $d->uploaded_by,
+                    'timestamp' => $d->uploaded_at->toIso8601String(),
+                    'description' => $d->description,
+                ]));
 
             if (empty($documentDtos)) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
@@ -386,16 +417,16 @@ class DashboardService
         $modeMap = [];
 
         try {
-            $procurements = $this->mirrorRepository->findManyByProcurement($prNumbers);
+            $procurements = Procurement::whereIn('pr_number', $prNumbers)->get()->keyBy('pr_number');
 
             foreach ($prNumbers as $prNumber) {
                 $procurement = $procurements[$prNumber] ?? null;
 
-                if ($procurement?->procurementMode) {
+                if ($procurement) {
                     $modeMap[$prNumber] = [
-                        'value' => $procurement->procurementMode->value,
-                        'label' => $procurement->procurementMode->getDisplayName(),
-                        'is_alternative' => $procurement->procurementMode->isAlternativeMode(),
+                        'value' => $procurement->procurement_mode ?? '',
+                        'label' => $procurement->procurement_mode ?? '',
+                        'is_alternative' => false,
                     ];
                 }
             }

@@ -7,11 +7,13 @@ namespace App\Repositories;
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementCorrectionData;
 use App\Enums\StreamEnums;
+use App\Models\ProcurementMetadataCorrection;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Repository for managing procurement.metadata.corrections stream
+ * Repository for procurement metadata corrections
+ * Reads from DB (mirror of blockchain).
  */
 final readonly class ProcurementCorrectionRepository implements ProcurementCorrectionRepositoryInterface
 {
@@ -20,7 +22,7 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
     ) {}
 
     /**
-     * Create a new procurement correction record
+     * Create a new correction record (writes to blockchain)
      */
     public function create(ProcurementCorrectionData $data): ?string
     {
@@ -31,104 +33,37 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
                 ['json' => $data->toBlockchainArray()]
             );
 
-            Log::info('Procurement correction published to blockchain', [
-                'pr_number' => $data->prNumber,
-                'correction_type' => $data->correctionType,
-                'stream' => StreamEnums::PROCUREMENT_CORRECTIONS->value,
-                'txid' => $txid,
-            ]);
+            Log::info('Correction published to blockchain', ['txid' => $txid]);
 
             return $txid;
         } catch (\Exception $e) {
-            Log::error('Failed to publish procurement correction to blockchain', [
-                'pr_number' => $data->prNumber,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error('Failed to publish correction', ['error' => $e->getMessage()]);
 
             return null;
         }
     }
 
     /**
-     * Find corrections by procurement ID
-     *
-     * Uses liststreamkeyitems for efficient key-based lookup.
-     *
-     * @return ProcurementCorrectionData[]
+     * Find corrections by PR number from DB.
      */
     public function findByProcurement(string $prNumber): array
     {
-        try {
-            $items = $this->multichain->liststreamkeyitems(
-                StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-                $prNumber,
-                true,
-                1000
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $corrections = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $corrections[] = ProcurementCorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
-                }
-            }
-
-            return $corrections;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve corrections by procurement', [
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('corrected_at')
+            ->get()
+            ->toArray();
     }
 
     /**
-     * Get all procurement corrections
-     *
-     * @return ProcurementCorrectionData[]
+     * Get all corrections from DB.
      */
     public function all(): array
     {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-                true,
-                1000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $corrections = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $corrections[] = ProcurementCorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
-                }
-            }
-
-            return $corrections;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve all procurement corrections', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementMetadataCorrection::orderByDesc('corrected_at')->get()->toArray();
     }
 
     /**
-     * Get correction history for a procurement
-     *
-     * @return ProcurementCorrectionData[]
+     * Get correction history for a PR from DB.
      */
     public function getHistory(string $prNumber): array
     {
@@ -136,29 +71,37 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
     }
 
     /**
-     * Check if a procurement has any corrections
+     * Check if a PR has corrections in DB.
      */
     public function hasCorrections(string $prNumber): bool
     {
-        $corrections = $this->findByProcurement($prNumber);
-
-        return ! empty($corrections);
+        return ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->exists();
     }
 
     /**
-     * Get the latest correction for a procurement
+     * Get the latest correction for a PR from DB.
      */
     public function getLatest(string $prNumber): ?ProcurementCorrectionData
     {
-        $corrections = $this->findByProcurement($prNumber);
+        $correction = ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('corrected_at')
+            ->first();
 
-        if (empty($corrections)) {
+        if (! $correction) {
             return null;
         }
 
-        // Sort by timestamp descending and return the first (latest)
-        usort($corrections, fn ($a, $b) => $b->timestamp <=> $a->timestamp);
-
-        return $corrections[0];
+        return ProcurementCorrectionData::fromBlockchainArray([
+            'pr_number' => $correction->procurement->pr_number ?? '',
+            'procurement_title' => $correction->procurement->title ?? '',
+            'correction_type' => $correction->correction_type,
+            'reason' => $correction->reason,
+            'corrected_by' => $correction->corrected_by,
+            'user_address' => $correction->user_address ?? '',
+            'timestamp' => $correction->corrected_at->toIso8601String(),
+            'original_title' => $correction->original_title,
+            'corrected_title' => $correction->corrected_title,
+        ], $correction->txid ?? '');
     }
 }

@@ -8,14 +8,13 @@ use App\Enums\BreachTypeEnums;
 use App\Enums\StreamEnums;
 use App\Http\Controllers\Controller;
 use App\Models\IntegrityAuditLog;
-use App\Models\IntegrityBreach;
-use App\Models\ProcurementRecord;
+use App\Models\Procurement;
 use App\Services\BlockchainRecordSyncService;
 use App\Services\IntegrityVerificationService;
+use App\Services\Manager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,200 +22,166 @@ use Inertia\Response;
 /**
  * Integrity Breach Controller
  *
- * Admin controller for viewing and managing data integrity breaches
- * and integrity audit logs in the procurement mirror system.
- *
- * Two data sources:
- * - IntegrityBreach (procurement_records with breach) — active breach status
- * - IntegrityAuditLog — permanent forensic record (append-only)
+ * Admin controller for viewing and managing integrity breaches.
+ * Reads from normalized tables, repairs FROM blockchain.
  */
 class IntegrityBreachController extends Controller
 {
     /**
-     * Display all integrity breaches with filtering and pagination.
+     * Display all integrity breaches with filtering.
      */
     public function index(Request $request): Response
     {
         $this->authorize('view-audit-log');
 
-        $query = IntegrityBreach::query();
+        $query = IntegrityAuditLog::query()->where('recovery_status', '!=', 'restored');
 
-        // Filter by breach type
-        if ($type = $request->input('breach_type')) {
-            $query->where('breach_type', $type);
+        if ($type = $request->input('violation_type')) {
+            $query->where('violation_type', $type);
         }
-
-        // Filter by stream
         if ($stream = $request->input('stream')) {
             $query->where('stream', $stream);
         }
-
-        // Filter by resolution status
-        $status = $request->input('status');
-        if ($status === 'unresolved') {
-            $query->unresolved();
-        } elseif ($status === 'resolved') {
-            $query->whereNotNull('repaired_at');
+        if ($status = $request->input('status')) {
+            $query->where('recovery_status', $status);
         }
-
-        // Filter by PR number
         if ($prNumber = $request->input('pr_number')) {
-            $query->forKey($prNumber);
+            $query->where('stream_key', $prNumber);
         }
 
-        // Filter by authorization status
-        if ($request->input('unauthorized') === 'true') {
-            $query->where('is_authorized', false);
-        }
-
-        $breaches = $query->orderByDesc('breach_detected_at')
+        $breaches = $query->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('admin/integrity-breaches', [
             'breaches' => $breaches,
-            'filters' => [
-                'breach_type' => $type,
-                'stream' => $stream,
-                'status' => $status,
-                'pr_number' => $prNumber,
-                'unauthorized' => $request->input('unauthorized'),
-            ],
+            'filters' => $request->only(['violation_type', 'stream', 'status', 'pr_number']),
             'breachTypes' => BreachTypeEnums::options(),
             'streams' => collect(StreamEnums::cases())
-                ->filter(fn ($case) => $case->isProcurementStream() || $case->isUserStream())
+                ->filter(fn ($case) => $case->isProcurementStream())
                 ->mapWithKeys(fn ($case) => [$case->value => $case->getDisplayName()])
                 ->toArray(),
             'stats' => [
-                'total' => IntegrityBreach::count(),
-                'unresolved' => IntegrityBreach::unresolved()->count(),
-                'critical' => IntegrityBreach::where('breach_type', BreachTypeEnums::HASH_MISMATCH->value)->unresolved()->count()
-                    + IntegrityBreach::where('breach_type', BreachTypeEnums::CONTENT_MISMATCH->value)->unresolved()->count(),
-                'unauthorized' => IntegrityBreach::where('is_authorized', false)->unresolved()->count(),
+                'total' => IntegrityAuditLog::count(),
+                'unresolved' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
+                'critical' => IntegrityAuditLog::where('severity', 'critical')->where('recovery_status', 'pending')->count(),
+                'high' => IntegrityAuditLog::where('severity', 'high')->where('recovery_status', 'pending')->count(),
             ],
         ]);
     }
 
     /**
-     * Show details for a specific breach record.
+     * Show details for a specific breach.
      */
-    public function show(int $id): JsonResponse
+    public function show(int $id): Response
     {
         $this->authorize('view-audit-log');
 
-        $breach = IntegrityBreach::findOrFail($id);
+        $log = IntegrityAuditLog::find($id);
 
-        // Also fetch related audit log entries
-        $auditLogs = IntegrityAuditLog::where('stream', $breach->stream)
-            ->where('stream_key', $breach->stream_key)
-            ->where('txid', $breach->txid)
-            ->orderByDesc('created_at')
-            ->get();
+        if (! $log) {
+            return Inertia::render('admin/breach-detail', [
+                'breachId' => $id,
+                'breach' => null,
+                'error' => 'Breach not found.',
+            ]);
+        }
 
-        return response()->json([
-            'id' => $breach->id,
-            'stream' => $breach->stream,
-            'stream_key' => $breach->stream_key,
-            'txid' => $breach->txid,
-            'publisher_address' => $breach->publisher_address,
-            'data_json' => $breach->data_json,
-            'data_hash' => $breach->data_hash,
-            'is_authorized' => $breach->is_authorized,
-            'breach_type' => $breach->breach_type,
-            'breach_data' => $breach->breach_data,
-            'breach_detected_at' => $breach->breach_detected_at?->toIso8601String(),
-            'repaired_at' => $breach->repaired_at?->toIso8601String(),
-            'synced_at' => $breach->synced_at?->toIso8601String(),
-            'verified_at' => $breach->verified_at?->toIso8601String(),
-            'blocktime' => $breach->blocktime?->toIso8601String(),
-            'severity' => $breach->severity(),
-            'revision_number' => $breach->revision_number,
-            'parent_txid' => $breach->parent_txid,
-            'is_latest_revision' => $breach->is_latest_revision,
-            'audit_logs' => $auditLogs,
+        // Get blockchain data for comparison
+        $blockchainData = null;
+        try {
+            $manager = app(Manager::class);
+            $items = $manager->liststreamkeyitems($log->stream, $log->stream_key);
+            if (is_array($items) && ! empty($items)) {
+                foreach ($items as $item) {
+                    if (($item['txid'] ?? null) === $log->txid) {
+                        $blockchainData = $item['data']['json'] ?? null;
+                        break;
+                    }
+                }
+                if ($blockchainData === null) {
+                    $blockchainData = end($items)['data']['json'] ?? null;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch blockchain data', ['error' => $e->getMessage()]);
+        }
+
+        return Inertia::render('admin/breach-detail', [
+            'breachId' => $id,
+            'breach' => [
+                'id' => $log->id,
+                'stream' => $log->stream,
+                'stream_key' => $log->stream_key,
+                'txid' => $log->txid,
+                'violation_type' => $log->violation_type,
+                'severity' => $log->severity,
+                'database_snapshot' => $log->database_snapshot,
+                'blockchain_snapshot' => $log->blockchain_snapshot,
+                'field_differences' => $log->field_differences,
+                'recovery_status' => $log->recovery_status,
+                'created_at' => $log->created_at?->toIso8601String(),
+                'blockchain_data' => $blockchainData,
+            ],
         ]);
     }
 
     /**
-     * Repair a specific breach from the blockchain.
+     * Repair a specific breach from blockchain.
      */
-    public function repair(Request $request, int $id): RedirectResponse
+    public function repair(int $id): RedirectResponse
     {
         $this->authorize('update-audit-log');
 
-        $breach = IntegrityBreach::findOrFail($id);
+        $log = IntegrityAuditLog::findOrFail($id);
+
+        if ($log->recovery_status !== 'pending') {
+            return back()->with('error', 'Already processed');
+        }
 
         try {
-            $service = app(IntegrityVerificationService::class);
             $syncService = app(BlockchainRecordSyncService::class);
-            $count = $syncService->repairFromChain($breach->stream_key, $breach->stream);
+            $syncService->repairFromChain($log->stream_key, $log->stream);
 
-            $breach->markAsRepaired();
-
-            // Also update any pending audit logs for this record
-            IntegrityAuditLog::where('stream', $breach->stream)
-                ->where('stream_key', $breach->stream_key)
-                ->where('txid', $breach->txid)
-                ->where('recovery_status', 'pending')
-                ->each(fn ($log) => $log->markRestored([
-                    'items_restored' => $count,
-                    'restored_by' => auth()->user()->name ?? 'admin',
-                    'restored_via' => 'admin_ui',
-                ]));
-
-            Log::info('IntegrityBreachController: breach repaired via admin UI', [
-                'breach_id' => $id,
-                'stream' => $breach->stream,
-                'stream_key' => $breach->stream_key,
-                'repaired_count' => $count,
+            $log->markRestored([
+                'restored_by' => auth()->user()->name ?? 'admin',
+                'restored_at' => now()->toIso8601String(),
             ]);
 
-            return redirect()->back()->with('success', "Breach repaired. {$count} item(s) synced from blockchain.");
+            return back()->with('success', 'Breach repaired from blockchain.');
         } catch (\Exception $e) {
-            Log::error('IntegrityBreachController: repair failed', [
-                'breach_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()->with('error', 'Failed to repair breach: '.$e->getMessage());
+            return back()->with('error', 'Repair failed: '.$e->getMessage());
         }
     }
 
     /**
-     * Repair all unresolved breaches for a PR number.
+     * Repair all breaches for a PR.
      */
     public function repairPr(Request $request): RedirectResponse
     {
         $this->authorize('update-audit-log');
 
         $prNumber = $request->input('pr_number');
-
         if (! $prNumber) {
-            return redirect()->back()->with('error', 'PR number is required.');
+            return back()->with('error', 'PR number required');
         }
 
         try {
             $syncService = app(BlockchainRecordSyncService::class);
-            $count = $syncService->repairFromChain($prNumber);
+            $syncService->repairFromChain($prNumber);
 
-            Log::info('IntegrityBreachController: PR breaches repaired via admin UI', [
-                'pr_number' => $prNumber,
-                'repaired_count' => $count,
-            ]);
+            IntegrityAuditLog::where('stream_key', $prNumber)
+                ->where('recovery_status', 'pending')
+                ->each(fn ($log) => $log->markRestored(['restored_by' => 'admin']));
 
-            return redirect()->back()->with('success', "PR {$prNumber} repaired. {$count} item(s) synced from blockchain.");
+            return back()->with('success', "PR {$prNumber} repaired from blockchain.");
         } catch (\Exception $e) {
-            Log::error('IntegrityBreachController: PR repair failed', [
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()->with('error', 'Failed to repair PR: '.$e->getMessage());
+            return back()->with('error', 'Repair failed: '.$e->getMessage());
         }
     }
 
     /**
-     * Run an integrity verification on all mirror data using the new service.
+     * Run integrity verification.
      */
     public function verify(): JsonResponse
     {
@@ -224,31 +189,22 @@ class IntegrityBreachController extends Controller
 
         try {
             $service = app(IntegrityVerificationService::class);
-            $result = $service->verifyAndRepair(autoRepair: false, source: 'manual');
-
-            $breachCount = is_array($result['violations'])
-            ? array_sum($result['violations'])
-            : 0;
+            $result = $service->verifyAndRepair(false, 'manual');
 
             return response()->json([
                 'success' => true,
                 'run_id' => $result['run_id'],
                 'verified' => $result['verified'],
-                'breach_count' => $breachCount,
+                'breach_count' => array_sum($result['violations']),
                 'violations' => $result['violations'],
-                'restored' => $result['restored'],
-                'failed' => $result['failed'],
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Run integrity verification with auto-repair.
+     * Run verification with auto-repair.
      */
     public function verifyAndRepair(): JsonResponse
     {
@@ -256,253 +212,114 @@ class IntegrityBreachController extends Controller
 
         try {
             $service = app(IntegrityVerificationService::class);
-            $result = $service->verifyAndRepair(autoRepair: true, source: 'manual');
-
-            $breachCount = is_array($result['violations'])
-            ? array_sum($result['violations'])
-            : 0;
+            $result = $service->verifyAndRepair(true, 'manual');
 
             return response()->json([
                 'success' => true,
                 'run_id' => $result['run_id'],
                 'verified' => $result['verified'],
-                'breach_count' => $breachCount,
-                'violations' => $result['violations'],
+                'breach_count' => array_sum($result['violations']),
                 'restored' => $result['restored'],
-                'failed' => $result['failed'],
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Get mirror status overview for the dashboard widget.
+     * Sync all data from blockchain to normalized tables.
+     */
+    public function sync(): JsonResponse
+    {
+        $this->authorize('update-audit-log');
+
+        try {
+            $syncService = app(\App\Services\NormalizedTableSyncService::class);
+            $counts = $syncService->syncAll();
+
+            return response()->json(['success' => true, 'counts' => $counts]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Dashboard status.
      */
     public function mirrorStatus(): JsonResponse
     {
         $this->authorize('view-audit-log');
 
-        $totalRecords = ProcurementRecord::count();
-        $unresolvedBreaches = IntegrityBreach::unresolved()->count();
-        $lastSync = ProcurementRecord::max('synced_at');
-        $lastVerified = ProcurementRecord::max('verified_at');
-
-        $streamCounts = ProcurementRecord::selectRaw('stream, count(*) as count')
-            ->groupBy('stream')
-            ->pluck('count', 'stream')
-            ->toArray();
-
-        $breachCounts = IntegrityBreach::selectRaw('breach_type, count(*) as count')
-            ->whereNull('repaired_at')
-            ->groupBy('breach_type')
-            ->pluck('count', 'breach_type')
-            ->toArray();
-
-        // Recent audit log stats
-        $lastAuditRun = IntegrityAuditLog::max('created_at');
-        $pendingRepairs = IntegrityAuditLog::unresolved()->count();
-
         return response()->json([
-            'total_records' => $totalRecords,
-            'unresolved_breaches' => $unresolvedBreaches,
-            'last_sync' => $lastSync,
-            'last_verified' => $lastVerified,
-            'last_audit_run' => $lastAuditRun,
-            'pending_repairs' => $pendingRepairs,
-            'stream_counts' => $streamCounts,
-            'breach_counts' => $breachCounts,
+            'total_records' => Procurement::count(),
+            'unresolved_breaches' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
+            'stream_counts' => [
+                'procurements' => Procurement::count(),
+                'stages' => \App\Models\ProcurementStage::count(),
+                'documents' => \App\Models\ProcurementDocument::count(),
+                'events' => \App\Models\ProcurementEvent::count(),
+            ],
         ]);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // INTEGRITY AUDIT LOG ENDPOINTS
-    // ═══════════════════════════════════════════════════════════════════
+    // ─── Audit Logs Page ─────────────────────────────────────────────
 
-    /**
-     * Render the Integrity Audit Logs Inertia page.
-     */
-    public function auditLogsPage(): Response
-    {
-        $this->authorize('view-audit-log');
-
-        $violationTypes = [
-            'hash_mismatch' => 'Hash Mismatch',
-            'content_mismatch' => 'Content Mismatch',
-            'user_address_tampered' => 'Address Tampered',
-            'unauthorized_publisher' => 'Unauthorized Publisher',
-            'row_deleted' => 'Row Deleted',
-        ];
-
-        $recoveryStatuses = [
-            'pending' => 'Pending',
-            'restored' => 'Restored',
-            'failed' => 'Failed',
-            'skipped' => 'Skipped',
-        ];
-
-        $severityLevels = [
-            'critical' => 'Critical',
-            'high' => 'High',
-            'medium' => 'Medium',
-            'low' => 'Low',
-        ];
-
-        $sources = [
-            'scheduled' => 'Scheduled',
-            'manual' => 'Manual',
-            'api' => 'API',
-        ];
-
-        return Inertia::render('admin/integrity-audit-logs', [
-            'violationTypes' => $violationTypes,
-            'recoveryStatuses' => $recoveryStatuses,
-            'severityLevels' => $severityLevels,
-            'sources' => $sources,
-        ]);
-    }
-
-    /**
-     * List integrity audit logs with filtering and pagination (JSON API).
-     */
-    public function auditLogsIndex(Request $request): JsonResponse
+    public function auditLogsPage(Request $request): Response
     {
         $this->authorize('view-audit-log');
 
         $query = IntegrityAuditLog::query();
 
         if ($type = $request->input('violation_type')) {
-            $query->forViolationType($type);
+            $query->where('violation_type', $type);
         }
-
         if ($key = $request->input('stream_key')) {
-            $query->forStreamKey($key);
+            $query->where('stream_key', $key);
         }
-
-        if ($runId = $request->input('verification_run_id')) {
-            $query->forRun($runId);
-        }
-
         if ($severity = $request->input('severity')) {
-            $query->withSeverity($severity);
+            $query->where('severity', $severity);
         }
-
         if ($status = $request->input('recovery_status')) {
-            $query->withRecoveryStatus($status);
+            $query->where('recovery_status', $status);
         }
 
-        if ($source = $request->input('source')) {
-            $query->fromSource($source);
-        }
+        $logs = $query->orderByDesc('created_at')->paginate(50)->withQueryString();
 
-        $logs = $query->orderByDesc('created_at')
-            ->paginate(50)
-            ->withQueryString();
-
-        return response()->json($logs);
+        return Inertia::render('admin/integrity-audit-logs', [
+            'logs' => $logs,
+            'filters' => $request->only(['violation_type', 'stream_key', 'severity', 'recovery_status']),
+            'violationTypes' => BreachTypeEnums::options(),
+            'recoveryStatuses' => ['pending' => 'Pending', 'restored' => 'Restored', 'failed' => 'Failed', 'skipped' => 'Skipped'],
+            'severityLevels' => ['critical' => 'Critical', 'high' => 'High', 'medium' => 'Medium', 'low' => 'Low'],
+            'sources' => ['scheduled' => 'Scheduled', 'manual' => 'Manual'],
+        ]);
     }
 
-    /**
-     * Show a specific integrity audit log entry.
-     */
-    public function auditLogsShow(int $id): JsonResponse
-    {
-        $this->authorize('view-audit-log');
-
-        $log = IntegrityAuditLog::findOrFail($id);
-
-        return response()->json($log);
-    }
-
-    /**
-     * Repair a specific violation from the blockchain (via audit log).
-     */
-    public function auditLogsRepair(int $id): JsonResponse
+    public function auditLogsRepair(int $id): RedirectResponse
     {
         $this->authorize('update-audit-log');
 
-        $auditLog = IntegrityAuditLog::findOrFail($id);
-
-        if ($auditLog->recovery_status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'error' => "Violation already processed with status: {$auditLog->recovery_status}",
-            ], 422);
+        $log = IntegrityAuditLog::findOrFail($id);
+        if ($log->recovery_status !== 'pending') {
+            return back()->with('error', 'Already processed');
         }
 
         try {
             $service = app(IntegrityVerificationService::class);
-            $result = $service->restoreViolation($auditLog);
-
-            return response()->json([
-                'success' => $result['success'],
-                'items_restored' => $result['items_restored'],
-                'error' => $result['error'],
-            ]);
+            $result = $service->restoreViolation($log);
+            return $result['success']
+                ? back()->with('success', 'Restored from blockchain.')
+                : back()->with('error', $result['error'] ?? 'Failed');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            return back()->with('error', $e->getMessage());
         }
     }
 
-    /**
-     * Generate a violation report for a specific verification run.
-     */
-    public function auditLogsReport(string $runId): JsonResponse
-    {
-        $this->authorize('view-audit-log');
-
-        $service = app(IntegrityVerificationService::class);
-        $report = $service->generateReport($runId);
-
-        return response()->json($report);
-    }
-
-    // ─── Detail Pages (Inertia) ──────────────────────────────────────
-
-    /**
-     * Render the Audit Log Detail page.
-     */
-    public function auditLogDetailPage(int $id): Response
-    {
-        $this->authorize('view-audit-log');
-
-        $log = IntegrityAuditLog::find($id);
-
-        if (! $log) {
-            return Inertia::render('admin/audit-log-detail', [
-                'logId' => $id,
-                'log' => null,
-                'error' => 'Audit log not found.',
-            ]);
-        }
-
-        // Make revision_history visible for detail page
-        $log->makeVisible(['revision_history']);
-
-        return Inertia::render('admin/audit-log-detail', [
-            'logId' => $id,
-            'log' => $log,
-        ]);
-    }
-
-    /**
-     * Render the Verification Run Report page.
-     */
     public function verificationReportPage(string $runId): Response
     {
         $this->authorize('view-audit-log');
 
-        // Get audit logs for this run
-        $logs = IntegrityAuditLog::forRun($runId)
-            ->orderByDesc('severity')
-            ->orderByDesc('created_at')
-            ->get();
+        $logs = IntegrityAuditLog::forRun($runId)->orderByDesc('severity')->get();
 
         $summary = [
             'total_violations' => $logs->count(),
@@ -511,209 +328,25 @@ class IntegrityBreachController extends Controller
             'medium' => $logs->where('severity', 'medium')->count(),
             'low' => $logs->where('severity', 'low')->count(),
             'restored' => $logs->where('recovery_status', 'restored')->count(),
-            'failed' => $logs->where('recovery_status', 'failed')->count(),
             'pending' => $logs->where('recovery_status', 'pending')->count(),
             'by_type' => $logs->groupBy('violation_type')->map->count()->toArray(),
         ];
 
-        // Don't include revision_history in the list for performance
-        // The frontend will fetch it on demand when expanding a violation
-        $violations = $logs->map(fn ($log) => collect($log->toArray())->except(['revision_history'])->toArray())->toArray();
-
-        $report = [
-            'run_id' => $runId,
-            'summary' => $summary,
-            'violations' => $violations,
-        ];
-
         return Inertia::render('admin/verification-report', [
             'runId' => $runId,
-            'report' => $report,
+            'report' => ['run_id' => $runId, 'summary' => $summary, 'violations' => $logs->toArray()],
         ]);
     }
 
-    /**
-     * Render the Breach Detail page.
-     */
-    public function breachDetailPage(int $id): Response
+    public function auditLogDetailPage(int $id): Response
     {
         $this->authorize('view-audit-log');
 
-        $breach = ProcurementRecord::find($id);
+        $log = IntegrityAuditLog::find($id);
 
-        if (! $breach) {
-            return Inertia::render('admin/breach-detail', [
-                'breachId' => $id,
-                'breach' => null,
-                'error' => 'Breach not found.',
-            ]);
-        }
-
-        // Get revision history
-        $revisionHistory = $breach->getRevisionHistory()->map(fn ($r) => [
-            'txid' => $r->txid,
-            'revision_number' => $r->revision_number,
-            'parent_txid' => $r->parent_txid,
-            'is_latest_revision' => $r->is_latest_revision,
-            'blocktime' => $r->blocktime?->toIso8601String(),
-            'publisher_address' => $r->publisher_address,
-            'data_hash' => $r->data_hash,
-            'breach_detected_at' => $r->breach_detected_at?->toIso8601String(),
-            'breach_type' => $r->breach_type,
-            'repaired_at' => $r->repaired_at?->toIso8601String(),
-        ]);
-
-        return Inertia::render('admin/breach-detail', [
-            'breachId' => $id,
-            'breach' => array_merge($breach->toArray(), [
-                'revision_history' => $revisionHistory,
-            ]),
-        ]);
-    }
-
-    // ─── Integrity Demo ───────────────────────────────────────────────
-
-    private string $demoKey = 'DEMO-PR-2026-TEST';
-
-    /**
-     * Render the Integrity Demo page.
-     */
-    public function demoPage(): Response
-    {
-        $this->authorize('view-audit-log');
-
-        $demoRecord = ProcurementRecord::where('stream_key', $this->demoKey)
-            ->where('txid', 'demo_txid_001')
-            ->first();
-
-        $blockchainData = [
-            'pr_number' => $this->demoKey,
-            'title' => 'Test Procurement for Integrity Demo',
-            'amount' => 150000.00,
-            'status' => 'pending',
-            'category' => 'goods',
-        ];
-
-        $status = $demoRecord ? 'initial' : 'deleted';
-
-        return Inertia::render('admin/integrity-demo', [
-            'demoRecord' => $demoRecord,
-            'blockchainData' => $blockchainData,
-            'status' => $status,
-        ]);
-    }
-
-    /**
-     * Handle demo actions (delete, restore, modify, reset).
-     */
-    public function demoAction(Request $request): RedirectResponse
-    {
-        $this->authorize('view-audit-log');
-
-        $action = $request->input('action');
-
-        match ($action) {
-            'delete' => $this->demoDelete(),
-            'restore' => $this->demoRestore(),
-            'modify' => $this->demoModify(),
-            'reset' => $this->demoReset(),
-            default => null,
-        };
-
-        return redirect()->route('integrity-demo.page');
-    }
-
-    private function demoDelete(): void
-    {
-        ProcurementRecord::where('stream_key', $this->demoKey)
-            ->where('txid', 'demo_txid_001')
-            ->delete();
-
-        // Record the deletion in audit log
-        IntegrityAuditLog::recordViolation(
-            stream: 'procurement.metadata',
-            streamKey: $this->demoKey,
-            violationType: BreachTypeEnums::ROW_DELETED->value,
-            txid: 'demo_txid_001',
-            chainSnapshot: [
-                'pr_number' => $this->demoKey,
-                'title' => 'Test Procurement for Integrity Demo',
-                'amount' => 150000.00,
-            ],
-            runId: 'demo-'.time(),
-            source: 'demo',
-        );
-    }
-
-    private function demoRestore(): void
-    {
-        $data = [
-            'pr_number' => $this->demoKey,
-            'title' => 'Test Procurement for Integrity Demo',
-            'amount' => 150000.00,
-            'status' => 'pending',
-            'category' => 'goods',
-        ];
-
-        ProcurementRecord::updateOrCreate(
-            [
-                'stream' => 'procurement.metadata',
-                'stream_key' => $this->demoKey,
-                'txid' => 'demo_txid_001',
-            ],
-            [
-                'revision_number' => 1,
-                'publisher_address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-                'data_json' => $data,
-                'data_hash' => hash('sha256', json_encode($data)),
-                'repaired_at' => now(),
-                'synced_at' => now(),
-            ]
-        );
-    }
-
-    private function demoModify(): void
-    {
-        $mirror = ProcurementRecord::where('stream_key', $this->demoKey)
-            ->where('txid', 'demo_txid_001')
-            ->first();
-
-        if ($mirror) {
-            $tamperedData = $mirror->data_json;
-            $tamperedData['amount'] = 999999.99;
-            $tamperedData['status'] = 'approved';
-
-            DB::table('procurement_records')
-                ->where('id', $mirror->id)
-                ->update(['data_json' => $tamperedData]);
-
-            $mirror->markAsBreached(BreachTypeEnums::CONTENT_MISMATCH->value, [
-                'demo' => true,
-            ]);
-        }
-    }
-
-    private function demoReset(): void
-    {
-        ProcurementRecord::where('stream_key', $this->demoKey)->delete();
-
-        $data = [
-            'pr_number' => $this->demoKey,
-            'title' => 'Test Procurement for Integrity Demo',
-            'amount' => 150000.00,
-            'status' => 'pending',
-            'category' => 'goods',
-        ];
-
-        ProcurementRecord::create([
-            'stream' => 'procurement.metadata',
-            'stream_key' => $this->demoKey,
-            'txid' => 'demo_txid_001',
-            'revision_number' => 1,
-            'publisher_address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-            'data_json' => $data,
-            'data_hash' => hash('sha256', json_encode($data)),
-            'synced_at' => now(),
+        return Inertia::render('admin/audit-log-detail', [
+            'logId' => $id,
+            'log' => $log,
         ]);
     }
 }

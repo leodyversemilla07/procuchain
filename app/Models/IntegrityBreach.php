@@ -9,9 +9,9 @@ use Illuminate\Support\Carbon;
 /**
  * IntegrityBreach Model
  *
- * A read-only model that reads from the procurement_records table,
+ * A read-only model that reads from integrity_audit_logs,
  * filtered to only include records where a breach has been detected.
- * Records are created and managed via ProcurementRecord — this model
+ * Records are created and managed via IntegrityVerificationService — this model
  * exists for convenient querying of breached records.
  *
  * @property int $id
@@ -127,14 +127,8 @@ class IntegrityBreach extends Model
      */
     public function getIsLatestRevisionAttribute(): bool
     {
-        if ($this->revision_number === null) {
-            return true;
-        }
-
-        return ! ProcurementRecord::where('stream', $this->stream)
-            ->where('stream_key', $this->stream_key)
-            ->where('revision_number', '>', $this->revision_number)
-            ->exists();
+        // Always return true for normalized tables
+        return true;
     }
 
     /**

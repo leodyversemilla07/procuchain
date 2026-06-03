@@ -7,11 +7,13 @@ namespace App\Repositories;
 use App\Contracts\CorrectionRepositoryInterface;
 use App\DataTransferObjects\CorrectionData;
 use App\Enums\StreamEnums;
+use App\Models\ProcurementCorrection;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Repository for managing procurement.corrections stream
+ * Repository for procurement corrections
+ * Reads from DB (mirror of blockchain).
  */
 final readonly class CorrectionRepository implements CorrectionRepositoryInterface
 {
@@ -20,7 +22,7 @@ final readonly class CorrectionRepository implements CorrectionRepositoryInterfa
     ) {}
 
     /**
-     * Create a new correction record
+     * Create a new correction record (writes to blockchain)
      */
     public function create(CorrectionData $data): ?string
     {
@@ -31,119 +33,85 @@ final readonly class CorrectionRepository implements CorrectionRepositoryInterfa
                 ['json' => $data->toBlockchainArray()]
             );
 
-            Log::info('Correction published to blockchain', [
-                'pr_number' => $data->prNumber,
-                'correction_type' => $data->correctionType,
-                'stream' => StreamEnums::CORRECTIONS->value,
-                'txid' => $txid,
-            ]);
-
+            Log::info('Correction published to blockchain', ['txid' => $txid]);
             return $txid;
         } catch (\Exception $e) {
-            Log::error('Failed to publish correction to blockchain', [
-                'pr_number' => $data->prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Failed to publish correction', ['error' => $e->getMessage()]);
             return null;
         }
     }
 
     /**
-     * Find corrections by procurement ID
-     *
-     * Uses liststreamkeyitems for efficient key-based lookup.
-     *
-     * @return CorrectionData[]
+     * Find corrections by PR number from DB.
+     * Returns CorrectionData objects.
      */
     public function findByProcurement(string $prNumber): array
     {
-        try {
-            $items = $this->multichain->liststreamkeyitems(
-                StreamEnums::CORRECTIONS->value,
-                $prNumber,
-                true,
-                1000
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $corrections = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $corrections[] = CorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
-                }
-            }
-
-            return $corrections;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve corrections by procurement', [
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('corrected_at')
+            ->get()
+            ->map(fn ($c) => CorrectionData::fromBlockchainArray([
+                'pr_number' => $c->procurement->pr_number ?? '',
+                'procurement_title' => $c->procurement->title ?? '',
+                'original_txid' => $c->original_txid,
+                'original_document_hash' => $c->original_document_hash,
+                'correction_type' => $c->correction_type,
+                'action' => $c->action,
+                'reason' => $c->reason,
+                'corrected_by' => $c->corrected_by,
+                'user_address' => $c->user_address ?? '',
+                'timestamp' => $c->corrected_at->toIso8601String(),
+            ], $c->txid ?? ''))
+            ->toArray();
     }
 
     /**
-     * Find corrections by original transaction ID
-     *
-     * @return CorrectionData[]
+     * Find corrections by original TXID from DB.
      */
     public function findByOriginalTxid(string $originalTxid): array
     {
-        $allCorrections = $this->all();
-
-        return array_filter(
-            $allCorrections,
-            fn (CorrectionData $correction) => $correction->originalTxid === $originalTxid
-        );
+        return ProcurementCorrection::where('original_txid', $originalTxid)
+            ->orderByDesc('corrected_at')
+            ->get()
+            ->map(fn ($c) => CorrectionData::fromBlockchainArray([
+                'pr_number' => $c->procurement->pr_number ?? '',
+                'procurement_title' => $c->procurement->title ?? '',
+                'original_txid' => $c->original_txid,
+                'original_document_hash' => $c->original_document_hash,
+                'correction_type' => $c->correction_type,
+                'action' => $c->action,
+                'reason' => $c->reason,
+                'corrected_by' => $c->corrected_by,
+                'user_address' => $c->user_address ?? '',
+                'timestamp' => $c->corrected_at->toIso8601String(),
+            ], $c->txid ?? ''))
+            ->toArray();
     }
 
     /**
-     * Get all corrections
-     *
-     * @return CorrectionData[]
+     * Get all corrections from DB.
      */
     public function all(): array
     {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::CORRECTIONS->value,
-                true,
-                1000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $corrections = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $corrections[] = CorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
-                }
-            }
-
-            return $corrections;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve all corrections', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementCorrection::orderByDesc('corrected_at')
+            ->get()
+            ->map(fn ($c) => CorrectionData::fromBlockchainArray([
+                'pr_number' => $c->procurement->pr_number ?? '',
+                'procurement_title' => $c->procurement->title ?? '',
+                'original_txid' => $c->original_txid,
+                'original_document_hash' => $c->original_document_hash,
+                'correction_type' => $c->correction_type,
+                'action' => $c->action,
+                'reason' => $c->reason,
+                'corrected_by' => $c->corrected_by,
+                'user_address' => $c->user_address ?? '',
+                'timestamp' => $c->corrected_at->toIso8601String(),
+            ], $c->txid ?? ''))
+            ->toArray();
     }
 
     /**
-     * Get correction history for a procurement
-     *
-     * @return CorrectionData[]
+     * Get correction history for a PR from DB.
      */
     public function getHistory(string $prNumber): array
     {

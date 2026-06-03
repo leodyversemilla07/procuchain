@@ -6,11 +6,13 @@ namespace App\Repositories;
 
 use App\DataTransferObjects\EventData;
 use App\Enums\StreamEnums;
+use App\Models\ProcurementEvent;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Repository for managing procurement.events stream
+ * Repository for procurement events
+ * Reads from DB (mirror of blockchain).
  */
 final readonly class EventRepository
 {
@@ -19,12 +21,11 @@ final readonly class EventRepository
     ) {}
 
     /**
-     * Create a new event record
+     * Create a new event record (writes to blockchain)
      */
     public function create(EventData $data): ?string
     {
         try {
-            // Event stream uses composite key: pr_number + descriptive suffix
             $key = $data->prNumber.'_'.str_replace(' ', '_', strtolower($data->procurementTitle));
 
             $txid = $this->multichain->publish(
@@ -33,143 +34,60 @@ final readonly class EventRepository
                 ['json' => $data->toBlockchainArray()]
             );
 
-            Log::info('Event published to blockchain', [
-                'pr_number' => $data->prNumber,
-                'event_type' => $data->eventType,
-                'stream' => StreamEnums::EVENTS->value,
-                'txid' => $txid,
-            ]);
-
+            Log::info('Event published to blockchain', ['txid' => $txid]);
             return $txid;
         } catch (\Exception $e) {
-            Log::error('Failed to publish event to blockchain', [
-                'pr_number' => $data->prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Failed to publish event', ['error' => $e->getMessage()]);
             return null;
         }
     }
 
     /**
-     * Find events by procurement ID
-     *
-     * @return EventData[]
+     * Find events by PR number from DB.
+     * Returns EventData objects.
      */
     public function findByProcurement(string $prNumber): array
     {
-        $allEvents = $this->all();
-
-        return array_filter(
-            $allEvents,
-            fn (EventData $event) => $event->prNumber === $prNumber
-        );
+        return ProcurementEvent::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('occurred_at')
+            ->get()
+            ->map(fn ($event) => EventData::fromBlockchainArray([
+                'pr_number' => $event->procurement->pr_number ?? '',
+                'procurement_title' => $event->procurement->title ?? '',
+                'stage' => $event->stage,
+                'event_type' => $event->event_type,
+                'category' => $event->category,
+                'severity' => $event->severity,
+                'details' => $event->details,
+                'document_count' => $event->document_count,
+                'user_address' => $event->user_address ?? '',
+                'timestamp' => $event->occurred_at->toIso8601String(),
+                'metadata' => $event->metadata,
+            ]))
+            ->toArray();
     }
 
     /**
-     * Find recent events (limit)
-     *
-     * @return EventData[]
+     * Find recent events from DB.
      */
-    public function findRecent(int $limit = 10): array
+    public function findRecentEvents(int $limit = 50): array
     {
-        $allEvents = $this->all();
-
-        usort($allEvents, fn ($a, $b) => $b->timestamp->timestamp - $a->timestamp->timestamp);
-
-        return array_slice($allEvents, 0, $limit);
-    }
-
-    /**
-     * Get all events
-     *
-     * @return EventData[]
-     */
-    public function all(): array
-    {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::EVENTS->value,
-                true,
-                1000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $events = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    try {
-                        // Skip events that don't have required fields (e.g., test data)
-                        $json = $item['data']['json'];
-                        if (! isset($json['procurement_title']) || ! isset($json['pr_number'])) {
-                            continue;
-                        }
-
-                        $events[] = EventData::fromBlockchainArray($json);
-                    } catch (\Exception $e) {
-                        Log::warning('Skipping invalid event data', [
-                            'error' => $e->getMessage(),
-                            'pr_number' => $json['pr_number'] ?? 'N/A',
-                        ]);
-
-                        continue;
-                    }
-                }
-            }
-
-            return $events;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve all events', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
-    }
-
-    /**
-     * Get event history for a procurement
-     *
-     * @return EventData[]
-     */
-    public function getHistory(string $prNumber): array
-    {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::EVENTS->value,
-                true,
-                1000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $history = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $event = EventData::fromBlockchainArray($item['data']['json']);
-                    if ($event->prNumber === $prNumber) {
-                        $history[] = $event;
-                    }
-                }
-            }
-
-            return $history;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve event history', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementEvent::orderByDesc('occurred_at')
+            ->take($limit)
+            ->get()
+            ->map(fn ($event) => EventData::fromBlockchainArray([
+                'pr_number' => $event->procurement->pr_number ?? '',
+                'procurement_title' => $event->procurement->title ?? '',
+                'stage' => $event->stage,
+                'event_type' => $event->event_type,
+                'category' => $event->category,
+                'severity' => $event->severity,
+                'details' => $event->details,
+                'document_count' => $event->document_count,
+                'user_address' => $event->user_address ?? '',
+                'timestamp' => $event->occurred_at->toIso8601String(),
+                'metadata' => $event->metadata,
+            ]))
+            ->toArray();
     }
 }

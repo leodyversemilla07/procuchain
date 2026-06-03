@@ -35,7 +35,6 @@ use App\Policies\UserPolicy;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\AuditLogger;
 use App\Services\BlockchainRecordSyncService;
@@ -82,7 +81,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ProcurementCorrectionRepositoryInterface::class, ProcurementCorrectionRepository::class);
 
         // Mirror repository (reads from MySQL mirror with blockchain fallback)
-        $this->app->singleton(ProcurementRecordRepository::class);
+        // ProcurementRecordRepository removed - using normalized tables now
 
         // Integrity verification (mirror ↔ blockchain comparison + auto-repair)
         $this->app->singleton(IntegrityVerificationService::class);

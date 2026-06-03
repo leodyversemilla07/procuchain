@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, Clock, FileSearch, Shield, Wrench, XCircle } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { CheckCircle2, Clock, FileSearch, Shield, Wrench, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface VerificationReport {
@@ -85,7 +85,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
 
     const handleRepair = (violationId: number) => {
         router.post(
-            integrityAuditLogs.api.repair.url(violationId),
+            integrityAuditLogs.repair.url(violationId),
             {},
             {
                 preserveScroll: true,
@@ -108,11 +108,6 @@ export default function VerificationReportPage({ runId, report, error }: Verific
             <div className="p-4 sm:p-6">
                 {/* Header */}
                 <div className="mb-6 flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={integrityAuditLogs.index.url()}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
-                    </Button>
                     <div className="flex-1">
                         <h1 className="flex items-center gap-2 text-2xl font-bold">
                             <FileSearch className="h-6 w-6" />
@@ -145,34 +140,40 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Violations</CardTitle>
+                                    <CardTitle className="text-muted-foreground text-sm font-medium">Total Violations</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-3xl font-bold">{report.summary.total_violations}</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        {report.summary.high + report.summary.medium + report.summary.low} other severity levels
+                                    </p>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-red-600">Critical</CardTitle>
+                                    <CardTitle className="text-sm font-medium text-red-600 dark:text-red-400">Critical</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-3xl font-bold text-red-600">{report.summary.critical}</p>
+                                    <p className="text-3xl font-bold text-red-600 dark:text-red-400">{report.summary.critical}</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">Requires immediate attention</p>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-green-600">Restored</CardTitle>
+                                    <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">Restored</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-3xl font-bold text-green-600">{report.summary.restored}</p>
+                                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">{report.summary.restored}</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">Successfully recovered from chain</p>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-yellow-600">Pending</CardTitle>
+                                    <CardTitle className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Pending</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-3xl font-bold text-yellow-600">{report.summary.pending}</p>
+                                    <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{report.summary.pending}</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">Awaiting manual repair</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -180,15 +181,42 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                         {/* Severity Breakdown */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Violation Types</CardTitle>
+                                <CardTitle>Violation Breakdown</CardTitle>
+                                <CardDescription>Distribution by type and severity</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex flex-wrap gap-3">
-                                    {Object.entries(report.summary.by_type).map(([type, count]) => (
-                                        <Badge key={type} variant="outline" className="text-sm">
-                                            {VIOLATION_TYPE_LABELS[type] ?? type}: {count}
-                                        </Badge>
-                                    ))}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <h4 className="text-muted-foreground mb-2 text-sm font-medium">By Type</h4>
+                                        <div className="space-y-2">
+                                            {Object.entries(report.summary.by_type).map(([type, count]) => (
+                                                <div key={type} className="flex items-center justify-between">
+                                                    <span className="text-sm">{VIOLATION_TYPE_LABELS[type] ?? type}</span>
+                                                    <Badge variant="outline" className="font-mono">
+                                                        {count}
+                                                    </Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-muted-foreground mb-2 text-sm font-medium">By Severity</h4>
+                                        <div className="space-y-2">
+                                            {[
+                                                { label: 'Critical', value: report.summary.critical, color: 'text-red-600 dark:text-red-400' },
+                                                { label: 'High', value: report.summary.high, color: 'text-orange-600 dark:text-orange-400' },
+                                                { label: 'Medium', value: report.summary.medium, color: 'text-yellow-600 dark:text-yellow-400' },
+                                                { label: 'Low', value: report.summary.low, color: 'text-blue-600 dark:text-blue-400' },
+                                            ].filter((s) => s.value > 0).map((severity) => (
+                                                <div key={severity.label} className="flex items-center justify-between">
+                                                    <span className="text-sm">{severity.label}</span>
+                                                    <Badge variant="outline" className={`font-mono ${severity.color}`}>
+                                                        {severity.value}
+                                                    </Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -232,7 +260,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <Badge className={RECOVERY_STATUS_STYLES[violation.recovery_status]?.className}>
-                                                                <RecoveryIcon className="mr-1 h-3 w-3" />
+                                                                <RecoveryIcon data-icon="inline-start" />
                                                                 {RECOVERY_STATUS_STYLES[violation.recovery_status]?.label}
                                                             </Badge>
                                                             {violation.revision_number && (
@@ -325,14 +353,12 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                             <div className="mt-4 flex gap-2">
                                                                 {violation.recovery_status === 'pending' && (
                                                                     <Button variant="outline" size="sm" onClick={() => handleRepair(violation.id)}>
-                                                                        <Wrench className="mr-2 h-4 w-4" />
+                                                                        <Wrench data-icon="inline-start" />
                                                                         Repair from Blockchain
                                                                     </Button>
                                                                 )}
-                                                                <Button variant="ghost" size="sm" asChild>
-                                                                    <Link href={integrityAuditLogs.index.url({ stream_key: violation.stream_key })}>
-                                                                        View All for PR {violation.stream_key}
-                                                                    </Link>
+                                                                <Button variant="ghost" size="sm" render={<Link href={integrityAuditLogs.index.url({ query: { stream_key: violation.stream_key } })} />} nativeButton={false}>
+                                                                    View All for PR {violation.stream_key}
                                                                 </Button>
                                                             </div>
                                                         </div>

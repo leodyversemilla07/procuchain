@@ -6,12 +6,13 @@ namespace App\Repositories;
 
 use App\DataTransferObjects\StatusData;
 use App\Enums\StreamEnums;
+use App\Models\ProcurementStage;
 use App\Services\Manager;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Repository for managing procurement.status stream
+ * Repository for procurement status
+ * Reads from DB (mirror of blockchain).
  */
 final readonly class StatusRepository
 {
@@ -20,7 +21,7 @@ final readonly class StatusRepository
     ) {}
 
     /**
-     * Create a new status record
+     * Create a new status record (writes to blockchain)
      */
     public function create(StatusData $data): ?string
     {
@@ -31,188 +32,55 @@ final readonly class StatusRepository
                 ['json' => $data->toBlockchainArray()]
             );
 
-            Log::info('Status published to blockchain', [
-                'pr_number' => $data->prNumber,
-                'current_status' => $data->currentStatus,
-                'stream' => StreamEnums::STATUS->value,
-                'txid' => $txid,
-            ]);
+            Log::info('Status published to blockchain', ['txid' => $txid]);
 
             return $txid;
         } catch (\Exception $e) {
-            Log::error('Failed to publish status to blockchain', [
-                'pr_number' => $data->prNumber,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error('Failed to publish status', ['error' => $e->getMessage()]);
 
             return null;
         }
     }
 
     /**
-     * Find status records by procurement ID
-     *
-     * Uses liststreamkeyitems for efficient key-based lookup
-     * instead of scanning all stream items.
-     *
-     * @return StatusData[]
+     * Find status records by PR number from DB.
      */
     public function findByProcurement(string $prNumber): array
     {
-        try {
-            $items = $this->multichain->liststreamkeyitems(
-                StreamEnums::STATUS->value,
-                $prNumber,
-                false,
-                1000
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $statuses = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    try {
-                        $statuses[] = StatusData::fromBlockchainArray($item['data']['json']);
-                    } catch (\Exception $e) {
-                        Log::warning('Failed to parse status data in findByProcurement', [
-                            'pr_number' => $prNumber,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-            }
-
-            // Sort by timestamp descending (most recent first)
-            usort($statuses, fn (StatusData $a, StatusData $b): int => $b->timestamp->timestamp - $a->timestamp->timestamp
-            );
-
-            return array_values($statuses);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve status by procurement', [
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return ProcurementStage::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderBy('entered_at')
+            ->get()
+            ->map(fn ($stage) => StatusData::fromBlockchainArray([
+                'pr_number' => $stage->procurement->pr_number ?? '',
+                'procurement_title' => $stage->procurement->title ?? '',
+                'stage' => $stage->stage,
+                'current_status' => $stage->status,
+                'user_address' => $stage->user_address ?? '',
+                'timestamp' => $stage->entered_at->toIso8601String(),
+                'previous_status' => $stage->previous_status,
+                'metadata' => $stage->metadata,
+            ]))
+            ->toArray();
     }
 
     /**
-     * Get the latest status for a procurement
+     * Get latest status for each PR from DB.
      */
-    public function getLatest(string $prNumber): ?StatusData
+    public function getLatestStatusByProcurement(int $limit = 100): array
     {
-        $statuses = $this->findByProcurement($prNumber);
-
-        if (empty($statuses)) {
-            return null;
-        }
-
-        return $statuses[0];
-    }
-
-    /**
-     * Get all status records
-     *
-     * @return StatusData[]
-     */
-    public function all(int $limit = 1000, int $offset = 0): array
-    {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::STATUS->value,
-                false,
-                $limit,
-                $offset,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $statuses = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    try {
-                        $statuses[] = StatusData::fromBlockchainArray($item['data']['json']);
-                    } catch (\Exception $e) {
-                        Log::error('Failed to parse status data in all()', [
-                            'error' => $e->getMessage(),
-                            'data' => $item['data']['json'] ?? null,
-                        ]);
-                    }
-                }
-            }
-
-            return $statuses;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve all statuses', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
-    }
-
-    /**
-     * Get only the latest status for each unique procurement (OPTIMIZED)
-     * Uses single-query approach to avoid N+1 blockchain queries
-     */
-    public function getLatestByProcurement(int $limit = 100): array
-    {
-        try {
-            Log::info('Using optimized single-query method', ['limit' => $limit]);
-
-            $fetchLimit = max($limit * 10, 150);
-            $allStatuses = $this->all($fetchLimit, 0);
-
-            $grouped = [];
-            foreach ($allStatuses as $status) {
-                $prNumber = $status->prNumber;
-                if (! isset($grouped[$prNumber])) {
-                    $grouped[$prNumber] = $status;
-                } else {
-                    $currentTime = $grouped[$prNumber]->timestamp instanceof Carbon
-                        ? $grouped[$prNumber]->timestamp->timestamp
-                        : strtotime($grouped[$prNumber]->timestamp);
-                    $newTime = $status->timestamp instanceof Carbon
-                        ? $status->timestamp->timestamp
-                        : strtotime($status->timestamp);
-
-                    if ($newTime > $currentTime) {
-                        $grouped[$prNumber] = $status;
-                    }
-                }
-            }
-
-            $result = array_values($grouped);
-
-            Log::info('Found unique procurements', [
-                'fetched_items' => count($allStatuses),
-                'unique_procurements' => count($result),
-            ]);
-
-            return $result;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve latest statuses by procurement', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->all($limit);
-        }
-    }
-
-    /**
-     * Get status history for a procurement
-     *
-     * @return StatusData[]
-     */
-    public function getHistory(string $prNumber): array
-    {
-        return $this->findByProcurement($prNumber);
+        return ProcurementStage::orderByDesc('entered_at')
+            ->take($limit)
+            ->get()
+            ->map(fn ($stage) => StatusData::fromBlockchainArray([
+                'pr_number' => $stage->procurement->pr_number ?? '',
+                'procurement_title' => $stage->procurement->title ?? '',
+                'stage' => $stage->stage,
+                'current_status' => $stage->status,
+                'user_address' => $stage->user_address ?? '',
+                'timestamp' => $stage->entered_at->toIso8601String(),
+                'previous_status' => $stage->previous_status,
+                'metadata' => $stage->metadata,
+            ]))
+            ->toArray();
     }
 }

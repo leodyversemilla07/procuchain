@@ -7,16 +7,17 @@ namespace App\Repositories;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\StreamEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementStage;
 use App\Services\DashboardCacheKeys;
 use App\Services\Manager;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Procurement Repository
  *
- * Handles all blockchain CRUD operations for procurement metadata
- * Stream: procurement.metadata
+ * Reads from normalized DB tables.
+ * Writes to blockchain via BlockchainWriteJob.
  */
 class ProcurementRepository implements ProcurementRepositoryInterface
 {
@@ -32,173 +33,74 @@ class ProcurementRepository implements ProcurementRepositoryInterface
             ['json' => $procurement->toBlockchainArray()]
         );
 
-        // Clear caches to show new procurement
         DashboardCacheKeys::clearAllProcurementCaches();
-
-        Log::info('Procurement published to blockchain', [
-            'pr_number' => $procurement->prNumber,
-            'stream' => StreamEnums::METADATA->value,
-        ]);
     }
 
     public function findByProcurement(string $prNumber): ?ProcurementData
     {
-        try {
-            $items = $this->multichain->liststreamkeyitems(StreamEnums::METADATA->value, $prNumber);
+        $record = Procurement::where('pr_number', $prNumber)->first();
 
-            if (empty($items)) {
-                return null;
-            }
-
-            // Get the latest version - use last item if blocktime is pending (unconfirmed)
-            // Items are returned in chronological order, so last item is most recent
-            $latestItem = collect($items)
-                ->sortByDesc(fn ($item) => $item['blocktime'] ?? PHP_INT_MAX)
-                ->first();
-
-            // If all items are pending, get the last one (most recently published)
-            if (($latestItem['blocktime'] ?? null) === null) {
-                $latestItem = end($items);
-            }
-
-            return ProcurementData::fromBlockchainArray($latestItem['data']['json']);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve procurement from blockchain', [
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
+        if (! $record) {
             return null;
         }
+
+        return ProcurementData::fromBlockchainArray([
+            'pr_number' => $record->pr_number,
+            'app_reference' => $record->app_reference,
+            'title' => $record->title,
+            'description' => $record->description,
+            'abc_amount' => $record->abc_amount,
+            'funding_source' => $record->fund_source,
+            'category' => $record->category,
+            'procurement_mode' => $record->procurement_mode,
+            'office' => $record->office,
+            'end_user' => $record->end_user,
+            'status' => $record->current_status ?? 'draft',
+            'user_address' => $record->user_address,
+            'created_at' => $record->initiated_at?->toIso8601String() ?? $record->created_at?->toIso8601String(),
+        ]);
     }
 
-    public function all(int $limit = 1000, int $offset = 0): Collection
+    public function all(): Collection
     {
-        try {
-            // OPTIMIZATION: Use verbose=false for faster response
-            $items = $this->multichain->liststreamitems(
-                'procurement.metadata',
-                false,  // verbose=false
-                $limit,
-                $offset,
-                false
-            );
-
-            // Group by procurement ID and get latest version of each
-            return collect($items)
-                ->groupBy('keys.0')
-                ->map(fn ($group) => collect($group)->sortByDesc('blocktime')->first())
-                ->map(fn ($item) => ProcurementData::fromBlockchainArray($item['data']['json']))
-                ->values();
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve procurements from blockchain', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return collect();
-        }
-    }
-
-    /**
-     * Find multiple procurements by PR numbers (OPTIMIZED BATCH FETCH)
-     *
-     * @param  array<string>  $prNumbers
-     * @return array<string, ProcurementData|null>
-     */
-    public function findManyByProcurement(array $prNumbers): array
-    {
-        if (empty($prNumbers)) {
-            return [];
-        }
-
-        try {
-            // Fetch all metadata items once (much faster than per-PR queries)
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::METADATA->value,
-                false,  // verbose=false
-                count($prNumbers) * 2,  // Buffer for multiple versions
-                0,
-                false
-            );
-
-            $result = [];
-            $grouped = collect($items)->groupBy('keys.0');
-
-            foreach ($prNumbers as $prNumber) {
-                if ($grouped->has($prNumber)) {
-                    // Get latest version for this PR
-                    $latest = $grouped->get($prNumber)
-                        ->sortByDesc('blocktime')
-                        ->first();
-
-                    if ($latest && isset($latest['data']['json'])) {
-                        $result[$prNumber] = ProcurementData::fromBlockchainArray($latest['data']['json']);
-                    } else {
-                        $result[$prNumber] = null;
-                    }
-                } else {
-                    $result[$prNumber] = null;
-                }
-            }
-
-            return $result;
-        } catch (\Exception $e) {
-            Log::error('Failed to batch fetch procurements', [
-                'pr_count' => count($prNumbers),
-                'error' => $e->getMessage(),
-            ]);
-
-            // Return nulls for all
-            return array_fill_keys($prNumbers, null);
-        }
+        return Procurement::all();
     }
 
     public function update(ProcurementData $procurement): void
     {
-        // Publish new version to blockchain (immutable append)
-        $this->multichain->publish(
-            StreamEnums::METADATA->value,
-            $procurement->prNumber,
-            ['json' => $procurement->toBlockchainArray()]
-        );
-
-        // Clear caches to show updated procurement data
-        DashboardCacheKeys::clearAllProcurementCaches();
-
-        Log::info('Procurement metadata updated on blockchain', [
-            'pr_number' => $procurement->prNumber,
-            'stream' => StreamEnums::METADATA->value,
+        // Update in normalized table
+        Procurement::where('pr_number', $procurement->prNumber)->update([
+            'title' => $procurement->title,
+            'description' => $procurement->description,
+            'abc_amount' => $procurement->abcAmount,
+            'category' => $procurement->category->value,
+            'procurement_mode' => $procurement->procurementMode->value,
         ]);
     }
 
     public function getHistory(string $prNumber): Collection
     {
-        try {
-            $items = $this->multichain->liststreamkeyitems(StreamEnums::METADATA->value, $prNumber);
-
-            return collect($items)
-                ->sortBy('blocktime')
-                ->map(fn ($item) => [
-                    'data' => ProcurementData::fromBlockchainArray($item['data']['json']),
-                    'txid' => $item['txid'],
-                    'blocktime' => $item['blocktime'],
-                    'blockheight' => $item['blockheight'],
-                ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve procurement history', [
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
-            return collect();
-        }
+        // Return stages as history
+        return ProcurementStage::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderBy('entered_at')
+            ->get();
     }
 
-    /**
-     * Check if a procurement exists
-     */
     public function exists(string $prNumber): bool
     {
-        return $this->findByProcurement($prNumber) !== null;
+        return Procurement::where('pr_number', $prNumber)->exists();
+    }
+
+    public function findManyByProcurement(array $prNumbers): array
+    {
+        return Procurement::whereIn('pr_number', $prNumbers)
+            ->get()
+            ->keyBy('pr_number')
+            ->toArray();
+    }
+
+    public function procurementExists(string $prNumber): bool
+    {
+        return Procurement::where('pr_number', $prNumber)->exists();
     }
 }

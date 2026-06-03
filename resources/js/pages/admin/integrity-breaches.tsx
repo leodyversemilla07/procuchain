@@ -1,3 +1,4 @@
+import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
@@ -16,6 +17,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -29,20 +39,19 @@ import { useState } from 'react';
 
 interface BreachRecord {
     id: number;
+    record_id: number | null;
     stream: string;
     stream_key: string;
     txid: string;
-    publisher_address: string;
-    is_authorized: boolean;
-    breach_type: string;
-    breach_data: Record<string, unknown> | null;
-    breach_detected_at: string | null;
-    repaired_at: string | null;
-    verified_at: string | null;
-    synced_at: string;
-    revision_number: number | null;
-    parent_txid: string | null;
-    is_latest_revision: boolean | null;
+    violation_type: string;
+    severity: string;
+    database_snapshot: Record<string, unknown> | null;
+    blockchain_snapshot: Record<string, unknown> | null;
+    field_differences: Array<{ field: string; old_value: unknown; new_value: unknown }> | null;
+    recovery_status: string;
+    recovered_at: string | null;
+    verification_run_id: string | null;
+    created_at: string;
 }
 
 interface PaginatedBreaches {
@@ -57,11 +66,10 @@ interface PaginatedBreaches {
 interface PageProps {
     breaches: PaginatedBreaches;
     filters: {
-        breach_type: string | null;
+        violation_type: string | null;
         stream: string | null;
         status: string | null;
         pr_number: string | null;
-        unauthorized: string | null;
     };
     breachTypes: Record<string, string>;
     streams: Record<string, string>;
@@ -69,7 +77,7 @@ interface PageProps {
         total: number;
         unresolved: number;
         critical: number;
-        unauthorized: number;
+        high: number;
     };
     success?: string;
     error?: string;
@@ -212,30 +220,29 @@ export default function IntegrityBreaches() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Integrity Breaches" />
 
+            {/* Hero Header */}
+            <div className="p-4">
+                <HeroCard
+                    icon={ShieldAlert}
+                    title="Integrity Breaches"
+                    description="Monitor and repair blockchain data integrity breaches. All anomalies are detected by comparing mirror data against on-chain records."
+                />
+            </div>
+
             {/* Stats Cards */}
             <StatsGrid
                 items={[
-                    { label: 'Total Breaches', value: stats.total, icon: AlertTriangle, iconClassName: 'bg-muted' },
-                    {
-                        label: 'Unresolved',
-                        value: stats.unresolved,
-                        icon: ShieldAlert,
-                        iconClassName: stats.unresolved > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted',
-                    },
-                    {
-                        label: 'Critical',
-                        value: stats.critical,
-                        icon: Shield,
-                        iconClassName: stats.critical > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted',
-                    },
-                    { label: 'Unauthorized', value: stats.unauthorized, icon: Fingerprint, iconClassName: 'bg-muted' },
+                    { label: 'Total Breaches', value: stats.total, icon: AlertTriangle },
+                    { label: 'Unresolved', value: stats.unresolved, icon: ShieldAlert },
+                    { label: 'Critical', value: stats.critical, icon: Shield },
+                    { label: 'Unauthorized', value: stats.unauthorized, icon: Fingerprint },
                 ]}
                 className="p-4"
             />
 
             {/* Filters + Actions */}
             <div className="flex flex-wrap items-center gap-3 p-4">
-                <Select value={filters.breach_type ?? ''} onValueChange={(v) => handleFilter('breach_type', v || null)}>
+                <Select value={filters.violation_type ?? ''} onValueChange={(v) => handleFilter('violation_type', v || null)}>
                     <SelectTrigger className="w-48">
                         <SelectValue placeholder="Breach Type" />
                     </SelectTrigger>
@@ -280,15 +287,13 @@ export default function IntegrityBreaches() {
 
                 <div className="ml-auto flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleVerify} disabled={verifying || verifyAndRepairing}>
-                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        <ShieldCheck data-icon="inline-start" />
                         {verifying ? 'Verifying...' : 'Run Verification'}
                     </Button>
                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing}>
-                                <Wrench className="mr-2 h-4 w-4" />
-                                {verifyAndRepairing ? 'Running...' : 'Verify & Repair All'}
-                            </Button>
+                        <AlertDialogTrigger render={<Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing} />} nativeButton={false}>
+                            <Wrench data-icon="inline-start" />
+                            {verifyAndRepairing ? 'Running...' : 'Verify & Repair All'}
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -306,11 +311,9 @@ export default function IntegrityBreaches() {
                     </AlertDialog>
                     {filters.pr_number && (
                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" disabled={repairingPr}>
-                                    <Wrench className="mr-2 h-4 w-4" />
-                                    {repairingPr ? 'Repairing...' : `Repair PR ${filters.pr_number}`}
-                                </Button>
+                            <AlertDialogTrigger render={<Button variant="outline" size="sm" disabled={repairingPr} />} nativeButton={false}>
+                                <Wrench data-icon="inline-start" />
+                                {repairingPr ? 'Repairing...' : `Repair PR ${filters.pr_number}`}
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
@@ -326,7 +329,7 @@ export default function IntegrityBreaches() {
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
-                    {(filters.breach_type || filters.stream || filters.status || filters.pr_number) && (
+                    {(filters.violation_type || filters.stream || filters.status || filters.pr_number) && (
                         <Button variant="ghost" size="sm" onClick={() => router.get('/admin/integrity-breaches')}>
                             Clear Filters
                         </Button>
@@ -408,12 +411,10 @@ export default function IntegrityBreaches() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Severity</TableHead>
-                                        <TableHead>Breach Type</TableHead>
+                                        <TableHead>Violation Type</TableHead>
                                         <TableHead>PR Number</TableHead>
                                         <TableHead>Stream</TableHead>
-                                        <TableHead>Rev</TableHead>
                                         <TableHead>TXID</TableHead>
-                                        <TableHead>Publisher</TableHead>
                                         <TableHead>Detected</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Actions</TableHead>
@@ -421,27 +422,18 @@ export default function IntegrityBreaches() {
                                 </TableHeader>
                                 <TableBody>
                                     {breaches.data.map((breach) => {
-                                        const severity = severityLabel(breach.breach_type);
+                                        const severity = breach.severity ?? 'medium';
                                         return (
-                                            <TableRow key={breach.id} className={!breach.repaired_at ? 'bg-red-50/50 dark:bg-red-950/20' : ''}>
+                                            <TableRow key={breach.id} className={breach.recovery_status === 'pending' ? 'bg-red-50/50 dark:bg-red-950/20' : ''}>
                                                 <TableCell>
                                                     <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
                                                 </TableCell>
-                                                <TableCell className="font-medium">{breachTypes[breach.breach_type] ?? breach.breach_type}</TableCell>
+                                                <TableCell className="font-medium">{breachTypes[breach.violation_type] ?? breach.violation_type}</TableCell>
                                                 <TableCell>
                                                     <code className="text-xs">{breach.stream_key}</code>
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground text-sm">
-                                                    {streams[breach.stream] ?? breach.stream}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {breach.revision_number !== null && breach.revision_number !== undefined ? (
-                                                        <Badge variant="outline" className="font-mono text-xs">
-                                                            #{breach.revision_number}
-                                                        </Badge>
-                                                    ) : (
-                                                        '—'
-                                                    )}
+                                                    {breach.stream}
                                                 </TableCell>
                                                 <TableCell>
                                                     <TooltipProvider>
@@ -455,40 +447,30 @@ export default function IntegrityBreaches() {
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-1">
-                                                        {!breach.is_authorized && <AlertTriangle className="h-3 w-3 text-red-500" />}
-                                                        <code className="text-xs">{truncateHash(breach.publisher_address, 6)}</code>
-                                                    </div>
-                                                </TableCell>
                                                 <TableCell className="text-muted-foreground text-sm">
-                                                    {breach.breach_detected_at
-                                                        ? formatDistanceToNow(parseISO(breach.breach_detected_at), { addSuffix: true })
+                                                    {breach.created_at
+                                                        ? formatDistanceToNow(parseISO(breach.created_at), { addSuffix: true })
                                                         : '—'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {breach.repaired_at ? (
+                                                    {breach.recovery_status === 'restored' ? (
                                                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                                            <CheckCircle2 className="mr-1 h-3 w-3" /> Repaired
+                                                            <CheckCircle2 data-icon="inline-start" /> Restored
                                                         </Badge>
                                                     ) : (
-                                                        <Badge variant="destructive">Unresolved</Badge>
+                                                        <Badge variant="destructive">{breach.recovery_status}</Badge>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-1">
-                                                        <Button variant="ghost" size="sm" asChild>
-                                                            <a href={integrityBreaches.detail.url(breach.id)} title="View Details">
-                                                                <Database className="h-4 w-4" />
-                                                            </a>
+                                                        <Button variant="ghost" size="sm" render={<a href={integrityBreaches.detail.url(breach.id)} />} nativeButton={false} title="View Details">
+                                                            <Database data-icon="inline-start" />
                                                         </Button>
-                                                        {!breach.repaired_at && (
+                                                        {breach.recovery_status === 'pending' && (
                                                             <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="outline" size="sm" disabled={repairing === breach.id}>
-                                                                        <Wrench className="mr-1 h-3 w-3" />
-                                                                        {repairing === breach.id ? 'Repairing...' : 'Repair'}
-                                                                    </Button>
+                                                                <AlertDialogTrigger render={<Button variant="outline" size="sm" disabled={repairing === breach.id} />} nativeButton={false}>
+                                                                    <Wrench data-icon="inline-start" />
+                                                                    {repairing === breach.id ? 'Repairing...' : 'Repair'}
                                                                 </AlertDialogTrigger>
                                                                 <AlertDialogContent>
                                                                     <AlertDialogHeader>
@@ -518,17 +500,113 @@ export default function IntegrityBreaches() {
 
                             {/* Pagination */}
                             {breaches.last_page > 1 && (
-                                <div className="mt-4 flex items-center justify-center gap-2">
-                                    {breaches.links.map((link, i) => (
-                                        <Button
-                                            key={i}
-                                            variant={link.active ? 'default' : 'outline'}
-                                            size="sm"
-                                            disabled={!link.url}
-                                            onClick={() => link.url && router.get(link.url)}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
+                                <div className="mt-4">
+                                    <Pagination>
+                                        <PaginationContent>
+                                            {/* First */}
+                                            <PaginationItem>
+                                                <PaginationLink
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (breaches.current_page > 1) {
+                                                            router.get(integrityBreaches.index.url({ page: 1 }));
+                                                        }
+                                                    }}
+                                                    className={breaches.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
+                                                >
+                                                    First
+                                                </PaginationLink>
+                                            </PaginationItem>
+
+                                            {/* Previous */}
+                                            <PaginationItem>
+                                                <PaginationPrevious
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (breaches.current_page > 1) {
+                                                            router.get(integrityBreaches.index.url({ page: breaches.current_page - 1 }));
+                                                        }
+                                                    }}
+                                                    className={breaches.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
+                                                />
+                                            </PaginationItem>
+
+                                            {/* Page Numbers */}
+                                            {(() => {
+                                                const pages: (number | 'ellipsis')[] = [];
+                                                const current = breaches.current_page;
+                                                const last = breaches.last_page;
+
+                                                if (last <= 7) {
+                                                    for (let i = 1; i <= last; i++) pages.push(i);
+                                                } else {
+                                                    pages.push(1);
+                                                    if (current > 3) pages.push('ellipsis');
+                                                    const start = Math.max(2, current - 1);
+                                                    const end = Math.min(last - 1, current + 1);
+                                                    for (let i = start; i <= end; i++) pages.push(i);
+                                                    if (current < last - 2) pages.push('ellipsis');
+                                                    pages.push(last);
+                                                }
+
+                                                return pages.map((page, i) => {
+                                                    if (page === 'ellipsis') {
+                                                        return (
+                                                            <PaginationItem key={`ellipsis-${i}`}>
+                                                                <PaginationEllipsis />
+                                                            </PaginationItem>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <PaginationItem key={page}>
+                                                            <PaginationLink
+                                                                href="#"
+                                                                isActive={page === current}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    router.get(integrityBreaches.index.url({ page }));
+                                                                }}
+                                                            >
+                                                                {page}
+                                                            </PaginationLink>
+                                                        </PaginationItem>
+                                                    );
+                                                });
+                                            })()}
+
+                                            {/* Next */}
+                                            <PaginationItem>
+                                                <PaginationNext
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (breaches.current_page < breaches.last_page) {
+                                                            router.get(integrityBreaches.index.url({ page: breaches.current_page + 1 }));
+                                                        }
+                                                    }}
+                                                    className={breaches.current_page >= breaches.last_page ? 'pointer-events-none opacity-50' : ''}
+                                                />
+                                            </PaginationItem>
+
+                                            {/* Last */}
+                                            <PaginationItem>
+                                                <PaginationLink
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (breaches.current_page < breaches.last_page) {
+                                                            router.get(integrityBreaches.index.url({ page: breaches.last_page }));
+                                                        }
+                                                    }}
+                                                    className={breaches.current_page >= breaches.last_page ? 'pointer-events-none opacity-50' : ''}
+                                                >
+                                                    Last
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        </PaginationContent>
+                                    </Pagination>
                                 </div>
                             )}
                         </CardContent>
@@ -550,15 +628,15 @@ export default function IntegrityBreaches() {
                         <div className="space-y-3 text-sm">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <span className="text-muted-foreground">Breach Type:</span>
+                                    <span className="text-muted-foreground">Violation Type:</span>
                                     <br />
-                                    <strong>{breachTypes[selectedBreach.breach_type] ?? selectedBreach.breach_type}</strong>
+                                    <strong>{breachTypes[selectedBreach.violation_type] ?? selectedBreach.violation_type}</strong>
                                 </div>
                                 <div>
                                     <span className="text-muted-foreground">Severity:</span>
                                     <br />
-                                    <Badge className={SEVERITY_COLORS[severityLabel(selectedBreach.breach_type)]}>
-                                        {severityLabel(selectedBreach.breach_type)}
+                                    <Badge className={SEVERITY_COLORS[selectedBreach.severity ?? 'medium']}>
+                                        {selectedBreach.severity ?? 'medium'}
                                     </Badge>
                                 </div>
                                 <div>
@@ -567,9 +645,9 @@ export default function IntegrityBreaches() {
                                     <code>{selectedBreach.stream_key}</code>
                                 </div>
                                 <div>
-                                    <span className="text-muted-foreground">Stream:</span>
+                                    <span className="text-muted-foreground">Table:</span>
                                     <br />
-                                    {streams[selectedBreach.stream] ?? selectedBreach.stream}
+                                    {selectedBreach.stream}
                                 </div>
                             </div>
                             <div>
@@ -577,22 +655,11 @@ export default function IntegrityBreaches() {
                                 <br />
                                 <code className="text-xs break-all">{selectedBreach.txid}</code>
                             </div>
-                            <div>
-                                <span className="text-muted-foreground">Publisher Address:</span>
-                                <br />
-                                <code className="text-xs break-all">{selectedBreach.publisher_address}</code>
-                                {!selectedBreach.is_authorized && (
-                                    <Badge variant="destructive" className="ml-2">
-                                        Unauthorized
-                                    </Badge>
-                                )}
-                            </div>
-                            {selectedBreach.breach_data && (
+                            {selectedBreach.field_differences && selectedBreach.field_differences.length > 0 && (
                                 <div>
-                                    <span className="text-muted-foreground">Breach Data:</span>
-                                    <br />
+                                    <span className="text-muted-foreground">Field Differences:</span>
                                     <pre className="bg-muted mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
-                                        {JSON.stringify(selectedBreach.breach_data, null, 2)}
+                                        {JSON.stringify(selectedBreach.field_differences, null, 2)}
                                     </pre>
                                 </div>
                             )}
@@ -600,16 +667,16 @@ export default function IntegrityBreaches() {
                                 <div>
                                     <span className="text-muted-foreground">Detected:</span>
                                     <br />
-                                    {selectedBreach.breach_detected_at
-                                        ? formatDistanceToNow(parseISO(selectedBreach.breach_detected_at), { addSuffix: true })
+                                    {selectedBreach.created_at
+                                        ? formatDistanceToNow(parseISO(selectedBreach.created_at), { addSuffix: true })
                                         : '—'}
                                 </div>
                                 <div>
-                                    <span className="text-muted-foreground">Repaired:</span>
+                                    <span className="text-muted-foreground">Restored:</span>
                                     <br />
-                                    {selectedBreach.repaired_at
-                                        ? formatDistanceToNow(parseISO(selectedBreach.repaired_at), { addSuffix: true })
-                                        : 'Not repaired'}
+                                    {selectedBreach.recovered_at
+                                        ? formatDistanceToNow(parseISO(selectedBreach.recovered_at), { addSuffix: true })
+                                        : 'Not restored'}
                                 </div>
                             </div>
                         </div>

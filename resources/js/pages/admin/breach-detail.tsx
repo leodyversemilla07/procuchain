@@ -1,35 +1,27 @@
-import { RevisionTree, type RevisionNode } from '@/components/admin/revision-tree';
+import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
-import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
 import integrityBreaches from '@/routes/admin/integrity-breaches';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { AlertTriangle, ArrowLeft, CheckCircle2, Database, ShieldAlert, Wrench } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 interface BreachDetail {
     id: number;
     stream: string;
     stream_key: string;
     txid: string;
-    publisher_address: string;
-    is_authorized: boolean;
-    breach_type: string;
-    breach_data: Record<string, unknown> | null;
-    breach_detected_at: string | null;
-    repaired_at: string | null;
-    verified_at: string | null;
-    synced_at: string;
-    revision_number: number | null;
-    parent_txid: string | null;
-    is_latest_revision: boolean | null;
-    data_json: Record<string, unknown>;
-    data_hash: string;
-    revision_history: RevisionNode[];
+    violation_type: string;
+    severity: string;
+    database_snapshot: Record<string, unknown> | null;
+    blockchain_snapshot: Record<string, unknown> | null;
+    field_differences: Array<{ field: string; old_value: unknown; new_value: unknown }> | null;
+    recovery_status: string;
+    created_at: string;
+    blockchain_data: Record<string, unknown> | null;
 }
 
 interface BreachDetailPageProps {
@@ -51,22 +43,6 @@ const SEVERITY_COLORS: Record<string, string> = {
     low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
 };
 
-const BREACH_SEVERITY: Record<string, string> = {
-    hash_mismatch: 'critical',
-    content_mismatch: 'critical',
-    user_address_tampered: 'high',
-    unauthorized_publisher: 'medium',
-    row_deleted: 'low',
-};
-
-const BREACH_TYPE_LABELS: Record<string, string> = {
-    hash_mismatch: 'Hash Mismatch',
-    content_mismatch: 'Content Mismatch',
-    unauthorized_publisher: 'Unauthorized Publisher',
-    row_deleted: 'Row Deleted',
-    user_address_tampered: 'User Address Tampered',
-};
-
 function truncateHash(hash: string, len = 12): string {
     if (!hash) return '—';
     if (hash.length <= len * 2 + 3) return hash;
@@ -74,229 +50,153 @@ function truncateHash(hash: string, len = 12): string {
 }
 
 export default function BreachDetailPage({ breachId, breach, error }: BreachDetailPageProps) {
+    const severity = breach?.severity ?? 'medium';
+
     const handleRepair = () => {
         if (!breach) return;
-        router.post(
-            integrityBreaches.repair.url(breach.id),
-            {},
-            {
-                preserveScroll: true,
-                onFinish: () => {
-                    router.reload({ only: ['breach'] });
-                },
-            },
-        );
+        router.post(integrityBreaches.repair.url(breach.id), {}, { preserveScroll: true });
     };
-
-    const severity = breach ? (BREACH_SEVERITY[breach.breach_type] ?? 'medium') : 'medium';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Breach #${breachId}`} />
 
             <div className="p-4 sm:p-6">
-                {/* Header */}
-                <div className="mb-6 flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={integrityBreaches.index.url()}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="flex items-center gap-2 text-2xl font-bold">
-                            <ShieldAlert className="h-6 w-6" />
+                {/* Hero Header */}
+                <HeroCard
+                    icon={ShieldAlert}
+                    title={
+                        <span className="flex items-center gap-2">
                             Breach Detail
-                        </h1>
-                        <p className="text-muted-foreground text-sm">Integrity breach #{breachId}</p>
-                    </div>
-                    {breach && !breach.repaired_at && (
-                        <Button onClick={handleRepair} variant="destructive">
-                            <Wrench className="mr-2 h-4 w-4" />
-                            Repair from Blockchain
-                        </Button>
-                    )}
-                </div>
+                            {breach && <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>}
+                        </span>
+                    }
+                    description={`Integrity breach #${breachId}${breach ? ` • ${breach.stream_key}` : ''}`}
+                    actions={
+                        breach && breach.recovery_status === 'pending' ? (
+                            <Button onClick={handleRepair} variant="destructive">
+                                Repair from Blockchain
+                            </Button>
+                        ) : undefined
+                    }
+                />
 
                 {error ? (
-                    <Card className="border-destructive">
+                    <Card className="mt-4 border-destructive">
                         <CardHeader>
-                            <CardTitle className="text-destructive">Error Loading Breach</CardTitle>
+                            <CardTitle className="text-destructive">Error</CardTitle>
                             <CardDescription>{error}</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Button onClick={() => router.reload({ only: ['breach'] })} variant="outline">
-                                Retry
-                            </Button>
-                        </CardContent>
                     </Card>
                 ) : breach ? (
-                    <div className="space-y-6">
-                        {/* Status Cards */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium">Severity</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium">Breach Type</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="font-medium">{BREACH_TYPE_LABELS[breach.breach_type] ?? breach.breach_type}</p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium">Status</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {breach.repaired_at ? (
-                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            <CheckCircle2 className="mr-1 h-3 w-3" /> Repaired
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="destructive">Unresolved</Badge>
-                                    )}
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium">Publisher</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-center gap-2">
-                                        {!breach.is_authorized && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                                        <code className="text-xs">{truncateHash(breach.publisher_address, 8)}</code>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Main Content */}
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                            {/* Revision Tree */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Revision History</CardTitle>
-                                    <CardDescription>Complete revision lineage for this record</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {breach.revision_history && breach.revision_history.length > 0 ? (
-                                        <RevisionTree revisions={breach.revision_history} currentTxid={breach.txid} />
-                                    ) : (
-                                        <p className="text-muted-foreground text-sm">No revision history available</p>
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            {/* Record Details */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Record Details</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <span className="text-muted-foreground text-sm">Stream:</span>
-                                            <p className="font-medium">{breach.stream}</p>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-sm">PR Number:</span>
-                                            <p className="font-medium">{breach.stream_key}</p>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-sm">Transaction ID:</span>
-                                            <code className="block text-xs break-all">{breach.txid}</code>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-sm">Revision:</span>
-                                            <p className="font-medium">#{breach.revision_number ?? '—'}</p>
-                                        </div>
-                                    </div>
-
-                                    <Separator />
-
-                                    <div>
-                                        <span className="text-muted-foreground text-sm">Detected:</span>
-                                        <p className="text-sm">
-                                            {breach.breach_detected_at
-                                                ? formatDistanceToNow(parseISO(breach.breach_detected_at), { addSuffix: true })
-                                                : '—'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground text-sm">Repaired:</span>
-                                        <p className="text-sm">
-                                            {breach.repaired_at
-                                                ? formatDistanceToNow(parseISO(breach.repaired_at), { addSuffix: true })
-                                                : 'Not repaired'}
-                                        </p>
-                                    </div>
-
-                                    {breach.breach_data && (
-                                        <>
-                                            <Separator />
-                                            <div>
-                                                <span className="text-muted-foreground text-sm">Breach Data:</span>
-                                                <pre className="bg-muted mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
-                                                    {JSON.stringify(breach.breach_data, null, 2)}
-                                                </pre>
-                                            </div>
-                                        </>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Current Data */}
+                    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        {/* Breach Info */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Database className="h-5 w-5" />
-                                    Current Mirror Data
-                                </CardTitle>
-                                <CardDescription>
-                                    This is the current data in the database mirror. Compare with blockchain to verify integrity.
-                                </CardDescription>
+                                <CardTitle>Breach Information</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <pre className="bg-muted max-h-96 overflow-auto rounded-lg p-4 text-xs leading-relaxed">
-                                    {JSON.stringify(breach.data_json, null, 2)}
-                                </pre>
-                                <div className="bg-muted/50 mt-2 rounded p-2">
-                                    <span className="text-muted-foreground text-xs">Data Hash:</span>
-                                    <code className="ml-2 font-mono text-xs">{breach.data_hash}</code>
+                            <CardContent className="space-y-3 text-sm">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <span className="text-muted-foreground">Violation Type</span>
+                                        <p className="font-medium">{breach.violation_type}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">Severity</span>
+                                        <p>
+                                            <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">Stream</span>
+                                        <p className="font-medium">{breach.stream}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">Status</span>
+                                        <p>
+                                            <Badge variant={breach.recovery_status === 'restored' ? 'default' : 'destructive'}>
+                                                {breach.recovery_status}
+                                            </Badge>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">PR Number</span>
+                                    <p className="font-medium">{breach.stream_key}</p>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Transaction ID</span>
+                                    <code className="block text-xs break-all">{breach.txid}</code>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Detected</span>
+                                    <p>{formatDistanceToNow(parseISO(breach.created_at), { addSuffix: true })}</p>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Actions */}
+                        {/* Field Differences */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Actions</CardTitle>
+                                <CardTitle>Field Differences</CardTitle>
+                                <CardDescription>What was changed in the database</CardDescription>
                             </CardHeader>
-                            <CardContent className="flex flex-wrap gap-3">
-                                <Button variant="outline" asChild>
-                                    <Link href={integrityAuditLogs.index.url({ stream_key: breach.stream_key })}>
-                                        View Audit Logs for PR {breach.stream_key}
-                                    </Link>
-                                </Button>
-                                <Button variant="outline" asChild>
-                                    <Link href={integrityBreaches.index.url()}>Back to Breaches List</Link>
-                                </Button>
+                            <CardContent>
+                                {breach.field_differences && breach.field_differences.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {breach.field_differences.map((diff, i) => (
+                                            <div key={i} className="rounded-md border p-3">
+                                                <p className="mb-2 font-medium">{diff.field}</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div className="rounded bg-green-50 p-2 dark:bg-green-950/30">
+                                                        <span className="text-green-700 dark:text-green-400">Blockchain:</span>
+                                                        <p className="mt-1 break-all">{JSON.stringify(diff.old_value)}</p>
+                                                    </div>
+                                                    <div className="rounded bg-red-50 p-2 dark:bg-red-950/30">
+                                                        <span className="text-red-700 dark:text-red-400">Database:</span>
+                                                        <p className="mt-1 break-all">{JSON.stringify(diff.new_value)}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-muted-foreground text-sm">No field differences recorded.</p>
+                                )}
                             </CardContent>
                         </Card>
+
+                        {/* Database Snapshot */}
+                        {breach.database_snapshot && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Database Snapshot</CardTitle>
+                                    <CardDescription>Current state in database</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <pre className="bg-muted max-h-60 overflow-auto rounded p-3 text-xs">
+                                        {JSON.stringify(breach.database_snapshot, null, 2)}
+                                    </pre>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Blockchain Snapshot */}
+                        {breach.blockchain_data && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Blockchain Data</CardTitle>
+                                    <CardDescription>Source of truth from blockchain</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <pre className="bg-muted max-h-60 overflow-auto rounded p-3 text-xs">
+                                        {JSON.stringify(breach.blockchain_data, null, 2)}
+                                    </pre>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="h-32 w-full animate-pulse rounded bg-gray-200" />
-                        <div className="h-64 w-full animate-pulse rounded bg-gray-200" />
-                    </div>
-                )}
+                ) : null}
             </div>
         </AppLayout>
     );

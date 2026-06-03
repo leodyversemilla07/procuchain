@@ -12,8 +12,7 @@ use App\Http\Controllers\Controller as BaseController;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
-use App\Repositories\ProcurementRecordRepository;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Repositories\StatusRepository;
 use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementStageCompletionService;
@@ -31,7 +30,6 @@ class ProcurementInitiationController extends BaseController
 {
     public function __construct(
         private readonly ProcurementSupportService $procurementSupport,
-        private readonly ProcurementRecordRepository $mirrorRepository,
         private readonly ProcurementRepository $procurements,
         private readonly ProcurementStagePageService $stagePageService,
         private readonly ProcurementStageUploadService $stageUploadService,
@@ -123,9 +121,8 @@ class ProcurementInitiationController extends BaseController
         $prNumber = $validated['pr_number'];
         $user = $request->user();
 
-        // Duplicate check: use mirror (MySQL) for 50x faster lookup.
-        // Falls back to blockchain automatically on mirror miss.
-        $existing = $this->mirrorRepository->procurementExists($prNumber);
+        // Duplicate check: use normalized table
+        $existing = Procurement::where('pr_number', $prNumber)->exists();
         if ($existing) {
             return response()->json([
                 'errors' => ['pr_number' => "PR Number {$prNumber} already exists. Please use a different PR number."],

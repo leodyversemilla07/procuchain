@@ -243,33 +243,29 @@ class IntegrityAuditLog extends Model
     }
 
     /**
-     * Record a violation from a ProcurementRecord model, automatically
-     * extracting revision context (revision_number, parent_txid, lineage).
+     * Record a violation from a model, automatically
+     * extracting context.
      */
-    public static function recordViolationFromMirror(
-        ProcurementRecord $mirror,
+    public static function recordViolationFromModel(
+        Model $record,
+        string $tableName,
         string $violationType,
         array $fieldDifferences = [],
         ?array $chainSnapshot = null,
         ?string $runId = null,
         string $source = 'scheduled',
-        bool $publishToChain = true,
     ): self {
         return self::recordViolation(
-            stream: $mirror->stream,
-            streamKey: $mirror->stream_key,
+            stream: $tableName,
+            streamKey: $record->pr_number ?? $record->stream_key ?? '',
             violationType: $violationType,
-            txid: $mirror->txid,
+            txid: $record->txid ?? null,
             fieldDifferences: $fieldDifferences,
-            mirrorSnapshot: $mirror->data_json,
+            mirrorSnapshot: $record->toArray(),
             chainSnapshot: $chainSnapshot,
-            recordId: $mirror->id,
+            recordId: $record->id,
             runId: $runId,
             source: $source,
-            revisionNumber: $mirror->revision_number,
-            parentTxid: $mirror->parent_txid,
-            revisionLineage: $mirror->getRevisionLineage(),
-            publishToChain: $publishToChain,
         );
     }
 
@@ -278,7 +274,7 @@ class IntegrityAuditLog extends Model
     /**
      * Get the full revision history for the affected record.
      *
-     * Returns an array of ProcurementRecord records representing the
+     * Returns an array of records representing the
      * complete revision tree for this stream + stream_key combination.
      *
      * @return array<int, array{txid: string, revision_number: int, parent_txid: string|null, is_latest_revision: bool, blocktime: string|null, publisher_address: string|null, data_hash: string, breach_detected_at: string|null, breach_type: string|null, repaired_at: string|null}>
@@ -289,23 +285,23 @@ class IntegrityAuditLog extends Model
             return [];
         }
 
-        $revisions = ProcurementRecord::where('stream', $this->stream)
-            ->where('stream_key', $this->stream_key)
-            ->orderBy('revision_number')
-            ->get();
+        // Query the appropriate table based on stream
+        $tableMap = [
+            'procurement.metadata' => Procurement::class,
+            'procurement.status' => ProcurementStage::class,
+            'procurement.documents' => ProcurementDocument::class,
+            'procurement.events' => ProcurementEvent::class,
+        ];
 
-        return $revisions->map(fn ($r) => [
-            'txid' => $r->txid,
-            'revision_number' => $r->revision_number,
-            'parent_txid' => $r->parent_txid,
-            'is_latest_revision' => $r->is_latest_revision,
-            'blocktime' => $r->blocktime?->toIso8601String(),
-            'publisher_address' => $r->publisher_address,
-            'data_hash' => $r->data_hash,
-            'breach_detected_at' => $r->breach_detected_at?->toIso8601String(),
-            'breach_type' => $r->breach_type,
-            'repaired_at' => $r->repaired_at?->toIso8601String(),
-        ])->toArray();
+        $modelClass = $tableMap[$this->stream] ?? null;
+        if (! $modelClass) {
+            return [];
+        }
+
+        return $modelClass::where('txid', $this->txid)
+            ->get()
+            ->map(fn ($r) => $r->toArray())
+            ->toArray();
     }
 
     /**
