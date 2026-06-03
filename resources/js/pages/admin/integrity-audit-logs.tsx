@@ -108,10 +108,6 @@ export default function IntegrityAuditLogs() {
     const [selectedLog, setSelectedLog] = useState<AuditLogRecord | null>(null);
     const [repairing, setRepairing] = useState<number | null>(null);
     const [repairResult, setRepairResult] = useState<{ success: boolean; items_restored?: number; error?: string } | null>(null);
-    const [reportRunId, setReportRunId] = useState<string | null>(null);
-    const [reportData, setReportData] = useState<Record<string, unknown> | null>(null);
-    const [reportLoading, setReportLoading] = useState(false);
-
     // Filters
     const [filterViolationType, setFilterViolationType] = useState<string>('');
     const [filterSeverity, setFilterSeverity] = useState<string>('');
@@ -176,24 +172,6 @@ export default function IntegrityAuditLogs() {
             setRepairResult({ success: false, error: 'Network error' });
         } finally {
             setRepairing(null);
-        }
-    };
-
-    const handleReport = async (runId: string) => {
-        setReportRunId(runId);
-        setReportLoading(true);
-        setReportData(null);
-        try {
-            const res = await fetch(`/admin/integrity-audit-logs/report/${encodeURIComponent(runId)}`, {
-                credentials: 'same-origin',
-                headers: { Accept: 'application/json' },
-            });
-            const data = await res.json();
-            setReportData(data);
-        } catch {
-            setReportData({ error: 'Failed to load report' });
-        } finally {
-            setReportLoading(false);
         }
     };
 
@@ -686,42 +664,6 @@ export default function IntegrityAuditLogs() {
                             </div>
                         </div>
                     )}
-                </DialogContent>
-            </Dialog>
-
-            {/* Verification Run Report Dialog */}
-            <Dialog
-                open={!!reportRunId}
-                onOpenChange={() => {
-                    setReportRunId(null);
-                    setReportData(null);
-                }}
-            >
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <FileSearch className="h-5 w-5" />
-                            Verification Run Report
-                        </DialogTitle>
-                        <DialogDescription>
-                            Run ID: <code className="text-xs">{reportRunId}</code>
-                        </DialogDescription>
-                    </DialogHeader>
-                    {reportLoading ? (
-                        <div className="space-y-3 p-4">
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-6 w-1/2" />
-                            <Skeleton className="h-40 w-full" />
-                        </div>
-                    ) : reportData ? (
-                        <div className="space-y-3 text-sm">
-                            {reportData.error ? (
-                                <div className="text-red-600">{String(reportData.error)}</div>
-                            ) : (
-                                <pre className="bg-muted max-h-96 overflow-auto rounded p-3 text-xs">{JSON.stringify(reportData, null, 2)}</pre>
-                            )}
-                        </div>
-                    ) : null}
                 </DialogContent>
             </Dialog>
         </AppLayout>
