@@ -78,6 +78,7 @@ const VIOLATION_TYPE_LABELS: Record<string, string> = {
     unauthorized_publisher: 'Unauthorized Publisher',
     row_deleted: 'Row Deleted',
     user_address_tampered: 'User Address Tampered',
+    unauthorized_record: 'Unauthorized Record',
 };
 
 export default function VerificationReportPage({ runId, report, error }: VerificationReportPageProps) {

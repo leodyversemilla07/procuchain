@@ -182,6 +182,7 @@ class IntegrityAuditLog extends Model
             'user_address_tampered' => 'high',
             'unauthorized_publisher' => 'medium',
             'row_deleted' => 'low',
+            'unauthorized_record' => 'critical',
             default => 'medium',
         };
     }

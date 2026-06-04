@@ -15,6 +15,7 @@ enum BreachTypeEnums: string
     case UNAUTHORIZED_PUBLISHER = 'unauthorized_publisher';
     case ROW_DELETED = 'row_deleted';
     case USER_ADDRESS_TAMPERED = 'user_address_tampered';
+    case UNAUTHORIZED_RECORD = 'unauthorized_record';
 
     /**
      * Get the user-friendly display name for the breach type
@@ -27,6 +28,7 @@ enum BreachTypeEnums: string
             self::UNAUTHORIZED_PUBLISHER => 'Unauthorized Publisher',
             self::ROW_DELETED => 'Row Deleted',
             self::USER_ADDRESS_TAMPERED => 'User Address Tampered',
+            self::UNAUTHORIZED_RECORD => 'Unauthorized Record',
         };
     }
 
@@ -41,6 +43,7 @@ enum BreachTypeEnums: string
             self::UNAUTHORIZED_PUBLISHER => 'The publisher address is not authorized to publish to this stream',
             self::ROW_DELETED => 'A record that exists on the blockchain has been deleted from the mirror',
             self::USER_ADDRESS_TAMPERED => 'The user address associated with the record has been modified',
+            self::UNAUTHORIZED_RECORD => 'A record exists in the database that has no corresponding entry on the blockchain',
         };
     }
 

@@ -102,6 +102,7 @@ const BREACH_SEVERITY: Record<string, string> = {
     user_address_tampered: 'high',
     unauthorized_publisher: 'medium',
     row_deleted: 'low',
+    unauthorized_record: 'critical',
 };
 
 function severityLabel(type: string): string {

@@ -320,11 +320,103 @@ class IntegrityVerificationService
                     chainData: $chainData,
                 );
             }
+
+            // Layer 3: Check if user_address was tampered
+            $dbUserAddress = $record->user_address ?? null;
+            $chainUserAddress = $chainData['user_address'] ?? null;
+            if ($dbUserAddress && $chainUserAddress && $dbUserAddress !== $chainUserAddress) {
+                $this->recordViolation(
+                    type: BreachTypeEnums::USER_ADDRESS_TAMPERED->value,
+                    severity: 'high',
+                    tableName: $tableName,
+                    record: $record,
+                    prNumber: $prNumber,
+                    message: 'User address was modified from original blockchain record',
+                    fieldDiffs: [['field' => 'user_address', 'old_value' => $chainUserAddress, 'new_value' => $dbUserAddress]],
+                    chainData: $chainData,
+                );
+            }
+        }
+
+        // Layer 4: Check if the blockchain publisher is unauthorized
+        // (verifies that the txid publisher matches the expected authorized address)
+        if ($record->txid) {
+            $this->checkUnauthorizedPublisher($record, $tableName, $prNumber, $stream->value);
         }
 
         // Clean - mark verified
         if (! $record->has_breach) {
             $record->update(['last_verified_at' => now(), 'is_blockchain_verified' => true]);
+        }
+    }
+
+    /**
+     * Check if the publisher of a blockchain transaction is authorized.
+     * Compares the publisher address of the record's txid against
+     * the known authorized publisher stored on the record.
+     */
+    private function checkUnauthorizedPublisher(Model $record, string $tableName, string $prNumber, string $stream): void
+    {
+        try {
+            $txid = $record->txid;
+            if (! $txid) {
+                return;
+            }
+
+            // Get the txid details from blockchain (verbose = true)
+            $txData = $this->manager->getrawtransaction($txid, 1);
+            if (! $txData || ! is_array($txData)) {
+                return;
+            }
+
+            // Extract publisher addresses from the transaction data
+            // In MultiChain, publishers are available in the 'data' section
+            $publishers = [];
+            $dataSection = $txData['data'] ?? [];
+
+            if (is_array($dataSection)) {
+                foreach ($dataSection as $keyData) {
+                    if (is_array($keyData) && isset($keyData['publishers'])) {
+                        $publishers = array_merge($publishers, (array) $keyData['publishers']);
+                    }
+                }
+            }
+
+            $publishers = array_unique($publishers);
+
+            if (empty($publishers)) {
+                return;
+            }
+
+            // Get the authorized publisher address for this record
+            $authorizedAddress = $record->user_address ?? null;
+
+            if (! $authorizedAddress) {
+                return;
+            }
+
+            // Check if any publisher is NOT the authorized address
+            foreach ($publishers as $publisher) {
+                if ($publisher !== $authorizedAddress) {
+                    $this->recordViolation(
+                        type: BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value,
+                        severity: 'medium',
+                        tableName: $tableName,
+                        record: $record,
+                        prNumber: $prNumber,
+                        message: "Unauthorized publisher {$publisher} — expected {$authorizedAddress}",
+                        chainData: ['publishers' => $publishers, 'authorized_address' => $authorizedAddress],
+                    );
+
+                    return; // One violation per record
+                }
+            }
+        } catch (\Exception $e) {
+            // Non-critical — publisher check is best-effort
+            Log::debug('IntegrityVerification: publisher check failed', [
+                'txid' => $record->txid,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -377,7 +469,7 @@ class IntegrityVerificationService
      * Detect records in DB that do NOT exist on blockchain.
      * (Unauthorized injection / fake records)
      *
-     * Per the user's interpretation of Requirement 5:
+     * Per Requirement 5:
      * "Records not on blockchain but in DB should be removed"
      * First we detect them here, then autoRepair handles removal.
      */
@@ -395,7 +487,7 @@ class IntegrityVerificationService
 
             foreach ($fakeRecords as $record) {
                 $this->recordViolation(
-                    type: BreachTypeEnums::CONTENT_MISMATCH->value,
+                    type: BreachTypeEnums::UNAUTHORIZED_RECORD->value,
                     severity: 'critical',
                     tableName: 'procurements',
                     record: $record,

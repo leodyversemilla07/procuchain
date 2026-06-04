@@ -39,6 +39,7 @@ class IntegrityBreachNotification extends Notification
         'content_mismatch' => 'critical',
         'user_address_tampered' => 'high',
         'unauthorized_publisher' => 'medium',
+        'unauthorized_record' => 'critical',
         'row_deleted' => 'low',
     ];
 
