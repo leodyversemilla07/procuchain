@@ -112,6 +112,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
         Route::post('/repair-pr', [IntegrityBreachController::class, 'repairPr'])->name('repair-pr');
         Route::post('/verify', [IntegrityBreachController::class, 'verify'])->name('verify');
         Route::post('/verify-and-repair', [IntegrityBreachController::class, 'verifyAndRepair'])->name('verify-and-repair');
+        Route::get('/verify-status', [IntegrityBreachController::class, 'verifyStatus'])->name('verify-status');
         Route::get('/mirror-status', [IntegrityBreachController::class, 'mirrorStatus'])->name('mirror-status');
     });
 

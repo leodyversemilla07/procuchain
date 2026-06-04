@@ -123,45 +123,65 @@ export default function IntegrityBreaches() {
     const [verifying, setVerifying] = useState(false);
     const [verifyAndRepairing, setVerifyAndRepairing] = useState(false);
 
-    const handleRepair = async (id: number) => {
-        setRepairing(id);
-        try {
-            await router.post(
-                integrityBreaches.repair.url(id),
-                {},
-                {
-                    preserveScroll: true,
-                    preserveState: false,
-                },
-            );
-        } finally {
-            setRepairing(null);
-        }
+    const pollVerificationStatus = (toastId: string | number) => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(integrityBreaches.verifyStatus.url());
+                const data = await res.json();
+
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    setVerifying(false);
+                    setVerifyAndRepairing(false);
+                    toast.dismiss(toastId);
+
+                    const result = data.result;
+                    const breachCount = Object.values(result?.violations ?? {}).reduce((a: number, b: number) => a + b, 0);
+                    toast.success('Verification complete', {
+                        description: `${result?.verified ?? 0} records checked, ${breachCount} breaches found, ${result?.restored ?? 0} restored.`,
+                    });
+
+                    // Reload the page to show fresh data
+                    router.reload({ only: ['breaches', 'stats'] });
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    setVerifying(false);
+                    setVerifyAndRepairing(false);
+                    toast.dismiss(toastId);
+                    toast.error('Verification failed', {
+                        description: data.error ?? 'An unexpected error occurred.',
+                    });
+                }
+                // 'running' → keep polling
+            } catch {
+                // Ignore polling errors — retry on next interval
+            }
+        }, 3000);
     };
 
     const handleVerify = () => {
         setVerifying(true);
-        toast.info('Verification in progress…', {
+        const toastId = toast.info('Verification in progress…', {
             description: 'Checking all records against the blockchain.',
             duration: Infinity,
         });
         router.post(integrityBreaches.verify.url(), {}, {
             preserveScroll: true,
-            preserveState: false,
-            onFinish: () => setVerifying(false),
+            preserveState: true,
+            onFinish: () => pollVerificationStatus(toastId),
         });
     };
 
     const handleVerifyAndRepair = () => {
         setVerifyAndRepairing(true);
-        toast.info('Verifying and repairing all breaches…', {
+        const toastId = toast.info('Verifying and repairing all breaches…', {
             description: 'Checking records, repairing tampered data from the blockchain.',
             duration: Infinity,
         });
         router.post(integrityBreaches.verifyAndRepair.url(), {}, {
             preserveScroll: true,
-            preserveState: false,
-            onFinish: () => setVerifyAndRepairing(false),
+            preserveState: true,
+            onFinish: () => pollVerificationStatus(toastId as string),
         });
     };
 

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\BreachTypeEnums;
 use App\Enums\StreamEnums;
 use App\Http\Controllers\Controller;
+use App\Jobs\RunIntegrityVerification;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
@@ -18,6 +19,7 @@ use App\Services\Manager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -191,18 +193,22 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        try {
-            $service = app(IntegrityVerificationService::class);
-            $result = $service->verifyAndRepair(false, 'manual');
+        $cacheKey = 'verification_run_'.auth()->id();
+        $status = Cache::get("{$cacheKey}_status");
 
-            return back()->with('success', sprintf(
-                'Verification complete: %d records checked, %d new breaches found.',
-                $result['verified'],
-                array_sum($result['violations'])
-            ));
-        } catch (\Exception $e) {
-            return back()->with('error', 'Verification failed: '.$e->getMessage());
+        if ($status === 'running') {
+            return back()->with('error', 'Verification is already in progress.');
         }
+
+        dispatch(new RunIntegrityVerification(
+            cacheKey: $cacheKey,
+            userId: (string) auth()->id(),
+            userName: auth()->user()?->name ?? 'admin',
+            autoRepair: false,
+        ));
+
+        return back()->with('verification_run_id', $cacheKey)
+            ->with('info', 'Verification started in the background. Refresh to see new results.');
     }
 
     /**
@@ -212,19 +218,56 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('update-audit-log');
 
-        try {
-            $service = app(IntegrityVerificationService::class);
-            $result = $service->verifyAndRepair(true, 'manual');
+        $cacheKey = 'verification_run_'.auth()->id();
+        $status = Cache::get("{$cacheKey}_status");
 
-            return back()->with('success', sprintf(
-                'Verification complete: %d records checked, %d breaches found, %d restored.',
-                $result['verified'],
-                array_sum($result['violations']),
-                $result['restored']
-            ));
-        } catch (\Exception $e) {
-            return back()->with('error', 'Verification failed: '.$e->getMessage());
+        if ($status === 'running') {
+            return back()->with('error', 'Verification is already in progress.');
         }
+
+        dispatch(new RunIntegrityVerification(
+            cacheKey: $cacheKey,
+            userId: (string) auth()->id(),
+            userName: auth()->user()?->name ?? 'admin',
+            autoRepair: true,
+        ));
+
+        return back()->with('verification_run_id', $cacheKey)
+            ->with('info', 'Verify & Repair started in the background. Refresh to see results.');
+    }
+
+    /**
+     * Poll verification run status.
+     */
+    public function verifyStatus(): JsonResponse
+    {
+        $this->authorize('view-audit-log');
+
+        $cacheKey = 'verification_run_'.auth()->id();
+        $status = Cache::get("{$cacheKey}_status");
+
+        if (! $status) {
+            return response()->json(['status' => 'idle']);
+        }
+
+        $response = [
+            'status' => $status,
+            'started_at' => Cache::get("{$cacheKey}_started_at"),
+        ];
+
+        if ($status === 'completed') {
+            $response['result'] = Cache::get("{$cacheKey}_result");
+            Cache::forget("{$cacheKey}_status");
+            Cache::forget("{$cacheKey}_result");
+            Cache::forget("{$cacheKey}_started_at");
+        } elseif ($status === 'failed') {
+            $response['error'] = Cache::get("{$cacheKey}_error");
+            Cache::forget("{$cacheKey}_status");
+            Cache::forget("{$cacheKey}_error");
+            Cache::forget("{$cacheKey}_started_at");
+        }
+
+        return response()->json($response);
     }
 
     /**
