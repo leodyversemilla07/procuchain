@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import integrityAuditLogs from '@/routes/admin/integrity-audit-logs';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, Clock, FileSearch, Shield, Wrench, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
