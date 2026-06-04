@@ -163,6 +163,15 @@ export default function IntegrityBreaches() {
         }, 3000);
     };
 
+    const handleRepair = (id: number) => {
+        setRepairing(id);
+        router.post(integrityBreaches.repair.url(id), {}, {
+            preserveScroll: true,
+            preserveState: false,
+            onFinish: () => setRepairing(null),
+        });
+    };
+
     const handleVerify = () => {
         setVerifying(true);
         const toastId = toast.info('Verification in progress…', {
