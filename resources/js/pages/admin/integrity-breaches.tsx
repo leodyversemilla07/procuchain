@@ -122,6 +122,7 @@ export default function IntegrityBreaches() {
     const [repairingPr, setRepairingPr] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [verifyAndRepairing, setVerifyAndRepairing] = useState(false);
+    const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
 
     const pollVerificationStatus = (toastId: string | number) => {
         const interval = setInterval(async () => {
@@ -142,7 +143,10 @@ export default function IntegrityBreaches() {
                     });
 
                     // Reload the page to show fresh data
-                    router.reload({ only: ['breaches', 'stats'] });
+                    router.reload({ only: ['breaches', 'stats'] }).catch(() => {
+                        // Fallback: if reload fails (e.g. 502), do a full page visit
+                        window.location.reload();
+                    });
                 } else if (data.status === 'failed') {
                     clearInterval(interval);
                     setVerifying(false);
@@ -173,6 +177,7 @@ export default function IntegrityBreaches() {
     };
 
     const handleVerifyAndRepair = () => {
+        setVerifyDialogOpen(false);
         setVerifyAndRepairing(true);
         const toastId = toast.info('Verifying and repairing all breaches…', {
             description: 'Checking records, repairing tampered data from the blockchain.',
@@ -278,7 +283,7 @@ export default function IntegrityBreaches() {
                         <ShieldCheck data-icon="inline-start" />
                         {verifying ? 'Verifying...' : 'Run Verification'}
                     </Button>
-                    <AlertDialog>
+                    <AlertDialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
                         <AlertDialogTrigger
                             render={<Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing} />}
                             nativeButton={false}
