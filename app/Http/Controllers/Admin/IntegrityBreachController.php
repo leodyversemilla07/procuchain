@@ -40,7 +40,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $query = IntegrityAuditLog::query()->where('recovery_status', '!=', 'restored');
+        $query = IntegrityAuditLog::query();
 
         if ($type = $request->input('violation_type')) {
             $query->where('violation_type', $type);
@@ -50,6 +50,10 @@ class IntegrityBreachController extends Controller
         }
         if ($status = $request->input('status')) {
             $query->where('recovery_status', $status);
+        } else {
+            // Integrity Breaches is the active work queue. Permanent historical
+            // records remain visible in Integrity Audit Logs.
+            $query->where('recovery_status', 'pending');
         }
         if ($prNumber = $request->input('pr_number')) {
             $query->where('stream_key', $prNumber);
@@ -68,7 +72,7 @@ class IntegrityBreachController extends Controller
                 ->mapWithKeys(fn ($case) => [$case->value => $case->getDisplayName()])
                 ->toArray(),
             'stats' => [
-                'total' => IntegrityAuditLog::count(),
+                'total' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
                 'unresolved' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
                 'critical' => IntegrityAuditLog::where('severity', 'critical')->where('recovery_status', 'pending')->count(),
                 'high' => IntegrityAuditLog::where('severity', 'high')->where('recovery_status', 'pending')->count(),
