@@ -289,7 +289,14 @@ class IntegrityVerificationService
         $storedHash = $record->data_hash;
 
         if ($storedHash && $currentHash !== $storedHash) {
-            // Hash mismatch - record was modified in DB
+            // Hash mismatch - record was modified in DB. Also fetch the exact
+            // blockchain record so the report can show human-readable field
+            // differences instead of only stored/current hash values.
+            $chainData = $this->fetchChainData($stream->value, $prNumber, $record->txid);
+            $fieldDiffs = $chainData
+                ? $this->computeFieldDifferences($this->recordToArray($record, $tableName), $chainData)
+                : null;
+
             $this->recordViolation(
                 type: BreachTypeEnums::HASH_MISMATCH->value,
                 severity: 'critical',
@@ -299,6 +306,8 @@ class IntegrityVerificationService
                 message: 'Record was modified in database since last sync',
                 currentHash: $currentHash,
                 storedHash: $storedHash,
+                fieldDiffs: ! empty($fieldDiffs) ? $fieldDiffs : null,
+                chainData: $chainData,
             );
 
             return;
