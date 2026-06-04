@@ -103,44 +103,49 @@ class NormalizedTableSyncService
             $txid = $item['txid'] ?? '';
             $blocktime = $item['blocktime'] ?? null;
 
-            // Compute hash from blockchain data
-            $hashableData = $this->extractFields($data, Procurement::getHashableFields());
-            $dataHash = $this->computeHash($hashableData);
+            $attributes = [
+                'app_reference' => $data['app_reference'] ?? null,
+                'title' => $data['title'] ?? '',
+                'description' => $data['description'] ?? null,
+                'category' => $data['category'] ?? 'goods',
+                'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
+                'office' => $data['office'] ?? null,
+                'end_user' => $data['end_user'] ?? null,
+                'fund_source' => $data['funding_source'] ?? null,
+                'prepared_by' => $data['prepared_by'] ?? null,
+                'abc_amount' => (float) ($data['abc_amount'] ?? 0),
+                'approved_budget' => isset($data['approved_budget']) ? (float) $data['approved_budget'] : null,
+                'contract_price' => isset($data['contract_price']) ? (float) $data['contract_price'] : null,
+                'delivery_location' => $data['delivery_location'] ?? null,
+                'delivery_date' => $data['delivery_date'] ?? null,
+                'delivery_term_days' => $data['delivery_term_days'] ?? null,
+                'philgeps_reference' => $data['philgeps_reference'] ?? null,
+                'philgeps_posting_date' => $data['philgeps_posting_date'] ?? null,
+                'bac_resolution_number' => $data['bac_resolution_number'] ?? null,
+                'bac_resolution_date' => $data['bac_resolution_date'] ?? null,
+                'approved_by' => $data['approved_by'] ?? null,
+                'approval_date' => $data['approval_date'] ?? null,
+                'current_status' => $data['status'] ?? 'draft',
+                'user_address' => $data['user_address'] ?? null,
+                'initiated_at' => $this->normaliseDate($data['created_at'] ?? null),
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'last_updated_at' => $blocktime ? date('Y-m-d H:i:s', $blocktime) : now(),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields(
+                ['pr_number' => $prNumber, ...$attributes],
+                Procurement::getHashableFields()
+            ));
 
             Procurement::updateOrCreate(
                 ['pr_number' => $prNumber],
                 [
-                    'app_reference' => $data['app_reference'] ?? null,
-                    'title' => $data['title'] ?? '',
-                    'description' => $data['description'] ?? null,
-                    'category' => $data['category'] ?? 'goods',
-                    'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
-                    'office' => $data['office'] ?? null,
-                    'end_user' => $data['end_user'] ?? null,
-                    'fund_source' => $data['funding_source'] ?? null,
-                    'prepared_by' => $data['prepared_by'] ?? null,
-                    'abc_amount' => (float) ($data['abc_amount'] ?? 0),
-                    'approved_budget' => isset($data['approved_budget']) ? (float) $data['approved_budget'] : null,
-                    'contract_price' => isset($data['contract_price']) ? (float) $data['contract_price'] : null,
-                    'delivery_location' => $data['delivery_location'] ?? null,
-                    'delivery_date' => $data['delivery_date'] ?? null,
-                    'delivery_term_days' => $data['delivery_term_days'] ?? null,
-                    'philgeps_reference' => $data['philgeps_reference'] ?? null,
-                    'philgeps_posting_date' => $data['philgeps_posting_date'] ?? null,
-                    'bac_resolution_number' => $data['bac_resolution_number'] ?? null,
-                    'bac_resolution_date' => $data['bac_resolution_date'] ?? null,
-                    'approved_by' => $data['approved_by'] ?? null,
-                    'approval_date' => $data['approval_date'] ?? null,
-                    'current_status' => $data['status'] ?? 'draft',
-                    'user_address' => $data['user_address'] ?? null,
-                    'initiated_at' => $data['created_at'] ?? null,
-                    'txid' => $txid,
+                    ...$attributes,
                     'data_hash' => $dataHash,
                     'blockchain_hash' => $dataHash,
-                    'is_blockchain_verified' => true,
-                    'last_verified_at' => now(),
-                    'has_breach' => false,
-                    'last_updated_at' => $blocktime ? date('Y-m-d H:i:s', $blocktime) : now(),
                 ]
             );
 
@@ -186,32 +191,30 @@ class NormalizedTableSyncService
                 ]
             );
 
-            // Compute hash
-            $hashableData = $this->extractFields($data, ProcurementStage::getHashableFields());
-            $hashableData['procurement_id'] = $procurement->id;
-            $dataHash = $this->computeHash($hashableData);
-
-            // Check for duplicate txid
-            $exists = ProcurementStage::where('txid', $txid)->exists();
-            if ($exists) {
-                continue;
-            }
-
-            ProcurementStage::create([
+            $attributes = [
                 'procurement_id' => $procurement->id,
                 'stage' => $data['stage'] ?? 'unknown',
                 'status' => $data['current_status'] ?? 'unknown',
                 'previous_status' => $data['previous_status'] ?? null,
-                'entered_at' => $data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now()),
+                'entered_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
                 'user_address' => $data['user_address'] ?? null,
                 'txid' => $txid,
-                'data_hash' => $dataHash,
-                'blockchain_hash' => $dataHash,
                 'is_blockchain_verified' => true,
                 'last_verified_at' => now(),
                 'has_breach' => false,
                 'metadata' => $data['metadata'] ?? null,
-            ]);
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementStage::getHashableFields()));
+
+            ProcurementStage::updateOrCreate(
+                ['txid' => $txid],
+                [
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]
+            );
 
             // Update procurement current stage
             $procurement->update([
@@ -261,18 +264,7 @@ class NormalizedTableSyncService
                 ]
             );
 
-            // Compute hash
-            $hashableData = $this->extractFields($data, ProcurementDocument::getHashableFields());
-            $hashableData['procurement_id'] = $procurement->id;
-            $dataHash = $this->computeHash($hashableData);
-
-            // Check for duplicate txid
-            $exists = ProcurementDocument::where('txid', $txid)->exists();
-            if ($exists) {
-                continue;
-            }
-
-            ProcurementDocument::create([
+            $attributes = [
                 'procurement_id' => $procurement->id,
                 'document_type' => $data['document_type'] ?? 'unknown',
                 'stage' => $data['stage'] ?? 'unknown',
@@ -285,17 +277,28 @@ class NormalizedTableSyncService
                 'uploaded_by' => $data['uploaded_by'] ?? '',
                 'user_address' => $data['user_address'] ?? null,
                 'txid' => $txid,
-                'data_hash' => $dataHash,
-                'blockchain_hash' => $dataHash,
                 'is_blockchain_verified' => true,
                 'last_verified_at' => now(),
                 'has_breach' => false,
                 'is_active' => true,
-                'uploaded_at' => $data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now()),
-            ]);
+                'uploaded_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
 
-            // Update documents count
-            $procurement->increment('documents_count');
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementDocument::getHashableFields()));
+
+            $document = ProcurementDocument::updateOrCreate(
+                ['txid' => $txid],
+                [
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]
+            );
+
+            if ($document->wasRecentlyCreated) {
+                $procurement->increment('documents_count');
+            }
+
             $procurement->update(['last_updated_at' => now()]);
 
             $count++;
@@ -338,18 +341,7 @@ class NormalizedTableSyncService
                 ]
             );
 
-            // Compute hash
-            $hashableData = $this->extractFields($data, ProcurementEvent::getHashableFields());
-            $hashableData['procurement_id'] = $procurement->id;
-            $dataHash = $this->computeHash($hashableData);
-
-            // Check for duplicate txid
-            $exists = ProcurementEvent::where('txid', $txid)->exists();
-            if ($exists) {
-                continue;
-            }
-
-            ProcurementEvent::create([
+            $attributes = [
                 'procurement_id' => $procurement->id,
                 'event_type' => $data['event_type'] ?? 'unknown',
                 'category' => $data['category'] ?? 'general',
@@ -359,14 +351,23 @@ class NormalizedTableSyncService
                 'document_count' => (int) ($data['document_count'] ?? 0),
                 'user_address' => $data['user_address'] ?? null,
                 'txid' => $txid,
-                'data_hash' => $dataHash,
-                'blockchain_hash' => $dataHash,
                 'is_blockchain_verified' => true,
                 'last_verified_at' => now(),
                 'has_breach' => false,
                 'metadata' => $data['metadata'] ?? null,
-                'occurred_at' => $data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now()),
-            ]);
+                'occurred_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementEvent::getHashableFields()));
+
+            ProcurementEvent::updateOrCreate(
+                ['txid' => $txid],
+                [
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]
+            );
 
             $count++;
         }
@@ -542,6 +543,23 @@ class NormalizedTableSyncService
         }
 
         return $result;
+    }
+
+    private function normaliseDate(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return date('Y-m-d H:i:s', strtotime($value));
+            } catch (\Throwable) {
+                return $value;
+            }
+        }
+
+        return $value;
     }
 
     /**

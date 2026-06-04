@@ -14,6 +14,7 @@ use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
@@ -615,7 +616,7 @@ class IntegrityVerificationService
 
         $data = [];
         foreach ($fields as $field) {
-            $data[$field] = $record->{$field} ?? null;
+            $data[$field] = $this->normaliseHashValue($record->{$field} ?? null);
         }
 
         return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -633,10 +634,23 @@ class IntegrityVerificationService
 
         $data = [];
         foreach ($fields as $field) {
-            $data[$field] = $record->{$field} ?? null;
+            $data[$field] = $this->normaliseHashValue($record->{$field} ?? null);
         }
 
         return $data;
+    }
+
+    private function normaliseHashValue(mixed $value): mixed
+    {
+        if ($value instanceof Carbon || $value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (float) $value;
+        }
+
+        return $value;
     }
 
     private function fetchChainData(string $stream, string $prNumber, ?string $txid): ?array

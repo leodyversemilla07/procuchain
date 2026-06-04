@@ -147,8 +147,6 @@ class Procurement extends Model
             'title',
             'category',
             'procurement_mode',
-            'current_stage',
-            'current_status',
             'abc_amount',
             'office',
             'end_user',
