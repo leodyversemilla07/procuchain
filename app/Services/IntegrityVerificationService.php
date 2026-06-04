@@ -447,6 +447,14 @@ class IntegrityVerificationService
      */
     private function detectMissingFromDb(): void
     {
+        $this->detectMissingProcurementsFromDb();
+        $this->detectMissingStreamRowsFromDb(StreamEnums::STATUS, ProcurementStage::class, 'procurement_stages');
+        $this->detectMissingStreamRowsFromDb(StreamEnums::DOCUMENTS, ProcurementDocument::class, 'procurement_documents');
+        $this->detectMissingStreamRowsFromDb(StreamEnums::EVENTS, ProcurementEvent::class, 'procurement_events', skipSystemPr: true);
+    }
+
+    private function detectMissingProcurementsFromDb(): void
+    {
         try {
             $chainItems = $this->manager->liststreamitems(StreamEnums::METADATA->value, false, 10000);
             foreach ($chainItems as $item) {
@@ -466,6 +474,43 @@ class IntegrityVerificationService
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check deleted procurements', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Detect child stream records that exist on-chain but are missing from DB.
+     */
+    private function detectMissingStreamRowsFromDb(StreamEnums $stream, string $modelClass, string $tableName, bool $skipSystemPr = false): void
+    {
+        try {
+            $chainItems = $this->manager->liststreamitems($stream->value, false, 10000);
+
+            foreach ($chainItems as $item) {
+                $txid = $item['txid'] ?? null;
+                $data = $item['data']['json'] ?? [];
+                $prNumber = $data['pr_number'] ?? null;
+
+                if (! $txid || ! $prNumber || ($skipSystemPr && $prNumber === 'system')) {
+                    continue;
+                }
+
+                if (! $modelClass::where('txid', $txid)->exists()) {
+                    $this->recordViolation(
+                        type: BreachTypeEnums::ROW_DELETED->value,
+                        severity: 'critical',
+                        tableName: $tableName,
+                        record: null,
+                        prNumber: $prNumber,
+                        message: "{$stream->value} item exists on blockchain but not in database",
+                        chainData: $data,
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('IntegrityVerification: failed to check deleted stream rows', [
+                'stream' => $stream->value,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -501,6 +546,10 @@ class IntegrityVerificationService
                 );
             }
 
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::STATUS, ProcurementStage::class, 'procurement_stages');
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::DOCUMENTS, ProcurementDocument::class, 'procurement_documents');
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::EVENTS, ProcurementEvent::class, 'procurement_events');
+
             if ($fakeRecords->isNotEmpty()) {
                 Log::warning('IntegrityVerification: detected unauthorized DB records', [
                     'count' => $fakeRecords->count(),
@@ -509,6 +558,69 @@ class IntegrityVerificationService
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check unauthorized records', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Detect DB child rows whose txid is not present in the corresponding blockchain stream.
+     */
+    private function detectUnauthorizedStreamRowsInDb(StreamEnums $stream, string $modelClass, string $tableName): void
+    {
+        try {
+            $chainTxids = $this->getBlockchainTxids($stream);
+
+            if (empty($chainTxids)) {
+                return;
+            }
+
+            $fakeRows = $modelClass::query()
+                ->whereNotNull('txid')
+                ->whereNotIn('txid', $chainTxids)
+                ->get();
+
+            foreach ($fakeRows as $record) {
+                $prNumber = $record->pr_number ?? $record->procurement?->pr_number ?? 'unknown';
+
+                $this->recordViolation(
+                    type: BreachTypeEnums::UNAUTHORIZED_RECORD->value,
+                    severity: 'critical',
+                    tableName: $tableName,
+                    record: $record,
+                    prNumber: $prNumber,
+                    message: "Record exists in {$tableName} but txid is absent from {$stream->value} blockchain stream",
+                    chainData: null,
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('IntegrityVerification: failed to check unauthorized stream rows', [
+                'stream' => $stream->value,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function getBlockchainTxids(StreamEnums $stream): array
+    {
+        try {
+            $items = $this->manager->liststreamitems($stream->value, false, 10000);
+
+            if (! is_array($items)) {
+                return [];
+            }
+
+            return collect($items)
+                ->map(fn ($item) => $item['txid'] ?? null)
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+        } catch (\Exception $e) {
+            Log::warning('IntegrityVerification: failed to get blockchain txids', [
+                'stream' => $stream->value,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
         }
     }
 
@@ -544,9 +656,11 @@ class IntegrityVerificationService
         ]);
 
         try {
-            // Step 1: Get all PR numbers known to blockchain (source of truth)
+            // Step 1: Get all blockchain identities (source of truth)
             $blockchainPrNumbers = $this->getBlockchainPrNumbers();
-            $previousRestoredCount = $this->restoredCount;
+            $stageTxids = $this->getBlockchainTxids(StreamEnums::STATUS);
+            $documentTxids = $this->getBlockchainTxids(StreamEnums::DOCUMENTS);
+            $eventTxids = $this->getBlockchainTxids(StreamEnums::EVENTS);
 
             // Step 2: Delete DB records that don't exist on blockchain
             // Requirement 5: "Restore original records from trusted blockchain data."
@@ -556,15 +670,28 @@ class IntegrityVerificationService
                     ->whereNotIn('pr_number', $blockchainPrNumbers)
                     ->forceDelete();
 
+                $deletedStages = ! empty($stageTxids)
+                    ? ProcurementStage::whereNotNull('txid')->whereNotIn('txid', $stageTxids)->delete()
+                    : 0;
+                $deletedDocuments = ! empty($documentTxids)
+                    ? ProcurementDocument::withTrashed()->whereNotNull('txid')->whereNotIn('txid', $documentTxids)->forceDelete()
+                    : 0;
+                $deletedEvents = ! empty($eventTxids)
+                    ? ProcurementEvent::whereNotNull('txid')->whereNotIn('txid', $eventTxids)->delete()
+                    : 0;
+
                 // Also clean up orphaned child records. Parent force-deletes should cascade,
                 // but this removes any orphan rows left by earlier soft-delete repairs.
                 ProcurementStage::whereDoesntHave('procurement')->delete();
                 ProcurementDocument::withTrashed()->whereDoesntHave('procurement')->forceDelete();
                 ProcurementEvent::whereDoesntHave('procurement')->delete();
 
-                if ($deletedCount > 0) {
+                if ($deletedCount > 0 || $deletedStages > 0 || $deletedDocuments > 0 || $deletedEvents > 0) {
                     Log::info('IntegrityVerification: removed unauthorized DB records', [
                         'deleted_procurements' => $deletedCount,
+                        'deleted_stages' => $deletedStages,
+                        'deleted_documents' => $deletedDocuments,
+                        'deleted_events' => $deletedEvents,
                     ]);
                 }
             }
@@ -756,21 +883,23 @@ class IntegrityVerificationService
 
         $dbSnapshot = $record ? $this->recordToArray($record, $tableName) : null;
 
-        IntegrityAuditLog::create([
+        $auditLog = IntegrityAuditLog::create([
             'record_id' => $record?->id,
             'stream' => self::TABLE_STREAM_MAP[$tableName]?->value ?? $tableName,
             'stream_key' => $prNumber,
             'txid' => $record?->txid,
             'violation_type' => $type,
             'severity' => $severity,
-            'database_snapshot' => $dbSnapshot,
-            'blockchain_snapshot' => $chainData,
+            'mirror_snapshot' => $dbSnapshot,
+            'chain_snapshot' => $chainData,
             'field_differences' => $fieldDiffs ?? ($currentHash ? [['field' => 'hash', 'old_value' => $storedHash, 'new_value' => $currentHash]] : null),
             'recovery_status' => 'pending',
             'verification_run_id' => $this->runId,
             'source' => $this->source,
             'created_at' => now(),
         ]);
+
+        $auditLog->publishToBlockchain();
 
         // Mark record as breached
         if ($record && method_exists($record, 'update')) {
