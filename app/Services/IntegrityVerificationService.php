@@ -156,8 +156,11 @@ class IntegrityVerificationService
             // Get all PR numbers from blockchain
             $blockchainPrNumbers = $this->getBlockchainPrNumbers();
 
-            // Delete records that don't exist on blockchain
-            $deletedCount = Procurement::whereNotIn('pr_number', $blockchainPrNumbers)->delete();
+            // Hard-delete records that don't exist on blockchain.
+            // Requirement 5 treats these as unauthorized DB injections, not recoverable user deletes.
+            $deletedCount = Procurement::withTrashed()
+                ->whereNotIn('pr_number', $blockchainPrNumbers)
+                ->forceDelete();
 
             // Re-sync from blockchain to restore
             $this->syncService->syncAll();
@@ -548,12 +551,14 @@ class IntegrityVerificationService
             // Requirement 5: "Restore original records from trusted blockchain data."
             // Records in DB not on chain = unauthorized injection → must be removed
             if (! empty($blockchainPrNumbers)) {
-                $deletedCount = Procurement::whereNotIn('pr_number', $blockchainPrNumbers)->delete();
+                $deletedCount = Procurement::withTrashed()
+                    ->whereNotIn('pr_number', $blockchainPrNumbers)
+                    ->forceDelete();
 
-                // Also clean up related child records for deleted procurements
-                // (handled by cascade or orphan cleanup below)
+                // Also clean up orphaned child records. Parent force-deletes should cascade,
+                // but this removes any orphan rows left by earlier soft-delete repairs.
                 ProcurementStage::whereDoesntHave('procurement')->delete();
-                ProcurementDocument::whereDoesntHave('procurement')->delete();
+                ProcurementDocument::withTrashed()->whereDoesntHave('procurement')->forceDelete();
                 ProcurementEvent::whereDoesntHave('procurement')->delete();
 
                 if ($deletedCount > 0) {
