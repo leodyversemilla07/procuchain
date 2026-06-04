@@ -663,9 +663,13 @@ class IntegrityVerificationService
     public function computeFieldDifferences(array $dbData, array $chainData): array
     {
         $diffs = [];
-        $allKeys = array_unique(array_merge(array_keys($chainData), array_keys($dbData)));
 
-        foreach ($allKeys as $key) {
+        // Only compare fields that exist in BOTH datasets.
+        // Extra metadata in chainData (e.g. stream_ref, publisher metadata)
+        // that aren't tracked in the DB snapshot should not trigger a violation.
+        $sharedKeys = array_intersect(array_keys($chainData), array_keys($dbData));
+
+        foreach ($sharedKeys as $key) {
             if (in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
                 continue;
             }
