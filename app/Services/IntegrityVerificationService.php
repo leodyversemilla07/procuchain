@@ -784,20 +784,33 @@ class IntegrityVerificationService
     {
         try {
             $items = $this->manager->liststreamkeyitems($stream, $prNumber);
-            if (! is_array($items) || empty($items)) {
-                return null;
-            }
+            $items = is_array($items) ? $items : [];
 
-            // If txid provided, find exact match
+            // If txid is provided, it must win. Some streams are keyed by PR but
+            // liststreamkeyitems may not return every historical item as expected,
+            // so fall back to scanning the stream before using latest-by-key.
             if ($txid) {
                 foreach ($items as $item) {
                     if (($item['txid'] ?? null) === $txid) {
                         return $item['data']['json'] ?? null;
                     }
                 }
+
+                $allItems = $this->manager->liststreamitems($stream, false, 10000);
+                if (is_array($allItems)) {
+                    foreach ($allItems as $item) {
+                        if (($item['txid'] ?? null) === $txid) {
+                            return $item['data']['json'] ?? null;
+                        }
+                    }
+                }
             }
 
-            // Return latest
+            if (empty($items)) {
+                return null;
+            }
+
+            // No txid available: compare against latest item for this PR.
             $latest = end($items);
 
             return $latest['data']['json'] ?? null;
