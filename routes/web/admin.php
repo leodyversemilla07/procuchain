@@ -107,13 +107,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
     // Integrity Breaches — mirror breach management
     Route::prefix('integrity-breaches')->name('integrity-breaches.')->group(function () {
         Route::get('/', [IntegrityBreachController::class, 'index'])->name('index');
-        Route::get('/{id}', [IntegrityBreachController::class, 'show'])->name('show');
-        Route::post('/{id}/repair', [IntegrityBreachController::class, 'repair'])->name('repair');
         Route::post('/repair-pr', [IntegrityBreachController::class, 'repairPr'])->name('repair-pr');
         Route::post('/verify', [IntegrityBreachController::class, 'verify'])->name('verify');
         Route::post('/verify-and-repair', [IntegrityBreachController::class, 'verifyAndRepair'])->name('verify-and-repair');
         Route::get('/verify-status', [IntegrityBreachController::class, 'verifyStatus'])->name('verify-status');
         Route::get('/mirror-status', [IntegrityBreachController::class, 'mirrorStatus'])->name('mirror-status');
+        Route::get('/{id}', [IntegrityBreachController::class, 'show'])->name('show')->whereNumber('id');
+        Route::post('/{id}/repair', [IntegrityBreachController::class, 'repair'])->name('repair');
     });
 
     // Integrity Audit Logs — permanent forensic record
