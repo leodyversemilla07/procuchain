@@ -399,31 +399,27 @@ describe('IntegrityVerificationService', function () {
             recordId: $correction->id,
         );
 
-        $this->mock(Manager::class, function ($mock) use ($procurement) {
-            $mock->shouldReceive('liststreamitems')->andReturn([]);
-            $mock->shouldReceive('liststreamkeyitems')
-                ->with('procurement.metadata', $procurement->pr_number)
-                ->andReturn([]);
-            $mock->shouldReceive('liststreamkeyitems')
-                ->with('procurement.corrections', $procurement->pr_number)
-                ->andReturn([
-                    [
-                        'txid' => 'correction-txid-stale-hash',
-                        'data' => [
-                            'json' => [
-                                'pr_number' => $procurement->pr_number,
-                                'correction_type' => 'document_correction',
-                                'action' => 'replace',
-                                'reason' => 'not accurate',
-                                'original_txid' => 'original-txid',
-                                'original_document_hash' => 'original-document-hash',
-                                'corrected_by' => 'Bryle Maamo',
-                                'timestamp' => '2026-05-27T22:55:17+08:00',
-                            ],
-                        ],
-                    ],
-                ]);
-            $mock->shouldReceive('getrawtransaction')->andReturn([]);
+        $chainCorrectionItem = [
+            'txid' => 'correction-txid-stale-hash',
+            'data' => [
+                'json' => [
+                    'pr_number' => $procurement->pr_number,
+                    'correction_type' => 'document_correction',
+                    'action' => 'replace',
+                    'reason' => 'not accurate',
+                    'original_txid' => 'original-txid',
+                    'original_document_hash' => 'original-document-hash',
+                    'corrected_by' => 'Bryle Maamo',
+                    'timestamp' => '2026-05-27T22:55:17+08:00',
+                ],
+            ],
+        ];
+
+        $this->mock(Manager::class, function ($mock) use ($chainCorrectionItem) {
+            $mock->shouldReceive('liststreamitems')
+                ->with('procurement.corrections', false, 10000)
+                ->andReturn([$chainCorrectionItem]);
+            $mock->shouldReceive('liststreamitems')->andReturn([])->byDefault();
         });
 
         $result = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'test');

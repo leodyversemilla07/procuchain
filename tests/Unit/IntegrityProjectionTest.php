@@ -1,7 +1,9 @@
 <?php
 
 use App\Services\Integrity\BlockchainPayloadProjector;
+use App\Services\Integrity\BlockchainVerificationIndex;
 use App\Services\Integrity\IntegrityComparator;
+use App\Services\Manager;
 
 it('projects procurement metadata blockchain payloads to database mirror fields', function () {
     $projected = app(BlockchainPayloadProjector::class)->projectForTable([
@@ -40,6 +42,32 @@ it('projects status and event timestamps to their database mirror fields', funct
     expect($stage['status'])->toBe('procurement_submitted')
         ->and($stage['entered_at'])->toBe('2026-05-27 23:00:56')
         ->and($event['occurred_at'])->toBe('2026-05-27 23:00:56');
+});
+
+it('indexes blockchain stream items by txid and pr number', function () {
+    $manager = Mockery::mock(Manager::class);
+    $manager->shouldReceive('liststreamitems')
+        ->once()
+        ->with('procurement.events', false, 10000)
+        ->andReturn([
+            [
+                'txid' => 'tx-1',
+                'data' => ['json' => ['pr_number' => 'PR-1', 'timestamp' => '2026-05-27T23:00:56+08:00']],
+                'keys' => ['PR-1'],
+            ],
+            [
+                'txid' => 'tx-2',
+                'data' => ['json' => ['pr_number' => 'PR-1', 'timestamp' => '2026-05-27T23:01:56+08:00']],
+                'keys' => ['PR-1'],
+            ],
+        ]);
+
+    $index = new BlockchainVerificationIndex($manager);
+    $index->loadStream('procurement.events');
+
+    expect($index->txids('procurement.events'))->toBe(['tx-1', 'tx-2'])
+        ->and($index->jsonByTxid('procurement.events', 'tx-1')['timestamp'])->toBe('2026-05-27T23:00:56+08:00')
+        ->and($index->latestJsonByPrNumber('procurement.events', 'PR-1')['timestamp'])->toBe('2026-05-27T23:01:56+08:00');
 });
 
 it('compares only projected blockchain counterparts and ignores db-only mirror fields', function () {

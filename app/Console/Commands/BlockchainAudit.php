@@ -29,6 +29,7 @@ class BlockchainAudit extends Command
     protected $signature = 'blockchain:audit
         {--pr= : Audit only a specific PR number}
         {--repair : Auto-repair detected breaches}
+        {--deep-publisher-check : Also verify transaction publishers with getrawtransaction calls}
         {--report= : Generate a report for a specific verification run ID}
         {--source=scheduled : Source label for audit records (scheduled|manual|read_time)}';
 
@@ -44,6 +45,7 @@ class BlockchainAudit extends Command
 
             $service = app(IntegrityVerificationService::class);
             $autoRepair = (bool) $this->option('repair');
+            $deepPublisherCheck = (bool) $this->option('deep-publisher-check');
             $source = $this->option('source');
 
             if ($autoRepair) {
@@ -51,17 +53,22 @@ class BlockchainAudit extends Command
                 $this->newLine();
             }
 
+            if ($deepPublisherCheck) {
+                $this->warn('Deep publisher check is ENABLED — audit will perform extra getrawtransaction calls.');
+                $this->newLine();
+            }
+
             // Single PR audit
             if ($prNumber = $this->option('pr')) {
                 $this->info("Auditing PR: {$prNumber}");
-                $result = $service->verifyPr($prNumber, $autoRepair, $source);
+                $result = $service->verifyPr($prNumber, $autoRepair, $source, $deepPublisherCheck);
             } else {
                 // Full audit
                 $this->info('Starting full blockchain integrity audit...');
                 $bar = $this->output->createProgressBar(3);
                 $bar->start();
 
-                $result = $service->verifyAndRepair($autoRepair, $source);
+                $result = $service->verifyAndRepair($autoRepair, $source, $deepPublisherCheck);
 
                 $bar->finish();
                 $this->newLine(2);

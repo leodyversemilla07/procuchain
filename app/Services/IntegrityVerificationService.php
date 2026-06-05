@@ -18,6 +18,7 @@ use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
 use App\Services\Integrity\BlockchainPayloadProjector;
+use App\Services\Integrity\BlockchainVerificationIndex;
 use App\Services\Integrity\IntegrityComparator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -62,6 +63,13 @@ class IntegrityVerificationService
 
     private IntegrityComparator $comparator;
 
+    private BlockchainVerificationIndex $blockchainIndex;
+
+    private bool $verifyPublishers = false;
+
+    /** @var array<string, array<string, mixed>|null> */
+    private array $rawTransactionCache = [];
+
     /** Tables to verify and their stream mappings */
     private const TABLE_STREAM_MAP = [
         'procurements' => StreamEnums::METADATA,
@@ -80,6 +88,7 @@ class IntegrityVerificationService
         $this->syncService = app(NormalizedTableSyncService::class);
         $this->payloadProjector = app(BlockchainPayloadProjector::class);
         $this->comparator = app(IntegrityComparator::class);
+        $this->blockchainIndex = app(BlockchainVerificationIndex::class);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -91,11 +100,14 @@ class IntegrityVerificationService
      *
      * @return array{run_id: string, verified: int, violations: array, restored: int, failed: int}
      */
-    public function verifyAndRepair(bool $autoRepair = false, string $source = 'scheduled'): array
+    public function verifyAndRepair(bool $autoRepair = false, string $source = 'scheduled', bool $deepPublisherCheck = false): array
     {
         $this->reset($source);
+        $this->verifyPublishers = $deepPublisherCheck;
 
         Log::info('IntegrityVerification: starting', ['run_id' => $this->runId, 'auto_repair' => $autoRepair]);
+
+        $this->preloadBlockchainIndex();
 
         // Phase 1: Verify hashes on all normalized tables
         $this->verifyAllTables();
@@ -124,9 +136,10 @@ class IntegrityVerificationService
     /**
      * Verify a specific PR number.
      */
-    public function verifyPr(string $prNumber, bool $autoRepair = false): array
+    public function verifyPr(string $prNumber, bool $autoRepair = false, string $source = 'manual', bool $deepPublisherCheck = false): array
     {
-        $this->reset('manual');
+        $this->reset($source);
+        $this->verifyPublishers = $deepPublisherCheck;
 
         $procurement = Procurement::where('pr_number', $prNumber)->first();
         if (! $procurement) {
@@ -136,7 +149,7 @@ class IntegrityVerificationService
         // Verify procurement record
         $this->verifyRecord($procurement, 'procurements', StreamEnums::METADATA);
 
-        // Verify related records
+        // Verify related records across all stream-backed mirror tables.
         foreach ($procurement->stages as $stage) {
             $this->verifyRecord($stage, 'procurement_stages', StreamEnums::STATUS);
         }
@@ -145,6 +158,22 @@ class IntegrityVerificationService
         }
         foreach ($procurement->events as $event) {
             $this->verifyRecord($event, 'procurement_events', StreamEnums::EVENTS);
+        }
+        foreach ($procurement->corrections as $correction) {
+            $this->verifyRecord($correction, 'procurement_corrections', StreamEnums::CORRECTIONS);
+        }
+        foreach (ProcurementArchive::where('procurement_id', $procurement->id)->get() as $archive) {
+            $this->verifyRecord($archive, 'procurement_archives', StreamEnums::ARCHIVE);
+        }
+        foreach (ProcurementMetadataCorrection::where('procurement_id', $procurement->id)->get() as $metadataCorrection) {
+            $this->verifyRecord($metadataCorrection, 'procurement_metadata_corrections', StreamEnums::PROCUREMENTS_CORRECTIONS);
+        }
+        foreach (File::where('pr_number', $procurement->pr_number)->get() as $file) {
+            $this->verifyRecord($file, 'files', StreamEnums::FILE_METADATA);
+        }
+
+        if ($autoRepair) {
+            $this->autoRepair();
         }
 
         return [
@@ -201,17 +230,7 @@ class IntegrityVerificationService
     private function getBlockchainPrNumbers(): array
     {
         try {
-            $items = $this->manager->liststreamitems(StreamEnums::METADATA->value, false, 10000);
-            if (! is_array($items)) {
-                return [];
-            }
-
-            return collect($items)
-                ->map(fn ($item) => $item['data']['json']['pr_number'] ?? null)
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
+            return $this->blockchainIndex->prNumbers(StreamEnums::METADATA);
         } catch (\Exception $e) {
             Log::warning('Failed to get blockchain PR numbers', ['error' => $e->getMessage()]);
 
@@ -403,7 +422,7 @@ class IntegrityVerificationService
 
         // Layer 4: Check if the blockchain publisher is unauthorized
         // (verifies that the txid publisher matches the expected authorized address)
-        if ($record->txid) {
+        if ($this->verifyPublishers && $record->txid) {
             $recordHadViolation = $this->checkUnauthorizedPublisher($record, $tableName, $prNumber, $stream->value) || $recordHadViolation;
         }
 
@@ -432,7 +451,7 @@ class IntegrityVerificationService
             }
 
             // Get the txid details from blockchain (verbose = true)
-            $txData = $this->manager->getrawtransaction($txid, 1);
+            $txData = $this->rawTransactionCache[$txid] ??= $this->manager->getrawtransaction($txid, 1);
             if (! $txData || ! is_array($txData)) {
                 return false;
             }
@@ -602,8 +621,7 @@ class IntegrityVerificationService
     private function detectMissingProcurementsFromDb(): void
     {
         try {
-            $chainItems = $this->manager->liststreamitems(StreamEnums::METADATA->value, false, 10000);
-            foreach ($chainItems as $item) {
+            foreach ($this->blockchainIndex->items(StreamEnums::METADATA) as $item) {
                 $data = $item['data']['json'] ?? [];
                 $prNumber = $data['pr_number'] ?? null;
                 if ($prNumber && ! Procurement::where('pr_number', $prNumber)->exists()) {
@@ -629,9 +647,7 @@ class IntegrityVerificationService
     private function detectMissingStreamRowsFromDb(StreamEnums $stream, string $modelClass, string $tableName, bool $skipSystemPr = false): void
     {
         try {
-            $chainItems = $this->manager->liststreamitems($stream->value, false, 10000);
-
-            foreach ($chainItems as $item) {
+            foreach ($this->blockchainIndex->items($stream) as $item) {
                 $txid = $item['txid'] ?? null;
                 $data = $item['data']['json'] ?? [];
                 $prNumber = $data['pr_number'] ?? data_get($item, 'keys.0');
@@ -714,9 +730,7 @@ class IntegrityVerificationService
     private function detectMissingFileMetadataRowsFromDb(): void
     {
         try {
-            $chainItems = $this->manager->liststreamitems(StreamEnums::FILE_METADATA->value, false, 10000);
-
-            foreach ($chainItems as $item) {
+            foreach ($this->blockchainIndex->items(StreamEnums::FILE_METADATA) as $item) {
                 $txid = $item['txid'] ?? null;
                 $data = $item['data']['json'] ?? [];
                 $fileKey = $data['file_key'] ?? null;
@@ -783,18 +797,7 @@ class IntegrityVerificationService
     private function getBlockchainTxids(StreamEnums $stream): array
     {
         try {
-            $items = $this->manager->liststreamitems($stream->value, false, 10000);
-
-            if (! is_array($items)) {
-                return [];
-            }
-
-            return collect($items)
-                ->map(fn ($item) => $item['txid'] ?? null)
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
+            return $this->blockchainIndex->txids($stream);
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to get blockchain txids', [
                 'stream' => $stream->value,
@@ -995,37 +998,39 @@ class IntegrityVerificationService
     private function fetchChainData(string $stream, string $prNumber, ?string $txid): ?array
     {
         try {
+            if ($this->blockchainIndex->isLoaded($stream)) {
+                if ($txid) {
+                    return $this->blockchainIndex->jsonByTxid($stream, $txid);
+                }
+
+                return $this->blockchainIndex->latestJsonByPrNumber($stream, $prNumber);
+            }
+
             $items = $this->manager->liststreamkeyitems($stream, $prNumber);
             $items = is_array($items) ? $items : [];
 
-            // If txid is provided, it must win. Some streams are keyed by PR but
-            // liststreamkeyitems may not return every historical item as expected,
-            // so fall back to scanning the stream before using latest-by-key.
             if ($txid) {
                 foreach ($items as $item) {
                     if (($item['txid'] ?? null) === $txid) {
-                        return $item['data']['json'] ?? null;
+                        $json = $item['data']['json'] ?? null;
+
+                        return is_array($json) ? $json : null;
                     }
                 }
 
-                $allItems = $this->manager->liststreamitems($stream, false, 10000);
-                if (is_array($allItems)) {
-                    foreach ($allItems as $item) {
-                        if (($item['txid'] ?? null) === $txid) {
-                            return $item['data']['json'] ?? null;
-                        }
-                    }
-                }
+                $this->blockchainIndex->loadStream($stream);
+
+                return $this->blockchainIndex->jsonByTxid($stream, $txid);
             }
 
             if (empty($items)) {
                 return null;
             }
 
-            // No txid available: compare against latest item for this PR.
             $latest = end($items);
+            $json = is_array($latest) ? ($latest['data']['json'] ?? null) : null;
 
-            return $latest['data']['json'] ?? null;
+            return is_array($json) ? $json : null;
         } catch (\Exception $e) {
             return null;
         }
@@ -1100,6 +1105,14 @@ class IntegrityVerificationService
         }
     }
 
+    private function preloadBlockchainIndex(): void
+    {
+        $this->blockchainIndex->loadStreams(array_values(array_unique(array_map(
+            fn (StreamEnums $stream) => $stream->value,
+            self::TABLE_STREAM_MAP,
+        ))));
+    }
+
     private function reset(string $source): void
     {
         $this->runId = IntegrityAuditLog::newRunId();
@@ -1108,5 +1121,8 @@ class IntegrityVerificationService
         $this->verifiedCount = 0;
         $this->restoredCount = 0;
         $this->failedCount = 0;
+        $this->verifyPublishers = false;
+        $this->rawTransactionCache = [];
+        $this->blockchainIndex = app(BlockchainVerificationIndex::class);
     }
 }
