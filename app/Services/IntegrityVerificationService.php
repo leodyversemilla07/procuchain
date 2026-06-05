@@ -327,9 +327,9 @@ class IntegrityVerificationService
         $storedHash = $record->data_hash;
 
         if ($storedHash && $currentHash !== $storedHash) {
-            // Hash mismatch - record was modified in DB. Also fetch the exact
-            // blockchain record so the report can show human-readable field
-            // differences instead of only stored/current hash values.
+            // Hash mismatch - record may have been modified in DB, or the local
+            // hash may be stale because the projection/hash algorithm changed.
+            // Blockchain content comparison is authoritative.
             $chainData = $this->fetchChainData($stream->value, $prNumber, $record->txid);
             $fieldDiffs = $chainData
                 ? $this->computeFieldDifferences(
@@ -338,20 +338,25 @@ class IntegrityVerificationService
                 )
                 : null;
 
-            $this->recordViolation(
-                type: BreachTypeEnums::HASH_MISMATCH->value,
-                severity: 'critical',
-                tableName: $tableName,
-                record: $record,
-                prNumber: $prNumber,
-                message: 'Record was modified in database since last sync',
-                currentHash: $currentHash,
-                storedHash: $storedHash,
-                fieldDiffs: ! empty($fieldDiffs) ? $fieldDiffs : null,
-                chainData: $chainData,
-            );
+            if ($chainData && empty($fieldDiffs)) {
+                $this->refreshTrustedRecordHash($record, $currentHash);
+                $this->resolvePendingStaleHashViolations($record, $prNumber, $stream->value);
+            } else {
+                $this->recordViolation(
+                    type: BreachTypeEnums::HASH_MISMATCH->value,
+                    severity: 'critical',
+                    tableName: $tableName,
+                    record: $record,
+                    prNumber: $prNumber,
+                    message: 'Record was modified in database since last sync',
+                    currentHash: $currentHash,
+                    storedHash: $storedHash,
+                    fieldDiffs: ! empty($fieldDiffs) ? $fieldDiffs : null,
+                    chainData: $chainData,
+                );
 
-            return;
+                return;
+            }
         }
 
         // Layer 2: Compare with blockchain data
@@ -483,6 +488,37 @@ class IntegrityVerificationService
         }
 
         return false;
+    }
+
+    private function refreshTrustedRecordHash(Model $record, string $currentHash): void
+    {
+        $record->forceFill([
+            'data_hash' => $currentHash,
+            'blockchain_hash' => $currentHash,
+        ])->save();
+
+        $record->refresh();
+    }
+
+    private function resolvePendingStaleHashViolations(Model $record, string $prNumber, string $stream): void
+    {
+        $query = IntegrityAuditLog::query()
+            ->where('recovery_status', 'pending')
+            ->where('violation_type', BreachTypeEnums::HASH_MISMATCH->value)
+            ->where('stream', $stream)
+            ->where('stream_key', $prNumber);
+
+        if ($record->txid) {
+            $query->where('txid', $record->txid);
+        } else {
+            $query->where('record_id', $record->id);
+        }
+
+        $logs = $query->get();
+
+        foreach ($logs as $log) {
+            $log->markSkipped('Verifier re-ran with canonical blockchain comparison and found the DB record content matches trusted chain data. Local stale hash was refreshed; original audit record retained.');
+        }
     }
 
     private function resolvePendingFalsePositiveViolations(Model $record, string $tableName, string $prNumber, string $stream): void

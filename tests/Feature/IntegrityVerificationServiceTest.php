@@ -3,6 +3,7 @@
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
+use App\Models\ProcurementCorrection;
 use App\Models\ProcurementEvent;
 use App\Services\BlockchainAuditTrailService;
 use App\Services\IntegrityVerificationService;
@@ -360,6 +361,81 @@ describe('IntegrityVerificationService', function () {
 
         expect($result['violations'])->not->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value);
         expect(IntegrityAuditLog::where('stream', 'procurement.events')->count())->toBe(0);
+    });
+
+    it('refreshes stale local hashes when canonical chain content matches', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2026-001-0001',
+            'title' => 'Procurement of Water System Repair',
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+            'current_stage' => 'procurement_initiation',
+            'current_status' => 'draft',
+        ]);
+
+        $correction = ProcurementCorrection::create([
+            'procurement_id' => $procurement->id,
+            'correction_type' => 'document_correction',
+            'action' => 'replace',
+            'reason' => 'not accurate',
+            'original_txid' => 'original-txid',
+            'original_document_hash' => 'original-document-hash',
+            'corrected_by' => 'Bryle Maamo',
+            'txid' => 'correction-txid-stale-hash',
+            'data_hash' => 'stale-hash',
+            'blockchain_hash' => 'stale-hash',
+            'corrected_at' => '2026-05-27 22:55:17',
+            'has_breach' => true,
+        ]);
+
+        $staleLog = IntegrityAuditLog::recordViolation(
+            stream: 'procurement.corrections',
+            streamKey: $procurement->pr_number,
+            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            txid: $correction->txid,
+            fieldDifferences: [['field' => 'hash', 'old_value' => 'stale-hash', 'new_value' => 'current-hash']],
+            mirrorSnapshot: $correction->toArray(),
+            chainSnapshot: ['pr_number' => $procurement->pr_number],
+            recordId: $correction->id,
+        );
+
+        $this->mock(Manager::class, function ($mock) use ($procurement) {
+            $mock->shouldReceive('liststreamitems')->andReturn([]);
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.metadata', $procurement->pr_number)
+                ->andReturn([]);
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.corrections', $procurement->pr_number)
+                ->andReturn([
+                    [
+                        'txid' => 'correction-txid-stale-hash',
+                        'data' => [
+                            'json' => [
+                                'pr_number' => $procurement->pr_number,
+                                'correction_type' => 'document_correction',
+                                'action' => 'replace',
+                                'reason' => 'not accurate',
+                                'original_txid' => 'original-txid',
+                                'original_document_hash' => 'original-document-hash',
+                                'corrected_by' => 'Bryle Maamo',
+                                'timestamp' => '2026-05-27T22:55:17+08:00',
+                            ],
+                        ],
+                    ],
+                ]);
+            $mock->shouldReceive('getrawtransaction')->andReturn([]);
+        });
+
+        $result = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'test');
+
+        $correction->refresh();
+        $staleLog->refresh();
+
+        expect($result['violations'])->not->toHaveKey(BreachTypeEnums::HASH_MISMATCH->value)
+            ->and($correction->data_hash)->not->toBe('stale-hash')
+            ->and($correction->blockchain_hash)->toBe($correction->data_hash)
+            ->and($correction->has_breach)->toBeFalse()
+            ->and($staleLog->recovery_status)->toBe('skipped');
     });
 
     it('marks stale pending projection mismatches as skipped after the record verifies clean', function () {
