@@ -3,6 +3,7 @@
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
+use App\Models\ProcurementEvent;
 use App\Services\BlockchainAuditTrailService;
 use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
@@ -204,6 +205,239 @@ describe('IntegrityVerificationService', function () {
         $result = $service->verifyAndRepair(false, 'test');
 
         expect($result['violations'])->toHaveKey('row_deleted');
+    });
+
+    it('does not flag procurement metadata aliases as content mismatches', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2026-001-0001',
+            'title' => 'Procurement of Water System Repair',
+            'description' => 'Water System Installation/Repair',
+            'category' => 'infrastructure_projects',
+            'procurement_mode' => 'limited_source_bidding',
+            'office' => "MO - Mayor's Office",
+            'end_user' => "MO - Mayor's Office",
+            'fund_source' => 'General Fund',
+            'prepared_by' => 'Bryle Maamo',
+            'abc_amount' => 1000000,
+            'current_stage' => 'procurement_initiation',
+            'current_status' => 'procurement_initiated',
+            'initiated_at' => '2026-05-19 21:37:15',
+            'txid' => 'metadata-txid-aliases',
+        ]);
+
+        $this->mock(Manager::class, function ($mock) use ($procurement) {
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.metadata', $procurement->pr_number)
+                ->andReturn([
+                    [
+                        'txid' => 'metadata-txid-aliases',
+                        'data' => [
+                            'json' => [
+                                'pr_number' => $procurement->pr_number,
+                                'title' => 'Procurement of Water System Repair',
+                                'description' => 'Water System Installation/Repair',
+                                'category' => 'infrastructure_projects',
+                                'procurement_mode' => 'limited_source_bidding',
+                                'office' => "MO - Mayor's Office",
+                                'end_user' => "MO - Mayor's Office",
+                                'funding_source' => 'General Fund',
+                                'prepared_by' => 'Bryle Maamo',
+                                'abc_amount' => '1000000',
+                                'status' => 'procurement_initiated',
+                                'created_at' => '2026-05-19T21:37:15+08:00',
+                            ],
+                        ],
+                    ],
+                ]);
+            $mock->shouldReceive('getrawtransaction')->andReturn([]);
+        });
+
+        $service = app(IntegrityVerificationService::class);
+        $result = $service->verifyPr($procurement->pr_number);
+
+        expect($result['violations'])->not->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value);
+        expect(IntegrityAuditLog::where('stream', 'procurement.metadata')->count())->toBe(0);
+    });
+
+    it('detects real database tampering after canonical blockchain mapping', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2026-001-0002',
+            'title' => 'Tampered Title',
+            'description' => 'Original Description',
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+            'office' => 'Office',
+            'end_user' => 'Office',
+            'fund_source' => 'General Fund',
+            'abc_amount' => 1000,
+            'current_stage' => 'procurement_initiation',
+            'current_status' => 'draft',
+            'txid' => 'metadata-txid-tampered',
+        ]);
+
+        $this->mock(Manager::class, function ($mock) use ($procurement) {
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.metadata', $procurement->pr_number)
+                ->andReturn([
+                    [
+                        'txid' => 'metadata-txid-tampered',
+                        'data' => [
+                            'json' => [
+                                'pr_number' => $procurement->pr_number,
+                                'title' => 'Original Title',
+                                'description' => 'Original Description',
+                                'category' => 'goods',
+                                'procurement_mode' => 'competitive_bidding',
+                                'office' => 'Office',
+                                'end_user' => 'Office',
+                                'funding_source' => 'General Fund',
+                                'abc_amount' => '1000',
+                                'status' => 'draft',
+                            ],
+                        ],
+                    ],
+                ]);
+            $mock->shouldReceive('getrawtransaction')->andReturn([]);
+        });
+
+        $service = app(IntegrityVerificationService::class);
+        $result = $service->verifyPr($procurement->pr_number);
+
+        expect($result['violations'])->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value);
+        expect(IntegrityAuditLog::where('stream', 'procurement.metadata')->first()?->field_differences)
+            ->toContain(['field' => 'title', 'old_value' => 'Original Title', 'new_value' => 'Tampered Title']);
+    });
+
+    it('does not flag normalized event fields as content mismatches', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2026-030-0300',
+            'title' => 'Test PR',
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+            'current_stage' => 'pre_procurement_conference',
+            'current_status' => 'procurement_submitted',
+        ]);
+
+        ProcurementEvent::create([
+            'procurement_id' => $procurement->id,
+            'event_type' => 'stage_completed',
+            'category' => 'stage_transition',
+            'severity' => 'info',
+            'details' => 'Stage Procurement Initiation completed. Transitioned to Pre-Procurement Conference with status Procurement Submitted.',
+            'stage' => 'pre_procurement_conference',
+            'document_count' => 0,
+            'txid' => 'event-txid-normalized-fields',
+            'occurred_at' => '2026-05-27 23:00:56',
+        ]);
+
+        $this->mock(Manager::class, function ($mock) use ($procurement) {
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.metadata', $procurement->pr_number)
+                ->andReturn([]);
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.events', $procurement->pr_number)
+                ->andReturn([
+                    [
+                        'txid' => 'event-txid-normalized-fields',
+                        'data' => [
+                            'json' => [
+                                'pr_number' => $procurement->pr_number,
+                                'event_type' => 'stage_completed',
+                                'category' => 'stage_transition',
+                                'severity' => 'info',
+                                'details' => 'Stage Procurement Initiation completed. Transitioned to Pre-Procurement Conference with status Procurement Submitted.',
+                                'stage' => 'pre_procurement_conference',
+                                'timestamp' => '2026-05-27T23:00:56+00:00',
+                            ],
+                        ],
+                    ],
+                ]);
+            $mock->shouldReceive('getrawtransaction')->andReturn([]);
+        });
+
+        $service = app(IntegrityVerificationService::class);
+        $result = $service->verifyPr($procurement->pr_number);
+
+        expect($result['violations'])->not->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value);
+        expect(IntegrityAuditLog::where('stream', 'procurement.events')->count())->toBe(0);
+    });
+
+    it('marks stale pending projection mismatches as skipped after the record verifies clean', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2026-030-0301',
+            'title' => 'Test PR',
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+            'current_stage' => 'pre_procurement_conference',
+            'current_status' => 'procurement_submitted',
+        ]);
+
+        $event = ProcurementEvent::create([
+            'procurement_id' => $procurement->id,
+            'event_type' => 'stage_completed',
+            'category' => 'stage_transition',
+            'severity' => 'info',
+            'details' => 'Stage completed.',
+            'stage' => 'pre_procurement_conference',
+            'document_count' => 0,
+            'txid' => 'event-txid-stale-false-positive',
+            'occurred_at' => '2026-05-27 23:00:56',
+            'has_breach' => true,
+        ]);
+
+        $staleLog = IntegrityAuditLog::recordViolation(
+            stream: 'procurement.events',
+            streamKey: $procurement->pr_number,
+            violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+            txid: $event->txid,
+            fieldDifferences: [
+                ['field' => 'procurement_id', 'old_value' => null, 'new_value' => $procurement->id],
+                ['field' => 'occurred_at', 'old_value' => null, 'new_value' => '2026-05-27 23:00:56'],
+            ],
+            mirrorSnapshot: $event->toArray(),
+            chainSnapshot: [
+                'pr_number' => $procurement->pr_number,
+                'timestamp' => '2026-05-27T23:00:56+00:00',
+            ],
+            recordId: $event->id,
+        );
+
+        $this->mock(Manager::class, function ($mock) use ($procurement) {
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.metadata', $procurement->pr_number)
+                ->andReturn([]);
+            $mock->shouldReceive('liststreamkeyitems')
+                ->with('procurement.events', $procurement->pr_number)
+                ->andReturn([
+                    [
+                        'txid' => 'event-txid-stale-false-positive',
+                        'data' => [
+                            'json' => [
+                                'pr_number' => $procurement->pr_number,
+                                'event_type' => 'stage_completed',
+                                'category' => 'stage_transition',
+                                'severity' => 'info',
+                                'details' => 'Stage completed.',
+                                'stage' => 'pre_procurement_conference',
+                                'document_count' => 0,
+                                'timestamp' => '2026-05-27T23:00:56+00:00',
+                            ],
+                        ],
+                    ],
+                ]);
+            $mock->shouldReceive('getrawtransaction')->andReturn([]);
+        });
+
+        $result = app(IntegrityVerificationService::class)->verifyPr($procurement->pr_number);
+
+        expect($result['violations'])->not->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value);
+
+        $staleLog->refresh();
+        $event->refresh();
+
+        expect($staleLog->recovery_status)->toBe('skipped')
+            ->and($staleLog->recovery_result['reason'])->toContain('found no remaining DB/blockchain mismatch')
+            ->and($event->has_breach)->toBeFalse();
     });
 
     it('generates violation report', function () {

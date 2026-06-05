@@ -7,9 +7,11 @@ namespace App\Services;
 use App\Enums\StreamEnums;
 use App\Models\File;
 use App\Models\Procurement;
+use App\Models\ProcurementArchive;
 use App\Models\ProcurementCorrection;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
+use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
 use Illuminate\Support\Facades\Log;
 
@@ -49,6 +51,8 @@ class NormalizedTableSyncService
             'documents' => 0,
             'events' => 0,
             'corrections' => 0,
+            'archives' => 0,
+            'metadata_corrections' => 0,
             'files' => 0,
         ];
 
@@ -69,7 +73,13 @@ class NormalizedTableSyncService
         // 5. Sync corrections → procurement_corrections table
         $counts['corrections'] = $this->syncCorrections();
 
-        // 6. Sync file metadata → files table
+        // 6. Sync archive flags → procurement_archives table
+        $counts['archives'] = $this->syncArchives();
+
+        // 7. Sync procurement metadata corrections → procurement_metadata_corrections table
+        $counts['metadata_corrections'] = $this->syncMetadataCorrections();
+
+        // 8. Sync file metadata → files table
         $counts['files'] = $this->syncFileMetadata();
 
         Log::info('NormalizedTableSync: sync completed', $counts);
@@ -191,8 +201,8 @@ class NormalizedTableSyncService
                     'title' => $data['procurement_title'] ?? $prNumber,
                     'current_stage' => $data['stage'] ?? 'unknown',
                     'current_status' => $data['current_status'] ?? 'unknown',
-                    'category' => $data['category'] ?? null,
-                    'procurement_mode' => $data['procurement_mode'] ?? null,
+                    'category' => $data['category'] ?? 'goods',
+                    'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
                 ]
             );
 
@@ -264,6 +274,8 @@ class NormalizedTableSyncService
                 ['pr_number' => $prNumber],
                 [
                     'title' => $data['procurement_title'] ?? $prNumber,
+                    'category' => 'goods',
+                    'procurement_mode' => 'competitive_bidding',
                     'current_stage' => $data['stage'] ?? 'unknown',
                     'current_status' => 'active',
                 ]
@@ -341,6 +353,8 @@ class NormalizedTableSyncService
                 ['pr_number' => $prNumber],
                 [
                     'title' => $data['procurement_title'] ?? $prNumber,
+                    'category' => 'goods',
+                    'procurement_mode' => 'competitive_bidding',
                     'current_stage' => $data['stage'] ?? 'unknown',
                     'current_status' => 'active',
                 ]
@@ -409,23 +423,14 @@ class NormalizedTableSyncService
                 ['pr_number' => $prNumber],
                 [
                     'title' => $data['procurement_title'] ?? $prNumber,
+                    'category' => 'goods',
+                    'procurement_mode' => 'competitive_bidding',
                     'current_stage' => 'correction',
                     'current_status' => 'corrected',
                 ]
             );
 
-            // Compute hash
-            $hashableData = $this->extractFields($data, ProcurementCorrection::getHashableFields());
-            $hashableData['procurement_id'] = $procurement->id;
-            $dataHash = $this->computeHash($hashableData);
-
-            // Check for duplicate txid
-            $exists = ProcurementCorrection::where('txid', $txid)->exists();
-            if ($exists) {
-                continue;
-            }
-
-            ProcurementCorrection::create([
+            $attributes = [
                 'procurement_id' => $procurement->id,
                 'correction_type' => $data['correction_type'] ?? 'unknown',
                 'action' => $data['action'] ?? 'correct',
@@ -435,19 +440,184 @@ class NormalizedTableSyncService
                 'corrected_by' => $data['corrected_by'] ?? '',
                 'user_address' => $data['user_address'] ?? null,
                 'txid' => $txid,
-                'data_hash' => $dataHash,
-                'blockchain_hash' => $dataHash,
                 'is_blockchain_verified' => true,
                 'last_verified_at' => now(),
                 'has_breach' => false,
                 'corrected_metadata' => $data['corrected_metadata'] ?? null,
-                'corrected_at' => $data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now()),
-            ]);
+                'corrected_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementCorrection::getHashableFields()));
+
+            ProcurementCorrection::updateOrCreate(
+                ['txid' => $txid],
+                [
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]
+            );
 
             $count++;
         }
 
         Log::info('NormalizedTableSync: corrections synced', ['count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * Sync procurement.archive stream → procurement_archives table.
+     */
+    private function syncArchives(): int
+    {
+        $items = $this->getStreamItems(StreamEnums::ARCHIVE->value);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data)) {
+                continue;
+            }
+
+            $prNumber = $data['pr_number'] ?? data_get($item, 'keys.0');
+            if (empty($prNumber)) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = Procurement::firstOrCreate(
+                ['pr_number' => $prNumber],
+                [
+                    'title' => $prNumber,
+                    'category' => 'goods',
+                    'procurement_mode' => 'competitive_bidding',
+                    'current_stage' => 'archive',
+                    'current_status' => $data['action'] ?? 'archived',
+                ]
+            );
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'action' => $data['action'] ?? 'archive',
+                'reason' => $data['reason'] ?? null,
+                'user_address' => $data['user_address'] ?? null,
+                'user_id' => isset($data['user_id']) ? (int) $data['user_id'] : null,
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'archived_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementArchive::getHashableFields()));
+
+            ProcurementArchive::updateOrCreate(
+                ['txid' => $txid],
+                [
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]
+            );
+
+            $count++;
+        }
+
+        Log::info('NormalizedTableSync: archives synced', ['count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * Sync procurement.metadata.corrections stream → procurement_metadata_corrections table.
+     */
+    private function syncMetadataCorrections(): int
+    {
+        $items = $this->getStreamItems(StreamEnums::PROCUREMENTS_CORRECTIONS->value);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data)) {
+                continue;
+            }
+
+            $prNumber = $data['pr_number'] ?? data_get($item, 'keys.0');
+            if (empty($prNumber)) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = Procurement::firstOrCreate(
+                ['pr_number' => $prNumber],
+                [
+                    'title' => $data['procurement_title'] ?? $prNumber,
+                    'category' => $data['corrected_category'] ?? $data['original_category'] ?? 'goods',
+                    'procurement_mode' => $data['corrected_procurement_mode'] ?? $data['original_procurement_mode'] ?? 'competitive_bidding',
+                    'current_stage' => 'metadata_correction',
+                    'current_status' => 'corrected',
+                ]
+            );
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'correction_type' => $data['correction_type'] ?? 'metadata',
+                'reason' => $data['reason'] ?? '',
+                'corrected_by' => $data['corrected_by'] ?? '',
+                'user_address' => $data['user_address'] ?? null,
+                'original_title' => $data['original_title'] ?? null,
+                'original_description' => $data['original_description'] ?? null,
+                'original_abc_amount' => isset($data['original_abc_amount']) ? (float) $data['original_abc_amount'] : null,
+                'original_funding_source' => $data['original_funding_source'] ?? null,
+                'original_category' => $data['original_category'] ?? null,
+                'original_procurement_mode' => $data['original_procurement_mode'] ?? null,
+                'original_office' => $data['original_office'] ?? null,
+                'original_end_user' => $data['original_end_user'] ?? null,
+                'original_delivery_date' => $this->normaliseDate($data['original_delivery_date'] ?? null),
+                'original_bac_resolution_number' => $data['original_bac_resolution_number'] ?? null,
+                'original_bac_resolution_date' => $this->normaliseDate($data['original_bac_resolution_date'] ?? null),
+                'original_approved_by' => $data['original_approved_by'] ?? null,
+                'original_approval_date' => $this->normaliseDate($data['original_approval_date'] ?? null),
+                'corrected_title' => $data['corrected_title'] ?? null,
+                'corrected_description' => $data['corrected_description'] ?? null,
+                'corrected_abc_amount' => isset($data['corrected_abc_amount']) ? (float) $data['corrected_abc_amount'] : null,
+                'corrected_funding_source' => $data['corrected_funding_source'] ?? null,
+                'corrected_category' => $data['corrected_category'] ?? null,
+                'corrected_procurement_mode' => $data['corrected_procurement_mode'] ?? null,
+                'corrected_office' => $data['corrected_office'] ?? null,
+                'corrected_end_user' => $data['corrected_end_user'] ?? null,
+                'corrected_delivery_date' => $this->normaliseDate($data['corrected_delivery_date'] ?? null),
+                'corrected_bac_resolution_number' => $data['corrected_bac_resolution_number'] ?? null,
+                'corrected_bac_resolution_date' => $this->normaliseDate($data['corrected_bac_resolution_date'] ?? null),
+                'corrected_approved_by' => $data['corrected_approved_by'] ?? null,
+                'corrected_approval_date' => $this->normaliseDate($data['corrected_approval_date'] ?? null),
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'corrected_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementMetadataCorrection::getHashableFields()));
+
+            ProcurementMetadataCorrection::updateOrCreate(
+                ['txid' => $txid],
+                [
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]
+            );
+
+            $count++;
+        }
+
+        Log::info('NormalizedTableSync: metadata corrections synced', ['count' => $count]);
 
         return $count;
     }

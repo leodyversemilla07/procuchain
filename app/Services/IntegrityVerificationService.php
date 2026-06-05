@@ -6,13 +6,19 @@ namespace App\Services;
 
 use App\Enums\BreachTypeEnums;
 use App\Enums\StreamEnums;
+use App\Models\File;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
+use App\Models\ProcurementArchive;
+use App\Models\ProcurementCorrection;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
+use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
+use App\Services\Integrity\BlockchainPayloadProjector;
+use App\Services\Integrity\IntegrityComparator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -52,6 +58,10 @@ class IntegrityVerificationService
 
     private NormalizedTableSyncService $syncService;
 
+    private BlockchainPayloadProjector $payloadProjector;
+
+    private IntegrityComparator $comparator;
+
     /** Tables to verify and their stream mappings */
     private const TABLE_STREAM_MAP = [
         'procurements' => StreamEnums::METADATA,
@@ -68,6 +78,8 @@ class IntegrityVerificationService
     {
         $this->manager = app(Manager::class);
         $this->syncService = app(NormalizedTableSyncService::class);
+        $this->payloadProjector = app(BlockchainPayloadProjector::class);
+        $this->comparator = app(IntegrityComparator::class);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -266,6 +278,30 @@ class IntegrityVerificationService
                 $this->verifyRecord($record, 'procurement_events', StreamEnums::EVENTS);
             }
         });
+
+        ProcurementCorrection::chunk(100, function ($records) {
+            foreach ($records as $record) {
+                $this->verifyRecord($record, 'procurement_corrections', StreamEnums::CORRECTIONS);
+            }
+        });
+
+        ProcurementArchive::chunk(100, function ($records) {
+            foreach ($records as $record) {
+                $this->verifyRecord($record, 'procurement_archives', StreamEnums::ARCHIVE);
+            }
+        });
+
+        ProcurementMetadataCorrection::chunk(100, function ($records) {
+            foreach ($records as $record) {
+                $this->verifyRecord($record, 'procurement_metadata_corrections', StreamEnums::PROCUREMENTS_CORRECTIONS);
+            }
+        });
+
+        File::chunk(100, function ($records) {
+            foreach ($records as $record) {
+                $this->verifyRecord($record, 'files', StreamEnums::FILE_METADATA);
+            }
+        });
     }
 
     /**
@@ -279,10 +315,12 @@ class IntegrityVerificationService
         $this->verifiedCount++;
 
         // Get the PR number for this record
-        $prNumber = $record->pr_number ?? $record->procurement->pr_number ?? null;
+        $prNumber = $record->pr_number ?? $record->procurement?->pr_number ?? null;
         if (! $prNumber) {
             return;
         }
+
+        $recordHadViolation = false;
 
         // Layer 1: Recompute hash and compare with stored data_hash
         $currentHash = $this->computeRecordHash($record, $tableName);
@@ -294,7 +332,10 @@ class IntegrityVerificationService
             // differences instead of only stored/current hash values.
             $chainData = $this->fetchChainData($stream->value, $prNumber, $record->txid);
             $fieldDiffs = $chainData
-                ? $this->computeFieldDifferences($this->recordToArray($record, $tableName), $chainData)
+                ? $this->computeFieldDifferences(
+                    $this->recordToArray($record, $tableName),
+                    $this->payloadProjector->projectForTable($chainData, $tableName, $record),
+                )
                 : null;
 
             $this->recordViolation(
@@ -318,10 +359,12 @@ class IntegrityVerificationService
         if ($chainData) {
             $fieldDiffs = $this->computeFieldDifferences(
                 $this->recordToArray($record, $tableName),
-                $chainData
+                $this->payloadProjector->projectForTable($chainData, $tableName, $record),
             );
 
             if (! empty($fieldDiffs)) {
+                $recordHadViolation = true;
+
                 $this->recordViolation(
                     type: BreachTypeEnums::CONTENT_MISMATCH->value,
                     severity: 'high',
@@ -338,6 +381,8 @@ class IntegrityVerificationService
             $dbUserAddress = $record->user_address ?? null;
             $chainUserAddress = $chainData['user_address'] ?? null;
             if ($dbUserAddress && $chainUserAddress && $dbUserAddress !== $chainUserAddress) {
+                $recordHadViolation = true;
+
                 $this->recordViolation(
                     type: BreachTypeEnums::USER_ADDRESS_TAMPERED->value,
                     severity: 'high',
@@ -354,12 +399,17 @@ class IntegrityVerificationService
         // Layer 4: Check if the blockchain publisher is unauthorized
         // (verifies that the txid publisher matches the expected authorized address)
         if ($record->txid) {
-            $this->checkUnauthorizedPublisher($record, $tableName, $prNumber, $stream->value);
+            $recordHadViolation = $this->checkUnauthorizedPublisher($record, $tableName, $prNumber, $stream->value) || $recordHadViolation;
         }
 
-        // Clean - mark verified
-        if (! $record->has_breach) {
-            $record->update(['last_verified_at' => now(), 'is_blockchain_verified' => true]);
+        if (! $recordHadViolation) {
+            $this->resolvePendingFalsePositiveViolations($record, $tableName, $prNumber, $stream->value);
+
+            $record->update([
+                'last_verified_at' => now(),
+                'is_blockchain_verified' => true,
+                'has_breach' => $this->hasPendingViolationsForRecord($record, $tableName, $prNumber, $stream->value),
+            ]);
         }
     }
 
@@ -368,18 +418,18 @@ class IntegrityVerificationService
      * Compares the publisher address of the record's txid against
      * the known authorized publisher stored on the record.
      */
-    private function checkUnauthorizedPublisher(Model $record, string $tableName, string $prNumber, string $stream): void
+    private function checkUnauthorizedPublisher(Model $record, string $tableName, string $prNumber, string $stream): bool
     {
         try {
             $txid = $record->txid;
             if (! $txid) {
-                return;
+                return false;
             }
 
             // Get the txid details from blockchain (verbose = true)
             $txData = $this->manager->getrawtransaction($txid, 1);
             if (! $txData || ! is_array($txData)) {
-                return;
+                return false;
             }
 
             // Extract publisher addresses from the transaction data
@@ -398,14 +448,14 @@ class IntegrityVerificationService
             $publishers = array_unique($publishers);
 
             if (empty($publishers)) {
-                return;
+                return false;
             }
 
             // Get the authorized publisher address for this record
             $authorizedAddress = $record->user_address ?? null;
 
             if (! $authorizedAddress) {
-                return;
+                return false;
             }
 
             // Check if any publisher is NOT the authorized address
@@ -421,7 +471,7 @@ class IntegrityVerificationService
                         chainData: ['publishers' => $publishers, 'authorized_address' => $authorizedAddress],
                     );
 
-                    return; // One violation per record
+                    return true; // One violation per record
                 }
             }
         } catch (\Exception $e) {
@@ -431,6 +481,53 @@ class IntegrityVerificationService
                 'error' => $e->getMessage(),
             ]);
         }
+
+        return false;
+    }
+
+    private function resolvePendingFalsePositiveViolations(Model $record, string $tableName, string $prNumber, string $stream): void
+    {
+        $query = IntegrityAuditLog::query()
+            ->where('recovery_status', 'pending')
+            ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+            ->where('stream', $stream)
+            ->where('stream_key', $prNumber);
+
+        if ($record->txid) {
+            $query->where('txid', $record->txid);
+        } else {
+            $query->where('record_id', $record->id);
+        }
+
+        $logs = $query->get();
+
+        foreach ($logs as $log) {
+            $log->markSkipped('Verifier re-ran with blockchain payload projection and found no remaining DB/blockchain mismatch. Marked non-actionable; original audit record retained.');
+        }
+
+        if ($logs->isNotEmpty()) {
+            Log::info('IntegrityVerification: resolved stale pending content mismatches', [
+                'count' => $logs->count(),
+                'stream' => $stream,
+                'stream_key' => $prNumber,
+                'txid' => $record->txid,
+                'table' => $tableName,
+            ]);
+        }
+    }
+
+    private function hasPendingViolationsForRecord(Model $record, string $tableName, string $prNumber, string $stream): bool
+    {
+        return IntegrityAuditLog::query()
+            ->where('recovery_status', 'pending')
+            ->where('stream', $stream)
+            ->where('stream_key', $prNumber)
+            ->when(
+                $record->txid,
+                fn ($query, string $txid) => $query->where('txid', $txid),
+                fn ($query) => $query->where('record_id', $record->id),
+            )
+            ->exists();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -460,6 +557,10 @@ class IntegrityVerificationService
         $this->detectMissingStreamRowsFromDb(StreamEnums::STATUS, ProcurementStage::class, 'procurement_stages');
         $this->detectMissingStreamRowsFromDb(StreamEnums::DOCUMENTS, ProcurementDocument::class, 'procurement_documents');
         $this->detectMissingStreamRowsFromDb(StreamEnums::EVENTS, ProcurementEvent::class, 'procurement_events', skipSystemPr: true);
+        $this->detectMissingStreamRowsFromDb(StreamEnums::CORRECTIONS, ProcurementCorrection::class, 'procurement_corrections');
+        $this->detectMissingStreamRowsFromDb(StreamEnums::ARCHIVE, ProcurementArchive::class, 'procurement_archives');
+        $this->detectMissingStreamRowsFromDb(StreamEnums::PROCUREMENTS_CORRECTIONS, ProcurementMetadataCorrection::class, 'procurement_metadata_corrections');
+        $this->detectMissingFileMetadataRowsFromDb();
     }
 
     private function detectMissingProcurementsFromDb(): void
@@ -497,7 +598,7 @@ class IntegrityVerificationService
             foreach ($chainItems as $item) {
                 $txid = $item['txid'] ?? null;
                 $data = $item['data']['json'] ?? [];
-                $prNumber = $data['pr_number'] ?? null;
+                $prNumber = $data['pr_number'] ?? data_get($item, 'keys.0');
 
                 if (! $txid || ! $prNumber || ($skipSystemPr && $prNumber === 'system')) {
                     continue;
@@ -558,6 +659,10 @@ class IntegrityVerificationService
             $this->detectUnauthorizedStreamRowsInDb(StreamEnums::STATUS, ProcurementStage::class, 'procurement_stages');
             $this->detectUnauthorizedStreamRowsInDb(StreamEnums::DOCUMENTS, ProcurementDocument::class, 'procurement_documents');
             $this->detectUnauthorizedStreamRowsInDb(StreamEnums::EVENTS, ProcurementEvent::class, 'procurement_events');
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::CORRECTIONS, ProcurementCorrection::class, 'procurement_corrections');
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::ARCHIVE, ProcurementArchive::class, 'procurement_archives');
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::PROCUREMENTS_CORRECTIONS, ProcurementMetadataCorrection::class, 'procurement_metadata_corrections');
+            $this->detectUnauthorizedStreamRowsInDb(StreamEnums::FILE_METADATA, File::class, 'files');
 
             if ($fakeRecords->isNotEmpty()) {
                 Log::warning('IntegrityVerification: detected unauthorized DB records', [
@@ -567,6 +672,37 @@ class IntegrityVerificationService
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check unauthorized records', ['error' => $e->getMessage()]);
+        }
+    }
+
+    private function detectMissingFileMetadataRowsFromDb(): void
+    {
+        try {
+            $chainItems = $this->manager->liststreamitems(StreamEnums::FILE_METADATA->value, false, 10000);
+
+            foreach ($chainItems as $item) {
+                $txid = $item['txid'] ?? null;
+                $data = $item['data']['json'] ?? [];
+                $fileKey = $data['file_key'] ?? null;
+
+                if (! $txid || ! $fileKey) {
+                    continue;
+                }
+
+                if (! File::where('txid', $txid)->exists()) {
+                    $this->recordViolation(
+                        type: BreachTypeEnums::ROW_DELETED->value,
+                        severity: 'critical',
+                        tableName: 'files',
+                        record: null,
+                        prNumber: (string) ($data['pr_number'] ?? $fileKey),
+                        message: 'file.metadata item exists on blockchain but not in database',
+                        chainData: $data,
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('IntegrityVerification: failed to check deleted file metadata rows', ['error' => $e->getMessage()]);
         }
     }
 
@@ -670,6 +806,10 @@ class IntegrityVerificationService
             $stageTxids = $this->getBlockchainTxids(StreamEnums::STATUS);
             $documentTxids = $this->getBlockchainTxids(StreamEnums::DOCUMENTS);
             $eventTxids = $this->getBlockchainTxids(StreamEnums::EVENTS);
+            $correctionTxids = $this->getBlockchainTxids(StreamEnums::CORRECTIONS);
+            $archiveTxids = $this->getBlockchainTxids(StreamEnums::ARCHIVE);
+            $metadataCorrectionTxids = $this->getBlockchainTxids(StreamEnums::PROCUREMENTS_CORRECTIONS);
+            $fileTxids = $this->getBlockchainTxids(StreamEnums::FILE_METADATA);
 
             // Step 2: Delete DB records that don't exist on blockchain
             // Requirement 5: "Restore original records from trusted blockchain data."
@@ -688,19 +828,38 @@ class IntegrityVerificationService
                 $deletedEvents = ! empty($eventTxids)
                     ? ProcurementEvent::whereNotNull('txid')->whereNotIn('txid', $eventTxids)->delete()
                     : 0;
+                $deletedCorrections = ! empty($correctionTxids)
+                    ? ProcurementCorrection::whereNotNull('txid')->whereNotIn('txid', $correctionTxids)->delete()
+                    : 0;
+                $deletedArchives = ! empty($archiveTxids)
+                    ? ProcurementArchive::whereNotNull('txid')->whereNotIn('txid', $archiveTxids)->delete()
+                    : 0;
+                $deletedMetadataCorrections = ! empty($metadataCorrectionTxids)
+                    ? ProcurementMetadataCorrection::whereNotNull('txid')->whereNotIn('txid', $metadataCorrectionTxids)->delete()
+                    : 0;
+                $deletedFiles = ! empty($fileTxids)
+                    ? File::withTrashed()->whereNotNull('txid')->whereNotIn('txid', $fileTxids)->forceDelete()
+                    : 0;
 
                 // Also clean up orphaned child records. Parent force-deletes should cascade,
                 // but this removes any orphan rows left by earlier soft-delete repairs.
                 ProcurementStage::whereDoesntHave('procurement')->delete();
                 ProcurementDocument::withTrashed()->whereDoesntHave('procurement')->forceDelete();
                 ProcurementEvent::whereDoesntHave('procurement')->delete();
+                ProcurementCorrection::whereDoesntHave('procurement')->delete();
+                ProcurementArchive::whereDoesntHave('procurement')->delete();
+                ProcurementMetadataCorrection::whereDoesntHave('procurement')->delete();
 
-                if ($deletedCount > 0 || $deletedStages > 0 || $deletedDocuments > 0 || $deletedEvents > 0) {
+                if ($deletedCount > 0 || $deletedStages > 0 || $deletedDocuments > 0 || $deletedEvents > 0 || $deletedCorrections > 0 || $deletedArchives > 0 || $deletedMetadataCorrections > 0 || $deletedFiles > 0) {
                     Log::info('IntegrityVerification: removed unauthorized DB records', [
                         'deleted_procurements' => $deletedCount,
                         'deleted_stages' => $deletedStages,
                         'deleted_documents' => $deletedDocuments,
                         'deleted_events' => $deletedEvents,
+                        'deleted_corrections' => $deletedCorrections,
+                        'deleted_archives' => $deletedArchives,
+                        'deleted_metadata_corrections' => $deletedMetadataCorrections,
+                        'deleted_files' => $deletedFiles,
                     ]);
                 }
             }
@@ -747,6 +906,10 @@ class IntegrityVerificationService
             'procurement_stages' => ProcurementStage::getHashableFields(),
             'procurement_documents' => ProcurementDocument::getHashableFields(),
             'procurement_events' => ProcurementEvent::getHashableFields(),
+            'procurement_corrections' => ProcurementCorrection::getHashableFields(),
+            'procurement_archives' => ProcurementArchive::getHashableFields(),
+            'procurement_metadata_corrections' => ProcurementMetadataCorrection::getHashableFields(),
+            'files' => File::getHashableFields(),
             default => [],
         };
 
@@ -765,6 +928,10 @@ class IntegrityVerificationService
             'procurement_stages' => ProcurementStage::getHashableFields(),
             'procurement_documents' => ProcurementDocument::getHashableFields(),
             'procurement_events' => ProcurementEvent::getHashableFields(),
+            'procurement_corrections' => ProcurementCorrection::getHashableFields(),
+            'procurement_archives' => ProcurementArchive::getHashableFields(),
+            'procurement_metadata_corrections' => ProcurementMetadataCorrection::getHashableFields(),
+            'files' => File::getHashableFields(),
             default => [],
         };
 
@@ -830,75 +997,7 @@ class IntegrityVerificationService
 
     public function computeFieldDifferences(array $dbData, array $chainData): array
     {
-        $diffs = [];
-
-        // Compare shared fields and DB-only fields. Chain-only metadata
-        // (e.g. stream_ref, publisher metadata) should not trigger a violation.
-        $sharedKeys = array_intersect(array_keys($chainData), array_keys($dbData));
-        $dbOnlyKeys = array_diff(array_keys($dbData), array_keys($chainData));
-
-        foreach ($sharedKeys as $key) {
-            if (in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
-                continue;
-            }
-
-            $chainValue = $chainData[$key] ?? null;
-            $dbValue = $dbData[$key] ?? null;
-
-            if (! $this->valuesAreEquivalent($chainValue, $dbValue)) {
-                $diffs[] = [
-                    'field' => $key,
-                    'old_value' => $chainValue,
-                    'new_value' => $dbValue,
-                ];
-            }
-        }
-
-        foreach ($dbOnlyKeys as $key) {
-            if (in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
-                continue;
-            }
-
-            $diffs[] = [
-                'field' => $key,
-                'old_value' => null,
-                'new_value' => $dbData[$key] ?? null,
-            ];
-        }
-
-        return $diffs;
-    }
-
-    /**
-     * Compare two values for semantic equivalence.
-     * Handles numeric type coercion ("100" === 100), null/empty equivalence,
-     * and nested arrays via json_encode.
-     */
-    private function valuesAreEquivalent(mixed $a, mixed $b): bool
-    {
-        // Both null or same type — direct comparison
-        if ($a === $b) {
-            return true;
-        }
-
-        // Both numeric — compare as floats to handle "100" === 100
-        if (is_numeric($a) && is_numeric($b)) {
-            return (float) $a === (float) $b;
-        }
-
-        // null vs empty string — treat as equivalent
-        if (($a === null && $b === '') || ($a === '' && $b === null)) {
-            return true;
-        }
-
-        // Both arrays — compare via json_encode
-        if (is_array($a) && is_array($b)) {
-            return json_encode($a, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-                === json_encode($b, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        }
-
-        // Fallback — compare as strings
-        return (string) $a === (string) $b;
+        return $this->comparator->diff($dbData, $chainData);
     }
 
     private function recordViolation(

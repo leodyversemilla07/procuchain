@@ -84,10 +84,9 @@ class IntegrityBreachSimulationTest extends TestCase
 
         $diffs = $service->computeFieldDifferences($dbData, $chainData);
 
-        expect($diffs)->toHaveCount(3); // title, status, extra_field
+        expect($diffs)->toHaveCount(2); // title, status; DB-only mirror fields are not raw chain diffs
         expect($diffs[0]['field'])->toBe('title');
         expect($diffs[1]['field'])->toBe('status');
-        expect($diffs[2]['field'])->toBe('extra_field');
     }
 
     /**
