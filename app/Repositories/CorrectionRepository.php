@@ -34,9 +34,11 @@ final readonly class CorrectionRepository implements CorrectionRepositoryInterfa
             );
 
             Log::info('Correction published to blockchain', ['txid' => $txid]);
+
             return $txid;
         } catch (\Exception $e) {
             Log::error('Failed to publish correction', ['error' => $e->getMessage()]);
+
             return null;
         }
     }

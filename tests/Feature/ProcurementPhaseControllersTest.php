@@ -33,27 +33,27 @@ describe('ProcurementStageController (Phase Pages)', function () {
 
         $routes = [
             route('bac-secretariat.procurement.pre-procurement.show', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]),
             route('bac-secretariat.procurement.pre-procurement.show', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::BID_EVALUATION->value,
             ]),
             route('bac-secretariat.procurement.bidding.show', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::BID_EVALUATION->value,
             ]),
             route('bac-secretariat.procurement.bidding.show', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]),
             route('bac-secretariat.procurement.post-procurement.show', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
             ]),
             route('bac-secretariat.procurement.post-procurement.show', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::BID_EVALUATION->value,
             ]),
         ];
@@ -80,7 +80,7 @@ describe('ProcurementStageController (Actions)', function () {
         $cases = [
             [
                 'route' => route('bac-secretariat.procurement.pre-procurement.upload-document', [
-                    'pr_number' => 'PR-2024-001',
+                    'pr_number' => 'PR-2024-001-0001',
                     'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
                 ]),
                 'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
@@ -88,7 +88,7 @@ describe('ProcurementStageController (Actions)', function () {
             ],
             [
                 'route' => route('bac-secretariat.procurement.bidding.upload-document', [
-                    'pr_number' => 'PR-2024-001',
+                    'pr_number' => 'PR-2024-001-0001',
                     'stage' => StageEnums::BID_EVALUATION->value,
                 ]),
                 'document_type' => DocumentTypeEnums::BID_EVALUATION_REPORT->value,
@@ -96,7 +96,7 @@ describe('ProcurementStageController (Actions)', function () {
             ],
             [
                 'route' => route('bac-secretariat.procurement.post-procurement.upload-document', [
-                    'pr_number' => 'PR-2024-001',
+                    'pr_number' => 'PR-2024-001-0001',
                     'stage' => StageEnums::NOTICE_OF_AWARD->value,
                 ]),
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
@@ -104,7 +104,7 @@ describe('ProcurementStageController (Actions)', function () {
             ],
             [
                 'route' => route('bac-secretariat.procurement.post-procurement.upload-document', [
-                    'pr_number' => 'PR-2024-001',
+                    'pr_number' => 'PR-2024-001-0001',
                     'stage' => StageEnums::COMPLETION->value,
                 ]),
                 'document_type' => DocumentTypeEnums::CERTIFICATE_OF_COMPLETION->value,
@@ -132,7 +132,7 @@ describe('ProcurementStageController (Actions)', function () {
         bindModeAwareGuideStubs(buildPhaseProcurementData($this->bacSecretariat));
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.document-guide', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]));
 
@@ -155,7 +155,7 @@ describe('ProcurementStageController (Actions)', function () {
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->startSession()
             ->post(route('bac-secretariat.publish-pre-procurement-conference-decision'), [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'procurement_title' => 'Test Procurement Project',
                 'conference_held' => true,
             ]);
@@ -173,7 +173,7 @@ describe('ProcurementStageController (Actions)', function () {
         ]);
 
         $response = $this->get(route('bac-secretariat.procurement.bidding.check-completion', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::BID_EVALUATION->value,
         ]));
 
@@ -192,7 +192,7 @@ describe('ProcurementStageController (Actions)', function () {
         $response = $this->withoutMiddleware(PreventRequestForgery::class)
             ->startSession()
             ->post(route('bac-secretariat.procurement.post-procurement.validate-upload', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
             ]), [
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
@@ -214,7 +214,7 @@ describe('Authorization', function () {
         actingAs($regularUser);
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]));
 
@@ -223,7 +223,7 @@ describe('Authorization', function () {
 
     it('denies access to unauthenticated users', function () {
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]));
 
@@ -234,7 +234,7 @@ describe('Authorization', function () {
 function buildPhaseProcurementData(User $user): ProcurementData
 {
     return new ProcurementData(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         appReference: 'APP-2024-001',
         title: 'Test Procurement',
         description: 'Test Description',

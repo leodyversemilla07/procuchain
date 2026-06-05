@@ -8,6 +8,8 @@ use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
 use App\Services\IntegrityVerificationService;
+use App\Services\Manager;
+use App\Services\NormalizedTableSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -35,7 +37,7 @@ class IntegrityBreachSimulationTest extends TestCase
         ];
 
         $procurement = Procurement::create([
-            'pr_number' => 'PR-2026-001',
+            'pr_number' => 'PR-2026-001-0001',
             'title' => 'Test Procurement',
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
@@ -95,7 +97,7 @@ class IntegrityBreachSimulationTest extends TestCase
     {
         // Arrange: Create a procurement
         Procurement::create([
-            'pr_number' => 'PR-2026-002',
+            'pr_number' => 'PR-2026-002-0001',
             'title' => 'To Be Deleted',
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
@@ -104,10 +106,10 @@ class IntegrityBreachSimulationTest extends TestCase
         ]);
 
         // Act: Delete the record
-        Procurement::where('pr_number', 'PR-2026-002')->delete();
+        Procurement::where('pr_number', 'PR-2026-002-0001')->delete();
 
-        // Assert: Record should not exist
-        $this->assertDatabaseMissing('procurements', ['pr_number' => 'PR-2026-002']);
+        // Assert: Record should be soft deleted
+        $this->assertSoftDeleted('procurements', ['pr_number' => 'PR-2026-002-0001']);
     }
 
     /**
@@ -120,14 +122,14 @@ class IntegrityBreachSimulationTest extends TestCase
 
         IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2026-003',
+            streamKey: 'PR-2026-003-0001',
             violationType: BreachTypeEnums::HASH_MISMATCH->value,
             runId: $runId,
         );
 
         IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2026-004',
+            streamKey: 'PR-2026-004-0001',
             violationType: BreachTypeEnums::ROW_DELETED->value,
             runId: $runId,
         );
@@ -150,9 +152,21 @@ class IntegrityBreachSimulationTest extends TestCase
         // Arrange: Create a violation
         $auditLog = IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2026-005',
+            streamKey: 'PR-2026-005-0001',
             violationType: BreachTypeEnums::HASH_MISMATCH->value,
         );
+
+        $manager = \Mockery::mock(Manager::class);
+        $manager->shouldReceive('liststreamitems')
+            ->once()
+            ->andReturn([]);
+
+        $syncService = \Mockery::mock(NormalizedTableSyncService::class);
+        $syncService->shouldReceive('syncAll')
+            ->once();
+
+        $this->app->instance(Manager::class, $manager);
+        $this->app->instance(NormalizedTableSyncService::class, $syncService);
 
         // Act: Restore
         $service = app(IntegrityVerificationService::class);

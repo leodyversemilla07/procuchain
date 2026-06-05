@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
+use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
-use App\Models\ProcurementEvent;
-use App\Models\ProcurementDocument;
 use App\Models\Procurement;
+use App\Models\ProcurementDocument;
+use App\Models\ProcurementEvent;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\Dashboard\ModeAnalyzer as ModeAnalyzerService;
@@ -71,7 +72,7 @@ class DashboardService
         try {
             // First pass: collect all PR numbers
             $prNumbers = collect($allStates)
-                ->map(fn ($item) => $item['pr_number'] ?? null)
+                ->map(fn ($item) => $this->normalizeStatusItem($item)['pr_number'] ?? null)
                 ->filter()
                 ->unique()
                 ->values()
@@ -81,7 +82,8 @@ class DashboardService
             $modeMap = $this->buildProcurementModeMap($prNumbers);
 
             return collect($allStates)
-                ->map(function ($item) use ($modeMap) {
+                ->map(function ($rawItem) use ($modeMap) {
+                    $item = $this->normalizeStatusItem($rawItem);
                     $prNumber = $item['pr_number'] ?? null;
                     if (! $prNumber || ! isset($item['procurement_title'])) {
                         Log::warning('Invalid procurement data structure', ['data' => $item]);
@@ -119,6 +121,15 @@ class DashboardService
                 'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
             ]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function normalizeStatusItem(array $item): array
+    {
+        return $item['data']['json'] ?? $item;
     }
 
     /**
@@ -423,10 +434,12 @@ class DashboardService
                 $procurement = $procurements[$prNumber] ?? null;
 
                 if ($procurement) {
+                    $mode = ProcurementModeEnums::tryFrom((string) $procurement->procurement_mode);
+
                     $modeMap[$prNumber] = [
                         'value' => $procurement->procurement_mode ?? '',
                         'label' => $procurement->procurement_mode ?? '',
-                        'is_alternative' => false,
+                        'is_alternative' => $mode?->isAlternativeMode() ?? false,
                     ];
                 }
             }

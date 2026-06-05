@@ -3,11 +3,10 @@
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
-use App\Enums\StreamEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementStage;
 use App\Models\User;
-use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\Procurement\ProcurementFormatterService;
@@ -90,7 +89,7 @@ describe('ProcurementListController', function () {
                 ->assertInertia(fn ($page) => $page
                     ->has('procurements', 1)
                     ->where('procurements.0.id', 'PR-2025-300-0001')
-                    ->where('procurements.0.title', 'Owned Procurement')
+                    ->where('procurements.0.title', 'Test Procurement')
                 );
         });
 
@@ -323,6 +322,8 @@ function bindProcurementControllerMocks(
     ?Collection $statusItems = null,
     ?array $detailFixture = null,
 ): void {
+    seedProcurementListMirror($listRepositoryFixtures, $listStatusFixtures);
+
     $repository = mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->zeroOrMoreTimes()
@@ -371,41 +372,7 @@ function bindProcurementControllerMocks(
         ->zeroOrMoreTimes()
         ->andReturn($detailFixture['procurement'] ?? null);
 
-    $manager = mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function (string $stream) use ($listStatusFixtures): array {
-            return match ($stream) {
-                StreamEnums::STATUS->value => statusStreamItems($listStatusFixtures),
-                StreamEnums::DOCUMENTS->value => [],
-                StreamEnums::ARCHIVE->value => [],
-                default => [],
-            };
-        });
-
-    $mirrorRepository = mock(ProcurementRecordRepository::class);
-    $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function () use ($listStatusFixtures): array {
-            $items = statusStreamItems($listStatusFixtures);
-
-            return array_map(fn ($item) => StatusData::fromBlockchainArray($item['data']['json']), $items);
-        });
-    $mirrorRepository->shouldReceive('getAllDocuments')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-    $mirrorRepository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-    $mirrorRepository->shouldReceive('getArchivedPrNumbers')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-    $mirrorRepository->shouldReceive('procurementExists')
-        ->zeroOrMoreTimes()
-        ->andReturn(false);
-
     $aggregator = new ProcurementListAggregatorService(
-        $mirrorRepository,
         new ProcurementFormatterService,
         new ProcurementActionService($repository),
         new UserNameResolverService(app(UserService::class)),
@@ -436,18 +403,58 @@ function bindProcurementControllerMocks(
 }
 
 /**
- * @param  array<int, StatusData>  $statusDtos
- * @return array<int, array<string, mixed>>
+ * @param  array<string, ProcurementData>  $repositoryFixtures
+ * @param  array<int, StatusData>  $statusFixtures
  */
-function statusStreamItems(array $statusDtos): array
+function seedProcurementListMirror(array $repositoryFixtures, array $statusFixtures): void
 {
-    return array_map(function (StatusData $statusDto): array {
-        return [
-            'keys' => [$statusDto->prNumber],
-            'data' => [
-                'json' => $statusDto->toBlockchainArray(),
+    foreach ($repositoryFixtures as $fixture) {
+        Procurement::updateOrCreate(
+            ['pr_number' => $fixture->prNumber],
+            [
+                'app_reference' => $fixture->appReference,
+                'title' => $fixture->title,
+                'description' => $fixture->description,
+                'category' => $fixture->category->value,
+                'procurement_mode' => $fixture->procurementMode->value,
+                'office' => $fixture->office,
+                'end_user' => $fixture->endUser,
+                'fund_source' => $fixture->fundingSource,
+                'prepared_by' => $fixture->preparedBy,
+                'abc_amount' => $fixture->abcAmount,
+                'current_status' => $fixture->status,
+                'user_id' => $fixture->userId,
+                'user_address' => $fixture->userAddress,
+                'initiated_at' => $fixture->createdAt,
+                'last_updated_at' => $fixture->createdAt,
             ],
-            'blocktime' => $statusDto->timestamp->timestamp,
-        ];
-    }, $statusDtos);
+        );
+    }
+
+    foreach ($statusFixtures as $index => $status) {
+        $procurement = Procurement::firstOrCreate(
+            ['pr_number' => $status->prNumber],
+            [
+                'title' => $status->procurementTitle,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+            ],
+        );
+
+        $procurement->update([
+            'current_stage' => $status->stage,
+            'current_status' => $status->currentStatus,
+        ]);
+
+        ProcurementStage::create([
+            'procurement_id' => $procurement->id,
+            'stage' => $status->stage,
+            'status' => $status->currentStatus,
+            'previous_status' => $status->previousStatus,
+            'entered_at' => $status->timestamp,
+            'user_address' => $status->userAddress,
+            'txid' => "list-status-{$index}",
+            'metadata' => $status->metadata,
+        ]);
+    }
 }

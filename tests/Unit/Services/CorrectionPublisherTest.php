@@ -39,10 +39,10 @@ it('can publish a replacement correction', function () {
         ->once()
         ->with(
             'procurement.corrections',
-            'PR-2024-001',
+            'PR-2024-001-0001',
             Mockery::on(function ($data) {
                 return isset($data['json'])
-                    && $data['json']['pr_number'] === 'PR-2024-001'
+                    && $data['json']['pr_number'] === 'PR-2024-001-0001'
                     && $data['json']['correction_type'] === 'document_correction'
                     && $data['json']['action'] === 'replace';
             })
@@ -56,7 +56,7 @@ it('can publish a replacement correction', function () {
 
     // Test the publishReplacement method
     $result = $this->publisher->publishReplacement(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         procurementTitle: 'Test Procurement',
         originalTxid: 'test_txid_123',
         originalDocumentHash: 'test_hash_123',
@@ -80,10 +80,10 @@ it('can publish an invalidation correction', function () {
         ->once()
         ->with(
             'procurement.corrections',
-            'PR-2024-001',
+            'PR-2024-001-0001',
             Mockery::on(function ($data) {
                 return isset($data['json'])
-                    && $data['json']['pr_number'] === 'PR-2024-001'
+                    && $data['json']['pr_number'] === 'PR-2024-001-0001'
                     && $data['json']['correction_type'] === 'status_correction'
                     && $data['json']['action'] === 'invalidate';
             })
@@ -92,7 +92,7 @@ it('can publish an invalidation correction', function () {
 
     // Test the publishInvalidation method
     $result = $this->publisher->publishInvalidation(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         procurementTitle: 'Test Procurement',
         originalTxid: 'test_txid_123',
         originalDocumentHash: 'test_hash_123',
@@ -123,7 +123,7 @@ it('preserves original stage when publishing replacement correction', function (
     // This is verified implicitly by the mock setup in BlockchainStorageService
 
     $result = $this->publisher->publish(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         procurementTitle: 'Test Procurement',
         originalTxid: 'test_txid_123',
         originalDocumentHash: 'test_hash_123',
@@ -153,7 +153,7 @@ it('uses default stage 1 when original stage is not provided', function () {
     $file = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
 
     $result = $this->publisher->publish(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         procurementTitle: 'Test Procurement',
         originalTxid: 'test_txid_123',
         originalDocumentHash: 'test_hash_123',

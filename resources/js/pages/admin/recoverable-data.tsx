@@ -304,7 +304,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                     description="Deleted procurement files are never permanently erased — they remain on the blockchain as immutable records. Every deletion and restoration is tracked on-chain and audit-logged per RA 12009 (NGPA)."
                     actions={
                         <div className="flex items-center gap-3">
-                            <Badge className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            <Badge className="gap-1">
                                 <Shield className="h-3 w-3" />
                                 On-chain & Recoverable
                             </Badge>
@@ -316,7 +316,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 />
 
                 {/* Explanation card */}
-                <Card className="border-blue-500/20 bg-blue-500/5">
+                <Card className="border-primary/20 bg-primary/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
                             <ArchiveRestore className="h-4 w-4" />
@@ -341,7 +341,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 </Card>
 
                 {/* ─── Node Status Grid ─── */}
-                <Card className="border-slate-500/20 bg-slate-500/5">
+                <Card className="border-muted bg-muted/30">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
                             <Network className="h-4 w-4" />
@@ -354,7 +354,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                 <div
                                     key={node.id}
                                     className={`rounded-lg border p-3 transition-colors ${
-                                        node.is_purged ? 'border-red-500/30 bg-red-500/5' : 'border-emerald-500/30 bg-emerald-500/5'
+                                        node.is_purged ? 'border-destructive/30 bg-destructive/5' : 'border-primary/30 bg-primary/5'
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -365,7 +365,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                                 Purged
                                             </Badge>
                                         ) : (
-                                            <Badge className="gap-1 bg-emerald-100 text-[10px] text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                            <Badge className="gap-1 text-[10px]">
                                                 <Shield className="h-3 w-3" />
                                                 Healthy
                                             </Badge>
@@ -375,9 +375,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                     <div className="mt-2 flex items-center justify-between">
                                         <span className="font-mono text-xs">
                                             {node.is_purged ? (
-                                                <span className="text-red-600 dark:text-red-400">0 items</span>
+                                                <span className="text-destructive">0 items</span>
                                             ) : (
-                                                <span className="text-emerald-600 dark:text-emerald-400">{node.items.toLocaleString()} items</span>
+                                                <span className="text-primary">{node.items.toLocaleString()} items</span>
                                             )}
                                         </span>
                                         {node.purged_at && (
@@ -395,10 +395,10 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 </Card>
 
                 {/* ─── DEMO: Purge All Data from Node ─── */}
-                <Card className="border-amber-500/20 bg-amber-500/5">
+                <Card className="border-destructive/20 bg-destructive/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                            <ServerCrash className="h-4 w-4 text-amber-600" />
+                            <ServerCrash className="text-destructive h-4 w-4" />
                             Demo: Purge All Data from a Single Node
                         </CardTitle>
                     </CardHeader>
@@ -515,10 +515,10 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
 
                 {/* ─── DEMO: Manual Resync of Purged Node ─── */}
                 {nodes.some((n) => n.is_purged) && (
-                    <Card className="border-emerald-500/20 bg-emerald-500/5">
+                    <Card className="border-primary/20 bg-primary/5">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                                <RotateCcw className="h-4 w-4 text-emerald-600" />
+                                <RotateCcw className="text-primary h-4 w-4" />
                                 Resync Purged Node
                             </CardTitle>
                         </CardHeader>
@@ -565,12 +565,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <Button
-                                    variant="default"
-                                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-                                    disabled={isResyncing || !resyncNodeId}
-                                    onClick={handleResyncNode}
-                                >
+                                <Button variant="default" className="gap-2" disabled={isResyncing || !resyncNodeId} onClick={handleResyncNode}>
                                     {isResyncing ? <Spinner className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
                                     {isResyncing ? 'Resyncing...' : 'Resync Node'}
                                 </Button>
@@ -587,7 +582,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 {deletedFiles.length === 0 ? (
                     <Empty>
                         <EmptyMedia variant="icon">
-                            <Shield className="h-8 w-8 text-emerald-500" />
+                            <Shield className="text-primary h-8 w-8" />
                         </EmptyMedia>
                         <EmptyHeader>
                             <EmptyTitle>No Deleted Files</EmptyTitle>
@@ -657,7 +652,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle className="flex items-center gap-2">
-                                                                <RotateCcw className="h-5 w-5 text-emerald-600" />
+                                                                <RotateCcw className="text-primary h-5 w-5" />
                                                                 Restore Procurement File from Blockchain
                                                             </AlertDialogTitle>
                                                             <AlertDialogDescription>
@@ -696,9 +691,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                             <AlertDialogAction
-                                                                variant="outline"
+                                                                variant="default"
                                                                 onClick={() => handleRestore(file.file_key)}
-                                                                className="gap-2 border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                                                                className="gap-2"
                                                                 disabled={restoringKey === file.file_key}
                                                             >
                                                                 {restoringKey === file.file_key ? (

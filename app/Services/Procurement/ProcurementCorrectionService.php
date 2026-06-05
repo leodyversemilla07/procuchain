@@ -8,9 +8,7 @@ use App\Contracts\CorrectionRepositoryInterface;
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
@@ -50,15 +48,21 @@ final class ProcurementCorrectionService
             throw new \RuntimeException('Procurement not found in blockchain.');
         }
 
-        return new ProcurementData(
-            prNumber: $prNumber,
-            title: $statusData['procurement_title'] ?? 'N/A',
-            status: StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? StatusEnums::PROCUREMENT_SUBMITTED,
-            stage: StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
-            procurementMode: ProcurementModeEnums::PUBLIC_BIDDING,
-            timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
-            userAddress: $statusData['user_address'] ?? $authUser?->blockchain_address ?? '',
-        );
+        return ProcurementData::fromBlockchainArray([
+            'pr_number' => $prNumber,
+            'title' => $statusData['procurement_title'] ?? 'N/A',
+            'description' => $statusData['description'] ?? '',
+            'abc_amount' => $statusData['abc_amount'] ?? 0,
+            'funding_source' => $statusData['funding_source'] ?? '',
+            'category' => $statusData['category'] ?? 'goods',
+            'procurement_mode' => $statusData['procurement_mode'] ?? 'competitive_bidding',
+            'office' => $statusData['office'] ?? '',
+            'end_user' => $statusData['end_user'] ?? null,
+            'status' => $statusData['current_status'] ?? 'procurement_submitted',
+            'user_id' => $authUser?->id ?? '',
+            'user_address' => $statusData['user_address'] ?? $authUser?->blockchain_address ?? null,
+            'created_at' => $statusData['timestamp'] ?? now()->toIso8601String(),
+        ]);
     }
 
     /**

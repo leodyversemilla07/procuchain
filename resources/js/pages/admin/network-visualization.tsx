@@ -111,13 +111,13 @@ export default function NetworkVisualizationPage({ nodes, connections, overview 
                     actions={
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                                <div className={`h-3 w-3 rounded-full ${overview.all_connected ? 'animate-pulse bg-green-500' : 'bg-amber-500'}`} />
+                                <div className={`h-3 w-3 rounded-full ${overview.all_connected ? 'bg-primary animate-pulse' : 'bg-secondary'}`} />
                                 <span className="text-sm font-medium">{overview.all_connected ? 'All Nodes Connected' : 'Partial Network'}</span>
                             </div>
                             <Badge variant="secondary" className="font-mono">
                                 Block #{overview.blocks}
                             </Badge>
-                            <Badge className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            <Badge className="gap-1">
                                 <Share2 className="h-3 w-3" />
                                 {overview.connected_nodes}/{overview.total_nodes} Replicated
                             </Badge>

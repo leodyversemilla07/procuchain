@@ -88,13 +88,13 @@ describe('CompletenessResult DTO', function () {
         ];
 
         $result = CompletenessResult::fromValidation(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             validationResult: $validationResult,
         );
 
         expect($result->isComplete)->toBeTrue();
-        expect($result->prNumber)->toBe('PR-2025-001');
+        expect($result->prNumber)->toBe('PR-2025-001-0001');
         expect($result->stage)->toBe(StageEnums::PROCUREMENT_INITIATION);
         expect($result->completionPercentage)->toBe(100.0);
         expect($result->canCompleteStage())->toBeTrue();
@@ -103,7 +103,7 @@ describe('CompletenessResult DTO', function () {
     it('calculates document counts correctly', function () {
         $result = new CompletenessResult(
             isComplete: false,
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             completionPercentage: 50.0,
             requiredDocuments: ['doc1', 'doc2', 'doc3', 'doc4'],
@@ -121,7 +121,7 @@ describe('CompletenessResult DTO', function () {
 
     it('converts to array with all keys', function () {
         $result = CompletenessResult::fromValidation(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             validationResult: ['can_complete' => true, 'completion_percentage' => 100.0],
         );
@@ -149,7 +149,7 @@ describe('CompletenessResult DTO', function () {
 describe('CrossReferenceResult DTO', function () {
     it('creates consistent result', function () {
         $result = CrossReferenceResult::consistent(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             prNumberChecks: [
                 ['document_type' => 'Purchase Request', 'matches' => true],
                 ['document_type' => 'PPMP', 'matches' => true],
@@ -157,14 +157,14 @@ describe('CrossReferenceResult DTO', function () {
         );
 
         expect($result->isConsistent)->toBeTrue();
-        expect($result->prNumber)->toBe('PR-2025-001');
+        expect($result->prNumber)->toBe('PR-2025-001-0001');
         expect($result->hasPrNumberMismatch())->toBeFalse();
         expect($result->getTotalIssues())->toBe(0);
     });
 
     it('creates inconsistent result with errors', function () {
         $result = CrossReferenceResult::inconsistent(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             errors: ['PR number mismatch in document'],
             prNumberChecks: [
                 ['document_type' => 'Purchase Request', 'matches' => false],
@@ -177,7 +177,7 @@ describe('CrossReferenceResult DTO', function () {
     });
 
     it('converts to array with summary', function () {
-        $result = CrossReferenceResult::consistent('PR-2025-001');
+        $result = CrossReferenceResult::consistent('PR-2025-001-0001');
         $array = $result->toArray();
 
         expect($array)->toHaveKey('summary');
@@ -193,7 +193,7 @@ describe('CrossReferenceResult DTO', function () {
 describe('ComplianceResult DTO', function () {
     it('creates compliant result', function () {
         $result = ComplianceResult::compliant(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             documentTypeChecks: [
                 ['document_type' => 'Purchase Request', 'valid' => true],
@@ -207,7 +207,7 @@ describe('ComplianceResult DTO', function () {
 
     it('creates non-compliant result with violations', function () {
         $result = ComplianceResult::nonCompliant(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             errors: ['Invalid document format'],
             documentTypeChecks: [
@@ -221,7 +221,7 @@ describe('ComplianceResult DTO', function () {
     });
 
     it('converts to array correctly', function () {
-        $result = ComplianceResult::compliant('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+        $result = ComplianceResult::compliant('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
         $array = $result->toArray();
 
         expect($array)->toHaveKeys([
@@ -243,16 +243,16 @@ describe('ComplianceResult DTO', function () {
 describe('VerificationReportDTO', function () {
     it('creates from individual results', function () {
         $completenessResult = CompletenessResult::fromValidation(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             validationResult: ['can_complete' => true, 'completion_percentage' => 100.0],
         );
 
-        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001');
-        $complianceResult = ComplianceResult::compliant('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001-0001');
+        $complianceResult = ComplianceResult::compliant('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
         $report = VerificationReportDTO::fromResults(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             integrityResults: [
                 ['is_valid' => true, 'file_key' => 'test-key'],
@@ -263,23 +263,23 @@ describe('VerificationReportDTO', function () {
             verifiedBy: 1,
         );
 
-        expect($report->prNumber)->toBe('PR-2025-001');
+        expect($report->prNumber)->toBe('PR-2025-001-0001');
         expect($report->overallValid)->toBeTrue();
         expect($report->getOverallStatus())->toBe('verified');
     });
 
     it('determines failed status when integrity fails', function () {
         $completenessResult = CompletenessResult::fromValidation(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             validationResult: ['can_complete' => true, 'completion_percentage' => 100.0],
         );
 
-        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001');
-        $complianceResult = ComplianceResult::compliant('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001-0001');
+        $complianceResult = ComplianceResult::compliant('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
         $report = VerificationReportDTO::fromResults(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             integrityResults: [
                 ['is_valid' => false, 'file_key' => 'test-key', 'errors' => ['Hash mismatch']],
@@ -297,7 +297,7 @@ describe('VerificationReportDTO', function () {
     it('counts warnings from all results', function () {
         $completenessResult = new CompletenessResult(
             isComplete: true,
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             completionPercentage: 100.0,
             requiredDocuments: [],
@@ -308,11 +308,11 @@ describe('VerificationReportDTO', function () {
             verifiedAt: now(),
         );
 
-        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001', warnings: ['Warning 3']);
-        $complianceResult = ComplianceResult::compliant('PR-2025-001', StageEnums::PROCUREMENT_INITIATION, warnings: ['Warning 4']);
+        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001-0001', warnings: ['Warning 3']);
+        $complianceResult = ComplianceResult::compliant('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION, warnings: ['Warning 4']);
 
         $report = VerificationReportDTO::fromResults(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             integrityResults: [
                 ['is_valid' => true, 'warnings' => ['Warning 5']],
@@ -327,16 +327,16 @@ describe('VerificationReportDTO', function () {
 
     it('converts to array with all fields', function () {
         $completenessResult = CompletenessResult::fromValidation(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             validationResult: ['can_complete' => true, 'completion_percentage' => 100.0],
         );
 
-        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001');
-        $complianceResult = ComplianceResult::compliant('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+        $crossRefResult = CrossReferenceResult::consistent('PR-2025-001-0001');
+        $complianceResult = ComplianceResult::compliant('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
         $report = VerificationReportDTO::fromResults(
-            prNumber: 'PR-2025-001',
+            prNumber: 'PR-2025-001-0001',
             stage: StageEnums::PROCUREMENT_INITIATION,
             integrityResults: [],
             completenessResult: $completenessResult,

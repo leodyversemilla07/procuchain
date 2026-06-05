@@ -2,8 +2,9 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
+use App\Models\Procurement;
+use App\Models\ProcurementStage;
 use App\Models\User;
-use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\DashboardCacheKeys;
 use App\Services\Procurement\ProcurementActionService;
@@ -120,6 +121,8 @@ it('builds distinct dashboard cache keys for scoped and unscoped access', functi
  */
 function buildIsolationAggregator(array $repositoryFixtures = [], array $statusFixtures = []): ProcurementListAggregatorService
 {
+    seedIsolationProcurementMirror($repositoryFixtures, $statusFixtures);
+
     $repository = mock(ProcurementRepository::class);
     $repository->shouldReceive('findManyByProcurement')
         ->zeroOrMoreTimes()
@@ -132,36 +135,68 @@ function buildIsolationAggregator(array $repositoryFixtures = [], array $statusF
             return $result;
         });
 
-    $mirrorRepository = mock(ProcurementRecordRepository::class);
-    $mirrorRepository->shouldReceive('getLatestStatusByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn($statusFixtures);
-    $mirrorRepository->shouldReceive('getAllDocuments')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-    $mirrorRepository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
-            $result = [];
-            foreach ($prNumbers as $prNumber) {
-                $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
-            }
-
-            return $result;
-        });
-    $mirrorRepository->shouldReceive('getArchivedPrNumbers')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-    $mirrorRepository->shouldReceive('procurementExists')
-        ->zeroOrMoreTimes()
-        ->andReturn(false);
-
     return new ProcurementListAggregatorService(
-        $mirrorRepository,
         new ProcurementFormatterService,
         new ProcurementActionService($repository),
         new UserNameResolverService(app(UserService::class)),
     );
+}
+
+/**
+ * @param  array<string, ProcurementData>  $repositoryFixtures
+ * @param  array<int, StatusData>  $statusFixtures
+ */
+function seedIsolationProcurementMirror(array $repositoryFixtures, array $statusFixtures): void
+{
+    foreach ($repositoryFixtures as $fixture) {
+        Procurement::updateOrCreate(
+            ['pr_number' => $fixture->prNumber],
+            [
+                'app_reference' => $fixture->appReference,
+                'title' => $fixture->title,
+                'description' => $fixture->description,
+                'category' => $fixture->category->value,
+                'procurement_mode' => $fixture->procurementMode->value,
+                'office' => $fixture->office,
+                'end_user' => $fixture->endUser,
+                'fund_source' => $fixture->fundingSource,
+                'prepared_by' => $fixture->preparedBy,
+                'abc_amount' => $fixture->abcAmount,
+                'current_status' => $fixture->status,
+                'user_id' => $fixture->userId,
+                'user_address' => $fixture->userAddress,
+                'initiated_at' => $fixture->createdAt,
+                'last_updated_at' => $fixture->createdAt,
+            ],
+        );
+    }
+
+    foreach ($statusFixtures as $index => $status) {
+        $procurement = Procurement::firstOrCreate(
+            ['pr_number' => $status->prNumber],
+            [
+                'title' => $status->procurementTitle,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+            ],
+        );
+
+        $procurement->update([
+            'current_stage' => $status->stage,
+            'current_status' => $status->currentStatus,
+        ]);
+
+        ProcurementStage::create([
+            'procurement_id' => $procurement->id,
+            'stage' => $status->stage,
+            'status' => $status->currentStatus,
+            'previous_status' => $status->previousStatus,
+            'entered_at' => $status->timestamp,
+            'user_address' => $status->userAddress,
+            'txid' => "isolation-status-{$index}",
+            'metadata' => $status->metadata,
+        ]);
+    }
 }
 
 function isolationProcurementFixture(string $prNumber, string $userId): ProcurementData

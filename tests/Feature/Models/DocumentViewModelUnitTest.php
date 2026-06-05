@@ -23,6 +23,9 @@ describe('DocumentView Model - Configuration', function () {
             'view_duration',
             'metadata',
             'viewed_at',
+            'txid',
+            'data_hash',
+            'blockchain_synced_at',
         ];
 
         expect($view->getFillable())->toBe($expectedFillable);
@@ -473,14 +476,14 @@ describe('DocumentView Model - Data Integrity', function () {
         $view = DocumentView::factory()->create([
             'user_id' => $user->id,
             'file_key' => 'file-abc-123',
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'procurement_title' => 'Supply of Office Equipment',
             'document_type' => 'bidding_documents',
             'stage' => 'submission_evaluation',
         ]);
 
         expect($view->file_key)->toBe('file-abc-123');
-        expect($view->pr_number)->toBe('PR-2024-001');
+        expect($view->pr_number)->toBe('PR-2024-001-0001');
         expect($view->procurement_title)->toBe('Supply of Office Equipment');
         expect($view->document_type)->toBe('bidding_documents');
         expect($view->stage)->toBe('submission_evaluation');

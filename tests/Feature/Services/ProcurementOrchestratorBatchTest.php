@@ -27,7 +27,7 @@ it('publishes status and event in single atomic batch transaction', function () 
 
             // Verify status item structure
             expect($items[0])->toHaveKeys(['key', 'data', 'for']);
-            expect($items[0]['key'])->toBe('PR-2024-001');
+            expect($items[0]['key'])->toBe('PR-2024-001-0001');
             expect($items[0]['for'])->toBe('procurement.status');
             expect($items[0]['data']['json'])->toHaveKeys([
                 'pr_number',
@@ -62,7 +62,7 @@ it('publishes status and event in single atomic batch transaction', function () 
 
     // Execute batch publish
     $result = $orchestrator->publishStatusWithEventBatch(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         procurementTitle: 'Test Procurement',
         stage: StageEnums::PROCUREMENT_INITIATION,
         currentStatus: StatusEnums::PROCUREMENT_INITIATED,
@@ -85,7 +85,7 @@ it('publishes status and event in single atomic batch transaction', function () 
     ]);
 
     expect($result['success'])->toBeTrue();
-    expect($result['pr_number'])->toBe('PR-2024-001');
+    expect($result['pr_number'])->toBe('PR-2024-001-0001');
     expect($result['txid'])->toBe('mock-txid-12345');
     expect($result['items_published'])->toBe(2);
 });
@@ -111,7 +111,7 @@ it('publishes only status when no event data provided', function () {
     );
 
     $result = $orchestrator->publishStatusWithEventBatch(
-        prNumber: 'PR-2024-002',
+        prNumber: 'PR-2024-002-0001',
         procurementTitle: 'Another Test',
         stage: StageEnums::BIDDING_DOCUMENTS,
         currentStatus: StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
@@ -144,7 +144,7 @@ it('includes previous status when provided', function () {
     );
 
     $result = $orchestrator->publishStatusWithEventBatch(
-        prNumber: 'PR-2024-003',
+        prNumber: 'PR-2024-003-0001',
         procurementTitle: 'Status Transition Test',
         stage: StageEnums::BID_EVALUATION,
         currentStatus: StatusEnums::BIDS_EVALUATED,
@@ -170,7 +170,7 @@ it('logs performance metrics for batch operations', function () {
     );
 
     $orchestrator->publishStatusWithEventBatch(
-        prNumber: 'PR-2024-004',
+        prNumber: 'PR-2024-004-0001',
         procurementTitle: 'Performance Test',
         stage: StageEnums::PROCUREMENT_INITIATION,
         currentStatus: StatusEnums::PROCUREMENT_INITIATED,

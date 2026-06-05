@@ -35,6 +35,7 @@ class DocumentRepository implements DocumentRepositoryInterface
             );
 
             Log::info('Document published to blockchain', ['txid' => $txid]);
+
             return $txid ?? '';
         } catch (\Exception $e) {
             Log::error('Failed to publish document', ['error' => $e->getMessage()]);
@@ -106,6 +107,68 @@ class DocumentRepository implements DocumentRepositoryInterface
     public function findByHash(string $hash): ?DocumentData
     {
         $doc = ProcurementDocument::where('hash', $hash)->first();
+
+        if (! $doc) {
+            return null;
+        }
+
+        return DocumentData::fromBlockchainArray([
+            'pr_number' => $doc->procurement->pr_number ?? '',
+            'procurement_title' => $doc->procurement->title ?? '',
+            'user_address' => $doc->user_address ?? '',
+            'stage' => $doc->stage,
+            'status' => '',
+            'document_type' => $doc->document_type,
+            'file_key' => $doc->file_key,
+            'file_name' => $doc->filename,
+            'file_size' => $doc->file_size,
+            'mime_type' => $doc->mime_type ?? '',
+            'hash' => $doc->hash,
+            'data_txid' => $doc->txid ?? '',
+            'metadata_txid' => '',
+            'uploaded_by' => $doc->uploaded_by,
+            'timestamp' => $doc->uploaded_at->toIso8601String(),
+            'description' => $doc->description,
+        ]);
+    }
+
+    /**
+     * Find a document by file key from DB.
+     */
+    public function findByFileKey(string $fileKey): ?DocumentData
+    {
+        $doc = ProcurementDocument::where('file_key', $fileKey)->first();
+
+        if (! $doc) {
+            return null;
+        }
+
+        return DocumentData::fromBlockchainArray([
+            'pr_number' => $doc->procurement->pr_number ?? '',
+            'procurement_title' => $doc->procurement->title ?? '',
+            'user_address' => $doc->user_address ?? '',
+            'stage' => $doc->stage,
+            'status' => '',
+            'document_type' => $doc->document_type,
+            'file_key' => $doc->file_key,
+            'file_name' => $doc->filename,
+            'file_size' => $doc->file_size,
+            'mime_type' => $doc->mime_type ?? '',
+            'hash' => $doc->hash,
+            'data_txid' => $doc->txid ?? '',
+            'metadata_txid' => '',
+            'uploaded_by' => $doc->uploaded_by,
+            'timestamp' => $doc->uploaded_at->toIso8601String(),
+            'description' => $doc->description,
+        ]);
+    }
+
+    /**
+     * Find a document by transaction ID from DB.
+     */
+    public function findByTxid(string $txid): ?DocumentData
+    {
+        $doc = ProcurementDocument::where('txid', $txid)->first();
 
         if (! $doc) {
             return null;

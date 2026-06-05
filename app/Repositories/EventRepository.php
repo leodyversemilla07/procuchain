@@ -35,9 +35,11 @@ final readonly class EventRepository
             );
 
             Log::info('Event published to blockchain', ['txid' => $txid]);
+
             return $txid;
         } catch (\Exception $e) {
             Log::error('Failed to publish event', ['error' => $e->getMessage()]);
+
             return null;
         }
     }

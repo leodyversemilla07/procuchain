@@ -13,6 +13,7 @@ use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\Procurement;
+use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use App\Services\AuditLogger;
 use App\Services\Procurement\ProcurementStageCompletionService;

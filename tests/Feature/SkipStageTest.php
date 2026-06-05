@@ -32,7 +32,7 @@ beforeEach(function () {
 
     // Helper to create mock procurement data
     $this->mockProcurementData = new ProcurementData(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         appReference: 'APP-2024-001',
         title: 'Test Procurement',
         description: 'Test Description',
@@ -61,21 +61,21 @@ beforeEach(function () {
 describe('Skip Stage Endpoint Availability', function () {
     it('has skip route for pre-procurement phase', function () {
         expect(route('bac-secretariat.procurement.pre-procurement.skip', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]))->toBeString();
     });
 
     it('has skip route for procurement phase', function () {
         expect(route('bac-secretariat.procurement.bidding.skip', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_BID_CONFERENCE->value,
         ]))->toBeString();
     });
 
     it('has skip route for post-procurement phase', function () {
         expect(route('bac-secretariat.procurement.post-procurement.skip', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::MONITORING->value,
         ]))->toBeString();
     });
@@ -112,7 +112,7 @@ describe('Skip Optional Stage', function () {
         // Mock the procurement repository
         $repository = mock(ProcurementRepository::class);
         $repository->shouldReceive('findByProcurement')
-            ->with('PR-2024-001')
+            ->with('PR-2024-001-0001')
             ->andReturn($this->mockProcurementData);
         $this->instance(ProcurementRepository::class, $repository);
 
@@ -123,7 +123,7 @@ describe('Skip Optional Stage', function () {
         $this->instance(Manager::class, $multichain);
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]), [
             'reason' => 'Not required for this procurement type',
@@ -141,7 +141,7 @@ describe('Cannot Skip Required Stage', function () {
 
         // Create procurement with SVP mode where RFQ is required
         $svpProcurement = new ProcurementData(
-            prNumber: 'PR-2024-002',
+            prNumber: 'PR-2024-002-0001',
             appReference: 'APP-2024-002',
             title: 'SVP Procurement',
             description: 'Test Description',
@@ -169,7 +169,7 @@ describe('Cannot Skip Required Stage', function () {
         // Mock the procurement repository
         $repository = mock(ProcurementRepository::class);
         $repository->shouldReceive('findByProcurement')
-            ->with('PR-2024-002')
+            ->with('PR-2024-002-0001')
             ->andReturn($svpProcurement);
         $this->instance(ProcurementRepository::class, $repository);
 
@@ -181,7 +181,7 @@ describe('Cannot Skip Required Stage', function () {
 
         // RFQ is required for SVP - controller dispatches job async, validation happens in job
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
-            'pr_number' => 'PR-2024-002',
+            'pr_number' => 'PR-2024-002-0001',
             'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
         ]));
 

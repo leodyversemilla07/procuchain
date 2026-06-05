@@ -35,10 +35,10 @@ describe('Mode Distribution', function () {
 
     it('correctly counts procurements by mode', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
-            ['id' => 'PR-002', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
-            ['id' => 'PR-003', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement'],
-            ['id' => 'PR-004', 'procurement_mode' => 'direct_contracting', 'procurement_mode_label' => 'Direct Contracting'],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
+            ['id' => 'PR-2025-003-0001', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement'],
+            ['id' => 'PR-2025-004-0001', 'procurement_mode' => 'direct_contracting', 'procurement_mode_label' => 'Direct Contracting'],
         ]);
 
         $distribution = $this->dashboardService->getModeDistribution($procurements);
@@ -58,8 +58,8 @@ describe('Mode Distribution', function () {
 
     it('handles unknown modes gracefully', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'unknown', 'procurement_mode_label' => 'Unknown'],
-            ['id' => 'PR-002', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'unknown', 'procurement_mode_label' => 'Unknown'],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
         ]);
 
         $distribution = $this->dashboardService->getModeDistribution($procurements);
@@ -75,9 +75,9 @@ describe('Mode Distribution', function () {
 describe('Mode Type Statistics (Competitive vs Alternative)', function () {
     it('correctly identifies competitive modes per NGPA IRR Sections 27-30', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
-            ['id' => 'PR-002', 'procurement_mode' => 'limited_source_bidding', 'is_alternative_mode' => false],
-            ['id' => 'PR-003', 'procurement_mode' => 'competitive_dialogue', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => 'limited_source_bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-003-0001', 'procurement_mode' => 'competitive_dialogue', 'is_alternative_mode' => false],
         ]);
 
         $typeStats = $this->dashboardService->getModeTypeStatistics($procurements);
@@ -90,9 +90,9 @@ describe('Mode Type Statistics (Competitive vs Alternative)', function () {
 
     it('correctly identifies alternative modes per NGPA IRR Sections 31-37', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'small_value_procurement', 'is_alternative_mode' => true],
-            ['id' => 'PR-002', 'procurement_mode' => 'direct_contracting', 'is_alternative_mode' => true],
-            ['id' => 'PR-003', 'procurement_mode' => 'negotiated_procurement', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'small_value_procurement', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => 'direct_contracting', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-003-0001', 'procurement_mode' => 'negotiated_procurement', 'is_alternative_mode' => true],
         ]);
 
         $typeStats = $this->dashboardService->getModeTypeStatistics($procurements);
@@ -105,11 +105,11 @@ describe('Mode Type Statistics (Competitive vs Alternative)', function () {
 
     it('correctly calculates mixed mode distribution', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
-            ['id' => 'PR-002', 'procurement_mode' => 'limited_source_bidding', 'is_alternative_mode' => false],
-            ['id' => 'PR-003', 'procurement_mode' => 'small_value_procurement', 'is_alternative_mode' => true],
-            ['id' => 'PR-004', 'procurement_mode' => 'direct_contracting', 'is_alternative_mode' => true],
-            ['id' => 'PR-005', 'procurement_mode' => 'negotiated_procurement', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => 'limited_source_bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-003-0001', 'procurement_mode' => 'small_value_procurement', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-004-0001', 'procurement_mode' => 'direct_contracting', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-005-0001', 'procurement_mode' => 'negotiated_procurement', 'is_alternative_mode' => true],
         ]);
 
         $typeStats = $this->dashboardService->getModeTypeStatistics($procurements);
@@ -123,7 +123,7 @@ describe('Mode Type Statistics (Competitive vs Alternative)', function () {
 
     it('includes NGPA references for each mode type', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
         ]);
 
         $typeStats = $this->dashboardService->getModeTypeStatistics($procurements);
@@ -134,8 +134,8 @@ describe('Mode Type Statistics (Competitive vs Alternative)', function () {
 
     it('tracks unknown/unclassified modes separately', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
-            ['id' => 'PR-002', 'procurement_mode' => null, 'is_alternative_mode' => null],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'competitive_bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => null, 'is_alternative_mode' => null],
         ]);
 
         $typeStats = $this->dashboardService->getModeTypeStatistics($procurements);
@@ -149,9 +149,9 @@ describe('Mode Type Statistics (Competitive vs Alternative)', function () {
 describe('Group Procurements By Mode', function () {
     it('groups procurements correctly by mode', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'title' => 'Office Supplies', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement'],
-            ['id' => 'PR-002', 'title' => 'IT Equipment', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement'],
-            ['id' => 'PR-003', 'title' => 'Construction', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
+            ['id' => 'PR-2025-001-0001', 'title' => 'Office Supplies', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement'],
+            ['id' => 'PR-2025-002-0001', 'title' => 'IT Equipment', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement'],
+            ['id' => 'PR-2025-003-0001', 'title' => 'Construction', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding'],
         ]);
 
         $grouped = $this->dashboardService->groupProcurementsByMode($procurements);
@@ -174,8 +174,8 @@ describe('Group Procurements By Mode', function () {
 describe('Comprehensive Mode Statistics', function () {
     it('returns all mode statistics in getModeStatistics', function () {
         $procurements = collect([
-            ['id' => 'PR-001', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding', 'is_alternative_mode' => false],
-            ['id' => 'PR-002', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement', 'is_alternative_mode' => true],
+            ['id' => 'PR-2025-001-0001', 'procurement_mode' => 'competitive_bidding', 'procurement_mode_label' => 'Public Bidding', 'is_alternative_mode' => false],
+            ['id' => 'PR-2025-002-0001', 'procurement_mode' => 'small_value_procurement', 'procurement_mode_label' => 'Small Value Procurement', 'is_alternative_mode' => true],
         ]);
 
         $stats = $this->dashboardService->getModeStatistics($procurements);
@@ -192,7 +192,7 @@ describe('Recent Procurements with Mode Data', function () {
         // Create a mock procurement with mode data
         $procurements = collect([
             [
-                'id' => 'PR-001',
+                'id' => 'PR-2025-001-0001',
                 'title' => 'Test Procurement',
                 'stage' => 'procurement_initiation',
                 'status' => 'pending',
@@ -219,7 +219,7 @@ describe('Procurement Distribution with Mode Data', function () {
     it('includes mode information in distribution data', function () {
         $procurements = collect([
             [
-                'id' => 'PR-001',
+                'id' => 'PR-2025-001-0001',
                 'title' => 'Test Procurement',
                 'stage' => 'procurement_initiation',
                 'status' => 'pending',

@@ -93,28 +93,28 @@ export default function UserInvitations() {
                 value: pending.toString(),
                 description: 'Awaiting acceptance',
                 icon: Clock,
-                iconColor: 'text-amber-500',
+                iconColor: 'text-secondary-foreground',
             },
             {
                 title: 'Accepted',
                 value: accepted.toString(),
                 description: 'Invitations accepted',
                 icon: MailCheck,
-                iconColor: 'text-emerald-500',
+                iconColor: 'text-primary',
             },
             {
                 title: 'Expired',
                 value: expired.toString(),
                 description: 'Invitations expired',
                 icon: MailX,
-                iconColor: 'text-gray-500',
+                iconColor: 'text-muted-foreground',
             },
             {
                 title: 'Revoked',
                 value: revoked.toString(),
                 description: 'Invitations revoked',
                 icon: X,
-                iconColor: 'text-rose-500',
+                iconColor: 'text-destructive',
             },
         ];
     }, [invitations]);
@@ -152,7 +152,7 @@ export default function UserInvitations() {
     const getStatusBadge = (status: Invitation['status']) => {
         const variants = {
             pending: { variant: 'default' as const, label: 'Pending', className: '' },
-            accepted: { variant: 'default' as const, label: 'Accepted', className: 'bg-emerald-500 hover:bg-emerald-600' },
+            accepted: { variant: 'default' as const, label: 'Accepted', className: '' },
             expired: { variant: 'secondary' as const, label: 'Expired', className: '' },
             revoked: { variant: 'destructive' as const, label: 'Revoked', className: '' },
         };

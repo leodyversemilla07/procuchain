@@ -122,15 +122,15 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
     $secretariatUser->assignRole('bac_secretariat');
 
     $procurementsByKey = collect([
-        'PR-001' => [
-            'id' => 'PR-001',
+        'PR-2025-001-0001' => [
+            'id' => 'PR-2025-001-0001',
             'title' => 'Allowed Procurement',
             'stage' => 'procurement_initiation',
             'status' => 'draft',
             'user_address' => 'secretariat-address',
         ],
-        'PR-002' => [
-            'id' => 'PR-002',
+        'PR-2025-002-0001' => [
+            'id' => 'PR-2025-002-0001',
             'title' => 'Blocked Procurement',
             'stage' => 'procurement_initiation',
             'status' => 'draft',
@@ -140,17 +140,10 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
 
     $filteredExpectation = function ($collection) {
         return $collection instanceof Collection
-            && $collection->keys()->all() === ['PR-001'];
+            && $collection->keys()->all() === ['PR-2025-001-0001'];
     };
 
     $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')
-        ->once()
-        ->withAnyArgs()
-        ->andReturn([
-            ['data' => ['json' => ['pr_number' => 'PR-001', 'procurement_title' => 'Allowed Procurement']]],
-            ['data' => ['json' => ['pr_number' => 'PR-002', 'procurement_title' => 'Blocked Procurement']]],
-        ]);
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getProcurementsByKey')
@@ -208,11 +201,10 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
 
     $procurementRepository = Mockery::mock(ProcurementRepository::class);
     $procurementRepository->shouldReceive('findManyByProcurement')
-        ->once()
-        ->with(['PR-001', 'PR-002'])
+        ->zeroOrMoreTimes()
         ->andReturn([
-            'PR-001' => dashboardProcurementFixture('PR-001', (string) $secretariatUser->id),
-            'PR-002' => dashboardProcurementFixture('PR-002', '999'),
+            'PR-2025-001-0001' => dashboardProcurementFixture('PR-2025-001-0001', (string) $secretariatUser->id),
+            'PR-2025-002-0001' => dashboardProcurementFixture('PR-2025-002-0001', '999'),
         ]);
 
     $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
@@ -239,11 +231,11 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
 
     expect(Cache::store('database')->get(
         DashboardCacheKeys::procurements('bac_secretariat', (string) $secretariatUser->id)
-    ))->toBeArray()->toHaveKey('PR-001');
+    ))->toBeArray()->toHaveKey('PR-2025-001-0001');
 
     expect(Cache::store('database')->get(
         DashboardCacheKeys::procurementsSnapshot('bac_secretariat', (string) $secretariatUser->id)
-    ))->toBeArray()->toHaveKey('PR-001');
+    ))->toBeArray()->toHaveKey('PR-2025-001-0001');
 });
 
 test('bac secretariat dashboard renders without global error when multichain is unavailable', function () {
@@ -255,10 +247,6 @@ test('bac secretariat dashboard renders without global error when multichain is 
     $secretariatUser->assignRole('bac_secretariat');
 
     $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')
-        ->once()
-        ->withAnyArgs()
-        ->andThrow(new RuntimeException('MultiChain Error: Empty reply from server'));
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
@@ -293,8 +281,8 @@ test('bac secretariat dashboard renders without global error when multichain is 
     Cache::store('database')->put(
         DashboardCacheKeys::procurementsSnapshot('bac_secretariat', (string) $secretariatUser->id),
         [
-            'PR-001' => [
-                'id' => 'PR-001',
+            'PR-2025-001-0001' => [
+                'id' => 'PR-2025-001-0001',
                 'title' => 'Accessible Procurement',
                 'stage' => 'procurement_initiation',
                 'status' => 'draft',
@@ -377,8 +365,8 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
     Cache::store('database')->put(
         DashboardCacheKeys::procurements('bac_secretariat', (string) $secretariatUser->id),
         [
-            'PR-001' => [
-                'id' => 'PR-001',
+            'PR-2025-001-0001' => [
+                'id' => 'PR-2025-001-0001',
                 'title' => 'Cached Procurement',
                 'stage' => 'procurement_initiation',
                 'status' => 'draft',

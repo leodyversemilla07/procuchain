@@ -261,7 +261,7 @@ test('report can be exported as PDF', function () {
             ],
             'data' => [
                 [
-                    'id' => 'PR-2026-001',
+                    'id' => 'PR-2026-001-0001',
                     'title' => 'Test Procurement One',
                     'current_status' => 'active',
                     'stage' => 'bid_opening',
@@ -269,7 +269,7 @@ test('report can be exported as PDF', function () {
                     'abc_amount' => 1000000,
                 ],
                 [
-                    'id' => 'PR-2026-002',
+                    'id' => 'PR-2026-002-0001',
                     'title' => 'Test Procurement Two',
                     'current_status' => 'active',
                     'stage' => 'post_qualification',

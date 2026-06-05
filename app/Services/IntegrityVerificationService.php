@@ -832,10 +832,10 @@ class IntegrityVerificationService
     {
         $diffs = [];
 
-        // Only compare fields that exist in BOTH datasets.
-        // Extra metadata in chainData (e.g. stream_ref, publisher metadata)
-        // that aren't tracked in the DB snapshot should not trigger a violation.
+        // Compare shared fields and DB-only fields. Chain-only metadata
+        // (e.g. stream_ref, publisher metadata) should not trigger a violation.
         $sharedKeys = array_intersect(array_keys($chainData), array_keys($dbData));
+        $dbOnlyKeys = array_diff(array_keys($dbData), array_keys($chainData));
 
         foreach ($sharedKeys as $key) {
             if (in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
@@ -852,6 +852,18 @@ class IntegrityVerificationService
                     'new_value' => $dbValue,
                 ];
             }
+        }
+
+        foreach ($dbOnlyKeys as $key) {
+            if (in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
+                continue;
+            }
+
+            $diffs[] = [
+                'field' => $key,
+                'old_value' => null,
+                'new_value' => $dbData[$key] ?? null,
+            ];
         }
 
         return $diffs;

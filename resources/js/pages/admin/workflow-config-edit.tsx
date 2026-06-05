@@ -98,12 +98,12 @@ function SortableStageItem({
 
             <div className="flex items-center gap-2">
                 {!isDefault && isSelected && (
-                    <Badge variant="outline" className="text-xs text-yellow-600">
+                    <Badge variant="secondary" className="text-xs">
                         Added
                     </Badge>
                 )}
                 {isDefault && !isSelected && (
-                    <Badge variant="outline" className="text-xs text-red-600">
+                    <Badge variant="destructive" className="text-xs">
                         Removed
                     </Badge>
                 )}
@@ -354,18 +354,18 @@ export default function WorkflowConfigEdit({
 
                 {/* Warning */}
                 {isModified && (
-                    <Card className="border-yellow-500/50 bg-yellow-500/5">
+                    <Card className="border-secondary bg-secondary/50">
                         <CardContent className="flex items-center gap-3 p-4">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                            <AlertTriangle className="text-secondary-foreground h-5 w-5" />
                             <p className="text-sm">You have unsaved changes. Click "Save Changes" to apply them.</p>
                         </CardContent>
                     </Card>
                 )}
 
                 {/* Instructions */}
-                <Card className="border-blue-500/50 bg-blue-500/5">
+                <Card className="border-primary/20 bg-primary/5">
                     <CardContent className="flex items-center gap-3 p-4">
-                        <GripVertical className="h-5 w-5 text-blue-600" />
+                        <GripVertical className="text-primary h-5 w-5" />
                         <p className="text-sm">
                             <strong>Tip:</strong> Drag the grip icon to reorder stages within each phase. Check/uncheck to include/exclude stages.
                         </p>

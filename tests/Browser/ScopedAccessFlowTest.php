@@ -44,7 +44,7 @@ describe('Scoped Access Browser Flow', function () {
 
         $page->assertSee('Accessible Procurement')
             ->assertSee('Workflow Progress')
-            ->assertSee('Procurement ID: PR-OPEN')
+            ->assertSee('Procurement ID: PR-2025-993-0001')
             ->assertNoJavascriptErrors()
             ->assertNoConsoleLogs();
     });

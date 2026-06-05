@@ -7,8 +7,6 @@ use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Repositories\StatusRepository;
-use App\Services\Manager;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use Tests\TestCase;
@@ -140,15 +138,8 @@ describe('Procurement Initiation With Workflow Info', function () {
         bindWorkflowSupportStub($this->competitiveProcurementData);
         bindWorkflowDocumentGuideStub();
 
-        $multichain = mock(Manager::class);
-        $multichain->shouldReceive('liststreamkeyitems')
-            ->once()
-            ->with('procurement.status', 'PR-2024-001', false, 1000)
-            ->andReturn([]);
-        $this->instance(StatusRepository::class, new StatusRepository($multichain));
-
         $response = $this->get(route('bac-secretariat.procurement.initiation.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
         ]));
 
         $response->assertSuccessful();
@@ -224,7 +215,7 @@ function buildWorkflowProcurementData(
     ProcurementModeEnums $mode,
     string $title,
     float $abcAmount,
-    string $prNumber = 'PR-2024-001',
+    string $prNumber = 'PR-2024-001-0001',
 ): ProcurementData {
     return new ProcurementData(
         prNumber: $prNumber,
@@ -324,7 +315,7 @@ function bindWorkflowDocumentGuideStub(): void
     app()->instance(ModeAwareDocumentValidationService::class, $validation);
 }
 
-function workflowStagePageRoute(StageEnums $stage, string $prNumber = 'PR-2024-001'): string
+function workflowStagePageRoute(StageEnums $stage, string $prNumber = 'PR-2024-001-0001'): string
 {
     if ($stage->isPreProcurement()) {
         return route('bac-secretariat.procurement.pre-procurement.show', [

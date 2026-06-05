@@ -198,7 +198,7 @@ test('validation fails without pr number', function () {
 test('validation fails with invalid pr number format', function () {
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => '2025-001', // Invalid format (should be PR-YYYY-####-####)
+            'pr_number' => '2025-001', // Invalid format (should be PR-YYYY-###-####)
             'app_reference' => 'APP-2025-004',
             'title' => 'Test Procurement',
             'description' => 'Test description',

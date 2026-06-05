@@ -255,9 +255,7 @@ export default function AdminLockedAccounts() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmUnlockAccount} className="bg-success text-success-foreground hover:bg-success/90">
-                            Unlock Account
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={confirmUnlockAccount}>Unlock Account</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

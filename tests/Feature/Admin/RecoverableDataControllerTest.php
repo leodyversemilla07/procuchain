@@ -30,6 +30,8 @@ function mockBlockchainStorageForNodes(array $nodes): void
 // ─── Route Access ─────────────────────────────────────────────────────────────
 
 it('admin can view the recoverable data page', function () {
+    mockBlockchainStorageForNodes([]);
+
     $this->actingAs($this->admin)
         ->get('/admin/recoverable-data')
         ->assertStatus(200);

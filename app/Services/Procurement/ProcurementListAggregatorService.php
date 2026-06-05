@@ -311,7 +311,7 @@ final class ProcurementListAggregatorService
         $allowedPrNumbers = [];
         foreach ($procurements as $prNumber => $procurement) {
             if ($procurement) {
-                $userIdMatch = $filterByUserId === null || (string) $procurement->id === $filterByUserId;
+                $userIdMatch = $filterByUserId !== null && (string) $procurement->user_id === $filterByUserId;
                 if ($userIdMatch) {
                     $allowedPrNumbers[] = $prNumber;
                 }
@@ -320,7 +320,7 @@ final class ProcurementListAggregatorService
 
         $filtered = $statusItems->filter(function (StatusData $statusDto) use ($allowedPrNumbers, $filterByUserAddress) {
             $prNumberAllowed = in_array($statusDto->prNumber, $allowedPrNumbers, true);
-            $addressAllowed = $filterByUserAddress === null || $statusDto->userAddress === $filterByUserAddress;
+            $addressAllowed = $filterByUserAddress !== null && $statusDto->userAddress === $filterByUserAddress;
 
             return $prNumberAllowed || $addressAllowed;
         });

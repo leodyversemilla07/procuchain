@@ -295,7 +295,7 @@ export default function AuditLog() {
                                                         {JSON.stringify(entry.new_values, null, 1)}
                                                     </pre>
                                                 ) : entry.old_values ? (
-                                                    <pre className="overflow-x-auto rounded bg-red-50 p-1 text-xs dark:bg-red-950/20">
+                                                    <pre className="bg-destructive/5 overflow-x-auto rounded p-1 text-xs">
                                                         {JSON.stringify(entry.old_values, null, 1)}
                                                     </pre>
                                                 ) : (

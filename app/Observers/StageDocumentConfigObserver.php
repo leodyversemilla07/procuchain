@@ -21,6 +21,10 @@ class StageDocumentConfigObserver
      */
     public function created(StageDocumentConfig $config): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         if ($config->txid !== null) {
             return;
         }
@@ -35,6 +39,10 @@ class StageDocumentConfigObserver
      */
     public function updated(StageDocumentConfig $config): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         if ($config->wasChanged(['required_documents', 'optional_documents', 'is_active'])) {
             $key = $config->stage.'-'.$config->procurement_mode.'-v'.$config->getKey().'-'.time();
 

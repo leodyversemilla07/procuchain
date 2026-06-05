@@ -24,9 +24,11 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->route('user');
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user)],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user)],
             'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
             'role' => ['required', 'string', Rule::in(['admin', 'bac_secretariat', 'bac_chairman', 'hope'])],
             'blockchain_address' => ['nullable', 'string', 'max:255'],

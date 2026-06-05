@@ -49,9 +49,11 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
     public function findByProcurement(string $prNumber): array
     {
         return ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->with('procurement')
             ->orderByDesc('corrected_at')
             ->get()
-            ->toArray();
+            ->map(fn (ProcurementMetadataCorrection $correction) => $this->toData($correction))
+            ->all();
     }
 
     /**
@@ -59,7 +61,11 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
      */
     public function all(): array
     {
-        return ProcurementMetadataCorrection::orderByDesc('corrected_at')->get()->toArray();
+        return ProcurementMetadataCorrection::with('procurement')
+            ->orderByDesc('corrected_at')
+            ->get()
+            ->map(fn (ProcurementMetadataCorrection $correction) => $this->toData($correction))
+            ->all();
     }
 
     /**
@@ -92,6 +98,11 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
             return null;
         }
 
+        return $this->toData($correction);
+    }
+
+    private function toData(ProcurementMetadataCorrection $correction): ProcurementCorrectionData
+    {
         return ProcurementCorrectionData::fromBlockchainArray([
             'pr_number' => $correction->procurement->pr_number ?? '',
             'procurement_title' => $correction->procurement->title ?? '',
@@ -101,7 +112,31 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
             'user_address' => $correction->user_address ?? '',
             'timestamp' => $correction->corrected_at->toIso8601String(),
             'original_title' => $correction->original_title,
+            'original_description' => $correction->original_description,
+            'original_abc_amount' => $correction->original_abc_amount,
+            'original_funding_source' => $correction->original_funding_source,
+            'original_category' => $correction->original_category,
+            'original_procurement_mode' => $correction->original_procurement_mode,
+            'original_office' => $correction->original_office,
+            'original_end_user' => $correction->original_end_user,
+            'original_delivery_date' => $correction->original_delivery_date?->toIso8601String(),
+            'original_bac_resolution_number' => $correction->original_bac_resolution_number,
+            'original_bac_resolution_date' => $correction->original_bac_resolution_date?->toIso8601String(),
+            'original_approved_by' => $correction->original_approved_by,
+            'original_approval_date' => $correction->original_approval_date?->toIso8601String(),
             'corrected_title' => $correction->corrected_title,
+            'corrected_description' => $correction->corrected_description,
+            'corrected_abc_amount' => $correction->corrected_abc_amount,
+            'corrected_funding_source' => $correction->corrected_funding_source,
+            'corrected_category' => $correction->corrected_category,
+            'corrected_procurement_mode' => $correction->corrected_procurement_mode,
+            'corrected_office' => $correction->corrected_office,
+            'corrected_end_user' => $correction->corrected_end_user,
+            'corrected_delivery_date' => $correction->corrected_delivery_date?->toIso8601String(),
+            'corrected_bac_resolution_number' => $correction->corrected_bac_resolution_number,
+            'corrected_bac_resolution_date' => $correction->corrected_bac_resolution_date?->toIso8601String(),
+            'corrected_approved_by' => $correction->corrected_approved_by,
+            'corrected_approval_date' => $correction->corrected_approval_date?->toIso8601String(),
         ], $correction->txid ?? '');
     }
 }

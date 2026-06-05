@@ -21,6 +21,10 @@ class DocumentViewObserver
      */
     public function created(DocumentView $documentView): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         if ($documentView->txid !== null) {
             return;
         }

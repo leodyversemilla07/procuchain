@@ -3,10 +3,7 @@
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
-use App\Models\ProcurementStage;
-use App\Models\User;
 use App\Services\BlockchainAuditTrailService;
-use App\Services\BlockchainRecordSyncService;
 use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
 use App\Services\NormalizedTableSyncService;
@@ -60,7 +57,7 @@ describe('IntegrityAuditLog Model', function () {
 
         $log = IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2024-001',
+            streamKey: 'PR-2024-001-0001',
             violationType: BreachTypeEnums::HASH_MISMATCH->value,
             txid: 'abc123txid',
             fieldDifferences: [
@@ -73,7 +70,7 @@ describe('IntegrityAuditLog Model', function () {
 
         expect($log)->toBeInstanceOf(IntegrityAuditLog::class);
         expect($log->stream)->toBe('procurement.metadata');
-        expect($log->stream_key)->toBe('PR-2024-001');
+        expect($log->stream_key)->toBe('PR-2024-001-0001');
         expect($log->violation_type)->toBe('hash_mismatch');
         expect($log->severity)->toBe('critical');
         expect($log->field_differences)->toHaveCount(1);
@@ -84,7 +81,7 @@ describe('IntegrityAuditLog Model', function () {
     it('marks violation as restored', function () {
         $log = IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2024-002',
+            streamKey: 'PR-2024-002-0001',
             violationType: BreachTypeEnums::HASH_MISMATCH->value,
         );
 
@@ -98,7 +95,7 @@ describe('IntegrityAuditLog Model', function () {
     it('marks violation as failed', function () {
         $log = IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2024-003',
+            streamKey: 'PR-2024-003-0001',
             violationType: BreachTypeEnums::ROW_DELETED->value,
         );
 
@@ -111,7 +108,7 @@ describe('IntegrityAuditLog Model', function () {
     it('marks violation as skipped', function () {
         $log = IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
-            streamKey: 'PR-2024-004',
+            streamKey: 'PR-2024-004-0001',
             violationType: BreachTypeEnums::ROW_DELETED->value,
         );
 

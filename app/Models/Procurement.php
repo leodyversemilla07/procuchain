@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $current_status
  * @property float $abc_amount
  * @property string|null $txid - Blockchain transaction ID
+ * @property string|null $user_id
  * @property string|null $data_hash - Hash computed at sync time from blockchain data
  * @property string|null $blockchain_hash - Original hash from blockchain (immutable)
  * @property bool $is_blockchain_verified
@@ -73,6 +74,7 @@ class Procurement extends Model
         'last_verified_at',
         'has_breach',
         'user_address',
+        'user_id',
         'is_active',
     ];
 

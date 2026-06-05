@@ -56,6 +56,7 @@ class ProcurementRepository implements ProcurementRepositoryInterface
             'office' => $record->office,
             'end_user' => $record->end_user,
             'status' => $record->current_status ?? 'draft',
+            'user_id' => $record->user_id,
             'user_address' => $record->user_address,
             'created_at' => $record->initiated_at?->toIso8601String() ?? $record->created_at?->toIso8601String(),
         ]);

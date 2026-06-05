@@ -39,7 +39,7 @@ describe('Document Upload Validation Workflow', function () {
             ->withoutMiddleware(PreventRequestForgery::class)
             ->startSession()
             ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
                 'document_file' => UploadedFile::fake()->create('noa.pdf', 1000, 'application/pdf'),
@@ -64,7 +64,7 @@ describe('Document Upload Validation Workflow', function () {
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->startSession()
             ->post(route('bac-secretariat.procurement.pre-procurement.validate-upload', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
@@ -107,7 +107,7 @@ describe('Document Upload Validation Workflow', function () {
         );
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.document-guide', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]));
 
@@ -138,7 +138,7 @@ describe('Progressive Upload Workflow', function () {
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->startSession()
             ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
                 'document_file' => UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf'),
@@ -210,7 +210,7 @@ describe('Progressive Upload Workflow', function () {
 
         foreach ($cases as $case) {
             $response = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]));
 
@@ -225,7 +225,7 @@ describe('Progressive Upload Workflow', function () {
 function buildDocumentWorkflowProcurement(User $user): ProcurementData
 {
     return new ProcurementData(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         appReference: 'APP-2024-001',
         title: 'Test Procurement',
         description: 'Test Description',

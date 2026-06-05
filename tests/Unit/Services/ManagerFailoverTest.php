@@ -2,7 +2,6 @@
 
 use App\Services\Manager;
 use Illuminate\Support\Facades\Log;
-use ReflectionClass;
 use Tests\TestCase;
 
 uses(TestCase::class);

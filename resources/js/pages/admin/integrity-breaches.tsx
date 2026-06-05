@@ -90,11 +90,11 @@ const breadcrumbs = [
     { title: 'Integrity Breaches', href: '#' },
 ];
 
-const SEVERITY_COLORS: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+const SEVERITY_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    critical: 'destructive',
+    high: 'default',
+    medium: 'secondary',
+    low: 'outline',
 };
 
 function truncateHash(hash: string | null | undefined, len = 12): string {
@@ -354,13 +354,13 @@ export default function IntegrityBreaches() {
 
             {/* Flash Messages */}
             {success && (
-                <Card className="mx-4 border-green-200 dark:border-green-900">
-                    <CardContent className="p-4 text-green-700 dark:text-green-400">{success}</CardContent>
+                <Card className="border-primary/20 bg-primary/5 mx-4">
+                    <CardContent className="text-primary p-4">{success}</CardContent>
                 </Card>
             )}
             {error && (
-                <Card className="mx-4 border-red-200 dark:border-red-900">
-                    <CardContent className="p-4 text-red-700 dark:text-red-400">{error}</CardContent>
+                <Card className="border-destructive/20 bg-destructive/5 mx-4">
+                    <CardContent className="text-destructive p-4">{error}</CardContent>
                 </Card>
             )}
 
@@ -369,7 +369,7 @@ export default function IntegrityBreaches() {
                 {!breaches?.data || breaches.data.length === 0 ? (
                     <Empty>
                         <EmptyMedia>
-                            <ShieldCheck className="h-16 w-16 text-green-500" />
+                            <ShieldCheck className="text-primary h-16 w-16" />
                         </EmptyMedia>
                         <EmptyHeader>
                             <EmptyTitle>No Integrity Breaches</EmptyTitle>
@@ -402,12 +402,9 @@ export default function IntegrityBreaches() {
                                     {(breaches?.data ?? []).map((breach) => {
                                         const severity = breach.severity ?? 'medium';
                                         return (
-                                            <TableRow
-                                                key={breach.id}
-                                                className={breach.recovery_status === 'pending' ? 'bg-red-50/50 dark:bg-red-950/20' : ''}
-                                            >
+                                            <TableRow key={breach.id} className={breach.recovery_status === 'pending' ? 'bg-destructive/5' : ''}>
                                                 <TableCell>
-                                                    <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
+                                                    <Badge variant={SEVERITY_VARIANTS[severity] ?? 'secondary'}>{severity}</Badge>
                                                 </TableCell>
                                                 <TableCell className="font-medium">
                                                     {breachTypes[breach.violation_type] ?? breach.violation_type}
@@ -433,7 +430,7 @@ export default function IntegrityBreaches() {
                                                 </TableCell>
                                                 <TableCell>
                                                     {breach.recovery_status === 'restored' ? (
-                                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                                        <Badge>
                                                             <CheckCircle2 data-icon="inline-start" /> Restored
                                                         </Badge>
                                                     ) : (
@@ -623,7 +620,7 @@ export default function IntegrityBreaches() {
                                 <div>
                                     <span className="text-muted-foreground">Severity:</span>
                                     <br />
-                                    <Badge className={SEVERITY_COLORS[selectedBreach.severity ?? 'medium']}>
+                                    <Badge variant={SEVERITY_VARIANTS[selectedBreach.severity ?? 'medium'] ?? 'secondary'}>
                                         {selectedBreach.severity ?? 'medium'}
                                     </Badge>
                                 </div>

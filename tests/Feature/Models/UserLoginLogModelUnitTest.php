@@ -22,6 +22,9 @@ describe('UserLoginLog Model - Configuration', function () {
             'successful',
             'login_at',
             'logout_at',
+            'txid',
+            'data_hash',
+            'blockchain_synced_at',
         ];
 
         expect($log->getFillable())->toBe($expectedFillable);

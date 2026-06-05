@@ -50,7 +50,7 @@ describe('FileUploader', function () {
                 ->once()
                 ->andReturn('txid_single_abc123');
 
-            $result = $uploader->uploadFile($file, 'PR-2025-001', 1, 'Purchase Request');
+            $result = $uploader->uploadFile($file, 'PR-2025-001-0001', 1, 'Purchase Request');
 
             expect($result)
                 ->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'mime_type', 'hash', 'storage_method', 'chunked'])
@@ -81,7 +81,7 @@ describe('FileUploader', function () {
                 ->once()
                 ->andReturn('metadata_txid_abc');
 
-            $result = $uploader->uploadFile($file, 'PR-2025-001', 1, 'Purchase Request');
+            $result = $uploader->uploadFile($file, 'PR-2025-001-0001', 1, 'Purchase Request');
 
             expect($result)
                 ->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'mime_type', 'hash', 'storage_method', 'chunked', 'total_chunks', 'chunk_txids'])
@@ -101,7 +101,7 @@ describe('FileUploader', function () {
 
             $fileKey = $method->invoke(
                 $uploader,
-                'PR-2025-001',
+                'PR-2025-001-0001',
                 1,
                 'Purchase Request',
                 'pdf',
@@ -109,7 +109,7 @@ describe('FileUploader', function () {
             );
 
             // Pattern: {pr_number}/{phase}/{stage_id}/{type}_{timestamp}_{hash_short}.{ext}
-            expect($fileKey)->toStartWith('PR-2025-001/pre-procurement/stage-01/purchase_request_')
+            expect($fileKey)->toStartWith('PR-2025-001-0001/pre-procurement/stage-01/purchase_request_')
                 ->and($fileKey)->toEndWith('.pdf')
                 ->and($fileKey)->toContain('a3f5b8c');
         });
@@ -154,7 +154,7 @@ describe('FileUploader', function () {
             $results = $uploader->uploadAndPrepare(
                 [$file1, $file2],
                 $metadata,
-                'PR-2025-001',
+                'PR-2025-001-0001',
                 1,
                 'Test Procurement'
             );
@@ -187,9 +187,9 @@ describe('FileRetriever', function () {
                         'data' => [
                             'json' => [
                                 'filename' => 'test.pdf',
-                                'file_key' => 'PR-2025-001/pre-procurement/stage-01/test.pdf',
+                                'file_key' => 'PR-2025-001-0001/pre-procurement/stage-01/test.pdf',
                                 'data_txid' => 'data_tx_123',
-                                'data_key' => 'PR-2025-001_pre-procurement_stage-01_test.pdf',
+                                'data_key' => 'PR-2025-001-0001_pre-procurement_stage-01_test.pdf',
                                 'mime_type' => 'application/pdf',
                                 'size' => strlen($testContent),
                                 'hash' => $expectedHash,
@@ -208,7 +208,7 @@ describe('FileRetriever', function () {
                     'data' => $testHex,
                 ]);
 
-            $result = $retriever->retrieveFile('PR-2025-001/pre-procurement/stage-01/test.pdf');
+            $result = $retriever->retrieveFile('PR-2025-001-0001/pre-procurement/stage-01/test.pdf');
 
             expect($result['content'])->toBe($testContent)
                 ->and($result['filename'])->toBe('test.pdf')
@@ -237,9 +237,9 @@ describe('FileRetriever', function () {
                         'data' => [
                             'json' => [
                                 'filename' => 'large.pdf',
-                                'file_key' => 'PR-2025-001/pre-procurement/stage-01/large.pdf',
+                                'file_key' => 'PR-2025-001-0001/pre-procurement/stage-01/large.pdf',
                                 'data_txid' => 'chunk_tx_1',
-                                'data_key' => 'PR-2025-001_pre-procurement_stage-01_large.pdf',
+                                'data_key' => 'PR-2025-001-0001_pre-procurement_stage-01_large.pdf',
                                 'mime_type' => 'application/pdf',
                                 'size' => strlen($fullContent),
                                 'hash' => $expectedHash,
@@ -264,7 +264,7 @@ describe('FileRetriever', function () {
                 ->once()
                 ->andReturn([['data' => bin2hex($chunk2)]]);
 
-            $result = $retriever->retrieveFile('PR-2025-001/pre-procurement/stage-01/large.pdf');
+            $result = $retriever->retrieveFile('PR-2025-001-0001/pre-procurement/stage-01/large.pdf');
 
             expect($result['content'])->toBe($fullContent)
                 ->and($result['storage_method'])->toBe('on_chain_chunked')
@@ -289,9 +289,9 @@ describe('FileRetriever', function () {
                         'data' => [
                             'json' => [
                                 'filename' => 'test.pdf',
-                                'file_key' => 'PR-2025-001/test.pdf',
+                                'file_key' => 'PR-2025-001-0001/test.pdf',
                                 'data_txid' => 'data_tx_123',
-                                'data_key' => 'PR-2025-001_test.pdf',
+                                'data_key' => 'PR-2025-001-0001_test.pdf',
                                 'mime_type' => 'application/pdf',
                                 'size' => strlen($testContent),
                                 'hash' => 'wrong_hash_value',
@@ -306,7 +306,7 @@ describe('FileRetriever', function () {
                 ->once()
                 ->andReturn(['data' => $testHex]);
 
-            $result = $retriever->retrieveFile('PR-2025-001/test.pdf');
+            $result = $retriever->retrieveFile('PR-2025-001-0001/test.pdf');
 
             // Should still return the file content despite hash mismatch
             expect($result['content'])->toBe($testContent);

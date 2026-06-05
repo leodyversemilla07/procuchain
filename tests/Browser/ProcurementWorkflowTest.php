@@ -114,7 +114,7 @@ describe('Request for Quotation (RFQ) Browser Flow', function () {
         $this->actingAs($this->bacSecretariat);
 
         $page = visit(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
         ]));
 
@@ -128,12 +128,12 @@ describe('Request for Quotation (RFQ) Browser Flow', function () {
         $this->actingAs($this->bacSecretariat);
 
         $page = visit(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
         ]));
 
         $page->assertSee('Upload and verify documents for this stage')
-            ->assertSee('PR-2024-001')
+            ->assertSee('PR-2024-001-0001')
             ->assertNoJavascriptErrors();
     });
 
@@ -141,7 +141,7 @@ describe('Request for Quotation (RFQ) Browser Flow', function () {
         $this->actingAs($this->bacSecretariat);
 
         $page = visit(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
         ]));
 
@@ -165,7 +165,7 @@ describe('Abstract of Quotations Browser Flow', function () {
         $this->actingAs($this->bacSecretariat);
 
         $page = visit(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
         ]));
 
@@ -179,12 +179,12 @@ describe('Abstract of Quotations Browser Flow', function () {
         $this->actingAs($this->bacSecretariat);
 
         $page = visit(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
         ]));
 
         $page->assertSee('Upload and verify documents for this stage')
-            ->assertSee('PR-2024-001')
+            ->assertSee('PR-2024-001-0001')
             ->assertNoJavascriptErrors();
     });
 
@@ -192,7 +192,7 @@ describe('Abstract of Quotations Browser Flow', function () {
         $this->actingAs($this->bacSecretariat);
 
         $page = visit(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
         ]));
 
@@ -201,7 +201,7 @@ describe('Abstract of Quotations Browser Flow', function () {
     });
 });
 
-function mockSmallValueProcurement(User $user, string $prNumber = 'PR-2024-001'): void
+function mockSmallValueProcurement(User $user, string $prNumber = 'PR-2024-001-0001'): void
 {
     $repository = mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')

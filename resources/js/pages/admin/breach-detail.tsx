@@ -36,18 +36,12 @@ const breadcrumbs = [
     { title: 'Breach Detail', href: '#' },
 ];
 
-const SEVERITY_COLORS: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+const SEVERITY_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    critical: 'destructive',
+    high: 'default',
+    medium: 'secondary',
+    low: 'outline',
 };
-
-function truncateHash(hash: string, len = 12): string {
-    if (!hash) return '—';
-    if (hash.length <= len * 2 + 3) return hash;
-    return `${hash.slice(0, len)}...${hash.slice(-len)}`;
-}
 
 export default function BreachDetailPage({ breachId, breach, error }: BreachDetailPageProps) {
     const severity = breach?.severity ?? 'medium';
@@ -68,7 +62,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                     title={
                         <span className="flex items-center gap-2">
                             Breach Detail
-                            {breach && <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>}
+                            {breach && <Badge variant={SEVERITY_VARIANTS[severity] ?? 'secondary'}>{severity}</Badge>}
                         </span>
                     }
                     description={`Integrity breach #${breachId}${breach ? ` • ${breach.stream_key}` : ''}`}
@@ -104,7 +98,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                                     <div>
                                         <span className="text-muted-foreground">Severity</span>
                                         <p>
-                                            <Badge className={SEVERITY_COLORS[severity]}>{severity}</Badge>
+                                            <Badge variant={SEVERITY_VARIANTS[severity] ?? 'secondary'}>{severity}</Badge>
                                         </p>
                                     </div>
                                     <div>
@@ -148,12 +142,12 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                                             <div key={i} className="rounded-md border p-3">
                                                 <p className="mb-2 font-medium">{diff.field}</p>
                                                 <div className="grid grid-cols-2 gap-2 text-xs">
-                                                    <div className="rounded bg-green-50 p-2 dark:bg-green-950/30">
-                                                        <span className="text-green-700 dark:text-green-400">Blockchain:</span>
+                                                    <div className="bg-primary/5 rounded p-2">
+                                                        <span className="text-primary">Blockchain:</span>
                                                         <p className="mt-1 break-all">{JSON.stringify(diff.old_value)}</p>
                                                     </div>
-                                                    <div className="rounded bg-red-50 p-2 dark:bg-red-950/30">
-                                                        <span className="text-red-700 dark:text-red-400">Database:</span>
+                                                    <div className="bg-destructive/5 rounded p-2">
+                                                        <span className="text-destructive">Database:</span>
                                                         <p className="mt-1 break-all">{JSON.stringify(diff.new_value)}</p>
                                                     </div>
                                                 </div>

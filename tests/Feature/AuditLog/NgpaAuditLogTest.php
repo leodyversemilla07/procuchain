@@ -320,6 +320,6 @@ it('AuditLogger does not throw on write failure for NGPA actions', function () {
 
     Schema::drop('audit_logs');
 
-    expect(fn () => $logger->log('procurement.initiated', 'procurement', 'PR-001'))
+    expect(fn () => $logger->log('procurement.initiated', 'procurement', 'PR-2025-001-0001'))
         ->not->toThrow(Exception::class);
 });

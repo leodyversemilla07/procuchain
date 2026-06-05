@@ -259,7 +259,8 @@ abstract class BaseDashboardController extends BaseController
         foreach ($procurements as $prNumber => $procurement) {
             if ($procurement) {
                 // Check userId if filter is provided
-                $userIdMatch = $filterByUserId === null || $procurement->userId === $filterByUserId;
+                $procurementUserId = $procurement->user_id ?? $procurement->userId ?? null;
+                $userIdMatch = $filterByUserId !== null && (string) $procurementUserId === $filterByUserId;
 
                 if ($userIdMatch) {
                     $allowedPrNumbers[] = $prNumber;
@@ -273,8 +274,12 @@ abstract class BaseDashboardController extends BaseController
             $prNumberAllowed = in_array($prNumber, $allowedPrNumbers, true);
 
             // Check if user has interacted with this procurement via blockchain
-            $addressAllowed = $filterByUserAddress === null || collect($items)->contains(function ($item) use ($filterByUserAddress) {
-                return isset($item['user_address']) && $item['user_address'] === $filterByUserAddress;
+            $addressAllowed = $filterByUserAddress !== null && collect($items)->contains(function ($item) use ($filterByUserAddress, $items) {
+                if (is_array($item)) {
+                    return isset($item['user_address']) && $item['user_address'] === $filterByUserAddress;
+                }
+
+                return isset($items['user_address']) && $items['user_address'] === $filterByUserAddress;
             });
 
             // Use OR logic: Show if user created it OR interacted with it

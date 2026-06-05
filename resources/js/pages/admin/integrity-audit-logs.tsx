@@ -92,18 +92,18 @@ const breadcrumbs = [
     { title: 'Integrity Audit Logs', href: '#' },
 ];
 
-const SEVERITY_COLORS: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+const SEVERITY_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    critical: 'destructive',
+    high: 'default',
+    medium: 'secondary',
+    low: 'outline',
 };
 
-const RECOVERY_STATUS_BADGE: Record<string, { className: string; icon: typeof CheckCircle2 }> = {
-    pending: { className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
-    restored: { className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2 },
-    failed: { className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
-    skipped: { className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', icon: Shield },
+const RECOVERY_STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof CheckCircle2 }> = {
+    pending: { variant: 'secondary', icon: Clock },
+    restored: { variant: 'default', icon: CheckCircle2 },
+    failed: { variant: 'destructive', icon: XCircle },
+    skipped: { variant: 'outline', icon: Shield },
 };
 
 function truncateHash(hash: string, len = 12): string {
@@ -184,19 +184,19 @@ export default function IntegrityAuditLogs() {
                         label: 'Pending (Page)',
                         value: pendingCount,
                         icon: Clock,
-                        iconClassName: pendingCount > 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-muted',
+                        iconClassName: pendingCount > 0 ? 'bg-secondary text-secondary-foreground' : 'bg-muted',
                     },
                     {
                         label: 'Critical (Page)',
                         value: criticalCount,
                         icon: ShieldAlert,
-                        iconClassName: criticalCount > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted',
+                        iconClassName: criticalCount > 0 ? 'bg-destructive/10 text-destructive' : 'bg-muted',
                     },
                     {
                         label: 'Restored (Page)',
                         value: restoredCount,
                         icon: CheckCircle2,
-                        iconClassName: restoredCount > 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted',
+                        iconClassName: restoredCount > 0 ? 'bg-primary/10 text-primary' : 'bg-muted',
                     },
                 ]}
                 className="p-4"
@@ -383,17 +383,14 @@ export default function IntegrityAuditLogs() {
                                 </TableHeader>
                                 <TableBody>
                                     {(logs?.data ?? []).map((log) => {
-                                        const severityColor = SEVERITY_COLORS[log.severity] ?? SEVERITY_COLORS.medium;
+                                        const severityVariant = SEVERITY_VARIANTS[log.severity] ?? SEVERITY_VARIANTS.medium;
                                         const statusBadge = RECOVERY_STATUS_BADGE[log.recovery_status] ?? RECOVERY_STATUS_BADGE.pending;
                                         const StatusIcon = statusBadge.icon;
 
                                         return (
-                                            <TableRow
-                                                key={log.id}
-                                                className={log.recovery_status === 'pending' ? 'bg-yellow-50/50 dark:bg-yellow-950/20' : ''}
-                                            >
+                                            <TableRow key={log.id} className={log.recovery_status === 'pending' ? 'bg-muted/50' : ''}>
                                                 <TableCell>
-                                                    <Badge className={severityColor}>{log.severity}</Badge>
+                                                    <Badge variant={severityVariant}>{log.severity}</Badge>
                                                 </TableCell>
                                                 <TableCell className="font-medium">
                                                     {violationTypes[log.violation_type] ?? log.violation_type}
@@ -428,7 +425,7 @@ export default function IntegrityAuditLogs() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge className={statusBadge.className}>
+                                                    <Badge variant={statusBadge.variant}>
                                                         <StatusIcon data-icon="inline-start" />
                                                         {recoveryStatuses[log.recovery_status] ?? log.recovery_status}
                                                     </Badge>

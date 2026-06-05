@@ -2,6 +2,9 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementCorrection;
+use App\Models\ProcurementMetadataCorrection;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
@@ -32,6 +35,24 @@ function buildCorrectionService(
         $documentRepository ?? Mockery::mock(DocumentRepository::class),
         $procurementDataService ?? Mockery::mock(ProcurementDataService::class),
     );
+}
+
+function createCorrectionTestProcurement(string $prNumber = 'PR-2025-001-0001'): Procurement
+{
+    return Procurement::create([
+        'pr_number' => $prNumber,
+        'title' => 'Test Procurement',
+        'description' => 'Test procurement description',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'Office',
+        'end_user' => 'End User',
+        'fund_source' => 'GAA',
+        'abc_amount' => 500000,
+        'current_stage' => 'procurement_initiation',
+        'current_status' => 'procurement_submitted',
+        'is_active' => true,
+    ]);
 }
 
 beforeEach(function () {
@@ -159,7 +180,7 @@ describe('ProcurementCorrectionService', function () {
     describe('findProcurementForCorrection', function () {
         it('returns procurement from primary repository when found', function () {
             $procurement = ProcurementData::fromBlockchainArray([
-                'pr_number' => 'PR-2025-001',
+                'pr_number' => 'PR-2025-001-0001',
                 'title' => 'Test',
                 'description' => 'Test',
                 'abc_amount' => '500000',
@@ -174,22 +195,19 @@ describe('ProcurementCorrectionService', function () {
 
             $this->procurementRepository
                 ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn($procurement);
 
-            $result = $this->service->findProcurementForCorrection('PR-2025-001');
+            $result = $this->service->findProcurementForCorrection('PR-2025-001-0001');
 
             expect($result)->toBe($procurement);
         });
 
         it('falls back to STATUS stream when not found in primary repo', function () {
-            // NOTE: The service's fallback path has a bug - it calls ProcurementData constructor
-            // with unknown parameters (stage, procurementMode, timestamp, userAddress).
-            // This test documents the bug by catching the expected error.
             $this->procurementRepository
                 ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn(null);
 
@@ -205,70 +223,67 @@ describe('ProcurementCorrectionService', function () {
 
             $this->procurementDataService
                 ->shouldReceive('fetchStatusItems')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn($statusCollection);
 
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
-            // The service's fallback ProcurementData construction uses invalid named params
-            expect(fn () => $this->service->findProcurementForCorrection('PR-2025-001'))
-                ->toThrow(Error::class, 'Unknown named parameter $stage');
-        })->note('Documents pre-existing bug in service fallback path');
+            $result = $this->service->findProcurementForCorrection('PR-2025-001-0001');
+
+            expect($result)->toBeInstanceOf(ProcurementData::class)
+                ->and($result->prNumber)->toBe('PR-2025-001-0001')
+                ->and($result->title)->toBe('Test Procurement')
+                ->and($result->status)->toBe('procurement_submitted')
+                ->and($result->userAddress)->toBe('1abc123');
+        });
 
         it('throws RuntimeException when not found in any stream', function () {
             $this->procurementRepository
                 ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn(null);
 
             $this->procurementDataService
                 ->shouldReceive('fetchStatusItems')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn(collect());
 
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
-            expect(fn () => $this->service->findProcurementForCorrection('PR-2025-001'))
+            expect(fn () => $this->service->findProcurementForCorrection('PR-2025-001-0001'))
                 ->toThrow(RuntimeException::class, 'Procurement not found in blockchain.');
         });
     });
 
     describe('checkCorrections', function () {
         it('returns has_corrections true when corrections exist in blockchain', function () {
-            $this->procCorrectionManager
-                ->shouldReceive('liststreamkeyitems')
-                ->andReturn([
-                    [
-                        'txid' => 'tx_correction_1',
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-2025-001',
-                                'procurement_title' => 'Test',
-                                'correction_type' => 'metadata',
-                                'reason' => 'Typo fix',
-                                'corrected_by' => 'user@test.com',
-                                'user_address' => '1abc',
-                                'timestamp' => now()->toIso8601String(),
-                            ],
-                        ],
-                    ],
-                ]);
+            $procurement = createCorrectionTestProcurement();
 
-            $result = $this->service->checkCorrections('PR-2025-001');
+            ProcurementMetadataCorrection::create([
+                'procurement_id' => $procurement->id,
+                'correction_type' => 'metadata',
+                'reason' => 'Typo fix',
+                'corrected_by' => 'user@test.com',
+                'user_address' => '1abc',
+                'original_title' => 'Test',
+                'corrected_title' => 'Corrected Test',
+                'txid' => 'tx_correction_1',
+                'corrected_at' => now(),
+            ]);
+
+            $result = $this->service->checkCorrections('PR-2025-001-0001');
 
             expect($result['has_corrections'])->toBeTrue()
                 ->and($result['latest_correction'])->not->toBeNull();
         });
 
         it('returns has_corrections false when no corrections exist', function () {
-            $this->procCorrectionManager
-                ->shouldReceive('liststreamkeyitems')
-                ->andReturn([]);
+            createCorrectionTestProcurement();
 
-            $result = $this->service->checkCorrections('PR-2025-001');
+            $result = $this->service->checkCorrections('PR-2025-001-0001');
 
             expect($result['has_corrections'])->toBeFalse()
                 ->and($result['latest_correction'])->toBeNull();
@@ -331,50 +346,34 @@ describe('ProcurementCorrectionService', function () {
         it('combines and sorts corrections from both repositories', function () {
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
-            // Mock procurement corrections manager
-            $this->procCorrectionManager
-                ->shouldReceive('liststreamkeyitems')
-                ->andReturn([
-                    [
-                        'txid' => 'tx_proc_1',
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-2025-001',
-                                'procurement_title' => 'Test',
-                                'correction_type' => 'metadata',
-                                'reason' => 'Title correction',
-                                'corrected_by' => 'user@test.com',
-                                'user_address' => '1abc',
-                                'timestamp' => now()->toIso8601String(),
-                            ],
-                        ],
-                    ],
-                ]);
+            $procurement = createCorrectionTestProcurement();
 
-            // Mock document corrections manager
-            $this->correctionManager
-                ->shouldReceive('liststreamkeyitems')
-                ->andReturn([
-                    [
-                        'txid' => 'tx_doc_1',
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-2025-001',
-                                'procurement_title' => 'Test',
-                                'original_txid' => 'otx1',
-                                'original_document_hash' => 'hash1',
-                                'correction_type' => 'document_replacement',
-                                'action' => 'replace',
-                                'reason' => 'Document replacement',
-                                'corrected_by' => 'user@test.com',
-                                'user_address' => '1abc',
-                                'timestamp' => now()->subMinute()->toIso8601String(),
-                            ],
-                        ],
-                    ],
-                ]);
+            ProcurementMetadataCorrection::create([
+                'procurement_id' => $procurement->id,
+                'correction_type' => 'metadata',
+                'reason' => 'Title correction',
+                'corrected_by' => 'user@test.com',
+                'user_address' => '1abc',
+                'original_title' => 'Test',
+                'corrected_title' => 'Corrected Test',
+                'txid' => 'tx_proc_1',
+                'corrected_at' => now(),
+            ]);
 
-            $result = $this->service->getCorrectionHistory('PR-2025-001');
+            ProcurementCorrection::create([
+                'procurement_id' => $procurement->id,
+                'correction_type' => 'document_replacement',
+                'action' => 'replace',
+                'reason' => 'Document replacement',
+                'original_txid' => 'otx1',
+                'original_document_hash' => 'hash1',
+                'corrected_by' => 'user@test.com',
+                'user_address' => '1abc',
+                'txid' => 'tx_doc_1',
+                'corrected_at' => now()->subMinute(),
+            ]);
+
+            $result = $this->service->getCorrectionHistory('PR-2025-001-0001');
 
             expect($result)->toHaveCount(2)
                 ->and($result[0]['reason'])->toBe('Title correction')
@@ -384,15 +383,9 @@ describe('ProcurementCorrectionService', function () {
         it('returns empty array when no corrections exist', function () {
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
-            $this->procCorrectionManager
-                ->shouldReceive('liststreamkeyitems')
-                ->andReturn([]);
+            createCorrectionTestProcurement();
 
-            $this->correctionManager
-                ->shouldReceive('liststreamkeyitems')
-                ->andReturn([]);
-
-            $result = $this->service->getCorrectionHistory('PR-2025-001');
+            $result = $this->service->getCorrectionHistory('PR-2025-001-0001');
 
             expect($result)->toBeEmpty();
         });

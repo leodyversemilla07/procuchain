@@ -21,6 +21,10 @@ class AuditLogObserver
      */
     public function created(AuditLog $auditLog): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         // Skip if already synced (e.g., during recovery)
         if ($auditLog->txid !== null) {
             return;

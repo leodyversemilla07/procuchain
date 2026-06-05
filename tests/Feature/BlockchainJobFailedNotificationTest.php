@@ -20,7 +20,7 @@ beforeEach(function () {
 it('notifies the submitting user when a blockchain job permanently fails', function () {
     $job = new BlockchainWriteJob(
         operation: 'upload_document',
-        data: ['pr_number' => 'PR-2026-001'],
+        data: ['pr_number' => 'PR-2026-001-0001'],
         jobId: 'test-job-id-123',
         userId: $this->user->id,
     );
@@ -33,7 +33,7 @@ it('notifies the submitting user when a blockchain job permanently fails', funct
 it('does not send a notification when no user_id is provided', function () {
     $job = new BlockchainWriteJob(
         operation: 'upload_document',
-        data: ['pr_number' => 'PR-2026-001'],
+        data: ['pr_number' => 'PR-2026-001-0001'],
         jobId: 'test-job-id-456',
         userId: null,
     );
@@ -46,7 +46,7 @@ it('does not send a notification when no user_id is provided', function () {
 it('does not throw when user_id does not match any user', function () {
     $job = new BlockchainWriteJob(
         operation: 'upload_document',
-        data: ['pr_number' => 'PR-2026-001'],
+        data: ['pr_number' => 'PR-2026-001-0001'],
         jobId: 'test-job-id-789',
         userId: 999999,
     );

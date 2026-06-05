@@ -41,7 +41,7 @@ beforeEach(function () {
 });
 
 // Helper to mock procurement repository for getProcurementMode
-function mockProcurementRepo(ProcurementModeEnums $mode, string $prNumber = 'PR-2025-001'): void
+function mockProcurementRepo(ProcurementModeEnums $mode, string $prNumber = 'PR-2025-001-0001'): void
 {
     $procurement = ProcurementData::fromBlockchainArray([
         'pr_number' => $prNumber,
@@ -76,7 +76,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(StatusEnums::PROCUREMENT_INITIATED);
 
-            $result = $this->service->getInitialStatusForStage('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+            $result = $this->service->getInitialStatusForStage('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
             expect($result)->toBe(StatusEnums::PROCUREMENT_INITIATED);
         });
@@ -90,7 +90,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(StatusEnums::ABSTRACT_PREPARED);
 
-            $result = $this->service->getInitialStatusForStage('PR-2025-001', StageEnums::BAC_RESOLUTION);
+            $result = $this->service->getInitialStatusForStage('PR-2025-001-0001', StageEnums::BAC_RESOLUTION);
 
             expect($result)->toBe(StatusEnums::ABSTRACT_PREPARED);
         });
@@ -104,7 +104,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(StatusEnums::POST_QUALIFICATION_VERIFIED);
 
-            $result = $this->service->getInitialStatusForStage('PR-2025-001', StageEnums::BAC_RESOLUTION);
+            $result = $this->service->getInitialStatusForStage('PR-2025-001-0001', StageEnums::BAC_RESOLUTION);
 
             expect($result)->toBe(StatusEnums::POST_QUALIFICATION_VERIFIED);
         });
@@ -128,7 +128,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn([]);
 
-            $result = $this->service->getNextStageForProcurement('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+            $result = $this->service->getNextStageForProcurement('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
             expect($result)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE);
         });
@@ -150,7 +150,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn([]);
 
-            $result = $this->service->getNextStageForProcurement('PR-2025-001', StageEnums::COMPLETED);
+            $result = $this->service->getNextStageForProcurement('PR-2025-001-0001', StageEnums::COMPLETED);
 
             expect($result)->toBeNull();
         });
@@ -179,7 +179,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(true);
 
-            $result = $this->service->stageExistsInWorkflow('PR-2025-001', StageEnums::BID_OPENING);
+            $result = $this->service->stageExistsInWorkflow('PR-2025-001-0001', StageEnums::BID_OPENING);
 
             expect($result)->toBeTrue();
         });
@@ -193,7 +193,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(false);
 
-            $result = $this->service->stageExistsInWorkflow('PR-2025-001', StageEnums::PRE_BID_CONFERENCE);
+            $result = $this->service->stageExistsInWorkflow('PR-2025-001-0001', StageEnums::PRE_BID_CONFERENCE);
 
             expect($result)->toBeFalse();
         });
@@ -220,7 +220,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(true);
 
-            $result = $this->service->isStageOptional('PR-2025-001', StageEnums::PRE_BID_CONFERENCE);
+            $result = $this->service->isStageOptional('PR-2025-001-0001', StageEnums::PRE_BID_CONFERENCE);
 
             expect($result)->toBeTrue();
         });
@@ -234,7 +234,7 @@ describe('ProcurementSupportService', function () {
                 ->once()
                 ->andReturn(false);
 
-            $result = $this->service->isStageOptional('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
+            $result = $this->service->isStageOptional('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
             expect($result)->toBeFalse();
         });

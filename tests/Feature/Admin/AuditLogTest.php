@@ -82,7 +82,9 @@ it('updating a user writes a user.updated audit log entry', function () {
             'name' => 'Updated Name',
             'email' => $target->email,
             'role' => 'bac_secretariat',
-        ]);
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
 
     expect(AuditLog::where('action', 'user.updated')
         ->where('subject_id', (string) $target->id)

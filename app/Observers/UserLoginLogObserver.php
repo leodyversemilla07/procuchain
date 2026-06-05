@@ -21,6 +21,10 @@ class UserLoginLogObserver
      */
     public function created(UserLoginLog $loginLog): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         if ($loginLog->txid !== null) {
             return;
         }

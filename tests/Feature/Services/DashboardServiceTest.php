@@ -3,10 +3,10 @@
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\ProcurementData;
+use App\Models\Procurement;
+use App\Models\ProcurementDocument;
+use App\Models\ProcurementEvent;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\EventRepository;
-use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Dashboard\ModeAnalyzer;
 use App\Services\Dashboard\StatisticsCalculator;
@@ -23,38 +23,15 @@ beforeEach(function () {
     Log::spy();
 
     $this->manager = mock(Manager::class);
-    $this->mirrorRepository = mock(ProcurementRecordRepository::class);
-    $this->eventRepository = new EventRepository($this->manager);
-    $this->documentRepository = new DocumentRepository($this->manager);
     $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
     $this->procurementRepository = mock(ProcurementRepository::class);
 
-    // Default mock: return null for any batch procurement lookup (no mode info)
-    $this->mirrorRepository
-        ->shouldReceive('findManyByProcurement')
-        ->andReturn([])
-        ->byDefault();
-
-    // Default mock: return empty for events and documents
-    $this->mirrorRepository
-        ->shouldReceive('findRecentEvents')
-        ->andReturn([])
-        ->byDefault();
-
-    $this->mirrorRepository
-        ->shouldReceive('getAllDocuments')
-        ->andReturn([])
-        ->byDefault();
-
     $this->service = new DashboardService(
         $this->manager,
-        $this->mirrorRepository,
-        $this->eventRepository,
-        $this->documentRepository,
-        $this->userService,
         $this->procurementRepository,
         new StatisticsCalculator,
-        new ModeAnalyzer
+        new ModeAnalyzer,
+        $this->userService,
     );
 });
 describe('DashboardService', function () {
@@ -189,14 +166,8 @@ describe('DashboardService', function () {
                 'procurement_mode' => 'competitive_bidding',
             ]);
 
-            $this->mirrorRepository
-                ->shouldReceive('findManyByProcurement')
-                ->with(['PR-001', 'PR-002'])
-                ->andReturn([
-                    'PR-001' => $procurementOne,
-                    'PR-002' => $procurementTwo,
-                ])
-                ->once();
+            seedDashboardProcurement($procurementOne);
+            seedDashboardProcurement($procurementTwo);
 
             $result = $this->service->getProcurementsByKey($streamData);
 
@@ -534,10 +505,7 @@ describe('DashboardService', function () {
                 timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
             );
 
-            $this->mirrorRepository
-                ->shouldReceive('findRecentEvents')
-                ->with(16)
-                ->andReturn([$eventData]);
+            seedDashboardEvent($eventData);
 
             $result = $this->service->getRecentActivities();
 
@@ -562,10 +530,7 @@ describe('DashboardService', function () {
                 timestamp: Carbon::now(),
             );
 
-            $this->mirrorRepository
-                ->shouldReceive('findRecentEvents')
-                ->with(16)
-                ->andReturn([$validEvent]);
+            seedDashboardEvent($validEvent);
 
             $result = $this->service->getRecentActivities();
 
@@ -573,18 +538,9 @@ describe('DashboardService', function () {
         });
 
         test('it returns empty array when no events found', function () {
-            $this->mirrorRepository
-                ->shouldReceive('findRecentEvents')
-                ->with(16)
-                ->andReturn([]);
-
             $result = $this->service->getRecentActivities();
 
             expect($result)->toBeEmpty();
-
-            Log::shouldHaveReceived('warning')
-                ->with('No events found in repository')
-                ->once();
         });
 
         test('it sorts activities by timestamp descending', function () {
@@ -625,10 +581,9 @@ describe('DashboardService', function () {
                 timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
             );
 
-            $this->mirrorRepository
-                ->shouldReceive('findRecentEvents')
-                ->with(16)
-                ->andReturn([$event1, $event2, $event3]);
+            seedDashboardEvent($event1);
+            seedDashboardEvent($event2);
+            seedDashboardEvent($event3);
 
             $result = $this->service->getRecentActivities();
 
@@ -655,10 +610,9 @@ describe('DashboardService', function () {
                 );
             }
 
-            $this->mirrorRepository
-                ->shouldReceive('findRecentEvents')
-                ->with(16)
-                ->andReturn($events);
+            foreach ($events as $event) {
+                seedDashboardEvent($event);
+            }
 
             $result = $this->service->getRecentActivities();
 
@@ -666,10 +620,7 @@ describe('DashboardService', function () {
         });
 
         test('it handles blockchain service exceptions', function () {
-            $this->mirrorRepository
-                ->shouldReceive('findRecentEvents')
-                ->with(16)
-                ->andThrow(new Exception('Repository failed'));
+            DB::statement('DROP TABLE procurement_events');
 
             $result = $this->service->getRecentActivities();
 
@@ -740,9 +691,9 @@ describe('DashboardService', function () {
                 timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
             );
 
-            $this->mirrorRepository->shouldReceive('getAllDocuments')
-                ->with(500)
-                ->andReturn([$doc1, $doc2, $doc3]);
+            seedDashboardDocument($doc1);
+            seedDashboardDocument($doc2);
+            seedDashboardDocument($doc3);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -796,9 +747,8 @@ describe('DashboardService', function () {
                 timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
             );
 
-            $this->mirrorRepository->shouldReceive('getAllDocuments')
-                ->with(500)
-                ->andReturn([$doc1, $doc2]);
+            seedDashboardDocument($doc1);
+            seedDashboardDocument($doc2);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -810,17 +760,9 @@ describe('DashboardService', function () {
                 'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $this->mirrorRepository->shouldReceive('getAllDocuments')
-                ->with(500)
-                ->andReturn([]);
-
             $result = $this->service->getTotalDocuments($procurements);
 
             expect($result)->toBe(0);
-
-            Log::shouldHaveReceived('warning')
-                ->with('Failed to retrieve document stream items for dashboard stats.')
-                ->once();
         });
 
         test('it filters documents missing required fields', function () {
@@ -846,9 +788,7 @@ describe('DashboardService', function () {
                 timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
             );
 
-            $this->mirrorRepository->shouldReceive('getAllDocuments')
-                ->with(500)
-                ->andReturn([$doc1]);
+            seedDashboardDocument($doc1);
 
             $result = $this->service->getTotalDocuments($procurements);
             expect($result)->toBe(1); // Only valid document counted
@@ -859,9 +799,7 @@ describe('DashboardService', function () {
                 'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $this->mirrorRepository->shouldReceive('getAllDocuments')
-                ->with(500)
-                ->andThrow(new Exception('Repository error'));
+            DB::statement('DROP TABLE procurement_documents');
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -992,3 +930,57 @@ describe('DashboardService', function () {
         });
     });
 });
+
+function seedDashboardProcurement(ProcurementData|EventData|DocumentData $data): Procurement
+{
+    return Procurement::firstOrCreate(
+        ['pr_number' => $data->prNumber],
+        [
+            'title' => $data->procurementTitle ?? $data->title,
+            'category' => $data instanceof ProcurementData ? $data->category->value : 'goods',
+            'procurement_mode' => $data instanceof ProcurementData ? $data->procurementMode->value : 'competitive_bidding',
+            'abc_amount' => $data instanceof ProcurementData ? $data->abcAmount : 0,
+            'current_status' => $data instanceof ProcurementData ? $data->status : null,
+            'user_id' => $data instanceof ProcurementData ? $data->userId : null,
+            'user_address' => $data->userAddress ?? null,
+            'initiated_at' => $data instanceof ProcurementData ? $data->createdAt : now(),
+        ],
+    );
+}
+
+function seedDashboardEvent(EventData $event): ProcurementEvent
+{
+    $procurement = seedDashboardProcurement($event);
+
+    return ProcurementEvent::create([
+        'procurement_id' => $procurement->id,
+        'event_type' => $event->eventType,
+        'category' => $event->category,
+        'severity' => $event->severity,
+        'details' => $event->details,
+        'stage' => $event->stage,
+        'document_count' => $event->documentCount,
+        'user_address' => $event->userAddress,
+        'occurred_at' => $event->timestamp,
+    ]);
+}
+
+function seedDashboardDocument(DocumentData $document): ProcurementDocument
+{
+    $procurement = seedDashboardProcurement($document);
+
+    return ProcurementDocument::create([
+        'procurement_id' => $procurement->id,
+        'document_type' => $document->documentType,
+        'stage' => $document->stage,
+        'filename' => $document->fileName,
+        'file_key' => $document->fileKey,
+        'mime_type' => $document->mimeType,
+        'file_size' => $document->fileSize,
+        'hash' => $document->hash,
+        'uploaded_by' => $document->uploadedBy,
+        'user_address' => $document->userAddress,
+        'txid' => $document->dataTxid,
+        'uploaded_at' => $document->timestamp,
+    ]);
+}

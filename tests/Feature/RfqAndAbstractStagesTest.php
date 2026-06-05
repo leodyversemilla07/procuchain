@@ -97,14 +97,14 @@ describe('SVP Stage Pages', function () {
         $cases = [
             [
                 'route' => route('bac-secretariat.procurement.pre-procurement.document-guide', [
-                    'pr_number' => 'PR-2024-001',
+                    'pr_number' => 'PR-2024-001-0001',
                     'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
                 ]),
                 'expected_stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
             ],
             [
                 'route' => route('bac-secretariat.procurement.bidding.document-guide', [
-                    'pr_number' => 'PR-2024-001',
+                    'pr_number' => 'PR-2024-001-0001',
                     'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
                 ]),
                 'expected_stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
@@ -152,11 +152,11 @@ describe('SVP Stage Pages', function () {
 
         $cases = [
             route('bac-secretariat.procurement.pre-procurement.check-completion', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
             ]),
             route('bac-secretariat.procurement.bidding.check-completion', [
-                'pr_number' => 'PR-2024-001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
             ]),
         ];
@@ -248,7 +248,7 @@ describe('Authorization for New Stages', function () {
 function buildSvpProcurementData(User $user): ProcurementData
 {
     return new ProcurementData(
-        prNumber: 'PR-2024-001',
+        prNumber: 'PR-2024-001-0001',
         appReference: 'APP-2024-001',
         title: 'Test Procurement',
         description: 'Test Description',
@@ -363,13 +363,13 @@ function stagePageRoute(StageEnums $stage): string
 {
     if ($stage->isPreProcurement()) {
         return route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001-0001',
             'stage' => $stage->value,
         ]);
     }
 
     return route('bac-secretariat.procurement.bidding.show', [
-        'pr_number' => 'PR-2024-001',
+        'pr_number' => 'PR-2024-001-0001',
         'stage' => $stage->value,
     ]);
 }

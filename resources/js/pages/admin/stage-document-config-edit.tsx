@@ -255,9 +255,9 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
 
                 {/* Warning */}
                 {isModified && (
-                    <Card className="border-yellow-500/50 bg-yellow-500/5">
+                    <Card className="border-secondary bg-secondary/50">
                         <CardContent className="flex items-center gap-3 p-4">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                            <AlertTriangle className="text-secondary-foreground h-5 w-5" />
                             <p className="text-sm">You have unsaved changes. Click "Save Changes" to apply them.</p>
                         </CardContent>
                     </Card>

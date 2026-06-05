@@ -2,10 +2,10 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementArchiveRepository;
+use App\Models\Procurement;
+use App\Models\ProcurementArchive;
+use App\Models\ProcurementStage;
 use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementRecordRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
@@ -177,15 +177,10 @@ describe('ProcurementDetailService', function () {
 
 describe('ProcurementListAggregatorService', function () {
     beforeEach(function () {
-        $this->statusManager = Mockery::mock(Manager::class);
-        $this->documentRepository = Mockery::mock(DocumentRepository::class);
         $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
-        $this->archiveRepository = Mockery::mock(ProcurementArchiveRepository::class);
         $this->userService = Mockery::mock(UserService::class);
-        $this->mirrorRepository = Mockery::mock(ProcurementRecordRepository::class);
 
         $this->aggregator = new ProcurementListAggregatorService(
-            $this->mirrorRepository,
             new ProcurementFormatterService,
             new ProcurementActionService($this->procurementRepository),
             new UserNameResolverService($this->userService),
@@ -194,36 +189,29 @@ describe('ProcurementListAggregatorService', function () {
 
     describe('fetchAllProcurements', function () {
         it('returns empty array when no status items exist', function () {
-            $this->mirrorRepository
-                ->shouldReceive('getLatestStatusByProcurement')
-                ->andReturn([]);
-
             $result = $this->aggregator->fetchAllProcurements();
 
             expect($result)->toBeEmpty();
         });
 
         it('fetches and processes procurements with skip actions', function () {
-            $timestamp = Carbon::now()->toIso8601String();
+            $procurement = Procurement::create([
+                'pr_number' => 'PR-2025-001-0001',
+                'title' => 'Test Procurement',
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'abc_amount' => 500000,
+                'current_stage' => 'procurement_initiation',
+                'current_status' => 'procurement_submitted',
+            ]);
 
-            $statusDto = new StatusData(
-                prNumber: 'PR-2025-001-0001',
-                procurementTitle: 'Test Procurement',
-                stage: 'procurement_initiation',
-                currentStatus: 'procurement_submitted',
-                userAddress: '1abc123',
-                timestamp: Carbon::parse($timestamp),
-            );
-
-            $this->mirrorRepository
-                ->shouldReceive('getLatestStatusByProcurement')
-                ->once()
-                ->andReturn([$statusDto]);
-
-            $this->mirrorRepository
-                ->shouldReceive('getAllDocuments')
-                ->once()
-                ->andReturn([]);
+            ProcurementStage::create([
+                'procurement_id' => $procurement->id,
+                'stage' => 'procurement_initiation',
+                'status' => 'procurement_submitted',
+                'entered_at' => Carbon::now(),
+                'user_address' => '1abc123',
+            ]);
 
             $this->userService
                 ->shouldReceive('preloadUserNames')
@@ -232,16 +220,6 @@ describe('ProcurementListAggregatorService', function () {
             $this->userService
                 ->shouldReceive('getUserNameByAddress')
                 ->andReturn('Test User');
-
-            $this->mirrorRepository
-                ->shouldReceive('findManyByProcurement')
-                ->once()
-                ->andReturn([]);
-
-            $this->mirrorRepository
-                ->shouldReceive('getArchivedPrNumbers')
-                ->once()
-                ->andReturn([]);
 
             $this->actingAs(createUserWithRole('admin'));
 
@@ -279,10 +257,23 @@ describe('ProcurementListAggregatorService', function () {
 
             $collection = collect([$activeDto, $archivedDto]);
 
-            $this->mirrorRepository
-                ->shouldReceive('getArchivedPrNumbers')
-                ->once()
-                ->andReturn(['PR-2025-991-0002']);
+            $archivedProcurement = Procurement::create([
+                'pr_number' => 'PR-2025-991-0002',
+                'title' => 'Archived',
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'abc_amount' => 500000,
+                'current_stage' => 'completed',
+                'current_status' => 'completed',
+            ]);
+
+            ProcurementArchive::create([
+                'procurement_id' => $archivedProcurement->id,
+                'action' => 'archive',
+                'reason' => 'Done',
+                'user_id' => '1',
+                'archived_at' => Carbon::now(),
+            ]);
 
             $result = $method->invoke($this->aggregator, $collection, false);
 
@@ -314,10 +305,23 @@ describe('ProcurementListAggregatorService', function () {
 
             $collection = collect([$activeDto, $archivedDto]);
 
-            $this->mirrorRepository
-                ->shouldReceive('getArchivedPrNumbers')
-                ->once()
-                ->andReturn(['PR-2025-991-0002']);
+            $archivedProcurement = Procurement::create([
+                'pr_number' => 'PR-2025-991-0002',
+                'title' => 'Archived',
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'abc_amount' => 500000,
+                'current_stage' => 'completed',
+                'current_status' => 'completed',
+            ]);
+
+            ProcurementArchive::create([
+                'procurement_id' => $archivedProcurement->id,
+                'action' => 'archive',
+                'reason' => 'Done',
+                'user_id' => '1',
+                'archived_at' => Carbon::now(),
+            ]);
 
             $result = $method->invoke($this->aggregator, $collection, true);
 

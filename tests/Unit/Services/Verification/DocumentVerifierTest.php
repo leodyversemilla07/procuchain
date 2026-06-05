@@ -21,7 +21,7 @@ uses(TestCase::class);
 function makeDocumentData(array $overrides = []): DocumentData
 {
     $defaults = [
-        'prNumber' => 'PR-2024-001',
+        'prNumber' => 'PR-2024-001-0001',
         'procurementTitle' => 'Test Procurement',
         'userAddress' => '0xTestAddress',
         'stage' => StageEnums::PROCUREMENT_INITIATION->value,
@@ -183,7 +183,7 @@ describe('DocumentIntegrityVerifier', function () {
             $this->documentRepository
                 ->shouldReceive('findByProcurement')
                 ->once()
-                ->with('PR-2024-001')
+                ->with('PR-2024-001-0001')
                 ->andReturn(collect([$doc1, $doc2]));
 
             $this->blockchainStorage
@@ -196,7 +196,7 @@ describe('DocumentIntegrityVerifier', function () {
                 ->with('fk-2', 'txid-2')
                 ->andReturn(['hash' => $hash2, 'content' => $content2]);
 
-            $results = $this->verifier->batchVerify('PR-2024-001');
+            $results = $this->verifier->batchVerify('PR-2024-001-0001');
 
             expect($results)->toHaveCount(2);
             expect($results[0]['verification']['is_valid'])->toBeTrue();
@@ -243,7 +243,7 @@ describe('DocumentCompletenessVerifier', function () {
                 ->with($stage)
                 ->andReturn([]);
 
-            $result = $this->verifier->verify('PR-2024-001', $stage, [$doc]);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
             expect($result->isComplete)->toBeTrue();
             expect($result->completionPercentage)->toBe(100.0);
@@ -269,7 +269,7 @@ describe('DocumentCompletenessVerifier', function () {
                 ->once()
                 ->andReturn([]);
 
-            $result = $this->verifier->verify('PR-2024-001', $stage, []);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage, []);
 
             expect($result->isComplete)->toBeFalse();
             expect($result->missingDocuments)->not->toBeEmpty();
@@ -299,7 +299,7 @@ describe('DocumentCompletenessVerifier', function () {
                     DocumentTypeEnums::TECHNICAL_SPECIFICATIONS,
                 ]);
 
-            $result = $this->verifier->verify('PR-2024-001', $stage, [$doc]);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
             expect($result->warnings)->not->toBeEmpty();
             expect($result->warnings[0])->toContain('No optional documents uploaded');
@@ -313,7 +313,7 @@ describe('DocumentCompletenessVerifier', function () {
                 ->once()
                 ->andThrow(new Exception('Repository error'));
 
-            $result = $this->verifier->verify('PR-2024-001', $stage);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage);
 
             expect($result->isComplete)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
@@ -337,15 +337,15 @@ describe('DocumentCrossReferenceVerifier', function () {
     describe('verify', function () {
         it('returns consistent when all PR numbers match', function () {
             $doc1 = makeDocumentData([
-                'prNumber' => 'PR-2024-001',
+                'prNumber' => 'PR-2024-001-0001',
                 'timestamp' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
-                'prNumber' => 'PR-2024-001',
+                'prNumber' => 'PR-2024-001-0001',
                 'timestamp' => Carbon::now()->addMinute(),
             ]);
 
-            $result = $this->verifier->verify('PR-2024-001', [$doc1, $doc2]);
+            $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
 
             expect($result->isConsistent)->toBeTrue();
             expect($result->errors)->toBeEmpty();
@@ -353,7 +353,7 @@ describe('DocumentCrossReferenceVerifier', function () {
 
         it('returns inconsistent with PR mismatch', function () {
             $doc1 = makeDocumentData([
-                'prNumber' => 'PR-2024-001',
+                'prNumber' => 'PR-2024-001-0001',
                 'timestamp' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
@@ -361,7 +361,7 @@ describe('DocumentCrossReferenceVerifier', function () {
                 'timestamp' => Carbon::now()->addMinute(),
             ]);
 
-            $result = $this->verifier->verify('PR-2024-001', [$doc1, $doc2]);
+            $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
 
             expect($result->isConsistent)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
@@ -370,19 +370,19 @@ describe('DocumentCrossReferenceVerifier', function () {
 
         it('warns about out-of-order documents', function () {
             $doc1 = makeDocumentData([
-                'prNumber' => 'PR-2024-001',
+                'prNumber' => 'PR-2024-001-0001',
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
                 'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
                 'timestamp' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
-                'prNumber' => 'PR-2024-001',
+                'prNumber' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PROCUREMENT_INITIATION->value,
                 'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
                 'timestamp' => Carbon::now()->addMinute(),
             ]);
 
-            $result = $this->verifier->verify('PR-2024-001', [$doc1, $doc2]);
+            $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
 
             expect($result->warnings)->not->toBeEmpty();
             expect($result->warnings[0])->toContain('out of stage order');
@@ -394,7 +394,7 @@ describe('DocumentCrossReferenceVerifier', function () {
                 ->once()
                 ->andThrow(new Exception('Connection failed'));
 
-            $result = $this->verifier->verify('PR-2024-001');
+            $result = $this->verifier->verify('PR-2024-001-0001');
 
             expect($result->isConsistent)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
@@ -438,7 +438,7 @@ describe('DocumentComplianceVerifier', function () {
                 ->with($stage)
                 ->andReturn([]);
 
-            $result = $this->verifier->verify('PR-2024-001', $stage, [$doc]);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
             expect($result->isCompliant)->toBeTrue();
             expect($result->errors)->toBeEmpty();
@@ -464,7 +464,7 @@ describe('DocumentComplianceVerifier', function () {
                 ->with($stage)
                 ->andReturn([]);
 
-            $result = $this->verifier->verify('PR-2024-001', $stage, [$doc]);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
             expect($result->isCompliant)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
@@ -491,7 +491,7 @@ describe('DocumentComplianceVerifier', function () {
                 ->with($stage)
                 ->andReturn([]);
 
-            $result = $this->verifier->verify('PR-2024-001', $stage, [$doc]);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
             expect($result->warnings)->not->toBeEmpty();
             expect($result->warnings[0])->toContain('may not be appropriate');
@@ -505,7 +505,7 @@ describe('DocumentComplianceVerifier', function () {
                 ->once()
                 ->andThrow(new Exception('Service unavailable'));
 
-            $result = $this->verifier->verify('PR-2024-001', $stage);
+            $result = $this->verifier->verify('PR-2024-001-0001', $stage);
 
             expect($result->isCompliant)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();

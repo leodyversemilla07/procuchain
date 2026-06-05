@@ -46,18 +46,21 @@ const breadcrumbs = [
     { title: 'Audit Log Detail', href: '#' },
 ];
 
-const SEVERITY_COLORS: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+const SEVERITY_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    critical: 'destructive',
+    high: 'default',
+    medium: 'secondary',
+    low: 'outline',
 };
 
-const RECOVERY_STATUS_STYLES: Record<string, { className: string; icon: typeof CheckCircle2; label: string }> = {
-    pending: { className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, label: 'Pending' },
-    restored: { className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2, label: 'Restored' },
-    failed: { className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle, label: 'Failed' },
-    skipped: { className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', icon: Shield, label: 'Skipped' },
+const RECOVERY_STATUS_STYLES: Record<
+    string,
+    { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof CheckCircle2; label: string }
+> = {
+    pending: { variant: 'secondary', icon: Clock, label: 'Pending' },
+    restored: { variant: 'default', icon: CheckCircle2, label: 'Restored' },
+    failed: { variant: 'destructive', icon: XCircle, label: 'Failed' },
+    skipped: { variant: 'outline', icon: Shield, label: 'Skipped' },
 };
 
 const VIOLATION_TYPE_LABELS: Record<string, string> = {
@@ -109,7 +112,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                     <CardTitle className="text-sm font-medium">Severity</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <Badge className={SEVERITY_COLORS[log.severity]}>{log.severity}</Badge>
+                                    <Badge variant={SEVERITY_VARIANTS[log.severity] ?? 'secondary'}>{log.severity}</Badge>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -125,7 +128,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                     <CardTitle className="text-sm font-medium">Recovery Status</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <Badge className={RECOVERY_STATUS_STYLES[log.recovery_status]?.className}>
+                                    <Badge variant={RECOVERY_STATUS_STYLES[log.recovery_status]?.variant ?? 'secondary'}>
                                         <RecoveryIcon data-icon="inline-start" />
                                         {RECOVERY_STATUS_STYLES[log.recovery_status]?.label}
                                     </Badge>
@@ -242,12 +245,12 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                             {log.field_differences.map((diff, i) => (
                                                 <TableRow key={i}>
                                                     <TableCell className="font-mono text-xs">{diff.field}</TableCell>
-                                                    <TableCell className="bg-green-50/50 text-xs dark:bg-green-950/20">
+                                                    <TableCell className="bg-primary/5 text-xs">
                                                         {typeof diff.old_value === 'object'
                                                             ? JSON.stringify(diff.old_value)
                                                             : String(diff.old_value ?? '—')}
                                                     </TableCell>
-                                                    <TableCell className="bg-red-50/50 text-xs dark:bg-red-950/20">
+                                                    <TableCell className="bg-destructive/5 text-xs">
                                                         {typeof diff.new_value === 'object'
                                                             ? JSON.stringify(diff.new_value)
                                                             : String(diff.new_value ?? '—')}
@@ -265,12 +268,10 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                             {log.chain_snapshot && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-green-700 dark:text-green-400">
-                                            Chain Snapshot (Blockchain - Source of Truth)
-                                        </CardTitle>
+                                        <CardTitle className="text-primary">Chain Snapshot (Blockchain - Source of Truth)</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <pre className="max-h-96 overflow-auto rounded-lg bg-green-50/50 p-4 text-xs dark:bg-green-950/20">
+                                        <pre className="bg-primary/5 max-h-96 overflow-auto rounded-lg p-4 text-xs">
                                             {JSON.stringify(log.chain_snapshot, null, 2)}
                                         </pre>
                                     </CardContent>
@@ -279,10 +280,10 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                             {log.mirror_snapshot && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-red-700 dark:text-red-400">Mirror Snapshot (Database - Tampered)</CardTitle>
+                                        <CardTitle className="text-destructive">Mirror Snapshot (Database - Tampered)</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <pre className="max-h-96 overflow-auto rounded-lg bg-red-50/50 p-4 text-xs dark:bg-red-950/20">
+                                        <pre className="bg-destructive/5 max-h-96 overflow-auto rounded-lg p-4 text-xs">
                                             {JSON.stringify(log.mirror_snapshot, null, 2)}
                                         </pre>
                                     </CardContent>
@@ -306,8 +307,8 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <div className="h-32 w-full animate-pulse rounded bg-gray-200" />
-                        <div className="h-64 w-full animate-pulse rounded bg-gray-200" />
+                        <div className="bg-muted h-32 w-full animate-pulse rounded" />
+                        <div className="bg-muted h-64 w-full animate-pulse rounded" />
                     </div>
                 )}
             </div>

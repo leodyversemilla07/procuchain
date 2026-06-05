@@ -85,16 +85,16 @@ describe('ProcurementPolicy', function () {
 
     it('enforces archive route authorization', function () {
         $this->actingAs($this->chairman)
-            ->post('/procurement/PR-2026-001/archive')
+            ->post('/procurement/PR-2026-001-0001/archive')
             ->assertForbidden();
 
         $this->actingAs($this->hope)
-            ->post('/procurement/PR-2026-001/archive')
+            ->post('/procurement/PR-2026-001-0001/archive')
             ->assertForbidden();
 
         $this->post('/logout');
 
-        $this->post('/procurement/PR-2026-001/archive')
+        $this->post('/procurement/PR-2026-001-0001/archive')
             ->assertRedirect('/login');
     });
 });

@@ -44,14 +44,14 @@ describe('ProcurementNotFoundException', function () {
     });
 
     it('creates exception for specific procurement ID', function () {
-        $exception = ProcurementNotFoundException::forId('PR-2025-0001');
-        expect($exception->getMessage())->toContain('PR-2025-0001');
-        expect($exception->getProcurementId())->toBe('PR-2025-0001');
+        $exception = ProcurementNotFoundException::forId('PR-2025-000-0001');
+        expect($exception->getMessage())->toContain('PR-2025-000-0001');
+        expect($exception->getProcurementId())->toBe('PR-2025-000-0001');
     });
 
     it('creates exception for specific stage', function () {
-        $exception = ProcurementNotFoundException::forStage('PR-2025-0001', 'bidding');
-        expect($exception->getMessage())->toContain('PR-2025-0001');
+        $exception = ProcurementNotFoundException::forStage('PR-2025-000-0001', 'bidding');
+        expect($exception->getMessage())->toContain('PR-2025-000-0001');
         expect($exception->getMessage())->toContain('bidding');
     });
 
@@ -71,16 +71,16 @@ describe('DocumentUploadException', function () {
 
     it('creates validation failed exception', function () {
         $file = UploadedFile::fake()->create('test.exe', 1024);
-        $exception = DocumentUploadException::validationFailed($file, 'Invalid file type', 'PR-2025-0001');
+        $exception = DocumentUploadException::validationFailed($file, 'Invalid file type', 'PR-2025-000-0001');
 
         expect($exception->getMessage())->toContain('validation failed');
         expect($exception->getFilename())->toBe('test.exe');
-        expect($exception->getProcurementId())->toBe('PR-2025-0001');
+        expect($exception->getProcurementId())->toBe('PR-2025-000-0001');
         expect($exception->getContext())->toHaveKey('reason');
     });
 
     it('creates storage failed exception', function () {
-        $exception = DocumentUploadException::storageFailed('document.pdf', 'Disk full', 'PR-2025-0001');
+        $exception = DocumentUploadException::storageFailed('document.pdf', 'Disk full', 'PR-2025-000-0001');
         expect($exception->getMessage())->toContain('Failed to store document');
         expect($exception->getFilename())->toBe('document.pdf');
     });

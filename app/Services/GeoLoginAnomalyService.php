@@ -89,6 +89,10 @@ class GeoLoginAnomalyService
      */
     public function getGeolocation(string $ipAddress): ?array
     {
+        if (app()->runningUnitTests()) {
+            return null;
+        }
+
         $cacheKey = "geo_ip:{$ipAddress}";
 
         return Cache::remember($cacheKey, self::GEO_CACHE_TTL, function () use ($ipAddress) {

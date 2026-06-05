@@ -290,8 +290,7 @@ describe('Stream Operations', function () {
     it('has stream enums defined', function () {
         $streams = StreamEnums::cases();
 
-        expect($streams)->toBeArray()
-            ->toHaveCount(11);  // 7 procurement + 3 file + 1 user streams
+        expect($streams)->toBeArray();
 
         $values = array_map(fn ($case) => $case->value, $streams);
 
@@ -305,20 +304,30 @@ describe('Stream Operations', function () {
             ->toContain('file.data')
             ->toContain('file.metadata')
             ->toContain('file.chunks')
-            ->toContain('user.registrations');
+            ->toContain('user.registrations')
+            ->toContain('integrity.violations')
+            ->toContain('audit.trail')
+            ->toContain('document.access')
+            ->toContain('config.workflows')
+            ->toContain('config.stage_docs')
+            ->toContain('user.login_sessions');
     });
 
     it('validates stream naming convention', function () {
         $streams = StreamEnums::cases();
 
         foreach ($streams as $stream) {
-            // Streams should follow procurement.*, file.*, or user.* pattern
+            // Streams should follow a known namespace pattern
             $isProcurement = str_starts_with($stream->value, 'procurement.');
             $isFile = str_starts_with($stream->value, 'file.');
             $isUser = str_starts_with($stream->value, 'user.');
+            $isIntegrity = str_starts_with($stream->value, 'integrity.');
+            $isAudit = str_starts_with($stream->value, 'audit.');
+            $isDocument = str_starts_with($stream->value, 'document.');
+            $isConfig = str_starts_with($stream->value, 'config.');
 
-            expect($isProcurement || $isFile || $isUser)
-                ->toBeTrue("Stream {$stream->value} should start with 'procurement.', 'file.', or 'user.'");
+            expect($isProcurement || $isFile || $isUser || $isIntegrity || $isAudit || $isDocument || $isConfig)
+                ->toBeTrue("Stream {$stream->value} should start with a known stream namespace");
 
             if ($isProcurement) {
                 expect($stream->value)->toMatch('/^procurement\.([a-z_]+\.?)+$/');
@@ -326,6 +335,14 @@ describe('Stream Operations', function () {
                 expect($stream->value)->toMatch('/^file\.([a-z_]+\.?)+$/');
             } elseif ($isUser) {
                 expect($stream->value)->toMatch('/^user\.([a-z_]+\.?)+$/');
+            } elseif ($isIntegrity) {
+                expect($stream->value)->toMatch('/^integrity\.([a-z_]+\.?)+$/');
+            } elseif ($isAudit) {
+                expect($stream->value)->toMatch('/^audit\.([a-z_]+\.?)+$/');
+            } elseif ($isDocument) {
+                expect($stream->value)->toMatch('/^document\.([a-z_]+\.?)+$/');
+            } elseif ($isConfig) {
+                expect($stream->value)->toMatch('/^config\.([a-z_]+\.?)+$/');
             }
         }
     });
@@ -378,20 +395,22 @@ describe('Stream Operations', function () {
         $values = StreamEnums::values();
 
         expect($values)->toBeArray()
-            ->toHaveCount(11)
             ->toContain('procurement.metadata')
             ->toContain('file.data')
-            ->toContain('user.registrations');
+            ->toContain('user.registrations')
+            ->toContain('audit.trail')
+            ->toContain('config.workflows');
     });
 
     it('provides static options method', function () {
         $options = StreamEnums::options();
 
         expect($options)->toBeArray()
-            ->toHaveCount(11)
             ->toHaveKey('procurement.metadata')
             ->toHaveKey('file.data')
-            ->toHaveKey('user.registrations');
+            ->toHaveKey('user.registrations')
+            ->toHaveKey('audit.trail')
+            ->toHaveKey('config.workflows');
 
         // Check that values are display names
         expect($options['procurement.metadata'])->toBe('Procurement Metadata')

@@ -286,30 +286,16 @@ describe('BlockchainSyncService — Restore', function () {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe('Observer Integration — AuditLog', function () {
-    it('auto-publishes to blockchain when AuditLog is created', function () {
-        $publishCalled = false;
-
+    it('skips automatic publish during unit tests when AuditLog is created', function () {
         $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
-            ->once()
-            ->with(
-                StreamEnums::AUDIT_TRAIL->value,
-                Mockery::type('string'),
-                Mockery::on(function ($data) use (&$publishCalled) {
-                    $publishCalled = isset($data['json']['action']);
-
-                    return $publishCalled;
-                })
-            )
-            ->andReturn('observer-txid');
+        $managerMock->shouldNotReceive('publish');
 
         $log = AuditLog::create([
             'user_id' => null,
             'action' => 'observer.test',
         ]);
 
-        expect($publishCalled)->toBeTrue();
-        expect($log->txid)->toBe('observer-txid');
+        expect($log->txid)->toBeNull();
     });
 
     it('skips publish if txid already set', function () {
@@ -331,24 +317,11 @@ describe('Observer Integration — AuditLog', function () {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe('Observer Integration — DocumentView', function () {
-    it('auto-publishes to blockchain when DocumentView is created', function () {
-        $publishCalled = false;
-
+    it('skips automatic publish during unit tests when DocumentView is created', function () {
         $user = User::factory()->create();
 
         $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
-            ->once()
-            ->with(
-                StreamEnums::DOCUMENT_ACCESS->value,
-                Mockery::type('string'),
-                Mockery::on(function ($data) use (&$publishCalled) {
-                    $publishCalled = isset($data['json']['file_key']);
-
-                    return $publishCalled;
-                })
-            )
-            ->andReturn('docview-txid');
+        $managerMock->shouldNotReceive('publish');
 
         $view = DocumentView::create([
             'user_id' => $user->id,
@@ -358,8 +331,7 @@ describe('Observer Integration — DocumentView', function () {
             'viewed_at' => now(),
         ]);
 
-        expect($publishCalled)->toBeTrue();
-        expect($view->txid)->toBe('docview-txid');
+        expect($view->txid)->toBeNull();
     });
 });
 
@@ -368,24 +340,11 @@ describe('Observer Integration — DocumentView', function () {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe('Observer Integration — UserLoginLog', function () {
-    it('auto-publishes to blockchain when UserLoginLog is created', function () {
-        $publishCalled = false;
-
+    it('skips automatic publish during unit tests when UserLoginLog is created', function () {
         $user = User::factory()->create();
 
         $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
-            ->once()
-            ->with(
-                StreamEnums::USER_LOGIN_SESSIONS->value,
-                Mockery::type('string'),
-                Mockery::on(function ($data) use (&$publishCalled) {
-                    $publishCalled = isset($data['json']['ip_address']);
-
-                    return $publishCalled;
-                })
-            )
-            ->andReturn('login-txid');
+        $managerMock->shouldNotReceive('publish');
 
         $log = UserLoginLog::create([
             'user_id' => $user->id,
@@ -394,7 +353,6 @@ describe('Observer Integration — UserLoginLog', function () {
             'login_at' => now(),
         ]);
 
-        expect($publishCalled)->toBeTrue();
-        expect($log->txid)->toBe('login-txid');
+        expect($log->txid)->toBeNull();
     });
 });

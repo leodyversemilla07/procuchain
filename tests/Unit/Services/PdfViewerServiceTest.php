@@ -26,7 +26,7 @@ beforeEach(function () {
 describe('PdfViewerService', function () {
     describe('prepareDocumentData', function () {
         it('returns correct structure with all fields when document exists', function () {
-            $fileKey = 'PR-2025-001/pre-procurement/stage-01/purchase_request.pdf';
+            $fileKey = 'PR-2025-001-0001/pre-procurement/stage-01/purchase_request.pdf';
             $request = Request::create('/pdf-viewer/'.$fileKey);
 
             $this->procurementDataService
@@ -34,7 +34,7 @@ describe('PdfViewerService', function () {
                 ->with($fileKey)
                 ->once()
                 ->andReturn([
-                    'pr_number' => 'PR-2025-001',
+                    'pr_number' => 'PR-2025-001-0001',
                     'procurement_title' => 'Test Procurement',
                     'document_type' => 'purchase_request',
                     'stage' => 'procurement_initiation',
@@ -52,7 +52,7 @@ describe('PdfViewerService', function () {
 
             $this->procurementDataService
                 ->shouldReceive('getCurrentProcurementStatus')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn([
                     'current_status' => 'procurement_submitted',
@@ -67,7 +67,7 @@ describe('PdfViewerService', function () {
 
             expect($result)
                 ->toHaveKeys(['pr_number', 'procurement_title', 'document_type', 'stage', 'file_size', 'hash', 'blockchain_txid'])
-                ->and($result['pr_number'])->toBe('PR-2025-001')
+                ->and($result['pr_number'])->toBe('PR-2025-001-0001')
                 ->and($result['blockchain_txid'])->toBe('txid_123')
                 ->and($result['stage_display'])->toBeString()
                 ->and($result['document_type_display'])->toBeString()
@@ -75,14 +75,14 @@ describe('PdfViewerService', function () {
         });
 
         it('handles document found without status data', function () {
-            $fileKey = 'PR-2025-001/pre-procurement/stage-01/doc.pdf';
+            $fileKey = 'PR-2025-001-0001/pre-procurement/stage-01/doc.pdf';
             $request = Request::create('/pdf-viewer/'.$fileKey);
 
             $this->procurementDataService
                 ->shouldReceive('getDocumentDataByFileKey')
                 ->once()
                 ->andReturn([
-                    'pr_number' => 'PR-2025-001',
+                    'pr_number' => 'PR-2025-001-0001',
                     'procurement_title' => 'Test',
                     'document_type' => 'purchase_request',
                     'stage' => 'procurement_initiation',
@@ -102,21 +102,21 @@ describe('PdfViewerService', function () {
 
             expect($result)
                 ->toHaveKeys(['pr_number', 'document_type', 'stage', 'hash'])
-                ->and($result['pr_number'])->toBe('PR-2025-001')
+                ->and($result['pr_number'])->toBe('PR-2025-001-0001')
                 ->and($result)->not->toHaveKey('blockchain_txid');
         });
     });
 
     describe('getFileViewStats', function () {
         it('returns correct statistics structure', function () {
-            $fileKey = 'PR-2025-001/pre-procurement/stage-01/test.pdf';
+            $fileKey = 'PR-2025-001-0001/pre-procurement/stage-01/test.pdf';
 
             $user = createUserWithRole('bac_secretariat');
 
             DocumentView::create([
                 'user_id' => $user->id,
                 'file_key' => $fileKey,
-                'pr_number' => 'PR-2025-001',
+                'pr_number' => 'PR-2025-001-0001',
                 'procurement_title' => 'Test',
                 'document_type' => 'purchase_request',
                 'stage' => 'procurement_initiation',

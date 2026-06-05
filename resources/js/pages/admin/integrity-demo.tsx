@@ -67,9 +67,9 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                 </div>
 
                 {message && (
-                    <Card className="mb-6 border-green-200 dark:border-green-900">
+                    <Card className="border-primary/20 bg-primary/5 mb-6">
                         <CardContent className="p-4">
-                            <p className="text-green-700 dark:text-green-400">{message}</p>
+                            <p className="text-primary">{message}</p>
                         </CardContent>
                     </Card>
                 )}
@@ -121,9 +121,9 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                     </Card>
 
                     {/* Blockchain Record */}
-                    <Card className="border-green-200 dark:border-green-900">
+                    <Card className="border-primary/20 bg-primary/5">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                            <CardTitle className="text-primary flex items-center gap-2">
                                 <CheckCircle2 className="h-5 w-5" />
                                 Blockchain Record (Source of Truth)
                             </CardTitle>
@@ -133,13 +133,11 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                             {blockchainData ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
-                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">✓ Immutable</Badge>
-                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            ✓ Always Available
-                                        </Badge>
+                                        <Badge>✓ Immutable</Badge>
+                                        <Badge variant="secondary">✓ Always Available</Badge>
                                     </div>
                                     <Separator />
-                                    <pre className="max-h-48 overflow-auto rounded bg-green-50/50 p-3 text-xs dark:bg-green-950/20">
+                                    <pre className="bg-muted max-h-48 overflow-auto rounded p-3 text-xs">
                                         {JSON.stringify(blockchainData, null, 2)}
                                     </pre>
                                     <p className="text-muted-foreground text-sm">
@@ -148,8 +146,8 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                                    <CheckCircle2 className="mb-3 h-12 w-12 text-green-500" />
-                                    <p className="font-medium text-green-700 dark:text-green-400">Data exists on blockchain</p>
+                                    <CheckCircle2 className="text-primary mb-3 h-12 w-12" />
+                                    <p className="text-primary font-medium">Data exists on blockchain</p>
                                     <p className="text-muted-foreground text-sm">Ready to restore if needed</p>
                                 </div>
                             )}
@@ -178,7 +176,7 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                                 </>
                             )}
                             {status === 'deleted' && (
-                                <Button onClick={() => handleAction('restore')} disabled={processing} className="bg-green-600 hover:bg-green-700">
+                                <Button onClick={() => handleAction('restore')} disabled={processing}>
                                     <Download className="mr-2 h-4 w-4" />
                                     {processing ? 'Restoring...' : 'Restore from Blockchain'}
                                 </Button>

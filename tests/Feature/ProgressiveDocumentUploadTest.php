@@ -26,7 +26,7 @@ describe('Progressive Document Upload - Authorization', function () {
         $file = UploadedFile::fake()->create('document.pdf', 1024, 'application/pdf');
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
-            'pr_number' => 'PR-2025-001',
+            'pr_number' => 'PR-2025-001-0001',
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]), [
             'document_file' => $file,
@@ -44,7 +44,7 @@ describe('Progressive Document Upload - Authorization', function () {
         $file = UploadedFile::fake()->create('document.pdf', 1024, 'application/pdf');
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
-            'pr_number' => 'PR-2025-001',
+            'pr_number' => 'PR-2025-001-0001',
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]), [
             'document_file' => $file,

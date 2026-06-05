@@ -62,10 +62,10 @@ it('filters ledger entries by pr_number', function () {
     $mockData = [
         [
             'txid' => 'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-            'keys' => ['PR-2025-001'],
+            'keys' => ['PR-2025-001-0001'],
             'data' => [
                 'json' => [
-                    'pr_number' => 'PR-2025-001',
+                    'pr_number' => 'PR-2025-001-0001',
                     'procurement_title' => 'Test Procurement',
                     'event_type' => 'procurement_created',
                     'details' => 'Procurement created',
@@ -76,10 +76,10 @@ it('filters ledger entries by pr_number', function () {
         ],
         [
             'txid' => 'def4567890abcdef1234567890abcdef1234567890abcdef1234567890abc',
-            'keys' => ['PR-2025-002'],
+            'keys' => ['PR-2025-002-0001'],
             'data' => [
                 'json' => [
-                    'pr_number' => 'PR-2025-002',
+                    'pr_number' => 'PR-2025-002-0001',
                     'procurement_title' => 'Another Procurement',
                     'event_type' => 'procurement_created',
                     'details' => 'Procurement created',
@@ -99,12 +99,12 @@ it('filters ledger entries by pr_number', function () {
     $this->app->instance(Manager::class, $managerMock);
 
     $this->actingAs($user)
-        ->get('/admin/shared-ledger?pr_number=PR-2025-001&node=default')
+        ->get('/admin/shared-ledger?pr_number=PR-2025-001-0001&node=default')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')
             ->has('entries', 1)
-            ->where('entries.0.pr_number', 'PR-2025-001')
+            ->where('entries.0.pr_number', 'PR-2025-001-0001')
         );
 });
 

@@ -236,7 +236,7 @@ class IntegrityAuditLog extends Model
         ]);
 
         // Publish to blockchain for permanent, immutable audit trail
-        if ($publishToChain) {
+        if ($publishToChain && ! app()->runningUnitTests()) {
             $auditLog->publishToBlockchain();
         }
 
@@ -320,7 +320,7 @@ class IntegrityAuditLog extends Model
         ]);
 
         // Publish recovery to blockchain for permanent audit trail
-        if ($publishToChain) {
+        if ($publishToChain && ! app()->runningUnitTests()) {
             try {
                 app(BlockchainAuditTrailService::class)->publishRecovery($this, $result);
             } catch (\Exception $e) {

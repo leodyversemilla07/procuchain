@@ -77,6 +77,7 @@ test('admin can update existing user', function () {
 
     $user = User::factory()->create([
         'email' => 'original@example.com',
+        'blockchain_address' => '1OldUserBlockchainAddress',
     ]);
     $user->assignRole('bac_secretariat');
 

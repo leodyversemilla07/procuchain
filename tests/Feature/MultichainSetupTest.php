@@ -3,6 +3,8 @@
 use App\Services\Manager;
 
 beforeEach(function () {
+    config(['multichain.nodes' => []]);
+
     $this->multichain = mock(Manager::class);
     $this->app->instance(Manager::class, $this->multichain);
 });
@@ -30,7 +32,6 @@ it('runs without throwing exceptions', function () {
     $this->multichain->shouldReceive('grant')->andReturnNull();
 
     // Just ensure it doesn't throw an exception
-    $this->artisan('multichain:setup');
-
-    expect(true)->toBeTrue(); // Dummy assertion to make the test pass
+    $this->artisan('multichain:setup')
+        ->assertSuccessful();
 });

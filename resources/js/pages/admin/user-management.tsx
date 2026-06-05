@@ -119,13 +119,13 @@ export default function AdminUserManagement() {
                             label: `Email Verified (${stats.verifiedPercentage}%)`,
                             value: stats.verified,
                             icon: CheckCircle2,
-                            iconClassName: 'bg-success/10 text-success',
+                            iconClassName: 'bg-primary/10 text-primary',
                         },
                         {
                             label: `2FA Enabled (${stats.twoFactorPercentage}%)`,
                             value: stats.twoFactor,
                             icon: Shield,
-                            iconClassName: 'bg-blue-500/10 text-blue-600',
+                            iconClassName: 'bg-secondary text-secondary-foreground',
                         },
                         { label: 'Administrators', value: stats.admins, icon: UserCheck, iconClassName: 'bg-destructive/10 text-destructive' },
                     ]}

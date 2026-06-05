@@ -99,20 +99,20 @@ class DocumentPolicy
             return $document->prNumber;
         }
 
-        $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey)
-            ?? $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
-
-        $prNumber = data_get($documentData, 'pr_number');
-        if (is_string($prNumber) && $prNumber !== '') {
-            return $prNumber;
-        }
-
         $documentView = DocumentView::query()
             ->where('file_key', $fileKey)
             ->first();
 
         if ($documentView !== null && ! empty($documentView->pr_number)) {
             return $documentView->pr_number;
+        }
+
+        $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey)
+            ?? $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
+
+        $prNumber = data_get($documentData, 'pr_number');
+        if (is_string($prNumber) && $prNumber !== '') {
+            return $prNumber;
         }
 
         $parts = explode('/', $fileKey);

@@ -102,6 +102,10 @@ class NormalizedTableSyncService
 
             $txid = $item['txid'] ?? '';
             $blocktime = $item['blocktime'] ?? null;
+            $userId = $data['user_id'] ?? null;
+            if (is_array($userId)) {
+                $userId = $userId['id'] ?? null;
+            }
 
             $attributes = [
                 'app_reference' => $data['app_reference'] ?? null,
@@ -127,6 +131,7 @@ class NormalizedTableSyncService
                 'approval_date' => $data['approval_date'] ?? null,
                 'current_status' => $data['status'] ?? 'draft',
                 'user_address' => $data['user_address'] ?? null,
+                'user_id' => $userId !== null ? (string) $userId : null,
                 'initiated_at' => $this->normaliseDate($data['created_at'] ?? null),
                 'txid' => $txid,
                 'is_blockchain_verified' => true,

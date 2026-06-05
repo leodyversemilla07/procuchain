@@ -58,18 +58,21 @@ const breadcrumbs = [
     { title: 'Verification Report', href: '#' },
 ];
 
-const SEVERITY_COLORS: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+const SEVERITY_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    critical: 'destructive',
+    high: 'default',
+    medium: 'secondary',
+    low: 'outline',
 };
 
-const RECOVERY_STATUS_STYLES: Record<string, { className: string; icon: typeof CheckCircle2; label: string }> = {
-    pending: { className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, label: 'Pending' },
-    restored: { className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2, label: 'Restored' },
-    failed: { className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle, label: 'Failed' },
-    skipped: { className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', icon: Shield, label: 'Skipped' },
+const RECOVERY_STATUS_STYLES: Record<
+    string,
+    { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof CheckCircle2; label: string }
+> = {
+    pending: { variant: 'secondary', icon: Clock, label: 'Pending' },
+    restored: { variant: 'default', icon: CheckCircle2, label: 'Restored' },
+    failed: { variant: 'destructive', icon: XCircle, label: 'Failed' },
+    skipped: { variant: 'outline', icon: Shield, label: 'Skipped' },
 };
 
 const VIOLATION_TYPE_LABELS: Record<string, string> = {
@@ -152,28 +155,28 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-red-600 dark:text-red-400">Critical</CardTitle>
+                                    <CardTitle className="text-destructive text-sm font-medium">Critical</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-3xl font-bold text-red-600 dark:text-red-400">{report.summary.critical}</p>
+                                    <p className="text-destructive text-3xl font-bold">{report.summary.critical}</p>
                                     <p className="text-muted-foreground mt-1 text-xs">Requires immediate attention</p>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">Restored</CardTitle>
+                                    <CardTitle className="text-primary text-sm font-medium">Restored</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">{report.summary.restored}</p>
+                                    <p className="text-primary text-3xl font-bold">{report.summary.restored}</p>
                                     <p className="text-muted-foreground mt-1 text-xs">Successfully recovered from chain</p>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Pending</CardTitle>
+                                    <CardTitle className="text-secondary-foreground text-sm font-medium">Pending</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{report.summary.pending}</p>
+                                    <p className="text-secondary-foreground text-3xl font-bold">{report.summary.pending}</p>
                                     <p className="text-muted-foreground mt-1 text-xs">Awaiting manual repair</p>
                                 </CardContent>
                             </Card>
@@ -204,16 +207,16 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                         <h4 className="text-muted-foreground mb-2 text-sm font-medium">By Severity</h4>
                                         <div className="space-y-2">
                                             {[
-                                                { label: 'Critical', value: report.summary.critical, color: 'text-red-600 dark:text-red-400' },
-                                                { label: 'High', value: report.summary.high, color: 'text-orange-600 dark:text-orange-400' },
-                                                { label: 'Medium', value: report.summary.medium, color: 'text-yellow-600 dark:text-yellow-400' },
-                                                { label: 'Low', value: report.summary.low, color: 'text-blue-600 dark:text-blue-400' },
+                                                { label: 'Critical', value: report.summary.critical, variant: 'destructive' as const },
+                                                { label: 'High', value: report.summary.high, variant: 'default' as const },
+                                                { label: 'Medium', value: report.summary.medium, variant: 'secondary' as const },
+                                                { label: 'Low', value: report.summary.low, variant: 'outline' as const },
                                             ]
                                                 .filter((s) => s.value > 0)
                                                 .map((severity) => (
                                                     <div key={severity.label} className="flex items-center justify-between">
                                                         <span className="text-sm">{severity.label}</span>
-                                                        <Badge variant="outline" className={`font-mono ${severity.color}`}>
+                                                        <Badge variant={severity.variant} className="font-mono">
                                                             {severity.value}
                                                         </Badge>
                                                     </div>
@@ -234,7 +237,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                 {report.violations.length === 0 ? (
                                     <Empty>
                                         <EmptyMedia>
-                                            <CheckCircle2 className="h-12 w-12 text-green-500" />
+                                            <CheckCircle2 className="text-primary h-12 w-12" />
                                         </EmptyMedia>
                                         <EmptyHeader>
                                             <EmptyTitle>No Violations</EmptyTitle>
@@ -255,14 +258,18 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                         className="hover:bg-muted/50 flex w-full items-center justify-between p-4 text-left"
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <Badge className={SEVERITY_COLORS[violation.severity]}>{violation.severity}</Badge>
+                                                            <Badge variant={SEVERITY_VARIANTS[violation.severity] ?? 'secondary'}>
+                                                                {violation.severity}
+                                                            </Badge>
                                                             <span className="font-medium">
                                                                 {VIOLATION_TYPE_LABELS[violation.violation_type] ?? violation.violation_type}
                                                             </span>
                                                             <span className="text-muted-foreground text-sm">PR: {violation.stream_key}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            <Badge className={RECOVERY_STATUS_STYLES[violation.recovery_status]?.className}>
+                                                            <Badge
+                                                                variant={RECOVERY_STATUS_STYLES[violation.recovery_status]?.variant ?? 'secondary'}
+                                                            >
                                                                 <RecoveryIcon data-icon="inline-start" />
                                                                 {RECOVERY_STATUS_STYLES[violation.recovery_status]?.label}
                                                             </Badge>
@@ -308,12 +315,12 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                                                         <TableCell className="font-mono text-xs">
                                                                                             {diff.field}
                                                                                         </TableCell>
-                                                                                        <TableCell className="bg-green-50/50 text-xs dark:bg-green-950/20">
+                                                                                        <TableCell className="bg-primary/5 text-xs">
                                                                                             {typeof diff.old_value === 'object'
                                                                                                 ? JSON.stringify(diff.old_value)
                                                                                                 : String(diff.old_value ?? '—')}
                                                                                         </TableCell>
-                                                                                        <TableCell className="bg-red-50/50 text-xs dark:bg-red-950/20">
+                                                                                        <TableCell className="bg-destructive/5 text-xs">
                                                                                             {typeof diff.new_value === 'object'
                                                                                                 ? JSON.stringify(diff.new_value)
                                                                                                 : String(diff.new_value ?? '—')}
@@ -332,20 +339,20 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                                             <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                                                                 {violation.chain_snapshot && (
                                                                     <div>
-                                                                        <h4 className="mb-2 text-sm font-medium text-green-700">
+                                                                        <h4 className="text-primary mb-2 text-sm font-medium">
                                                                             Chain Snapshot (Blockchain - Source of Truth)
                                                                         </h4>
-                                                                        <pre className="max-h-48 overflow-auto rounded-lg bg-green-50/50 p-3 text-xs dark:bg-green-950/20">
+                                                                        <pre className="bg-primary/5 max-h-48 overflow-auto rounded-lg p-3 text-xs">
                                                                             {JSON.stringify(violation.chain_snapshot, null, 2)}
                                                                         </pre>
                                                                     </div>
                                                                 )}
                                                                 {violation.mirror_snapshot && (
                                                                     <div>
-                                                                        <h4 className="mb-2 text-sm font-medium text-red-700">
+                                                                        <h4 className="text-destructive mb-2 text-sm font-medium">
                                                                             Mirror Snapshot (Database - Tampered)
                                                                         </h4>
-                                                                        <pre className="max-h-48 overflow-auto rounded-lg bg-red-50/50 p-3 text-xs dark:bg-red-950/20">
+                                                                        <pre className="bg-destructive/5 max-h-48 overflow-auto rounded-lg p-3 text-xs">
                                                                             {JSON.stringify(violation.mirror_snapshot, null, 2)}
                                                                         </pre>
                                                                     </div>

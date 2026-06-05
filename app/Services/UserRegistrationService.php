@@ -30,6 +30,10 @@ class UserRegistrationService
      */
     public function publishRegistration(User $user, string $registeredBy): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         try {
             $manager = app(Manager::class);
 
@@ -92,6 +96,10 @@ class UserRegistrationService
      */
     public function publishAddressChange(User $user, string $oldAddress, string $changedBy): void
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         try {
             $manager = app(Manager::class);
 

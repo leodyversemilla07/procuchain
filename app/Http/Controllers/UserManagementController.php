@@ -152,8 +152,12 @@ class UserManagementController extends Controller
             $updateData = [
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'blockchain_address' => ! empty($validated['blockchain_address']) ? $validated['blockchain_address'] : null,
             ];
+
+            $oldBlockchainAddress = $user->blockchain_address;
+            if (array_key_exists('blockchain_address', $validated)) {
+                $updateData['blockchain_address'] = ! empty($validated['blockchain_address']) ? $validated['blockchain_address'] : null;
+            }
 
             if (! empty($validated['password'])) {
                 // Password is set explicitly (not via $fillable) to prevent mass assignment attacks
@@ -162,10 +166,10 @@ class UserManagementController extends Controller
 
             $user->update($updateData);
 
-            if ($user->wasChanged('blockchain_address')) {
+            if ($user->wasChanged('blockchain_address') && $oldBlockchainAddress !== null && $user->blockchain_address !== null) {
                 app(UserRegistrationService::class)->publishAddressChange(
                     $user,
-                    $user->getOriginal('blockchain_address'),
+                    $oldBlockchainAddress,
                     auth()->user()?->name ?? 'System',
                 );
             }
