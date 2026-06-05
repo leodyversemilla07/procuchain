@@ -1,6 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import admin from '@/routes/admin';
 import { router, usePage, usePoll } from '@inertiajs/react';
@@ -534,64 +542,70 @@ export function useUserManagement() {
                     const user = row.original;
                     return (
                         <DropdownMenu>
-                            <DropdownMenuTrigger render={<Button variant="ghost" className="h-10 w-10 p-0 md:h-8 md:w-8" />}>
+                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-10 md:size-8" />}>
                                 <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreHorizontal />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
-                                <DropdownMenuItem
-                                    onClick={async () => {
-                                        try {
-                                            await navigator.clipboard.writeText(user.email);
-                                            toast.success('Email copied to clipboard', { duration: 3000 });
-                                        } catch (error) {
-                                            toast.error('Failed to copy email', { description: String(error), duration: 5000 });
-                                        }
-                                    }}
-                                >
-                                    Copy email
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => {
-                                        setSelectedUser(user);
-                                        setIsDetailsDialogOpen(true);
-                                    }}
-                                >
-                                    View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={() => {
-                                        setSelectedUser(user);
-                                        setIsLoginHistoryDialogOpen(true);
-                                    }}
-                                >
-                                    <History className="mr-2 h-4 w-4" />
-                                    Login History
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => {
-                                        setSelectedUser(user);
-                                        setIsResetPasswordDialogOpen(true);
-                                    }}
-                                >
-                                    <KeyRound className="mr-2 h-4 w-4" />
-                                    Reset Password
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {hasPermission('edit users') && (
-                                    <DropdownMenuItem onClick={() => openEditModal(user)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit user
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        onClick={async () => {
+                                            try {
+                                                await navigator.clipboard.writeText(user.email);
+                                                toast.success('Email copied to clipboard', { duration: 3000 });
+                                            } catch (error) {
+                                                toast.error('Failed to copy email', { description: String(error), duration: 5000 });
+                                            }
+                                        }}
+                                    >
+                                        Copy email
                                     </DropdownMenuItem>
-                                )}
-                                {hasPermission('delete users') && (
-                                    <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-destructive hover:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete user
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setIsDetailsDialogOpen(true);
+                                        }}
+                                    >
+                                        View Details
                                     </DropdownMenuItem>
-                                )}
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setIsLoginHistoryDialogOpen(true);
+                                        }}
+                                    >
+                                        <History />
+                                        Login History
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setIsResetPasswordDialogOpen(true);
+                                        }}
+                                    >
+                                        <KeyRound />
+                                        Reset Password
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    {hasPermission('edit users') && (
+                                        <DropdownMenuItem onClick={() => openEditModal(user)}>
+                                            <Edit />
+                                            Edit user
+                                        </DropdownMenuItem>
+                                    )}
+                                    {hasPermission('delete users') && (
+                                        <DropdownMenuItem onClick={() => handleDeleteUser(user)} variant="destructive">
+                                            <Trash2 />
+                                            Delete user
+                                        </DropdownMenuItem>
+                                    )}
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     );

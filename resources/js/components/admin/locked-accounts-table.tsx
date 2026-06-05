@@ -3,7 +3,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -62,42 +70,46 @@ export default function LockedAccountsTable({
     // Shared dropdown menu items for a user row
     const renderActionMenu = (user: User) => (
         <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
-                <MoreHorizontal className="h-4 w-4" />
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+                <MoreHorizontal />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    onClick={() => {
-                        navigator.clipboard.writeText(user.email);
-                        toast.success('Email copied to clipboard');
-                    }}
-                >
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copy Email
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onViewProfile(user)}>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onViewLoginHistory(user)}>
-                    <History className="mr-2 h-4 w-4" />
-                    Login History
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuItem
+                        onClick={() => {
+                            navigator.clipboard.writeText(user.email);
+                            toast.success('Email copied to clipboard');
+                        }}
+                    >
+                        <Copy />
+                        Copy Email
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewProfile(user)}>
+                        <ExternalLink />
+                        View Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewLoginHistory(user)}>
+                        <History />
+                        Login History
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {user.is_currently_locked && canManageUsers && (
-                    <DropdownMenuItem onClick={() => onUnlockAccount(user)} className="text-success">
-                        <Unlock className="mr-2 h-4 w-4" />
-                        Unlock Account
-                    </DropdownMenuItem>
-                )}
-                {canManageUsers && (
-                    <DropdownMenuItem onClick={() => onResetAttempts(user)}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Reset Attempts
-                    </DropdownMenuItem>
-                )}
+                <DropdownMenuGroup>
+                    {user.is_currently_locked && canManageUsers && (
+                        <DropdownMenuItem onClick={() => onUnlockAccount(user)}>
+                            <Unlock />
+                            Unlock Account
+                        </DropdownMenuItem>
+                    )}
+                    {canManageUsers && (
+                        <DropdownMenuItem onClick={() => onResetAttempts(user)}>
+                            <RotateCcw />
+                            Reset Attempts
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );

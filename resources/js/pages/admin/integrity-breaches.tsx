@@ -26,7 +26,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
@@ -35,8 +35,8 @@ import integrityBreaches from '@/routes/admin/integrity-breaches';
 import { Head, router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Database, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
-import { toast } from 'sonner';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface BreachRecord {
     id: number;
@@ -82,6 +82,7 @@ interface PageProps {
     };
     success?: string;
     error?: string;
+    [key: string]: unknown;
 }
 
 const breadcrumbs = [
@@ -95,19 +96,6 @@ const SEVERITY_COLORS: Record<string, string> = {
     medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
 };
-
-const BREACH_SEVERITY: Record<string, string> = {
-    hash_mismatch: 'critical',
-    content_mismatch: 'critical',
-    user_address_tampered: 'high',
-    unauthorized_publisher: 'medium',
-    row_deleted: 'low',
-    unauthorized_record: 'critical',
-};
-
-function severityLabel(type: string): string {
-    return BREACH_SEVERITY[type] ?? 'medium';
-}
 
 function truncateHash(hash: string | null | undefined, len = 12): string {
     if (!hash) return '—';
@@ -137,15 +125,15 @@ export default function IntegrityBreaches() {
                     toast.dismiss(toastId);
 
                     const result = data.result;
-                    const breachCount = Object.values(result?.violations ?? {}).reduce((a: number, b: number) => a + b, 0);
+                    const breachCount = Object.values((result?.violations ?? {}) as Record<string, number>).reduce((a, b) => a + b, 0);
                     toast.success('Verification complete', {
                         description: `${result?.verified ?? 0} records checked, ${breachCount} breaches found, ${result?.restored ?? 0} restored.`,
                     });
 
                     // Reload the page to show fresh data
-                    router.reload({ only: ['breaches', 'stats'] }).catch(() => {
-                        // Fallback: if reload fails (e.g. 502), do a full page visit
-                        window.location.reload();
+                    router.reload({
+                        only: ['breaches', 'stats'],
+                        onError: () => window.location.reload(),
                     });
                 } else if (data.status === 'failed') {
                     clearInterval(interval);
@@ -165,11 +153,15 @@ export default function IntegrityBreaches() {
 
     const handleRepair = (id: number) => {
         setRepairing(id);
-        router.post(integrityBreaches.repair.url(id), {}, {
-            preserveScroll: true,
-            preserveState: false,
-            onFinish: () => setRepairing(null),
-        });
+        router.post(
+            integrityBreaches.repair.url(id),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onFinish: () => setRepairing(null),
+            },
+        );
     };
 
     const handleVerify = () => {
@@ -178,11 +170,15 @@ export default function IntegrityBreaches() {
             description: 'Checking all records against the blockchain.',
             duration: Infinity,
         });
-        router.post(integrityBreaches.verify.url(), {}, {
-            preserveScroll: true,
-            preserveState: true,
-            onFinish: () => pollVerificationStatus(toastId),
-        });
+        router.post(
+            integrityBreaches.verify.url(),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => pollVerificationStatus(toastId),
+            },
+        );
     };
 
     const handleVerifyAndRepair = () => {
@@ -192,21 +188,29 @@ export default function IntegrityBreaches() {
             description: 'Checking records, repairing tampered data from the blockchain.',
             duration: Infinity,
         });
-        router.post(integrityBreaches.verifyAndRepair.url(), {}, {
-            preserveScroll: true,
-            preserveState: true,
-            onFinish: () => pollVerificationStatus(toastId as string),
-        });
+        router.post(
+            integrityBreaches.verifyAndRepair.url(),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => pollVerificationStatus(toastId as string),
+            },
+        );
     };
 
     const handleRepairPr = () => {
         if (!filters.pr_number) return;
         setRepairingPr(true);
-        router.post(integrityBreaches.repairPr.url(), { pr_number: filters.pr_number }, {
-            preserveScroll: true,
-            preserveState: false,
-            onFinish: () => setRepairingPr(false),
-        });
+        router.post(
+            integrityBreaches.repairPr.url(),
+            { pr_number: filters.pr_number },
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onFinish: () => setRepairingPr(false),
+            },
+        );
     };
 
     const handleFilter = (key: string, value: string | null) => {
@@ -249,11 +253,13 @@ export default function IntegrityBreaches() {
                         <SelectValue placeholder="Breach Type" />
                     </SelectTrigger>
                     <SelectContent>
-                        {Object.entries(breachTypes).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            {Object.entries(breachTypes).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -262,11 +268,13 @@ export default function IntegrityBreaches() {
                         <SelectValue placeholder="Stream" />
                     </SelectTrigger>
                     <SelectContent>
-                        {Object.entries(streams).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            {Object.entries(streams).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -275,8 +283,10 @@ export default function IntegrityBreaches() {
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="unresolved">Unresolved</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
+                        <SelectGroup>
+                            <SelectItem value="unresolved">Unresolved</SelectItem>
+                            <SelectItem value="resolved">Resolved</SelectItem>
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -488,7 +498,7 @@ export default function IntegrityBreaches() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         if (breaches.current_page > 1) {
-                                                            router.get(integrityBreaches.index.url({ page: 1 }));
+                                                            router.get(integrityBreaches.index.url({ query: { page: 1 } }));
                                                         }
                                                     }}
                                                     className={breaches.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
@@ -504,7 +514,7 @@ export default function IntegrityBreaches() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         if (breaches.current_page > 1) {
-                                                            router.get(integrityBreaches.index.url({ page: breaches.current_page - 1 }));
+                                                            router.get(integrityBreaches.index.url({ query: { page: breaches.current_page - 1 } }));
                                                         }
                                                     }}
                                                     className={breaches.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
@@ -544,7 +554,7 @@ export default function IntegrityBreaches() {
                                                                 isActive={page === current}
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
-                                                                    router.get(integrityBreaches.index.url({ page }));
+                                                                    router.get(integrityBreaches.index.url({ query: { page } }));
                                                                 }}
                                                             >
                                                                 {page}
@@ -561,7 +571,7 @@ export default function IntegrityBreaches() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         if (breaches.current_page < breaches.last_page) {
-                                                            router.get(integrityBreaches.index.url({ page: breaches.current_page + 1 }));
+                                                            router.get(integrityBreaches.index.url({ query: { page: breaches.current_page + 1 } }));
                                                         }
                                                     }}
                                                     className={breaches.current_page >= breaches.last_page ? 'pointer-events-none opacity-50' : ''}
@@ -575,7 +585,7 @@ export default function IntegrityBreaches() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         if (breaches.current_page < breaches.last_page) {
-                                                            router.get(integrityBreaches.index.url({ page: breaches.last_page }));
+                                                            router.get(integrityBreaches.index.url({ query: { page: breaches.last_page } }));
                                                         }
                                                     }}
                                                     className={breaches.current_page >= breaches.last_page ? 'pointer-events-none opacity-50' : ''}

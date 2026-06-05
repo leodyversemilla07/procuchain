@@ -3,7 +3,7 @@ import { TruncateBadge } from '@/components/truncate-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getStageBadgeStyle, getStatusBadgeStyle } from '@/constants/procurement-badges';
 import { cn } from '@/lib/utils';
 import { show as adminShow } from '@/routes/admin/procurements';
@@ -97,18 +97,18 @@ export const MobileCardView = ({
 
                             {/* Actions Dropdown */}
                             <DropdownMenu>
-                                <DropdownMenuTrigger
-                                    render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Open actions menu" />}
-                                >
-                                    <MoreVertical className="h-4 w-4" />
+                                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Open actions menu" />}>
+                                    <MoreVertical />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <ActionButtons
-                                        procurement={procurement}
-                                        onOpenPreProcurementDialog={onOpenPreProcurementDialog}
-                                        onOpenPreBidDialog={onOpenPreBidDialog}
-                                        onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
-                                    />
+                                    <DropdownMenuGroup>
+                                        <ActionButtons
+                                            procurement={procurement}
+                                            onOpenPreProcurementDialog={onOpenPreProcurementDialog}
+                                            onOpenPreBidDialog={onOpenPreBidDialog}
+                                            onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                                        />
+                                    </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>

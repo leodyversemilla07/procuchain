@@ -3,7 +3,15 @@ import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -211,26 +219,28 @@ export default function UserInvitations() {
 
                 return (
                     <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+                        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
                             <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {canResend && (
-                                <DropdownMenuItem onClick={() => handleResend(invitation)}>
-                                    <RefreshCw className="mr-2 h-4 w-4" />
-                                    Resend Invitation
-                                </DropdownMenuItem>
-                            )}
-                            {canRevoke && (
-                                <DropdownMenuItem onClick={() => handleRevoke(invitation)} className="text-destructive focus:text-destructive">
-                                    <X className="mr-2 h-4 w-4" />
-                                    Revoke Invitation
-                                </DropdownMenuItem>
-                            )}
-                            {!canResend && !canRevoke && <DropdownMenuItem disabled>No actions available</DropdownMenuItem>}
+                            <DropdownMenuGroup>
+                                {canResend && (
+                                    <DropdownMenuItem onClick={() => handleResend(invitation)}>
+                                        <RefreshCw />
+                                        Resend Invitation
+                                    </DropdownMenuItem>
+                                )}
+                                {canRevoke && (
+                                    <DropdownMenuItem onClick={() => handleRevoke(invitation)} variant="destructive">
+                                        <X />
+                                        Revoke Invitation
+                                    </DropdownMenuItem>
+                                )}
+                                {!canResend && !canRevoke && <DropdownMenuItem disabled>No actions available</DropdownMenuItem>}
+                            </DropdownMenuGroup>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );

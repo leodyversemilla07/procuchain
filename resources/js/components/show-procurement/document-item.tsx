@@ -3,7 +3,7 @@ import { useCallback, type FC } from 'react';
 
 import CorrectionDetailsSheet from '@/components/documents/correction-details-sheet';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import files from '@/routes/files';
 import pdf from '@/routes/pdf';
@@ -108,20 +108,22 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             View
                         </Button>
                         <DropdownMenu>
-                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
-                                <MoreVertical className="h-4 w-4" />
+                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+                                <MoreVertical />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                    render={<a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer" />}
-                                >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Download
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleCopyHash}>
-                                    <Hash className="mr-2 h-4 w-4" />
-                                    Copy Hash
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        render={<a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer" />}
+                                    >
+                                        <Download />
+                                        Download
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleCopyHash}>
+                                        <Hash />
+                                        Copy Hash
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

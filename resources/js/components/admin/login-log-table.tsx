@@ -3,7 +3,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -150,23 +158,25 @@ export default function LoginLogTable({
                                     <div className="flex items-center justify-between">
                                         <span className="text-muted-foreground text-xs">{formatDateTime(log.login_at)}</span>
                                         <DropdownMenu>
-                                            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
-                                                <MoreVertical className="h-4 w-4" />
+                                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+                                                <MoreVertical />
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View Details
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(log.ip_address);
-                                                        toast.success('IP copied');
-                                                    }}
-                                                >
-                                                    <Globe className="mr-2 h-4 w-4" />
-                                                    Copy IP
-                                                </DropdownMenuItem>
+                                                <DropdownMenuGroup>
+                                                    <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
+                                                        <Eye />
+                                                        View Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(log.ip_address);
+                                                            toast.success('IP copied');
+                                                        }}
+                                                    >
+                                                        <Globe />
+                                                        Copy IP
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuGroup>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -328,36 +338,42 @@ export default function LoginLogTable({
                                         </TableCell>
                                         <TableCell className="pr-6">
                                             <DropdownMenu>
-                                                <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
-                                                    <MoreVertical className="h-4 w-4" />
+                                                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+                                                    <MoreVertical />
                                                     <span className="sr-only">Open menu</span>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
-                                                    <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        View Details
-                                                    </DropdownMenuItem>
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuGroup>
+                                                        <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
+                                                            <Eye />
+                                                            View Details
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(log.ip_address);
-                                                            toast.success('IP Address copied', { description: log.ip_address });
-                                                        }}
-                                                    >
-                                                        <Globe className="mr-2 h-4 w-4" />
-                                                        Copy IP Address
-                                                    </DropdownMenuItem>
+                                                    <DropdownMenuGroup>
+                                                        <DropdownMenuItem
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(log.ip_address);
+                                                                toast.success('IP Address copied', { description: log.ip_address });
+                                                            }}
+                                                        >
+                                                            <Globe />
+                                                            Copy IP Address
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
                                                     {log.category === 'suspicious' && (
                                                         <>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                className="text-destructive focus:text-destructive"
-                                                                onClick={() => onBlockIpClick(log.ip_address)}
-                                                            >
-                                                                <ShieldBan className="mr-2 h-4 w-4" />
-                                                                Block IP Address
-                                                            </DropdownMenuItem>
+                                                            <DropdownMenuGroup>
+                                                                <DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() => onBlockIpClick(log.ip_address)}
+                                                                >
+                                                                    <ShieldBan />
+                                                                    Block IP Address
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuGroup>
                                                         </>
                                                     )}
                                                 </DropdownMenuContent>

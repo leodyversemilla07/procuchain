@@ -3,7 +3,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -197,47 +205,53 @@ export function UserManagementTable({
                                                   </div>
                                                   <DropdownMenu>
                                                       <DropdownMenuTrigger
-                                                          render={<Button variant="ghost" size="icon" className="h-10 w-10 md:h-8 md:w-8" />}
+                                                          render={<Button variant="ghost" size="icon" className="size-10 md:size-8" />}
                                                       >
-                                                          <MoreHorizontal className="h-4 w-4" />
+                                                          <MoreHorizontal />
                                                       </DropdownMenuTrigger>
                                                       <DropdownMenuContent align="end">
-                                                          <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
-                                                          <DropdownMenuItem
-                                                              onClick={async () => {
-                                                                  try {
-                                                                      await navigator.clipboard.writeText(user.email);
-                                                                      toast.success('Email copied');
-                                                                  } catch {
-                                                                      toast.error('Failed to copy');
-                                                                  }
-                                                              }}
-                                                          >
-                                                              Copy email
-                                                          </DropdownMenuItem>
-                                                          <DropdownMenuItem onClick={() => onViewDetails(user)}>View Details</DropdownMenuItem>
-                                                          <DropdownMenuSeparator />
-                                                          <DropdownMenuItem onClick={() => onViewLoginHistory(user)}>
-                                                              <History className="mr-2 h-4 w-4" />
-                                                              Login History
-                                                          </DropdownMenuItem>
-                                                          <DropdownMenuItem onClick={() => onResetPassword(user)}>
-                                                              <KeyRound className="mr-2 h-4 w-4" />
-                                                              Reset Password
-                                                          </DropdownMenuItem>
-                                                          <DropdownMenuSeparator />
-                                                          {hasPermission('edit users') && (
-                                                              <DropdownMenuItem onClick={() => onEditUser(user)}>
-                                                                  <Edit className="mr-2 h-4 w-4" />
-                                                                  Edit user
+                                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                          <DropdownMenuGroup>
+                                                              <DropdownMenuItem
+                                                                  onClick={async () => {
+                                                                      try {
+                                                                          await navigator.clipboard.writeText(user.email);
+                                                                          toast.success('Email copied');
+                                                                      } catch {
+                                                                          toast.error('Failed to copy');
+                                                                      }
+                                                                  }}
+                                                              >
+                                                                  Copy email
                                                               </DropdownMenuItem>
-                                                          )}
-                                                          {hasPermission('delete users') && (
-                                                              <DropdownMenuItem onClick={() => onDeleteUser(user)} className="text-destructive">
-                                                                  <Trash2 className="mr-2 h-4 w-4" />
-                                                                  Delete user
+                                                              <DropdownMenuItem onClick={() => onViewDetails(user)}>View Details</DropdownMenuItem>
+                                                          </DropdownMenuGroup>
+                                                          <DropdownMenuSeparator />
+                                                          <DropdownMenuGroup>
+                                                              <DropdownMenuItem onClick={() => onViewLoginHistory(user)}>
+                                                                  <History />
+                                                                  Login History
                                                               </DropdownMenuItem>
-                                                          )}
+                                                              <DropdownMenuItem onClick={() => onResetPassword(user)}>
+                                                                  <KeyRound />
+                                                                  Reset Password
+                                                              </DropdownMenuItem>
+                                                          </DropdownMenuGroup>
+                                                          <DropdownMenuSeparator />
+                                                          <DropdownMenuGroup>
+                                                              {hasPermission('edit users') && (
+                                                                  <DropdownMenuItem onClick={() => onEditUser(user)}>
+                                                                      <Edit />
+                                                                      Edit user
+                                                                  </DropdownMenuItem>
+                                                              )}
+                                                              {hasPermission('delete users') && (
+                                                                  <DropdownMenuItem onClick={() => onDeleteUser(user)} variant="destructive">
+                                                                      <Trash2 />
+                                                                      Delete user
+                                                                  </DropdownMenuItem>
+                                                              )}
+                                                          </DropdownMenuGroup>
                                                       </DropdownMenuContent>
                                                   </DropdownMenu>
                                               </div>

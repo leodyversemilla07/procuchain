@@ -30,8 +30,7 @@ const getIconComponent = (iconName: string, variant: string) => {
         outline: 'text-gray-500 dark:text-gray-400',
     };
 
-    const colorClass = variantColorMap[variant] || variantColorMap.default;
-    const className = `h-4 w-4 ${colorClass}`;
+    const className = variantColorMap[variant] || variantColorMap.default;
 
     switch (iconName) {
         case 'upload':
@@ -78,7 +77,7 @@ const DropdownActionItem = ({
     };
 
     return (
-        <DropdownMenuItem onClick={handleClick} className="flex cursor-pointer items-center gap-2">
+        <DropdownMenuItem onClick={handleClick}>
             {icon}
             <span className={isOptional ? 'text-gray-500 italic' : ''}>{tooltipText}</span>
         </DropdownMenuItem>

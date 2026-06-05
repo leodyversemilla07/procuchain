@@ -15,7 +15,15 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { ProcurementListItem } from '@/types';
 
 import procurementRoutes from '@/routes/procurement';
@@ -157,57 +165,65 @@ const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDial
     return (
         <>
             <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
                     <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                    <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
-                    <DropdownMenuItem
-                        onClick={async () => {
-                            try {
-                                await navigator.clipboard.writeText(procurement.id);
-                                toast.success('Procurement ID copied');
-                            } catch {
-                                toast.error('Failed to copy ID');
-                            }
-                        }}
-                    >
-                        Copy procurement ID
-                    </DropdownMenuItem>
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem
+                            onClick={async () => {
+                                try {
+                                    await navigator.clipboard.writeText(procurement.id);
+                                    toast.success('Procurement ID copied');
+                                } catch {
+                                    toast.error('Failed to copy ID');
+                                }
+                            }}
+                        >
+                            Copy procurement ID
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    <ActionButtons
-                        procurement={procurement}
-                        onOpenPreProcurementDialog={onOpenPreProcurementDialog}
-                        onOpenPreBidDialog={onOpenPreBidDialog}
-                        onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
-                    />
+                    <DropdownMenuGroup>
+                        <ActionButtons
+                            procurement={procurement}
+                            onOpenPreProcurementDialog={onOpenPreProcurementDialog}
+                            onOpenPreBidDialog={onOpenPreBidDialog}
+                            onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                        />
+                    </DropdownMenuGroup>
                     {(procurement.stage === 'COMPLETED' || procurement.stage === 'completed' || procurement.current_status === 'COMPLETED') &&
                         !procurement.is_archived && (
                             <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setShowArchiveDialog(true);
-                                    }}
-                                    className="text-red-600 focus:text-red-600"
-                                >
-                                    Archive Procurement
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setShowArchiveDialog(true);
+                                        }}
+                                        variant="destructive"
+                                    >
+                                        Archive Procurement
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </>
                         )}
                     {procurement.is_archived && (
                         <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setShowRestoreDialog(true);
-                                }}
-                            >
-                                Restore Procurement
-                            </DropdownMenuItem>
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setShowRestoreDialog(true);
+                                    }}
+                                >
+                                    Restore Procurement
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
                         </>
                     )}
                 </DropdownMenuContent>

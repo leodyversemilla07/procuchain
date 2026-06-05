@@ -25,7 +25,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
@@ -216,12 +216,14 @@ export default function IntegrityAuditLogs() {
                         <SelectValue placeholder="Violation Type" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="__all">All Types</SelectItem>
-                        {Object.entries(violationTypes).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            <SelectItem value="__all">All Types</SelectItem>
+                            {Object.entries(violationTypes).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -237,12 +239,14 @@ export default function IntegrityAuditLogs() {
                         <SelectValue placeholder="Severity" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="__all">All</SelectItem>
-                        {Object.entries(severityLevels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            <SelectItem value="__all">All</SelectItem>
+                            {Object.entries(severityLevels).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -258,12 +262,14 @@ export default function IntegrityAuditLogs() {
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="__all">All</SelectItem>
-                        {Object.entries(recoveryStatuses).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            <SelectItem value="__all">All</SelectItem>
+                            {Object.entries(recoveryStatuses).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -279,12 +285,14 @@ export default function IntegrityAuditLogs() {
                         <SelectValue placeholder="Source" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="__all">All</SelectItem>
-                        {Object.entries(sources).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
+                        <SelectGroup>
+                            <SelectItem value="__all">All</SelectItem>
+                            {Object.entries(sources).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
                     </SelectContent>
                 </Select>
 
@@ -510,7 +518,7 @@ export default function IntegrityAuditLogs() {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     if (logs.current_page > 1) {
-                                                        router.get(integrityAuditLogs.index.url({ ...filters, page: 1 }));
+                                                        router.get(integrityAuditLogs.index.url({ query: { ...filters, page: 1 } }));
                                                     }
                                                 }}
                                                 className={logs.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
@@ -526,7 +534,9 @@ export default function IntegrityAuditLogs() {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     if (logs.current_page > 1) {
-                                                        router.get(integrityAuditLogs.index.url({ ...filters, page: logs.current_page - 1 }));
+                                                        router.get(
+                                                            integrityAuditLogs.index.url({ query: { ...filters, page: logs.current_page - 1 } }),
+                                                        );
                                                     }
                                                 }}
                                                 className={logs.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
@@ -566,7 +576,7 @@ export default function IntegrityAuditLogs() {
                                                             isActive={page === current}
                                                             onClick={(e) => {
                                                                 e.preventDefault();
-                                                                router.get(integrityAuditLogs.index.url({ ...filters, page }));
+                                                                router.get(integrityAuditLogs.index.url({ query: { ...filters, page } }));
                                                             }}
                                                         >
                                                             {page}
@@ -583,7 +593,9 @@ export default function IntegrityAuditLogs() {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     if (logs.current_page < logs.last_page) {
-                                                        router.get(integrityAuditLogs.index.url({ ...filters, page: logs.current_page + 1 }));
+                                                        router.get(
+                                                            integrityAuditLogs.index.url({ query: { ...filters, page: logs.current_page + 1 } }),
+                                                        );
                                                     }
                                                 }}
                                                 className={logs.current_page >= logs.last_page ? 'pointer-events-none opacity-50' : ''}
@@ -597,7 +609,7 @@ export default function IntegrityAuditLogs() {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     if (logs.current_page < logs.last_page) {
-                                                        router.get(integrityAuditLogs.index.url({ ...filters, page: logs.last_page }));
+                                                        router.get(integrityAuditLogs.index.url({ query: { ...filters, page: logs.last_page } }));
                                                     }
                                                 }}
                                                 className={logs.current_page >= logs.last_page ? 'pointer-events-none opacity-50' : ''}
