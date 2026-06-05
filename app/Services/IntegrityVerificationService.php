@@ -140,7 +140,31 @@ class IntegrityVerificationService
 
         $procurement = Procurement::where('pr_number', $prNumber)->first();
         if (! $procurement) {
-            return ['run_id' => $this->runId, 'verified' => 0, 'violations' => [], 'restored' => 0, 'failed' => 0];
+            // Record may have been hard-deleted. Check blockchain before giving up.
+            $blockchainPrNumbers = $this->getBlockchainPrNumbers();
+            if (in_array($prNumber, $blockchainPrNumbers, true)) {
+                // Exists on chain but missing from DB — record as deleted violation
+                $this->recordViolation(
+                    type: BreachTypeEnums::ROW_DELETED->value,
+                    tableName: 'procurements',
+                    record: null,
+                    prNumber: $prNumber,
+                    message: 'PR exists on blockchain but is absent from the database (deleted)',
+                    chainData: null,
+                );
+
+                if ($autoRepair) {
+                    $this->autoRepair();
+                }
+            }
+
+            return [
+                'run_id' => $this->runId,
+                'verified' => 0,
+                'violations' => $this->violationCounts,
+                'restored' => $this->restoredCount,
+                'failed' => $this->failedCount,
+            ];
         }
 
         // Verify procurement record
@@ -360,7 +384,6 @@ class IntegrityVerificationService
             } else {
                 $this->recordViolation(
                     type: BreachTypeEnums::HASH_MISMATCH->value,
-                    severity: 'critical',
                     tableName: $tableName,
                     record: $record,
                     prNumber: $prNumber,
@@ -388,7 +411,6 @@ class IntegrityVerificationService
 
                 $this->recordViolation(
                     type: BreachTypeEnums::CONTENT_MISMATCH->value,
-                    severity: 'high',
                     tableName: $tableName,
                     record: $record,
                     prNumber: $prNumber,
@@ -406,7 +428,6 @@ class IntegrityVerificationService
 
                 $this->recordViolation(
                     type: BreachTypeEnums::USER_ADDRESS_TAMPERED->value,
-                    severity: 'high',
                     tableName: $tableName,
                     record: $record,
                     prNumber: $prNumber,
@@ -484,7 +505,6 @@ class IntegrityVerificationService
                 if ($publisher !== $authorizedAddress) {
                     $this->recordViolation(
                         type: BreachTypeEnums::UNAUTHORIZED_PUBLISHER->value,
-                        severity: 'medium',
                         tableName: $tableName,
                         record: $record,
                         prNumber: $prNumber,
@@ -624,7 +644,6 @@ class IntegrityVerificationService
                 if ($prNumber && ! Procurement::where('pr_number', $prNumber)->exists()) {
                     $this->recordViolation(
                         type: BreachTypeEnums::ROW_DELETED->value,
-                        severity: 'critical',
                         tableName: 'procurements',
                         record: null,
                         prNumber: $prNumber,
@@ -656,7 +675,6 @@ class IntegrityVerificationService
                 if (! $modelClass::where('txid', $txid)->exists()) {
                     $this->recordViolation(
                         type: BreachTypeEnums::ROW_DELETED->value,
-                        severity: 'critical',
                         tableName: $tableName,
                         record: null,
                         prNumber: $prNumber,
@@ -696,7 +714,6 @@ class IntegrityVerificationService
             foreach ($fakeRecords as $record) {
                 $this->recordViolation(
                     type: BreachTypeEnums::UNAUTHORIZED_RECORD->value,
-                    severity: 'critical',
                     tableName: 'procurements',
                     record: $record,
                     prNumber: $record->pr_number,
@@ -739,7 +756,6 @@ class IntegrityVerificationService
                 if (! File::where('txid', $txid)->exists()) {
                     $this->recordViolation(
                         type: BreachTypeEnums::ROW_DELETED->value,
-                        severity: 'critical',
                         tableName: 'files',
                         record: null,
                         prNumber: (string) ($data['pr_number'] ?? $fileKey),
@@ -775,7 +791,6 @@ class IntegrityVerificationService
 
                 $this->recordViolation(
                     type: BreachTypeEnums::UNAUTHORIZED_RECORD->value,
-                    severity: 'critical',
                     tableName: $tableName,
                     record: $record,
                     prNumber: $prNumber,
@@ -1040,7 +1055,6 @@ class IntegrityVerificationService
 
     private function recordViolation(
         string $type,
-        string $severity,
         string $tableName,
         ?Model $record,
         string $prNumber,
@@ -1051,6 +1065,9 @@ class IntegrityVerificationService
         ?array $chainData = null,
     ): void {
         $this->violationCounts[$type] = ($this->violationCounts[$type] ?? 0) + 1;
+
+        // Always derive severity from the canonical model mapping — never hardcode.
+        $severity = IntegrityAuditLog::severityForType($type);
 
         $dbSnapshot = $record ? $this->recordToArray($record, $tableName) : null;
 
