@@ -67,9 +67,6 @@ class IntegrityVerificationService
 
     private bool $verifyPublishers = false;
 
-    /** @var array<string, array<string, mixed>|null> */
-    private array $rawTransactionCache = [];
-
     /** Tables to verify and their stream mappings */
     private const TABLE_STREAM_MAP = [
         'procurements' => StreamEnums::METADATA,
@@ -451,7 +448,7 @@ class IntegrityVerificationService
             }
 
             // Get the txid details from blockchain (verbose = true)
-            $txData = $this->rawTransactionCache[$txid] ??= $this->manager->getrawtransaction($txid, 1);
+            $txData = $this->manager->getrawtransaction($txid, 1);
             if (! $txData || ! is_array($txData)) {
                 return false;
             }
@@ -1122,7 +1119,6 @@ class IntegrityVerificationService
         $this->restoredCount = 0;
         $this->failedCount = 0;
         $this->verifyPublishers = false;
-        $this->rawTransactionCache = [];
         $this->blockchainIndex = app(BlockchainVerificationIndex::class);
     }
 }
