@@ -102,43 +102,64 @@ class IntegrityVerificationService
      */
     public function verifyAndRepair(bool $autoRepair = false, string $source = 'scheduled', bool $deepPublisherCheck = false): array
     {
-        $this->reset($source);
-        $this->verifyPublishers = $deepPublisherCheck;
+        // Prevent concurrent verification runs (race condition protection)
+        $lockKey = 'integrity:verification:lock';
+        if (! cache()->lock($lockKey, 300)->get()) {
+            Log::warning('IntegrityVerification: skipped — another run is in progress', ['source' => $source]);
 
-        Log::info('IntegrityVerification: starting', ['run_id' => $this->runId, 'auto_repair' => $autoRepair]);
-
-        $this->preloadBlockchainIndex();
-        $this->ensureBlockchainIndexLoaded();
-
-        // Phase 1: Verify hashes on all normalized tables
-        $this->verifyAllTables();
-
-        // Phase 2: Detect deleted records (chain has it, DB doesn't)
-        $this->detectDeletedRecords();
-
-        // Phase 2b: Verify audit log integrity (DB vs blockchain)
-        $this->verifyAuditLogIntegrity();
-
-        if (empty($this->violationCounts)) {
-            $this->resolveStalePendingViolationsAfterCleanRun();
+            return [
+                'run_id' => $this->runId ?? uniqid('skip-'),
+                'verified' => 0,
+                'violations' => [],
+                'restored' => 0,
+                'failed' => 0,
+                'skipped' => true,
+            ];
         }
 
-        // Phase 3: Auto-repair if requested
-        if ($autoRepair) {
-            $this->autoRepair();
+        try {
+            $this->reset($source);
+            $this->verifyPublishers = $deepPublisherCheck;
+
+            Log::info('IntegrityVerification: starting', ['run_id' => $this->runId, 'auto_repair' => $autoRepair]);
+
+            $this->preloadBlockchainIndex();
+            $this->ensureBlockchainIndexLoaded();
+
+            // Phase 1: Verify hashes on all normalized tables
+            $this->verifyAllTables();
+
+            // Phase 2: Detect deleted records (chain has it, DB doesn't)
+            $this->detectDeletedRecords();
+
+            // Phase 2b: Verify audit log integrity (DB vs blockchain)
+            $this->verifyAuditLogIntegrity();
+
+            if (empty($this->violationCounts)) {
+                $this->resolveStalePendingViolationsAfterCleanRun();
+            }
+
+            // Phase 3: Auto-repair if requested
+            if ($autoRepair) {
+                $this->autoRepair();
+            }
+
+            $result = [
+                'run_id' => $this->runId,
+                'verified' => $this->verifiedCount,
+                'violations' => $this->violationCounts,
+                'restored' => $this->restoredCount,
+                'failed' => $this->failedCount,
+            ];
+
+            Log::info('IntegrityVerification: completed', $result);
+
+            return $result;
+
+        } finally {
+            // Always release the lock
+            cache()->lock($lockKey)->forceRelease();
         }
-
-        $result = [
-            'run_id' => $this->runId,
-            'verified' => $this->verifiedCount,
-            'violations' => $this->violationCounts,
-            'restored' => $this->restoredCount,
-            'failed' => $this->failedCount,
-        ];
-
-        Log::info('IntegrityVerification: completed', $result);
-
-        return $result;
     }
 
     /**

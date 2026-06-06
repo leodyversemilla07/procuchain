@@ -68,11 +68,46 @@ class IntegrityComparator
             return true;
         }
 
+        // Handle timestamp timezone differences (UTC vs local)
+        if (is_string($a) && is_string($b) && $this->looksLikeTimestamp($a) && $this->looksLikeTimestamp($b)) {
+            return $this->timestampsAreEquivalent($a, $b);
+        }
+
         if (is_array($a) && is_array($b)) {
             return json_encode($a, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
                 === json_encode($b, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
         return (string) $a === (string) $b;
+    }
+
+    /**
+     * Check if a string looks like a timestamp.
+     */
+    private function looksLikeTimestamp(string $value): bool
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/', $value) === 1;
+    }
+
+    /**
+     * Compare timestamps that may be in different timezones.
+     * Blockchain stores UTC, DB may store local time.
+     * Normalize both to UTC before comparing.
+     */
+    private function timestampsAreEquivalent(string $a, string $b): bool
+    {
+        try {
+            $timeA = new \DateTime($a);
+            $timeB = new \DateTime($b);
+
+            // Convert both to UTC for comparison
+            $timeA->setTimezone(new \DateTimeZone('UTC'));
+            $timeB->setTimezone(new \DateTimeZone('UTC'));
+
+            return $timeA->getTimestamp() === $timeB->getTimestamp();
+        } catch (\Exception) {
+            // If parsing fails, fall back to string comparison
+            return (string) $a === (string) $b;
+        }
     }
 }
