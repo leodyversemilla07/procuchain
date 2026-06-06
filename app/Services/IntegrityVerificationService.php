@@ -1069,11 +1069,25 @@ class IntegrityVerificationService
         // Always derive severity from the canonical model mapping — never hardcode.
         $severity = IntegrityAuditLog::severityForType($type);
 
+        $stream = self::TABLE_STREAM_MAP[$tableName]?->value ?? $tableName;
+
+        // Deduplicate: supersede any existing pending violations for this
+        // (stream, stream_key, violation_type) tuple so repeated audit runs
+        // never accumulate duplicate unresolved entries in the dashboard.
+        IntegrityAuditLog::where('stream', $stream)
+            ->where('stream_key', $prNumber)
+            ->where('violation_type', $type)
+            ->where('recovery_status', 'pending')
+            ->update([
+                'recovery_status' => 'superseded',
+                'recovery_result' => ['reason' => 'Superseded by a newer audit run (run_id: '.$this->runId.')'],
+            ]);
+
         $dbSnapshot = $record ? $this->recordToArray($record, $tableName) : null;
 
         $auditLog = IntegrityAuditLog::create([
             'record_id' => $record?->id,
-            'stream' => self::TABLE_STREAM_MAP[$tableName]?->value ?? $tableName,
+            'stream' => $stream,
             'stream_key' => $prNumber,
             'txid' => $record?->txid,
             'violation_type' => $type,

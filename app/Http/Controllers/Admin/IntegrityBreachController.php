@@ -51,8 +51,10 @@ class IntegrityBreachController extends Controller
         if ($status = $request->input('status')) {
             $query->where('recovery_status', $status);
         } else {
-            // Integrity Breaches is the active work queue. Permanent historical
-            // records remain visible in Integrity Audit Logs.
+            // Integrity Breaches is the active work queue — show only actionable
+            // pending violations. Superseded entries are deduplication artifacts
+            // from repeated audit runs; they are not genuine open issues.
+            // Permanent historical records remain visible in Integrity Audit Logs.
             $query->where('recovery_status', 'pending');
         }
         if ($prNumber = $request->input('pr_number')) {
@@ -63,6 +65,9 @@ class IntegrityBreachController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // Stats only count genuinely active pending violations (not superseded).
+        $activePending = IntegrityAuditLog::where('recovery_status', 'pending');
+
         return Inertia::render('admin/integrity-breaches', [
             'breaches' => $breaches,
             'filters' => $request->only(['violation_type', 'stream', 'status', 'pr_number']),
@@ -72,10 +77,10 @@ class IntegrityBreachController extends Controller
                 ->mapWithKeys(fn ($case) => [$case->value => $case->getDisplayName()])
                 ->toArray(),
             'stats' => [
-                'total' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
-                'unresolved' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
-                'critical' => IntegrityAuditLog::where('severity', 'critical')->where('recovery_status', 'pending')->count(),
-                'high' => IntegrityAuditLog::where('severity', 'high')->where('recovery_status', 'pending')->count(),
+                'total' => (clone $activePending)->count(),
+                'unresolved' => (clone $activePending)->count(),
+                'critical' => (clone $activePending)->where('severity', 'critical')->count(),
+                'high' => (clone $activePending)->where('severity', 'high')->count(),
             ],
         ]);
     }
