@@ -120,7 +120,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 ) : null}
 
                 {/* Status Information Grid */}
-                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
                     {/* Current Phase */}
                     {status?.phase && (
                         <div className="bg-muted min-w-0 rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
