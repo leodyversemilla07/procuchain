@@ -217,6 +217,18 @@ class IntegrityAuditLog extends Model
         ?array $revisionLineage = null,
         bool $publishToChain = true,
     ): self {
+        // Deduplication: skip if an identical pending violation already exists
+        $existing = self::where('stream', $stream)
+            ->where('stream_key', $streamKey)
+            ->where('violation_type', $violationType)
+            ->where('recovery_status', 'pending')
+            ->when($txid, fn ($q) => $q->where('txid', $txid))
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
         $auditLog = self::create([
             'stream' => $stream,
             'stream_key' => $streamKey,
