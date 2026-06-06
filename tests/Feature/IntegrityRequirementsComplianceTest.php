@@ -201,3 +201,37 @@ it('publishes violation and recovery operations to the permanent blockchain audi
         ->and($published[1]['payload']['json']['type'])->toBe('recovery')
         ->and($published[1]['payload']['json']['violation_id'])->toBe($auditLog->id);
 });
+
+it('deduplicates identical pending violations in audit log', function () {
+    $first = IntegrityAuditLog::recordViolation(
+        stream: 'procurement.metadata',
+        streamKey: 'PR-DEDUP-001',
+        violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+        txid: 'dedup-txid-001',
+        publishToChain: false,
+    );
+
+    // Second identical violation should return the same record
+    $second = IntegrityAuditLog::recordViolation(
+        stream: 'procurement.metadata',
+        streamKey: 'PR-DEDUP-001',
+        violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+        txid: 'dedup-txid-001',
+        publishToChain: false,
+    );
+
+    expect($first->id)->toBe($second->id)
+        ->and(IntegrityAuditLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(1);
+
+    // Different violation type should create a new record
+    $third = IntegrityAuditLog::recordViolation(
+        stream: 'procurement.metadata',
+        streamKey: 'PR-DEDUP-001',
+        violationType: BreachTypeEnums::ROW_DELETED->value,
+        txid: 'dedup-txid-001',
+        publishToChain: false,
+    );
+
+    expect($third->id)->not->toBe($first->id)
+        ->and(IntegrityAuditLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(2);
+});
