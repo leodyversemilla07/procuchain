@@ -85,25 +85,23 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
 
             {/* Workflow Visualization or Progress Bar */}
             {workflow ? (
-                <Card className="overflow-visible mt-3 shadow-sm sm:mt-4">
-                    <CardHeader className="p-4 sm:p-6">
-                        <div className="space-y-4">
-                            <div className="text-muted-foreground text-xs font-medium sm:text-sm">
-                                <span className="tracking-wider uppercase">Workflow Progress</span>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <Stepper
-                                    steps={workflow.stages.map((stage, index) => ({
-                                        id: index + 1,
-                                        title: stage.display_name,
-                                        description: stage.is_optional ? '(Optional)' : undefined,
-                                    }))}
-                                    currentStep={workflow.stages.findIndex((s) => s.is_current) + 1 || 1}
-                                />
-                            </div>
+                <div className="mt-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-foreground/10 sm:mt-4 sm:p-6">
+                    <div className="space-y-4">
+                        <div className="text-muted-foreground text-xs font-medium sm:text-sm">
+                            <span className="tracking-wider uppercase">Workflow Progress</span>
                         </div>
-                    </CardHeader>
-                </Card>
+                        <div className="overflow-x-auto">
+                            <Stepper
+                                steps={workflow.stages.map((stage, index) => ({
+                                    id: index + 1,
+                                    title: stage.display_name,
+                                    description: stage.is_optional ? '(Optional)' : undefined,
+                                }))}
+                                currentStep={workflow.stages.findIndex((s) => s.is_current) + 1 || 1}
+                            />
+                        </div>
+                    </div>
+                </div>
             ) : progress > 0 ? (
                 <Card className="mt-3 shadow-sm sm:mt-4">
                     <CardHeader className="p-4 sm:p-6">
