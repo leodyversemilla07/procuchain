@@ -35,7 +35,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
             {/* Desktop Stepper - Horizontal with scroll */}
             <div className="hidden md:block">
                 <div className="overflow-x-auto pb-2">
-                    <ol className="flex items-start gap-4">
+                    <ol className="flex items-start gap-4 pr-4">
                         {steps.map((step, index) => {
                             const isCompleted = step.id < currentStep;
                             const isCurrent = step.id === currentStep;
@@ -44,7 +44,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                             return (
                                 <li
                                     key={step.id}
-                                    className={cn('relative flex min-w-[5rem] flex-1 flex-col items-center', {
+                                    className={cn('relative flex w-20 shrink-0 flex-col items-center md:w-24 lg:w-28', {
                                         'cursor-pointer': isClickable,
                                     })}
                                     onClick={() => isClickable && onStepClick(step.id)}
