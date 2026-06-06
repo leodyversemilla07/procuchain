@@ -85,7 +85,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
 
             {/* Workflow Visualization or Progress Bar */}
             {workflow ? (
-                <Card className="mt-3 shadow-sm sm:mt-4">
+                <Card className="overflow-visible mt-3 shadow-sm sm:mt-4">
                     <CardHeader className="p-4 sm:p-6">
                         <div className="space-y-4">
                             <div className="text-muted-foreground text-xs font-medium sm:text-sm">
