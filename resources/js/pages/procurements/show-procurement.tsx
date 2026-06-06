@@ -255,7 +255,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
 
             <div
                 id="main-content"
-                className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6"
+                className="from-background to-muted/20 flex min-h-0 flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6"
             >
                 {/* Procurement Header */}
                 <ProcurementHeader
