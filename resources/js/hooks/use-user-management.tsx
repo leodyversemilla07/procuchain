@@ -547,8 +547,8 @@ export function useUserManagement() {
                                 <MoreHorizontal />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuGroup>
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={async () => {
                                             try {

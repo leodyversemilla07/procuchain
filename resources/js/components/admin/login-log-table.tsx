@@ -343,8 +343,8 @@ export default function LoginLogTable({
                                                     <span className="sr-only">Open menu</span>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DropdownMenuGroup>
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
                                                             <Eye />
                                                             View Details

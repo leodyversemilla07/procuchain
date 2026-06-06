@@ -165,13 +165,13 @@ const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDial
     return (
         <>
             <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+                <DropdownMenuTrigger render={(props) => <Button variant="ghost" size="icon" {...props} />}>
                     <span className="sr-only">Open menu</span>
                     <MoreHorizontal />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuGroup>
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem
                             onClick={async () => {
                                 try {
