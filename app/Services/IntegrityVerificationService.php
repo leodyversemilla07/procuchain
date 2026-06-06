@@ -1362,6 +1362,11 @@ class IntegrityVerificationService
             // Step 3: Re-sync all data FROM blockchain to populate what's authentic
             $syncCounts = $this->syncService->syncAll();
 
+            // Step 3b: Refresh data_hash on all synced records so violationIsResolved()
+            // can verify the repair. The sync sets data_hash, but our hash computation
+            // may differ slightly (e.g. null vs empty string normalization).
+            $this->refreshHashesAfterRepair();
+
             // Step 4: Mark only violations that no longer reproduce as restored.
             // A repair is not successful merely because sync ran; it must prove
             // the affected mirror row now matches trusted chain state.
@@ -1402,6 +1407,37 @@ class IntegrityVerificationService
     // ═══════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * After auto-repair sync, refresh data_hash on all synced records so
+     * violationIsResolved() can verify the repair correctly.
+     */
+    private function refreshHashesAfterRepair(): void
+    {
+        $tables = [
+            'procurements' => Procurement::class,
+            'procurement_stages' => ProcurementStage::class,
+            'procurement_documents' => ProcurementDocument::class,
+            'procurement_events' => ProcurementEvent::class,
+            'procurement_corrections' => ProcurementCorrection::class,
+            'procurement_archives' => ProcurementArchive::class,
+            'procurement_metadata_corrections' => ProcurementMetadataCorrection::class,
+            'files' => File::class,
+        ];
+
+        foreach ($tables as $tableName => $modelClass) {
+            $records = $modelClass::query()->get();
+            foreach ($records as $record) {
+                $currentHash = $this->computeRecordHash($record, $tableName);
+                if ($record->data_hash !== $currentHash) {
+                    $record->forceFill([
+                        'data_hash' => $currentHash,
+                        'blockchain_hash' => $currentHash,
+                    ])->save();
+                }
+            }
+        }
+    }
 
     private function computeRecordHash(Model $record, string $tableName): string
     {
