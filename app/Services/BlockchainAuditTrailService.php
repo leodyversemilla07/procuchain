@@ -293,6 +293,11 @@ class BlockchainAuditTrailService
             }
 
             try {
+                // Always mark restored entries as 'superseded' — they are
+                // historical records, not new violations requiring action.
+                // This prevents restored audit logs from creating false positives.
+                $restoredStatus = 'superseded';
+
                 IntegrityAuditLog::create([
                     'stream' => $data['stream'] ?? '',
                     'stream_key' => $data['stream_key'] ?? '',
@@ -304,10 +309,10 @@ class BlockchainAuditTrailService
                     'field_differences' => $data['field_differences'] ?? null,
                     'mirror_snapshot' => $data['mirror_snapshot'] ?? null,
                     'chain_snapshot' => $data['chain_snapshot'] ?? null,
-                    'recovery_status' => $data['recovery_status'] ?? 'pending',
+                    'recovery_status' => $restoredStatus,
                     'recovered_at' => $data['recovered_at'] ?? null,
-                    'recovery_result' => $data['recovery_result'] ?? null,
-                    'record_id' => null, // Original record may not exist
+                    'recovery_result' => array_merge($data['recovery_result'] ?? [], ['restored_from_chain' => true]),
+                    'record_id' => null,
                     'verification_run_id' => $data['verification_run_id'] ?? null,
                     'source' => $data['source'] ?? 'chain_recovery',
                     'revision_lineage' => $data['revision_lineage'] ?? null,
