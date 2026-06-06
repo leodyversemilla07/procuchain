@@ -88,6 +88,27 @@ class NormalizedTableSyncService
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Find or create a Procurement, handling soft-deleted records.
+     *
+     * Procurement uses SoftDeletes, so firstOrCreate skips soft-deleted rows
+     * and tries to INSERT, hitting the pr_number unique constraint.
+     * This method uses withTrashed() to find existing soft-deleted records.
+     */
+    private function findOrCreateProcurement(string $prNumber, array $defaults): Procurement
+    {
+        $existing = Procurement::withTrashed()->where('pr_number', $prNumber)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        return Procurement::create(['pr_number' => $prNumber, ...$defaults]);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // STREAM SYNC METHODS
     // ═══════════════════════════════════════════════════════════════════
 
@@ -155,14 +176,19 @@ class NormalizedTableSyncService
                 Procurement::getHashableFields()
             ));
 
-            Procurement::updateOrCreate(
-                ['pr_number' => $prNumber],
-                [
+            // Use withTrashed() to find soft-deleted records and avoid
+            // UniqueConstraintViolationException from the pr_number unique index.
+            $existing = Procurement::withTrashed()->where('pr_number', $prNumber)->first();
+            if ($existing) {
+                $existing->update([...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]);
+            } else {
+                Procurement::create([
+                    'pr_number' => $prNumber,
                     ...$attributes,
                     'data_hash' => $dataHash,
                     'blockchain_hash' => $dataHash,
-                ]
-            );
+                ]);
+            }
 
             $count++;
         }
@@ -195,16 +221,13 @@ class NormalizedTableSyncService
             $blocktime = $item['blocktime'] ?? null;
 
             // Find or create procurement
-            $procurement = Procurement::firstOrCreate(
-                ['pr_number' => $prNumber],
-                [
-                    'title' => $data['procurement_title'] ?? $prNumber,
-                    'current_stage' => $data['stage'] ?? 'unknown',
-                    'current_status' => $data['current_status'] ?? 'unknown',
-                    'category' => $data['category'] ?? 'goods',
-                    'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
-                ]
-            );
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'current_stage' => $data['stage'] ?? 'unknown',
+                'current_status' => $data['current_status'] ?? 'unknown',
+                'category' => $data['category'] ?? 'goods',
+                'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
+            ]);
 
             $attributes = [
                 'procurement_id' => $procurement->id,
@@ -270,16 +293,13 @@ class NormalizedTableSyncService
             $blocktime = $item['blocktime'] ?? null;
 
             // Find or create procurement
-            $procurement = Procurement::firstOrCreate(
-                ['pr_number' => $prNumber],
-                [
-                    'title' => $data['procurement_title'] ?? $prNumber,
-                    'category' => 'goods',
-                    'procurement_mode' => 'competitive_bidding',
-                    'current_stage' => $data['stage'] ?? 'unknown',
-                    'current_status' => 'active',
-                ]
-            );
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => $data['stage'] ?? 'unknown',
+                'current_status' => 'active',
+            ]);
 
             $attributes = [
                 'procurement_id' => $procurement->id,
@@ -349,16 +369,13 @@ class NormalizedTableSyncService
             $blocktime = $item['blocktime'] ?? null;
 
             // Find or create procurement
-            $procurement = Procurement::firstOrCreate(
-                ['pr_number' => $prNumber],
-                [
-                    'title' => $data['procurement_title'] ?? $prNumber,
-                    'category' => 'goods',
-                    'procurement_mode' => 'competitive_bidding',
-                    'current_stage' => $data['stage'] ?? 'unknown',
-                    'current_status' => 'active',
-                ]
-            );
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => $data['stage'] ?? 'unknown',
+                'current_status' => 'active',
+            ]);
 
             $attributes = [
                 'procurement_id' => $procurement->id,
@@ -419,16 +436,13 @@ class NormalizedTableSyncService
             $blocktime = $item['blocktime'] ?? null;
 
             // Find or create procurement
-            $procurement = Procurement::firstOrCreate(
-                ['pr_number' => $prNumber],
-                [
-                    'title' => $data['procurement_title'] ?? $prNumber,
-                    'category' => 'goods',
-                    'procurement_mode' => 'competitive_bidding',
-                    'current_stage' => 'correction',
-                    'current_status' => 'corrected',
-                ]
-            );
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => 'correction',
+                'current_status' => 'corrected',
+            ]);
 
             $attributes = [
                 'procurement_id' => $procurement->id,
@@ -488,16 +502,13 @@ class NormalizedTableSyncService
             $txid = $item['txid'] ?? '';
             $blocktime = $item['blocktime'] ?? null;
 
-            $procurement = Procurement::firstOrCreate(
-                ['pr_number' => $prNumber],
-                [
-                    'title' => $prNumber,
-                    'category' => 'goods',
-                    'procurement_mode' => 'competitive_bidding',
-                    'current_stage' => 'archive',
-                    'current_status' => $data['action'] ?? 'archived',
-                ]
-            );
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => 'archive',
+                'current_status' => $data['action'] ?? 'archived',
+            ]);
 
             $attributes = [
                 'procurement_id' => $procurement->id,
@@ -553,16 +564,13 @@ class NormalizedTableSyncService
             $txid = $item['txid'] ?? '';
             $blocktime = $item['blocktime'] ?? null;
 
-            $procurement = Procurement::firstOrCreate(
-                ['pr_number' => $prNumber],
-                [
-                    'title' => $data['procurement_title'] ?? $prNumber,
-                    'category' => $data['corrected_category'] ?? $data['original_category'] ?? 'goods',
-                    'procurement_mode' => $data['corrected_procurement_mode'] ?? $data['original_procurement_mode'] ?? 'competitive_bidding',
-                    'current_stage' => 'metadata_correction',
-                    'current_status' => 'corrected',
-                ]
-            );
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => $data['corrected_category'] ?? $data['original_category'] ?? 'goods',
+                'procurement_mode' => $data['corrected_procurement_mode'] ?? $data['original_procurement_mode'] ?? 'competitive_bidding',
+                'current_stage' => 'metadata_correction',
+                'current_status' => 'corrected',
+            ]);
 
             $attributes = [
                 'procurement_id' => $procurement->id,
