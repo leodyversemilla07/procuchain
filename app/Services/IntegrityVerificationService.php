@@ -65,6 +65,8 @@ class IntegrityVerificationService
 
     private BlockchainVerificationIndex $blockchainIndex;
 
+    private BlockchainAuditTrailService $auditTrail;
+
     private bool $verifyPublishers = false;
 
     /** Tables to verify and their stream mappings */
@@ -86,6 +88,7 @@ class IntegrityVerificationService
         $this->payloadProjector = app(BlockchainPayloadProjector::class);
         $this->comparator = app(IntegrityComparator::class);
         $this->blockchainIndex = app(BlockchainVerificationIndex::class);
+        $this->auditTrail = app(BlockchainAuditTrailService::class);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -112,6 +115,9 @@ class IntegrityVerificationService
 
         // Phase 2: Detect deleted records (chain has it, DB doesn't)
         $this->detectDeletedRecords();
+
+        // Phase 2b: Verify audit log integrity (DB vs blockchain)
+        $this->verifyAuditLogIntegrity();
 
         if (empty($this->violationCounts)) {
             $this->resolveStalePendingViolationsAfterCleanRun();
@@ -767,6 +773,64 @@ class IntegrityVerificationService
     {
         $this->detectMissingFromDb();
         $this->detectUnauthorizedInDb();
+    }
+
+    /**
+     * Verify audit log integrity: compare DB audit logs against blockchain.
+     *
+     * Requirement 6: "Maintain a permanent audit trail of all recovery operations."
+     * If panel deletes/modifies DB audit logs, this detects the tampering
+     * and can restore from blockchain.
+     */
+    private function verifyAuditLogIntegrity(): void
+    {
+        try {
+            $blockchainEntries = $this->auditTrail->recoverAuditTrail();
+            if (empty($blockchainEntries)) {
+                return;
+            }
+
+            // Build map of blockchain txids -> entries
+            $chainTxids = [];
+            foreach ($blockchainEntries as $entry) {
+                $txid = $entry['txid'] ?? null;
+                if ($txid) {
+                    $chainTxids[$txid] = $entry['data'];
+                }
+            }
+
+            // Check each blockchain entry exists in DB
+            $missingFromDb = 0;
+            foreach ($chainTxids as $txid => $chainData) {
+                $exists = IntegrityAuditLog::where('txid', $txid)
+                    ->where('stream', $chainData['stream'] ?? '')
+                    ->exists();
+
+                if (! $exists) {
+                    $missingFromDb++;
+                }
+            }
+
+            if ($missingFromDb > 0) {
+                $this->recordViolation(
+                    type: BreachTypeEnums::CONTENT_MISMATCH->value,
+                    tableName: 'integrity_audit_logs',
+                    record: null,
+                    prNumber: 'audit_trail',
+                    message: "Audit log tampering detected: {$missingFromDb} blockchain entries missing from DB",
+                    chainData: ['missing_count' => $missingFromDb, 'total_chain' => count($chainTxids)],
+                );
+
+                Log::warning('IntegrityVerification: audit log tampering detected', [
+                    'missing_from_db' => $missingFromDb,
+                    'total_on_chain' => count($chainTxids),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('IntegrityVerification: audit log integrity check failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
