@@ -33,13 +33,17 @@ final readonly class CorrectionRepository implements CorrectionRepositoryInterfa
                 ['json' => $data->toBlockchainArray()]
             );
 
+            if (! is_string($txid) || $txid === '') {
+                throw new \RuntimeException('Blockchain correction publish did not return a transaction id.');
+            }
+
             Log::info('Correction published to blockchain', ['txid' => $txid]);
 
             return $txid;
         } catch (\Exception $e) {
             Log::error('Failed to publish correction', ['error' => $e->getMessage()]);
 
-            return null;
+            throw $e;
         }
     }
 

@@ -34,9 +34,13 @@ class DocumentRepository implements DocumentRepositoryInterface
                 ['json' => $data->toBlockchainArray()]
             );
 
+            if (! is_string($txid) || $txid === '') {
+                throw new \RuntimeException('Blockchain document publish did not return a transaction id.');
+            }
+
             Log::info('Document published to blockchain', ['txid' => $txid]);
 
-            return $txid ?? '';
+            return $txid;
         } catch (\Exception $e) {
             Log::error('Failed to publish document', ['error' => $e->getMessage()]);
             throw $e;

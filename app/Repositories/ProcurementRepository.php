@@ -27,11 +27,15 @@ class ProcurementRepository implements ProcurementRepositoryInterface
 
     public function create(ProcurementData $procurement): void
     {
-        $this->multichain->publish(
+        $txid = $this->multichain->publish(
             StreamEnums::METADATA->value,
             $procurement->prNumber,
             ['json' => $procurement->toBlockchainArray()]
         );
+
+        if (! is_string($txid) || $txid === '') {
+            throw new \RuntimeException('Blockchain procurement metadata publish did not return a transaction id.');
+        }
 
         DashboardCacheKeys::clearAllProcurementCaches();
     }

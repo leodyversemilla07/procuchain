@@ -28,6 +28,9 @@ class BlockchainVerificationIndex
     /** @var array<string, bool> */
     private array $loadedStreams = [];
 
+    /** @var array<string, string> */
+    private array $failedStreams = [];
+
     public function __construct(private Manager $manager) {}
 
     /**
@@ -55,6 +58,7 @@ class BlockchainVerificationIndex
                 'error' => $e->getMessage(),
             ]);
 
+            $this->failedStreams[$stream] = $e->getMessage();
             $items = [];
         }
 
@@ -87,6 +91,19 @@ class BlockchainVerificationIndex
     public function isLoaded(string $stream): bool
     {
         return $this->loadedStreams[$stream] ?? false;
+    }
+
+    public function hasFailures(): bool
+    {
+        return $this->failedStreams !== [];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function failedStreams(): array
+    {
+        return $this->failedStreams;
     }
 
     /**

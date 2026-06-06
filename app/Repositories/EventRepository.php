@@ -34,13 +34,17 @@ final readonly class EventRepository
                 ['json' => $data->toBlockchainArray()]
             );
 
+            if (! is_string($txid) || $txid === '') {
+                throw new \RuntimeException('Blockchain event publish did not return a transaction id.');
+            }
+
             Log::info('Event published to blockchain', ['txid' => $txid]);
 
             return $txid;
         } catch (\Exception $e) {
             Log::error('Failed to publish event', ['error' => $e->getMessage()]);
 
-            return null;
+            throw $e;
         }
     }
 

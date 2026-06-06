@@ -105,12 +105,17 @@ class IntegrityVerificationService
         Log::info('IntegrityVerification: starting', ['run_id' => $this->runId, 'auto_repair' => $autoRepair]);
 
         $this->preloadBlockchainIndex();
+        $this->ensureBlockchainIndexLoaded();
 
         // Phase 1: Verify hashes on all normalized tables
         $this->verifyAllTables();
 
         // Phase 2: Detect deleted records (chain has it, DB doesn't)
         $this->detectDeletedRecords();
+
+        if (empty($this->violationCounts)) {
+            $this->resolveStalePendingViolationsAfterCleanRun();
+        }
 
         // Phase 3: Auto-repair if requested
         if ($autoRepair) {
@@ -225,13 +230,22 @@ class IntegrityVerificationService
                 ->whereNotIn('pr_number', $blockchainPrNumbers)
                 ->forceDelete();
 
-            // Re-sync from blockchain to restore
-            $this->syncService->syncAll();
+            // Re-sync from blockchain to restore, then prove the violation no
+            // longer reproduces before marking it restored.
+            $syncCounts = $this->syncService->syncAll();
+
+            if (! $this->violationIsResolved($auditLog)) {
+                $auditLog->markFailed('Post-repair verification failed; the violation still reproduces after syncing from blockchain.');
+                $this->failedCount++;
+
+                return ['success' => false, 'items_restored' => 0, 'deleted' => $deletedCount, 'error' => 'Post-repair verification failed'];
+            }
 
             $auditLog->markRestored([
                 'restored_by' => 'system',
                 'restored_at' => now()->toIso8601String(),
                 'deleted_records' => $deletedCount,
+                'sync_counts' => $syncCounts,
             ]);
 
             $this->restoredCount++;
@@ -361,6 +375,10 @@ class IntegrityVerificationService
         }
 
         $recordHadViolation = false;
+
+        if ($this->recordReferencesSupersededChainRevision($record, $tableName, $prNumber, $stream)) {
+            return;
+        }
 
         // Layer 1: Recompute hash and compare with stored data_hash
         $currentHash = $this->computeRecordHash($record, $tableName);
@@ -526,6 +544,61 @@ class IntegrityVerificationService
         return false;
     }
 
+    private function recordReferencesSupersededChainRevision(Model $record, string $tableName, string $prNumber, StreamEnums $stream): bool
+    {
+        if ($this->recordReferencesLatestChainRevision($record, $tableName, $prNumber, $stream)) {
+            return false;
+        }
+
+        $latest = $this->latestChainItemForRecord($tableName, $prNumber, $stream);
+        $latestTxid = $latest['txid'] ?? null;
+        $recordTxid = $record->txid ?? null;
+
+        $this->recordViolation(
+            type: BreachTypeEnums::CONTENT_MISMATCH->value,
+            tableName: $tableName,
+            record: $record,
+            prNumber: $prNumber,
+            message: 'Procurement mirror references an older blockchain revision instead of the latest trusted chain record',
+            fieldDiffs: [[
+                'field' => 'txid',
+                'old_value' => $latestTxid,
+                'new_value' => $recordTxid,
+            ]],
+            chainData: is_array($latest['data']['json'] ?? null) ? $latest['data']['json'] : null,
+        );
+
+        return true;
+    }
+
+    private function recordReferencesLatestChainRevision(Model $record, string $tableName, string $prNumber, StreamEnums $stream): bool
+    {
+        if ($tableName !== 'procurements') {
+            return true;
+        }
+
+        $latest = $this->latestChainItemForRecord($tableName, $prNumber, $stream);
+        if (! is_array($latest)) {
+            return true;
+        }
+
+        $latestTxid = $latest['txid'] ?? null;
+
+        return ! is_string($latestTxid) || $latestTxid === '' || $latestTxid === ($record->txid ?? null);
+    }
+
+    private function latestChainItemForRecord(string $tableName, string $prNumber, StreamEnums $stream): ?array
+    {
+        if ($tableName !== 'procurements') {
+            return null;
+        }
+
+        $items = $this->blockchainIndex->itemsByPrNumber($stream, $prNumber);
+        $latest = end($items);
+
+        return is_array($latest) ? $latest : null;
+    }
+
     private function refreshTrustedRecordHash(Model $record, string $currentHash): void
     {
         $record->forceFill([
@@ -638,19 +711,27 @@ class IntegrityVerificationService
     private function detectMissingProcurementsFromDb(): void
     {
         try {
+            $reportedPrNumbers = [];
+
             foreach ($this->blockchainIndex->items(StreamEnums::METADATA) as $item) {
                 $data = $item['data']['json'] ?? [];
                 $prNumber = $data['pr_number'] ?? null;
-                if ($prNumber && ! Procurement::where('pr_number', $prNumber)->exists()) {
-                    $this->recordViolation(
-                        type: BreachTypeEnums::ROW_DELETED->value,
-                        tableName: 'procurements',
-                        record: null,
-                        prNumber: $prNumber,
-                        message: 'PR exists on blockchain but not in database',
-                        chainData: $data,
-                    );
+
+                if (! $prNumber || isset($reportedPrNumbers[$prNumber]) || Procurement::where('pr_number', $prNumber)->exists()) {
+                    continue;
                 }
+
+                $reportedPrNumbers[$prNumber] = true;
+
+                $this->recordViolation(
+                    type: BreachTypeEnums::ROW_DELETED->value,
+                    tableName: 'procurements',
+                    record: null,
+                    prNumber: $prNumber,
+                    message: 'PR exists on blockchain but not in database',
+                    chainData: $data,
+                    chainTxid: $item['txid'] ?? null,
+                );
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check deleted procurements', ['error' => $e->getMessage()]);
@@ -680,6 +761,7 @@ class IntegrityVerificationService
                         prNumber: $prNumber,
                         message: "{$stream->value} item exists on blockchain but not in database",
                         chainData: $data,
+                        chainTxid: $txid,
                     );
                 }
             }
@@ -722,6 +804,8 @@ class IntegrityVerificationService
                 );
             }
 
+            $this->detectUnauthorizedProcurementTxidsInDb($blockchainPrNumbers);
+
             $this->detectUnauthorizedStreamRowsInDb(StreamEnums::STATUS, ProcurementStage::class, 'procurement_stages');
             $this->detectUnauthorizedStreamRowsInDb(StreamEnums::DOCUMENTS, ProcurementDocument::class, 'procurement_documents');
             $this->detectUnauthorizedStreamRowsInDb(StreamEnums::EVENTS, ProcurementEvent::class, 'procurement_events');
@@ -738,6 +822,38 @@ class IntegrityVerificationService
             }
         } catch (\Exception $e) {
             Log::warning('IntegrityVerification: failed to check unauthorized records', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * @param  list<string>  $blockchainPrNumbers
+     */
+    private function detectUnauthorizedProcurementTxidsInDb(array $blockchainPrNumbers): void
+    {
+        $chainTxids = $this->getBlockchainTxids(StreamEnums::METADATA);
+
+        if (empty($chainTxids)) {
+            return;
+        }
+
+        $fakeRecords = Procurement::query()
+            ->whereIn('pr_number', $blockchainPrNumbers)
+            ->where(function ($query) use ($chainTxids) {
+                $query->whereNull('txid')
+                    ->orWhere('txid', '')
+                    ->orWhereNotIn('txid', $chainTxids);
+            })
+            ->get();
+
+        foreach ($fakeRecords as $record) {
+            $this->recordViolation(
+                type: BreachTypeEnums::UNAUTHORIZED_RECORD->value,
+                tableName: 'procurements',
+                record: $record,
+                prNumber: $record->pr_number,
+                message: 'Procurement record exists in database but its txid is absent from procurement.metadata blockchain stream',
+                chainData: null,
+            );
         }
     }
 
@@ -761,6 +877,7 @@ class IntegrityVerificationService
                         prNumber: (string) ($data['pr_number'] ?? $fileKey),
                         message: 'file.metadata item exists on blockchain but not in database',
                         chainData: $data,
+                        chainTxid: $txid,
                     );
                 }
             }
@@ -777,13 +894,17 @@ class IntegrityVerificationService
         try {
             $chainTxids = $this->getBlockchainTxids($stream);
 
-            if (empty($chainTxids)) {
-                return;
-            }
-
             $fakeRows = $modelClass::query()
-                ->whereNotNull('txid')
-                ->whereNotIn('txid', $chainTxids)
+                ->where(function ($query) use ($chainTxids) {
+                    $query->whereNull('txid')
+                        ->orWhere('txid', '');
+
+                    if (empty($chainTxids)) {
+                        $query->orWhereNotNull('txid');
+                    } else {
+                        $query->orWhereNotIn('txid', $chainTxids);
+                    }
+                })
                 ->get();
 
             foreach ($fakeRows as $record) {
@@ -818,6 +939,163 @@ class IntegrityVerificationService
 
             return [];
         }
+    }
+
+    private function resolveStalePendingViolationsAfterCleanRun(): void
+    {
+        $staleViolations = IntegrityAuditLog::where('recovery_status', 'pending')->get();
+
+        foreach ($staleViolations as $violation) {
+            $violation->markSkipped('Verifier completed a full clean run (run_id: '.$this->runId.') with no current blockchain/database breaches. This pending record is historical and no longer actionable.');
+        }
+
+        if ($staleViolations->isNotEmpty()) {
+            Log::info('IntegrityVerification: resolved stale pending violations after clean run', [
+                'run_id' => $this->runId,
+                'count' => $staleViolations->count(),
+            ]);
+        }
+    }
+
+    private function violationIsResolved(IntegrityAuditLog $violation): bool
+    {
+        $modelClass = $this->modelClassForStream($violation->stream);
+
+        return match ($violation->violation_type) {
+            BreachTypeEnums::ROW_DELETED->value => $this->rowDeletedViolationIsResolved($violation, $modelClass),
+            BreachTypeEnums::UNAUTHORIZED_RECORD->value => $this->unauthorizedRecordViolationIsResolved($violation, $modelClass),
+            BreachTypeEnums::HASH_MISMATCH->value,
+            BreachTypeEnums::CONTENT_MISMATCH->value,
+            BreachTypeEnums::USER_ADDRESS_TAMPERED->value => $this->contentViolationIsResolved($violation, $modelClass),
+            default => false,
+        };
+    }
+
+    private function rowDeletedViolationIsResolved(IntegrityAuditLog $violation, ?string $modelClass): bool
+    {
+        if (! $modelClass) {
+            return false;
+        }
+
+        if ($violation->stream === StreamEnums::METADATA->value) {
+            return $modelClass::where('pr_number', $violation->stream_key)->exists();
+        }
+
+        return is_string($violation->txid) && $violation->txid !== ''
+            ? $modelClass::where('txid', $violation->txid)->exists()
+            : false;
+    }
+
+    private function unauthorizedRecordViolationIsResolved(IntegrityAuditLog $violation, ?string $modelClass): bool
+    {
+        if (! $modelClass) {
+            return false;
+        }
+
+        if ($violation->record_id && ! $modelClass::whereKey($violation->record_id)->exists()) {
+            return true;
+        }
+
+        if (is_string($violation->txid) && $violation->txid !== '') {
+            return $this->blockchainIndex->hasTxid($violation->stream, $violation->txid);
+        }
+
+        return false;
+    }
+
+    private function contentViolationIsResolved(IntegrityAuditLog $violation, ?string $modelClass): bool
+    {
+        $record = $this->findMirrorRecordForViolation($violation, $modelClass);
+
+        if (! $record) {
+            return false;
+        }
+
+        $tableName = $this->tableNameForStream($violation->stream);
+        if (! $tableName) {
+            return false;
+        }
+
+        $prNumber = $record->pr_number ?? $record->procurement?->pr_number ?? $violation->stream_key;
+        $chainData = $this->fetchChainData($violation->stream, $prNumber, $record->txid ?? null);
+
+        if (! $chainData) {
+            return false;
+        }
+
+        if (! $this->recordReferencesLatestChainRevision($record, $tableName, $prNumber, StreamEnums::from($violation->stream))) {
+            return false;
+        }
+
+        $fieldDiffs = $this->computeFieldDifferences(
+            $this->recordToArray($record, $tableName),
+            $this->payloadProjector->projectForTable($chainData, $tableName, $record),
+        );
+
+        if (! empty($fieldDiffs)) {
+            return false;
+        }
+
+        $currentHash = $this->computeRecordHash($record, $tableName);
+
+        return ! $record->data_hash || $currentHash === $record->data_hash;
+    }
+
+    private function findMirrorRecordForViolation(IntegrityAuditLog $violation, ?string $modelClass): ?Model
+    {
+        if (! $modelClass) {
+            return null;
+        }
+
+        if ($violation->record_id) {
+            $record = $modelClass::find($violation->record_id);
+            if ($record) {
+                return $record;
+            }
+        }
+
+        if (is_string($violation->txid) && $violation->txid !== '') {
+            $record = $modelClass::where('txid', $violation->txid)->first();
+            if ($record) {
+                return $record;
+            }
+        }
+
+        if ($violation->stream === StreamEnums::METADATA->value) {
+            return $modelClass::where('pr_number', $violation->stream_key)->first();
+        }
+
+        return null;
+    }
+
+    private function modelClassForStream(string $stream): ?string
+    {
+        return match ($stream) {
+            StreamEnums::METADATA->value => Procurement::class,
+            StreamEnums::STATUS->value => ProcurementStage::class,
+            StreamEnums::DOCUMENTS->value => ProcurementDocument::class,
+            StreamEnums::EVENTS->value => ProcurementEvent::class,
+            StreamEnums::CORRECTIONS->value => ProcurementCorrection::class,
+            StreamEnums::ARCHIVE->value => ProcurementArchive::class,
+            StreamEnums::PROCUREMENTS_CORRECTIONS->value => ProcurementMetadataCorrection::class,
+            StreamEnums::FILE_METADATA->value => File::class,
+            default => null,
+        };
+    }
+
+    private function tableNameForStream(string $stream): ?string
+    {
+        return match ($stream) {
+            StreamEnums::METADATA->value => 'procurements',
+            StreamEnums::STATUS->value => 'procurement_stages',
+            StreamEnums::DOCUMENTS->value => 'procurement_documents',
+            StreamEnums::EVENTS->value => 'procurement_events',
+            StreamEnums::CORRECTIONS->value => 'procurement_corrections',
+            StreamEnums::ARCHIVE->value => 'procurement_archives',
+            StreamEnums::PROCUREMENTS_CORRECTIONS->value => 'procurement_metadata_corrections',
+            StreamEnums::FILE_METADATA->value => 'files',
+            default => null,
+        };
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -916,22 +1194,31 @@ class IntegrityVerificationService
             }
 
             // Step 3: Re-sync all data FROM blockchain to populate what's authentic
-            $this->syncService->syncAll();
+            $syncCounts = $this->syncService->syncAll();
 
-            // Step 4: Mark all pending violations from this run as restored
+            // Step 4: Mark only violations that no longer reproduce as restored.
+            // A repair is not successful merely because sync ran; it must prove
+            // the affected mirror row now matches trusted chain state.
             foreach ($pending as $violation) {
-                $violation->markRestored([
-                    'restored_by' => 'system_auto_repair',
-                    'restored_at' => now()->toIso8601String(),
-                    'verification_run_id' => $this->runId,
-                ]);
+                if ($this->violationIsResolved($violation)) {
+                    $violation->markRestored([
+                        'restored_by' => 'system_auto_repair',
+                        'restored_at' => now()->toIso8601String(),
+                        'verification_run_id' => $this->runId,
+                        'sync_counts' => $syncCounts,
+                    ]);
 
-                $this->restoredCount++;
+                    $this->restoredCount++;
+                } else {
+                    $violation->markFailed('Auto-repair completed sync, but post-repair verification still reproduces this violation.');
+                    $this->failedCount++;
+                }
             }
 
             Log::info('IntegrityVerification: auto-repair completed', [
                 'run_id' => $this->runId,
                 'restored' => $this->restoredCount,
+                'failed' => $this->failedCount,
             ]);
         } catch (\Exception $e) {
             Log::error('IntegrityVerification: auto-repair failed', [
@@ -1012,10 +1299,16 @@ class IntegrityVerificationService
         try {
             if ($this->blockchainIndex->isLoaded($stream)) {
                 if ($txid) {
-                    return $this->blockchainIndex->jsonByTxid($stream, $txid);
+                    $json = $this->blockchainIndex->jsonByTxid($stream, $txid);
+                    if ($json) {
+                        return $json;
+                    }
+                } else {
+                    $json = $this->blockchainIndex->latestJsonByPrNumber($stream, $prNumber);
+                    if ($json) {
+                        return $json;
+                    }
                 }
-
-                return $this->blockchainIndex->latestJsonByPrNumber($stream, $prNumber);
             }
 
             $items = $this->manager->liststreamkeyitems($stream, $prNumber);
@@ -1063,6 +1356,7 @@ class IntegrityVerificationService
         ?string $storedHash = null,
         ?array $fieldDiffs = null,
         ?array $chainData = null,
+        ?string $chainTxid = null,
     ): void {
         $this->violationCounts[$type] = ($this->violationCounts[$type] ?? 0) + 1;
 
@@ -1070,18 +1364,27 @@ class IntegrityVerificationService
         $severity = IntegrityAuditLog::severityForType($type);
 
         $stream = self::TABLE_STREAM_MAP[$tableName]?->value ?? $tableName;
+        $violationTxid = $record?->txid ?? $chainTxid;
 
-        // Deduplicate: supersede any existing pending violations for this
-        // (stream, stream_key, violation_type) tuple so repeated audit runs
-        // never accumulate duplicate unresolved entries in the dashboard.
-        IntegrityAuditLog::where('stream', $stream)
+        // Deduplicate repeated audit runs without collapsing separate missing
+        // stream rows for the same PR. Child-row deletions are txid-scoped;
+        // DB-only injected rows without txids are record-id scoped; whole-record
+        // missing violations fall back to the stream/key/type tuple.
+        $dedupeQuery = IntegrityAuditLog::where('stream', $stream)
             ->where('stream_key', $prNumber)
             ->where('violation_type', $type)
-            ->where('recovery_status', 'pending')
-            ->update([
-                'recovery_status' => 'superseded',
-                'recovery_result' => ['reason' => 'Superseded by a newer audit run (run_id: '.$this->runId.')'],
-            ]);
+            ->where('recovery_status', 'pending');
+
+        if ($violationTxid) {
+            $dedupeQuery->where('txid', $violationTxid);
+        } elseif ($record) {
+            $dedupeQuery->where('record_id', $record->id);
+        }
+
+        $dedupeQuery->update([
+            'recovery_status' => 'superseded',
+            'recovery_result' => ['reason' => 'Superseded by a newer audit run (run_id: '.$this->runId.')'],
+        ]);
 
         $dbSnapshot = $record ? $this->recordToArray($record, $tableName) : null;
 
@@ -1089,7 +1392,7 @@ class IntegrityVerificationService
             'record_id' => $record?->id,
             'stream' => $stream,
             'stream_key' => $prNumber,
-            'txid' => $record?->txid,
+            'txid' => $violationTxid,
             'violation_type' => $type,
             'severity' => $severity,
             'mirror_snapshot' => $dbSnapshot,
@@ -1139,6 +1442,15 @@ class IntegrityVerificationService
             fn (StreamEnums $stream) => $stream->value,
             self::TABLE_STREAM_MAP,
         ))));
+    }
+
+    private function ensureBlockchainIndexLoaded(): void
+    {
+        if (! $this->blockchainIndex->hasFailures()) {
+            return;
+        }
+
+        throw new \RuntimeException('Integrity audit aborted because one or more blockchain streams could not be read: '.json_encode($this->blockchainIndex->failedStreams(), JSON_UNESCAPED_SLASHES));
     }
 
     private function reset(string $source): void

@@ -32,13 +32,17 @@ final readonly class StatusRepository
                 ['json' => $data->toBlockchainArray()]
             );
 
+            if (! is_string($txid) || $txid === '') {
+                throw new \RuntimeException('Blockchain status publish did not return a transaction id.');
+            }
+
             Log::info('Status published to blockchain', ['txid' => $txid]);
 
             return $txid;
         } catch (\Exception $e) {
             Log::error('Failed to publish status', ['error' => $e->getMessage()]);
 
-            return null;
+            throw $e;
         }
     }
 

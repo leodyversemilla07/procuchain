@@ -152,7 +152,7 @@ class IntegrityBreachSimulationTest extends TestCase
         $auditLog = IntegrityAuditLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-005-0001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachTypeEnums::ROW_DELETED->value,
         );
 
         $manager = \Mockery::mock(Manager::class);
@@ -162,7 +162,19 @@ class IntegrityBreachSimulationTest extends TestCase
 
         $syncService = \Mockery::mock(NormalizedTableSyncService::class);
         $syncService->shouldReceive('syncAll')
-            ->once();
+            ->once()
+            ->andReturnUsing(function () {
+                Procurement::create([
+                    'pr_number' => 'PR-2026-005-0001',
+                    'title' => 'Restored Procurement',
+                    'category' => 'goods',
+                    'procurement_mode' => 'competitive_bidding',
+                    'current_stage' => 'procurement_initiation',
+                    'current_status' => 'draft',
+                ]);
+
+                return ['procurements' => 1];
+            });
 
         $this->app->instance(Manager::class, $manager);
         $this->app->instance(NormalizedTableSyncService::class, $syncService);

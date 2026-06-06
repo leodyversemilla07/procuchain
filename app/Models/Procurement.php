@@ -146,13 +146,31 @@ class Procurement extends Model
     {
         return [
             'pr_number',
+            'app_reference',
             'title',
+            'description',
             'category',
             'procurement_mode',
-            'abc_amount',
             'office',
             'end_user',
             'fund_source',
+            'prepared_by',
+            'abc_amount',
+            'approved_budget',
+            'contract_price',
+            'delivery_location',
+            'delivery_date',
+            'delivery_term_days',
+            'philgeps_reference',
+            'philgeps_posting_date',
+            'bac_resolution_number',
+            'bac_resolution_date',
+            'approved_by',
+            'approval_date',
+            'current_status',
+            'user_address',
+            'user_id',
+            'initiated_at',
         ];
     }
 }

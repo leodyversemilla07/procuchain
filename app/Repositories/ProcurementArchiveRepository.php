@@ -35,13 +35,17 @@ class ProcurementArchiveRepository
             'reason' => $reason,
         ];
 
-        $this->multichain->publish(
+        $txid = $this->multichain->publish(
             StreamEnums::ARCHIVE->value,
             $prNumber,
             ['json' => $data]
         );
 
-        Log::info('Procurement archived', ['pr_number' => $prNumber]);
+        if (! is_string($txid) || $txid === '') {
+            throw new \RuntimeException('Blockchain archive publish did not return a transaction id.');
+        }
+
+        Log::info('Procurement archived', ['pr_number' => $prNumber, 'txid' => $txid]);
         DashboardCacheKeys::clearAllProcurementCaches();
     }
 
@@ -56,13 +60,17 @@ class ProcurementArchiveRepository
             'user_id' => $userId,
         ];
 
-        $this->multichain->publish(
+        $txid = $this->multichain->publish(
             StreamEnums::ARCHIVE->value,
             $prNumber,
             ['json' => $data]
         );
 
-        Log::info('Procurement restored', ['pr_number' => $prNumber]);
+        if (! is_string($txid) || $txid === '') {
+            throw new \RuntimeException('Blockchain archive restore publish did not return a transaction id.');
+        }
+
+        Log::info('Procurement restored', ['pr_number' => $prNumber, 'txid' => $txid]);
         DashboardCacheKeys::clearAllProcurementCaches();
     }
 

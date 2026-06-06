@@ -155,15 +155,13 @@ class IntegrityBreachController extends Controller
         }
 
         try {
-            $syncService = app(BlockchainRecordSyncService::class);
-            $syncService->repairFromChain($log->stream_key, $log->stream);
+            $result = app(IntegrityVerificationService::class)->restoreViolation($log);
 
-            $log->markRestored([
-                'restored_by' => auth()->user()->name ?? 'admin',
-                'restored_at' => now()->toIso8601String(),
-            ]);
+            if (! $result['success']) {
+                return back()->with('error', 'Repair failed: '.($result['error'] ?? 'Post-repair verification failed.'));
+            }
 
-            return back()->with('success', 'Breach repaired from blockchain.');
+            return back()->with('success', 'Breach repaired from blockchain and verified clean.');
         } catch (\Exception $e) {
             return back()->with('error', 'Repair failed: '.$e->getMessage());
         }
@@ -185,11 +183,25 @@ class IntegrityBreachController extends Controller
             $syncService = app(BlockchainRecordSyncService::class);
             $syncService->repairFromChain($prNumber);
 
+            $verification = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'manual');
+            $stillBreached = IntegrityAuditLog::where('verification_run_id', $verification['run_id'])
+                ->where('stream_key', $prNumber)
+                ->where('recovery_status', 'pending')
+                ->exists();
+
+            if ($stillBreached) {
+                return back()->with('error', "Repair ran, but PR {$prNumber} still has reproducible integrity breaches.");
+            }
+
             IntegrityAuditLog::where('stream_key', $prNumber)
                 ->where('recovery_status', 'pending')
-                ->each(fn ($log) => $log->markRestored(['restored_by' => 'admin']));
+                ->each(fn ($log) => $log->markRestored([
+                    'restored_by' => auth()->user()->name ?? 'admin',
+                    'restored_at' => now()->toIso8601String(),
+                    'verified_by_run_id' => $verification['run_id'],
+                ]));
 
-            return back()->with('success', "PR {$prNumber} repaired from blockchain.");
+            return back()->with('success', "PR {$prNumber} repaired from blockchain and verified clean.");
         } catch (\Exception $e) {
             return back()->with('error', 'Repair failed: '.$e->getMessage());
         }
