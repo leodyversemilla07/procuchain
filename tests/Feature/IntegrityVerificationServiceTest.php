@@ -506,6 +506,49 @@ describe('IntegrityVerificationService', function () {
             ->toContain(['field' => 'title', 'old_value' => 'Original Title', 'new_value' => 'Tampered Title']);
     });
 
+    it('validates procurement current status against the latest status stream entry', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2026-041-0403',
+            'title' => 'Original Title',
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+            'current_stage' => 'bidding_documents',
+            'current_status' => 'tampered_status',
+            'txid' => 'metadata-txid-status-check',
+        ]);
+
+        $metadataItem = [
+            'txid' => 'metadata-txid-status-check',
+            'data' => ['json' => ['pr_number' => $procurement->pr_number, 'title' => 'Original Title']],
+        ];
+        $statusItem = [
+            'txid' => 'latest-status-txid',
+            'data' => ['json' => [
+                'pr_number' => $procurement->pr_number,
+                'stage' => 'bidding_documents',
+                'current_status' => 'pre_procurement_conference_completed',
+            ]],
+        ];
+
+        $this->mock(Manager::class, function ($mock) use ($metadataItem, $statusItem) {
+            $mock->shouldReceive('liststreamitems')
+                ->with('procurement.metadata', false, 10000)
+                ->andReturn([$metadataItem]);
+            $mock->shouldReceive('liststreamitems')
+                ->with('procurement.status', false, 10000)
+                ->andReturn([$statusItem]);
+            $mock->shouldReceive('liststreamitems')->andReturn([])->byDefault();
+            $mock->shouldReceive('liststreamkeyitems')->andReturn([])->byDefault();
+            $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
+        });
+
+        $result = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'test');
+
+        expect($result['violations'])->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value)
+            ->and(IntegrityAuditLog::where('stream', 'procurement.metadata')->first()?->field_differences)
+            ->toContain(['field' => 'current_status', 'old_value' => 'pre_procurement_conference_completed', 'new_value' => 'tampered_status']);
+    });
+
     it('detects a procurement mirror row that points to a fake blockchain txid', function () {
         $procurement = Procurement::create([
             'pr_number' => 'PR-2026-041-0402',

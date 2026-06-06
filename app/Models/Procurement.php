@@ -167,7 +167,6 @@ class Procurement extends Model
             'bac_resolution_date',
             'approved_by',
             'approval_date',
-            'current_status',
             'user_address',
             'user_id',
             'initiated_at',

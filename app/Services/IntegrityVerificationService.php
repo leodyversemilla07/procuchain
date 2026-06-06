@@ -456,6 +456,10 @@ class IntegrityVerificationService
             }
         }
 
+        if ($tableName === 'procurements' && $this->procurementStatusDiffersFromLatestStatusStream($record, $prNumber)) {
+            $recordHadViolation = true;
+        }
+
         // Layer 4: Check if the blockchain publisher is unauthorized
         // (verifies that the txid publisher matches the expected authorized address)
         if ($this->verifyPublishers && $record->txid) {
@@ -542,6 +546,79 @@ class IntegrityVerificationService
         }
 
         return false;
+    }
+
+    private function procurementStatusDiffersFromLatestStatusStream(Model $record, string $prNumber): bool
+    {
+        $diffs = $this->procurementStatusDifferencesFromLatestStatusStream($record, $prNumber);
+
+        if (empty($diffs)) {
+            return false;
+        }
+
+        $latestStatus = $this->latestStatusItemForPrNumber($prNumber);
+        $chainData = is_array($latestStatus) ? ($latestStatus['data']['json'] ?? null) : null;
+
+        $this->recordViolation(
+            type: BreachTypeEnums::CONTENT_MISMATCH->value,
+            tableName: 'procurements',
+            record: $record,
+            prNumber: $prNumber,
+            message: 'Procurement mirror status differs from the latest procurement.status blockchain entry',
+            fieldDiffs: $diffs,
+            chainData: is_array($chainData) ? $chainData : null,
+        );
+
+        return true;
+    }
+
+    private function procurementStatusDifferencesFromLatestStatusStream(Model $record, string $prNumber): array
+    {
+        $latestStatus = $this->latestStatusItemForPrNumber($prNumber);
+
+        if (! $latestStatus) {
+            return [];
+        }
+
+        $chainData = $latestStatus['data']['json'] ?? null;
+        if (! is_array($chainData)) {
+            return [];
+        }
+
+        $diffs = [];
+        $chainStatus = $chainData['current_status'] ?? null;
+        $chainStage = $chainData['stage'] ?? null;
+
+        if ($chainStatus !== null && ! $this->valuesMatch($chainStatus, $record->current_status ?? null)) {
+            $diffs[] = ['field' => 'current_status', 'old_value' => $chainStatus, 'new_value' => $record->current_status ?? null];
+        }
+
+        if ($chainStage !== null && ! $this->valuesMatch($chainStage, $record->current_stage ?? null)) {
+            $diffs[] = ['field' => 'current_stage', 'old_value' => $chainStage, 'new_value' => $record->current_stage ?? null];
+        }
+
+        return $diffs;
+    }
+
+    private function latestStatusItemForPrNumber(string $prNumber): ?array
+    {
+        $items = $this->blockchainIndex->itemsByPrNumber(StreamEnums::STATUS, $prNumber);
+        $latest = end($items);
+
+        return is_array($latest) ? $latest : null;
+    }
+
+    private function valuesMatch(mixed $chainValue, mixed $dbValue): bool
+    {
+        if ($chainValue === $dbValue) {
+            return true;
+        }
+
+        if (is_numeric($chainValue) && is_numeric($dbValue)) {
+            return (float) $chainValue === (float) $dbValue;
+        }
+
+        return (string) $chainValue === (string) $dbValue;
     }
 
     private function recordReferencesSupersededChainRevision(Model $record, string $tableName, string $prNumber, StreamEnums $stream): bool
@@ -1033,6 +1110,10 @@ class IntegrityVerificationService
         );
 
         if (! empty($fieldDiffs)) {
+            return false;
+        }
+
+        if ($tableName === 'procurements' && ! empty($this->procurementStatusDifferencesFromLatestStatusStream($record, $prNumber))) {
             return false;
         }
 
