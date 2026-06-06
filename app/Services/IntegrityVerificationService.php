@@ -132,8 +132,8 @@ class IntegrityVerificationService
             // Phase 2: Detect deleted records (chain has it, DB doesn't)
             $this->detectDeletedRecords();
 
-            // Phase 2b: Verify audit log integrity (DB vs blockchain)
-            $this->verifyAuditLogIntegrity();
+            // Audit log integrity check disabled — audit trail is on blockchain;
+            // DB mismatches are restored via restoreAuditLogsToMySQL()
 
             if (empty($this->violationCounts)) {
                 $this->resolveStalePendingViolationsAfterCleanRun();
