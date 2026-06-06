@@ -102,6 +102,11 @@ class NormalizedTableSyncService
     {
         $existing = Procurement::withTrashed()->where('pr_number', $prNumber)->first();
         if ($existing) {
+            // Restore soft-deleted records so they appear in queries
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
             return $existing;
         }
 
