@@ -87,17 +87,18 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
     const handleMarkComplete = async () => {
         setCompleteDialog(false);
         setIsMarkingComplete(true);
+        const loadingToast = toast.loading('Recording on blockchain...');
         const url = actions.complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url;
         try {
             const result = await submitAndPoll(url, new FormData());
-            toast.success('Stage marked as complete!');
+            toast.success('Stage marked as complete!', { id: loadingToast });
             const blockchain = result.result as { next_stage_name?: string; next_stage_url?: string } | undefined;
             if (blockchain?.next_stage_name) {
                 setNextStageInfo({ name: blockchain.next_stage_name, url: blockchain.next_stage_url! });
             }
             router.reload();
         } catch (err) {
-            toast.error('Failed to mark stage as complete', { description: err instanceof Error ? err.message : undefined });
+            toast.error('Failed to mark stage as complete', { id: loadingToast, description: err instanceof Error ? err.message : undefined });
         } finally {
             setIsMarkingComplete(false);
         }

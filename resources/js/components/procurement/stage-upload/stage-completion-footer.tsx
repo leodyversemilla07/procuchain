@@ -28,9 +28,7 @@ export function StageCompletionFooter({
             {isStageCompleted ? (
                 <div className="flex w-full items-center justify-between rounded-xl border border-green-500/20 bg-primary/100/10 p-4">
                     <div className="flex items-center gap-3 text-primary">
-                        <div className="rounded-full bg-primary/100 p-1">
-                            <CheckCircle2 />
-                        </div>
+                        <CheckCircle2 className="h-5 w-5" />
                         <span className="text-xs font-bold tracking-tight uppercase">Stage Complete</span>
                     </div>
                     {nextStageInfo && (

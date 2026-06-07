@@ -24,10 +24,21 @@ export function CompletionDialog({ open, isMarkingComplete, stageName, prNumber,
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-2xl font-black">Mark Stage as Complete?</AlertDialogTitle>
+                    <AlertDialogTitle className="text-2xl font-black">
+                        {isMarkingComplete ? 'Processing...' : 'Mark Stage as Complete?'}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will finalize <strong>{stageName}</strong> for <strong>{prNumber}</strong> and record it on the blockchain. This action
-                        cannot be undone.
+                        {isMarkingComplete ? (
+                            <span className="flex items-center gap-2">
+                                <Spinner className="h-4 w-4" />
+                                Recording on blockchain. Please wait...
+                            </span>
+                        ) : (
+                            <>
+                                This will finalize <strong>{stageName}</strong> for <strong>{prNumber}</strong> and record it on the blockchain. This action
+                                cannot be undone.
+                            </>
+                        )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -35,8 +46,11 @@ export function CompletionDialog({ open, isMarkingComplete, stageName, prNumber,
                         Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction onClick={onConfirm} disabled={isMarkingComplete} className="rounded-lg px-8">
-                        {isMarkingComplete ? <Spinner /> : null}
-                        Confirm
+                        {isMarkingComplete ? (
+                            <span className="flex items-center gap-2"><Spinner /> Processing...</span>
+                        ) : (
+                            'Confirm'
+                        )}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
