@@ -65,13 +65,11 @@ class BlockchainAudit extends Command
             } else {
                 // Full audit
                 $this->info('Starting full blockchain integrity audit...');
-                $bar = $this->output->createProgressBar(3);
-                $bar->start();
+                $this->comment('  Verifying blockchain mirror records...');
 
                 $result = $service->verifyAndRepair($autoRepair, $source, $deepPublisherCheck);
 
-                $bar->finish();
-                $this->newLine(2);
+                $this->newLine();
             }
 
             $this->displayResults($result, $autoRepair);
