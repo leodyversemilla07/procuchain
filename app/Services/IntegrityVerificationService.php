@@ -952,17 +952,35 @@ class IntegrityVerificationService
                 return;
             }
 
-            // Find procurements in DB that don't exist on chain
+            // Find procurements in DB that don't exist on chain by PR number.
+            // A PR change in DB creates a txid-mismatch: the txid still exists
+            // on chain but under the original PR. We fetch chain data via txid
+            // so field differences can be shown in the breach detail.
             $fakeRecords = Procurement::whereNotIn('pr_number', $blockchainPrNumbers)->get();
 
             foreach ($fakeRecords as $record) {
+                $fieldDiffs = null;
+                $chainData = null;
+
+                // Try to recover the original blockchain payload by txid
+                if ($record->txid) {
+                    $chainData = $this->fetchChainData(StreamEnums::METADATA->value, $record->pr_number, $record->txid);
+                    if ($chainData) {
+                        $fieldDiffs = $this->computeFieldDifferences(
+                            $this->recordToArray($record, 'procurements'),
+                            $this->payloadProjector->projectForTable($chainData, 'procurements', $record),
+                        );
+                    }
+                }
+
                 $this->recordViolation(
                     type: BreachTypeEnums::UNAUTHORIZED_RECORD->value,
                     tableName: 'procurements',
                     record: $record,
                     prNumber: $record->pr_number,
-                    message: 'Record exists in database but not on blockchain - unauthorized injection',
-                    chainData: null,
+                    message: 'Record exists in database but not on blockchain - unauthorized injection or PR tampering',
+                    fieldDiffs: $fieldDiffs,
+                    chainData: $chainData,
                 );
             }
 
