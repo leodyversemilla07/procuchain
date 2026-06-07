@@ -68,7 +68,7 @@ class RunIntegrityVerification implements ShouldQueue
             Log::info('RunIntegrityVerification: job completed', $result);
         } catch (\Throwable $e) {
             Cache::put("{$this->cacheKey}_status", 'failed', 3600);
-            Cache::put("{$this->cacheKey}_error", $e->getMessage(), 3600);
+            Cache::put("{$this->cacheKey}_error", 'Verification failed. Please try again or contact support.', 3600);
 
             Log::error('RunIntegrityVerification: job failed', [
                 'error' => $e->getMessage(),

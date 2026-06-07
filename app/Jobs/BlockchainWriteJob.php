@@ -244,9 +244,12 @@ class BlockchainWriteJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
+        // Sanitize error message to avoid exposing sensitive information
+        $errorMessage = $this->sanitizeErrorMessage($exception->getMessage());
+
         Cache::put("blockchain_job:{$this->jobId}", [
             'status' => 'failed',
-            'error' => $exception->getMessage(),
+            'error' => $errorMessage,
             'user_id' => $this->userId,
         ], now()->addHour());
 
@@ -271,7 +274,38 @@ class BlockchainWriteJob implements ShouldQueue
             operation: $this->operation,
             prNumber: $this->data['pr_number'] ?? 'N/A',
             jobId: $this->jobId,
-            errorMessage: $exception->getMessage(),
+            errorMessage: $errorMessage,
         ));
+    }
+
+    /**
+     * Sanitize error message to avoid exposing sensitive information.
+     *
+     * @param  string  $message  The original error message
+     * @return string The sanitized message
+     */
+    private function sanitizeErrorMessage(string $message): string
+    {
+        $sanitized = $message;
+
+        // Remove file paths that could expose server structure
+        $sanitized = preg_replace('/in .*?\.php:\d+/', '', $sanitized) ?? $sanitized;
+
+        // Remove database credentials or connection details
+        $sanitized = preg_replace('/SQLSTATE\[[^\]]+\][^\n]*/', 'Database error occurred', $sanitized) ?? $sanitized;
+
+        // Remove stack traces
+        $sanitized = preg_replace('/Stack trace:.*/s', '', $sanitized) ?? $sanitized;
+
+        // Remove any JSON data that might contain sensitive info
+        $sanitized = preg_replace('/\{.*?\}/', '[details omitted]', $sanitized) ?? $sanitized;
+
+        if (strlen($sanitized) > 200) {
+            $sanitized = substr($sanitized, 0, 200).'...';
+        }
+
+        $sanitized = trim($sanitized);
+
+        return $sanitized !== '' ? $sanitized : 'Blockchain write failed. Please try again or contact support.';
     }
 }

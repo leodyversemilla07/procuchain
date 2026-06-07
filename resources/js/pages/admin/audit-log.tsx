@@ -91,6 +91,10 @@ const ACTION_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
     'account.bulk_attempts_reset': 'secondary',
 };
 
+function paginationLabel(label: string): string {
+    return label.replace(/&laquo;/g, '«').replace(/&raquo;/g, '»').replace(/&amp;/g, '&');
+}
+
 export default function AuditLog() {
     const { logs, distinctActions, filters, error } = usePage<PageProps>().props;
     const safeLogs = logs ?? {
@@ -316,14 +320,9 @@ export default function AuditLog() {
                             </span>
                             <div className="flex gap-2">
                                 {safeLogs.links.map((link, i) => (
-                                    <Button
-                                        key={i}
-                                        variant={link.active ? 'default' : 'outline'}
-                                        size="sm"
-                                        disabled={!link.url}
-                                        onClick={() => goToPage(link.url)}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
+                                    <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" disabled={!link.url} onClick={() => goToPage(link.url)}>
+                                        {paginationLabel(link.label)}
+                                    </Button>
                                 ))}
                             </div>
                         </CardFooter>

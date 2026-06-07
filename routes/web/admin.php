@@ -14,6 +14,7 @@ use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\RecoverableDataController;
 use App\Http\Controllers\SharedLedgerController;
 use App\Http\Controllers\UserManagementController;
+use App\Services\BlockchainRecordSyncService;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?', 'user' => '[0-9]+'])->group(function () {
@@ -21,10 +22,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
 
     // Full blockchain sync
     Route::post('/sync-blockchain', function () {
-        $syncService = app(\App\Services\BlockchainRecordSyncService::class);
+        $syncService = app(BlockchainRecordSyncService::class);
         $counts = $syncService->syncAll();
+
         return response()->json(['success' => true, 'synced' => $counts]);
-    })->name('sync-blockchain');
+    })->middleware('throttle:5,1')->name('sync-blockchain');
 
     Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
 
@@ -114,13 +116,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
     // Integrity Breaches — mirror breach management
     Route::prefix('integrity-breaches')->name('integrity-breaches.')->group(function () {
         Route::get('/', [IntegrityBreachController::class, 'index'])->name('index');
-        Route::post('/repair-pr', [IntegrityBreachController::class, 'repairPr'])->name('repair-pr');
-        Route::post('/verify', [IntegrityBreachController::class, 'verify'])->name('verify');
-        Route::post('/verify-and-repair', [IntegrityBreachController::class, 'verifyAndRepair'])->name('verify-and-repair');
+        Route::post('/repair-pr', [IntegrityBreachController::class, 'repairPr'])->middleware('throttle:5,1')->name('repair-pr');
+        Route::post('/verify', [IntegrityBreachController::class, 'verify'])->middleware('throttle:5,1')->name('verify');
+        Route::post('/verify-and-repair', [IntegrityBreachController::class, 'verifyAndRepair'])->middleware('throttle:5,1')->name('verify-and-repair');
         Route::get('/verify-status', [IntegrityBreachController::class, 'verifyStatus'])->name('verify-status');
         Route::get('/mirror-status', [IntegrityBreachController::class, 'mirrorStatus'])->name('mirror-status');
         Route::get('/{id}', [IntegrityBreachController::class, 'show'])->name('show')->whereNumber('id');
-        Route::post('/{id}/repair', [IntegrityBreachController::class, 'repair'])->name('repair');
+        Route::post('/{id}/repair', [IntegrityBreachController::class, 'repair'])->middleware('throttle:10,1')->name('repair');
     });
 
     // Integrity Audit Logs — permanent forensic record
@@ -128,7 +130,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
         Route::get('/', [IntegrityBreachController::class, 'auditLogsPage'])->name('index');
         Route::get('/detail/{id}', [IntegrityBreachController::class, 'auditLogDetailPage'])->name('detail');
         Route::get('/report/{runId}', [IntegrityBreachController::class, 'verificationReportPage'])->name('report');
-        Route::post('/{id}/repair', [IntegrityBreachController::class, 'auditLogsRepair'])->name('repair');
+        Route::post('/{id}/repair', [IntegrityBreachController::class, 'auditLogsRepair'])->middleware('throttle:10,1')->name('repair');
     });
 
     // Breach Detail Page
@@ -136,5 +138,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
 
     // Integrity Demo
     Route::get('/integrity-demo', [IntegrityBreachController::class, 'demoPage'])->name('integrity-demo.page');
-    Route::post('/integrity-demo', [IntegrityBreachController::class, 'demoAction'])->name('integrity-demo.action');
+    Route::post('/integrity-demo', [IntegrityBreachController::class, 'demoAction'])->middleware('throttle:5,1')->name('integrity-demo.action');
 });

@@ -370,7 +370,15 @@ class FileUploader
         string $fileHash
     ): string {
         // Sanitize document type (e.g., "Purchase Request" -> "purchase_request")
+        // Remove any potentially dangerous characters
         $sanitizedType = Str::slug($documentType, '_');
+
+        // Validate sanitized type contains only safe characters
+        if (! preg_match('/^[a-z0-9_]+$/', $sanitizedType)) {
+            throw new \InvalidArgumentException(
+                "Invalid document type after sanitization: {$sanitizedType}"
+            );
+        }
 
         // Get short hash (first 7 chars) for uniqueness verification
         $hashShort = substr($fileHash, 0, 7);

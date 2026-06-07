@@ -47,6 +47,10 @@ function TwoFactorSetupStep({
 }) {
     const [copiedText, copy] = useClipboard();
     const IconComponent = copiedText === manualSetupKey ? Check : Copy;
+    const qrCodeDataUrl = useMemo(
+        () => (qrCodeSvg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCodeSvg)}` : null),
+        [qrCodeSvg],
+    );
 
     return (
         <>
@@ -54,16 +58,11 @@ function TwoFactorSetupStep({
                 <AlertError errors={errors} />
             ) : (
                 <>
-                    <div className="mx-auto flex max-w-md flex-col items-center flex flex-col gap-3 overflow-hidden">
+                    <div className="mx-auto flex max-w-md flex-col items-center gap-3 overflow-hidden">
                         <div className="border-border mx-auto aspect-square w-80 rounded-lg border-2 bg-white p-2 shadow-sm dark:bg-background">
                             <div className="z-10 flex h-full w-full items-center justify-center">
-                                {qrCodeSvg ? (
-                                    <div
-                                        className="h-full w-full [&>svg]:h-full [&>svg]:w-full"
-                                        dangerouslySetInnerHTML={{
-                                            __html: qrCodeSvg,
-                                        }}
-                                    />
+                                {qrCodeDataUrl ? (
+                                    <img src={qrCodeDataUrl} alt="Two-factor authentication QR code" className="h-full w-full object-contain" />
                                 ) : (
                                     <Spinner className="size-8 text-muted-foreground" />
                                 )}

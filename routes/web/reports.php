@@ -15,9 +15,9 @@ foreach (['admin', 'bac_chairman', 'bac_secretariat', 'hope'] as $role) {
     Route::middleware(['auth', "role:{$role}"])->prefix($prefix)->name("{$role}.")->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/', [ReportController::class, 'index'])->name('index');
-            Route::post('/generate', [ReportController::class, 'generate'])->name('generate');
-            Route::post('/export', [ReportController::class, 'export'])->name('export');
-            Route::post('/search', [ReportController::class, 'search'])->name('search');
+            Route::post('/generate', [ReportController::class, 'generate'])->middleware('throttle:10,1')->name('generate');
+            Route::post('/export', [ReportController::class, 'export'])->middleware('throttle:10,1')->name('export');
+            Route::post('/search', [ReportController::class, 'search'])->middleware('throttle:30,1')->name('search');
         });
     });
 }

@@ -77,10 +77,14 @@ trait HasAccountLock
 
     /**
      * Increment failed login attempts
+     *
+     * Uses atomic increment to prevent race conditions in concurrent requests.
      */
     public function incrementFailedLoginAttempts(): void
     {
-        $this->failed_login_attempts = $this->failed_login_attempts + 1;
+        // Use atomic increment to prevent race conditions
+        // This ensures concurrent requests don't overwrite each other's increments
+        $this->increment('failed_login_attempts');
         $this->last_failed_login_at = now();
         $this->save();
     }

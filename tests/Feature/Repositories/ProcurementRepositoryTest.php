@@ -53,7 +53,8 @@ it('creates procurement metadata on blockchain', function () {
                     && $data['json']['abc_amount'] === '150000'
                     && $data['json']['category'] === 'goods';
             })
-        );
+        )
+        ->andReturn('metadata-txid-123');
 
     $this->repository->create($procurement);
 });

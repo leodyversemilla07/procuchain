@@ -57,8 +57,12 @@ class BlockchainMonitoringService
         }
 
         // Try to get cached health status
-        return Cache::remember(self::HEALTH_CHECK_KEY, $this->healthCheckTtl, function () {
-            return $this->performHealthCheck();
+        $lock = Cache::lock('health-check-computing', 10);
+
+        return $lock->block(10, function () {
+            return Cache::remember(self::HEALTH_CHECK_KEY, $this->healthCheckTtl, function () {
+                return $this->performHealthCheck();
+            });
         });
     }
 

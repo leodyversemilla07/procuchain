@@ -162,13 +162,20 @@ class AdminAnalyticsService
             ->where('successful', true);
 
         // Calculate session durations (assuming logout_at field exists, or estimate from next login)
-        $sessions = $query->orderBy('user_id')->orderBy('login_at')->get();
-
+        // Use chunking to avoid memory issues with large datasets
         $sessionDurations = [];
-        $userSessions = $sessions->groupBy('user_id');
+        $userSessions = [];
+
+        // First, collect user sessions in chunks to avoid memory issues
+        $query->orderBy('user_id')->orderBy('login_at')
+            ->chunk(1000, function ($chunk) use (&$userSessions) {
+                foreach ($chunk as $session) {
+                    $userSessions[$session->user_id][] = $session;
+                }
+            });
 
         foreach ($userSessions as $userId => $userLogins) {
-            $sortedLogins = $userLogins->sortBy('login_at');
+            $sortedLogins = collect($userLogins)->sortBy('login_at');
 
             for ($i = 0; $i < $sortedLogins->count() - 1; $i++) {
                 $currentLogin = $sortedLogins->values()[$i];
@@ -183,6 +190,14 @@ class AdminAnalyticsService
         }
 
         $averageSessionDuration = ! empty($sessionDurations) ? array_sum($sessionDurations) / count($sessionDurations) : 0;
+
+        // Count total sessions and unique users from the chunked data
+        $totalSessions = 0;
+        $uniqueUserIds = [];
+        foreach ($userSessions as $userId => $sessions) {
+            $totalSessions += count($sessions);
+            $uniqueUserIds[$userId] = true;
+        }
 
         // Session frequency analysis
         $dailySessions = UserLoginLog::query()
@@ -228,11 +243,11 @@ class AdminAnalyticsService
 
         return [
             'average_session_duration_minutes' => round($averageSessionDuration, 2),
-            'total_sessions' => $sessions->count(),
-            'unique_active_users' => $sessions->unique('user_id')->count(),
+            'total_sessions' => $totalSessions,
+            'unique_active_users' => count($uniqueUserIds),
             'daily_session_trends' => $dailySessions->toArray(),
             'user_engagement_distribution' => $engagementDistribution,
-            'sessions_per_user_average' => $sessions->count() > 0 ? round($sessions->count() / $sessions->unique('user_id')->count(), 2) : 0,
+            'sessions_per_user_average' => $totalSessions > 0 ? round($totalSessions / count($uniqueUserIds), 2) : 0,
         ];
     }
 

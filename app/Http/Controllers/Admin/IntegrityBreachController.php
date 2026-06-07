@@ -163,7 +163,12 @@ class IntegrityBreachController extends Controller
 
             return back()->with('success', 'Breach repaired from blockchain and verified clean.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Repair failed: '.$e->getMessage());
+            Log::error('Integrity breach repair failed', [
+                'breach_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Repair failed. Please try again or contact support.');
         }
     }
 
@@ -174,10 +179,11 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('update-audit-log');
 
-        $prNumber = $request->input('pr_number');
-        if (! $prNumber) {
-            return back()->with('error', 'PR number required');
-        }
+        $validated = $request->validate([
+            'pr_number' => ['required', 'string', 'regex:/^PR-\d{4}-\d{3}(-\d{4})?$/'],
+        ]);
+
+        $prNumber = $validated['pr_number'];
 
         try {
             $syncService = app(BlockchainRecordSyncService::class);
@@ -203,7 +209,12 @@ class IntegrityBreachController extends Controller
 
             return back()->with('success', "PR {$prNumber} repaired from blockchain and verified clean.");
         } catch (\Exception $e) {
-            return back()->with('error', 'Repair failed: '.$e->getMessage());
+            Log::error('Integrity breach PR repair failed', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Repair failed. Please try again or contact support.');
         }
     }
 
@@ -304,7 +315,11 @@ class IntegrityBreachController extends Controller
 
             return response()->json(['success' => true, 'counts' => $counts]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            Log::error('Manual normalized table sync failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['success' => false, 'error' => 'Sync failed. Please try again or contact support.'], 500);
         }
     }
 
@@ -377,7 +392,12 @@ class IntegrityBreachController extends Controller
                 ? back()->with('success', 'Restored from blockchain.')
                 : back()->with('error', $result['error'] ?? 'Failed');
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            Log::error('Integrity audit log repair failed', [
+                'audit_log_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Repair failed. Please try again or contact support.');
         }
     }
 
@@ -436,8 +456,13 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('update-audit-log');
 
-        $action = $request->input('action');
-        $prNumber = $request->input('pr_number');
+        $validated = $request->validate([
+            'action' => ['required', 'string', 'in:sync,verify,verify_pr'],
+            'pr_number' => ['nullable', 'string', 'regex:/^PR-\d{4}-\d{3}(-\d{4})?$/'],
+        ]);
+
+        $action = $validated['action'];
+        $prNumber = $validated['pr_number'] ?? null;
 
         try {
             if ($action === 'sync') {
@@ -463,7 +488,13 @@ class IntegrityBreachController extends Controller
 
             return back()->with('error', 'Unknown action');
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            Log::error('Integrity demo action failed', [
+                'action' => $action,
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Action failed. Please try again or contact support.');
         }
     }
 }

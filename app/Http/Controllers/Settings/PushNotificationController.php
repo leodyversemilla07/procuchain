@@ -14,7 +14,10 @@ class PushNotificationController extends Controller
      */
     public function index(Request $request)
     {
-        $subscriptions = $request->user()->pushSubscriptions;
+        $user = $request->user();
+        abort_if($user === null, 401);
+
+        $subscriptions = $user->pushSubscriptions;
 
         return response()->json([
             'count' => $subscriptions->count(),
@@ -27,9 +30,12 @@ class PushNotificationController extends Controller
      */
     public function edit(Request $request)
     {
+        $user = $request->user();
+        abort_if($user === null, 401);
+
         return Inertia::render('settings/push-notification', [
             'vapidPublicKey' => config('webpush.vapid.public_key'),
-            'subscriptions' => $request->user()->pushSubscriptions,
+            'subscriptions' => $user->pushSubscriptions,
         ]);
     }
 
@@ -45,6 +51,7 @@ class PushNotificationController extends Controller
         ]);
 
         $user = $request->user();
+        abort_if($user === null, 401);
 
         // Check if subscription already exists
         $existingSubscription = $user->pushSubscriptions()
@@ -76,6 +83,7 @@ class PushNotificationController extends Controller
         ]);
 
         $user = $request->user();
+        abort_if($user === null, 401);
 
         $deleted = $user->pushSubscriptions()
             ->where('endpoint', $request->endpoint)

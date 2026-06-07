@@ -13,6 +13,7 @@ use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -45,46 +46,48 @@ class NormalizedTableSyncService
      */
     public function syncAll(): array
     {
-        $counts = [
-            'procurements' => 0,
-            'stages' => 0,
-            'documents' => 0,
-            'events' => 0,
-            'corrections' => 0,
-            'archives' => 0,
-            'metadata_corrections' => 0,
-            'files' => 0,
-        ];
+        return Cache::lock('normalized-table-sync:all', 600)->block(10, function (): array {
+            $counts = [
+                'procurements' => 0,
+                'stages' => 0,
+                'documents' => 0,
+                'events' => 0,
+                'corrections' => 0,
+                'archives' => 0,
+                'metadata_corrections' => 0,
+                'files' => 0,
+            ];
 
-        Log::info('NormalizedTableSync: starting full sync from blockchain');
+            Log::info('NormalizedTableSync: starting full sync from blockchain');
 
-        // 1. Sync procurement metadata → procurements table
-        $counts['procurements'] = $this->syncProcurementMetadata();
+            // 1. Sync procurement metadata → procurements table
+            $counts['procurements'] = $this->syncProcurementMetadata();
 
-        // 2. Sync status updates → procurement_stages table
-        $counts['stages'] = $this->syncStatusUpdates();
+            // 2. Sync status updates → procurement_stages table
+            $counts['stages'] = $this->syncStatusUpdates();
 
-        // 3. Sync documents → procurement_documents table
-        $counts['documents'] = $this->syncDocuments();
+            // 3. Sync documents → procurement_documents table
+            $counts['documents'] = $this->syncDocuments();
 
-        // 4. Sync events → procurement_events table
-        $counts['events'] = $this->syncEvents();
+            // 4. Sync events → procurement_events table
+            $counts['events'] = $this->syncEvents();
 
-        // 5. Sync corrections → procurement_corrections table
-        $counts['corrections'] = $this->syncCorrections();
+            // 5. Sync corrections → procurement_corrections table
+            $counts['corrections'] = $this->syncCorrections();
 
-        // 6. Sync archive flags → procurement_archives table
-        $counts['archives'] = $this->syncArchives();
+            // 6. Sync archive flags → procurement_archives table
+            $counts['archives'] = $this->syncArchives();
 
-        // 7. Sync procurement metadata corrections → procurement_metadata_corrections table
-        $counts['metadata_corrections'] = $this->syncMetadataCorrections();
+            // 7. Sync procurement metadata corrections → procurement_metadata_corrections table
+            $counts['metadata_corrections'] = $this->syncMetadataCorrections();
 
-        // 8. Sync file metadata → files table
-        $counts['files'] = $this->syncFileMetadata();
+            // 8. Sync file metadata → files table
+            $counts['files'] = $this->syncFileMetadata();
 
-        Log::info('NormalizedTableSync: sync completed', $counts);
+            Log::info('NormalizedTableSync: sync completed', $counts);
 
-        return $counts;
+            return $counts;
+        });
     }
 
     /**
@@ -95,28 +98,30 @@ class NormalizedTableSyncService
      */
     public function syncPr(string $prNumber): array
     {
-        Log::info('NormalizedTableSync: syncing PR', ['pr_number' => $prNumber]);
+        return Cache::lock("normalized-table-sync:pr:{$prNumber}", 300)->block(10, function () use ($prNumber): array {
+            Log::info('NormalizedTableSync: syncing PR', ['pr_number' => $prNumber]);
 
-        $counts = [
-            'stages' => 0,
-            'events' => 0,
-            'documents' => 0,
-            'metadata' => 0,
-            'corrections' => 0,
-        ];
+            $counts = [
+                'stages' => 0,
+                'events' => 0,
+                'documents' => 0,
+                'metadata' => 0,
+                'corrections' => 0,
+            ];
 
-        $counts['metadata'] = $this->syncMetadataForPr($prNumber);
-        $counts['stages'] = $this->syncStatusUpdatesForPr($prNumber);
-        $counts['events'] = $this->syncEventsForPr($prNumber);
-        $counts['documents'] = $this->syncDocumentsForPr($prNumber);
-        $counts['corrections'] = $this->syncCorrectionsForPr($prNumber);
-        $counts['archives'] = $this->syncArchivesForPr($prNumber);
-        $counts['metadata_corrections'] = $this->syncMetadataCorrectionsForPr($prNumber);
-        $counts['files'] = $this->syncFilesForPr($prNumber);
+            $counts['metadata'] = $this->syncMetadataForPr($prNumber);
+            $counts['stages'] = $this->syncStatusUpdatesForPr($prNumber);
+            $counts['events'] = $this->syncEventsForPr($prNumber);
+            $counts['documents'] = $this->syncDocumentsForPr($prNumber);
+            $counts['corrections'] = $this->syncCorrectionsForPr($prNumber);
+            $counts['archives'] = $this->syncArchivesForPr($prNumber);
+            $counts['metadata_corrections'] = $this->syncMetadataCorrectionsForPr($prNumber);
+            $counts['files'] = $this->syncFilesForPr($prNumber);
 
-        Log::info('NormalizedTableSync: PR sync completed', ['pr_number' => $prNumber] + $counts);
+            Log::info('NormalizedTableSync: PR sync completed', ['pr_number' => $prNumber] + $counts);
 
-        return $counts;
+            return $counts;
+        });
     }
 
     /**

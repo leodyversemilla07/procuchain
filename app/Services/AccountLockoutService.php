@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\AccountLocked;
 use App\Models\User;
 use App\Models\UserLoginLog;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AccountLockoutService
@@ -15,39 +16,55 @@ class AccountLockoutService
     public function handleFailedLoginAttempt(User $user): void
     {
         try {
-            // Don't process if account is already locked
-            if ($user->isAccountLocked()) {
+            $result = DB::transaction(function () use ($user): array {
+                $lockedUser = User::whereKey($user->id)->lockForUpdate()->first();
+
+                if (! $lockedUser || $lockedUser->isAccountLocked()) {
+                    return ['locked' => false, 'attempts' => $lockedUser?->failed_login_attempts ?? 0, 'user' => $lockedUser];
+                }
+
+                $lockedUser->incrementFailedLoginAttempts();
+                $lockedUser->refresh();
+
+                if ($lockedUser->failed_login_attempts < 3) {
+                    return ['locked' => false, 'attempts' => $lockedUser->failed_login_attempts, 'user' => $lockedUser];
+                }
+
+                $lockDurationMinutes = config('auth.account_lockout_duration', 30);
+                $lockedUser->lockAccount('Account locked due to multiple failed login attempts', $lockDurationMinutes);
+
+                return ['locked' => true, 'attempts' => $lockedUser->failed_login_attempts, 'user' => $lockedUser, 'duration' => $lockDurationMinutes];
+            });
+
+            $lockedUser = $result['user'];
+
+            if (! $lockedUser) {
                 return;
             }
 
-            // Increment failed attempts
-            $user->incrementFailedLoginAttempts();
-
-            // Check if we need to lock the account (3 attempts = lock)
-            if ($user->failed_login_attempts >= 3) {
-                $lockDurationMinutes = config('auth.account_lockout_duration', 30);
-                $user->lockAccount('Account locked due to multiple failed login attempts', $lockDurationMinutes);
-
+            if ($result['locked']) {
                 Log::warning('User account locked due to failed login attempts', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'failed_attempts' => $user->failed_login_attempts,
-                    'locked_until' => $user->lock_expires_at,
+                    'user_id' => $lockedUser->id,
+                    'user_email' => $lockedUser->email,
+                    'failed_attempts' => $result['attempts'],
+                    'locked_until' => $lockedUser->lock_expires_at,
                 ]);
 
                 AccountLocked::dispatch(
-                    $user,
+                    $lockedUser,
                     'Account locked due to multiple failed login attempts',
-                    "{$lockDurationMinutes} minutes",
+                    "{$result['duration']} minutes",
                 );
-            } else {
-                Log::info('Failed login attempt recorded', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'failed_attempts' => $user->failed_login_attempts,
-                    'attempts_remaining' => 3 - $user->failed_login_attempts,
-                ]);
+
+                return;
             }
+
+            Log::info('Failed login attempt recorded', [
+                'user_id' => $lockedUser->id,
+                'user_email' => $lockedUser->email,
+                'failed_attempts' => $result['attempts'],
+                'attempts_remaining' => max(0, 3 - $result['attempts']),
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to handle failed login attempt', [
                 'user_id' => $user->id,
