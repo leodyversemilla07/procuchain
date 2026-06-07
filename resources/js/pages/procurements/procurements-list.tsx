@@ -6,7 +6,7 @@ import { Can } from '@/components/auth/can';
 import { HeroCard } from '@/components/hero-card';
 import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
 import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
-import { createColumns } from '@/components/procurements-list/columns';
+import { createColumns, registerLoadingDialogSetter } from '@/components/procurements-list/columns';
 import { ProcurementsDataTable } from '@/components/procurements-list/data-table';
 import { type ProcurementFilterOption } from '@/components/procurements-list/procurement-filters-toolbar';
 import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
@@ -178,6 +178,11 @@ export default function ProcurementsList({
 
     // Track which dialog is processing
     const [loadingDialog, setLoadingDialog] = useState<'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null>(null);
+
+    // Register the setter for global access
+    useEffect(() => {
+        registerLoadingDialogSetter(setLoadingDialog);
+    }, []);
 
     // Keep local pagination state in sync with server meta
     useEffect(() => {
@@ -357,7 +362,6 @@ export default function ProcurementsList({
         onOpenPreProcurementDialog: handleOpenPreProcurementDialog,
         onOpenPreBidDialog: handleOpenPreBidDialog,
         onOpenSupplementalBidBulletinDialog: handleOpenSupplementalBidBulletinDialog,
-        loadingDialog,
     });
 
     // Transform enum options to filter options
@@ -422,7 +426,6 @@ export default function ProcurementsList({
                     onOpenPreProcurementDialog={handleOpenPreProcurementDialog}
                     onOpenPreBidDialog={handleOpenPreBidDialog}
                     onOpenSupplementalBidBulletinDialog={handleOpenSupplementalBidBulletinDialog}
-                    loadingDialog={loadingDialog}
                     serverTotal={pagination?.total}
                     pageIndex={pageIndex}
                     pageSize={pageSize}

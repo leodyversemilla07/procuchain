@@ -4,12 +4,13 @@ import type { ProcurementAction } from '@/types/workflow';
 import { router } from '@inertiajs/react';
 import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, RefreshCw, ShieldCheck, SkipForward, UploadCloudIcon } from 'lucide-react';
 
+import { getLoadingDialogState } from './columns';
+
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
-    loadingDialog?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null;
 }
 
 /**
@@ -105,7 +106,6 @@ export const ActionButtons = ({
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
-    loadingDialog,
 }: ActionButtonsProps) => {
     // Use actions directly from Inertia props (pre-loaded from backend)
     const workflow_actions = procurement.workflow_actions || [];
@@ -154,7 +154,7 @@ export const ActionButtons = ({
         if (action.type === 'dialog') {
             onClick = getDialogHandler(action.action);
             href = undefined; // Don't navigate for dialogs
-            isLoading = loadingDialog === action.action;
+            isLoading = getLoadingDialogState() === action.action;
         } else if (action.type === 'repeat' && action.href) {
             onClick = () => handleRepeatAction(action.href!);
             href = undefined; // Don't navigate for repeat actions

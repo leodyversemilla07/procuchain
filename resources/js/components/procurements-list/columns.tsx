@@ -44,14 +44,12 @@ export interface ColumnsProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
-    loadingDialog?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null;
 }
 
 export const createColumns = ({
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
-    loadingDialog,
 }: ColumnsProps): ColumnDef<ProcurementListItem>[] => [
     {
         id: 'select',
@@ -151,7 +149,6 @@ export const createColumns = ({
                 onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                 onOpenPreBidDialog={onOpenPreBidDialog}
                 onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
-                loadingDialog={loadingDialog}
             />
         ),
     },
@@ -161,7 +158,25 @@ interface ActionsCellProps extends ColumnsProps {
     procurement: ProcurementListItem;
 }
 
-const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDialog, onOpenSupplementalBidBulletinDialog, loadingDialog }: ActionsCellProps) => {
+// Global state for tracking which dialog is loading
+let _loadingDialog: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null = null;
+let _setLoadingDialog: ((value: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null) => void) | null = null;
+
+export function setLoadingDialogState(value: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null) {
+    if (_setLoadingDialog) {
+        _setLoadingDialog(value);
+    }
+}
+
+export function getLoadingDialogState() {
+    return _loadingDialog;
+}
+
+export function registerLoadingDialogSetter(setter: (value: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null) => void) {
+    _setLoadingDialog = setter;
+}
+
+const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDialog, onOpenSupplementalBidBulletinDialog }: ActionsCellProps) => {
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
     const [showRestoreDialog, setShowRestoreDialog] = useState(false);
 
@@ -195,7 +210,6 @@ const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDial
                             onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                             onOpenPreBidDialog={onOpenPreBidDialog}
                             onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
-                            loadingDialog={loadingDialog}
                         />
                     </DropdownMenuGroup>
                     {(procurement.stage === 'COMPLETED' || procurement.stage === 'completed' || procurement.current_status === 'COMPLETED') &&
