@@ -19,6 +19,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?', 'user' => '[0-9]+'])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
+    // Full blockchain sync
+    Route::post('/sync-blockchain', function () {
+        $syncService = app(\App\Services\BlockchainRecordSyncService::class);
+        $counts = $syncService->syncAll();
+        return response()->json(['success' => true, 'synced' => $counts]);
+    })->name('sync-blockchain');
+
     Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
 
     Route::get('/procurements-list', [ProcurementListController::class, 'index'])
