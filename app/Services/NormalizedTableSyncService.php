@@ -88,10 +88,10 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync only a specific PR's status and events from blockchain.
+     * Sync only a specific PR's data from blockchain.
      * Used after blockchain writes for instant DB updates.
      *
-     * @return array{stages: int, events: int, procurement_updated: bool}
+     * @return array{stages: int, events: int, documents: int, metadata: int, corrections: int}
      */
     public function syncPr(string $prNumber): array
     {
@@ -100,18 +100,95 @@ class NormalizedTableSyncService
         $counts = [
             'stages' => 0,
             'events' => 0,
-            'procurement_updated' => false,
+            'documents' => 0,
+            'metadata' => 0,
+            'corrections' => 0,
         ];
 
-        // 1. Sync only status items for this PR
+        $counts['metadata'] = $this->syncMetadataForPr($prNumber);
         $counts['stages'] = $this->syncStatusUpdatesForPr($prNumber);
-
-        // 2. Sync only events for this PR
         $counts['events'] = $this->syncEventsForPr($prNumber);
+        $counts['documents'] = $this->syncDocumentsForPr($prNumber);
+        $counts['corrections'] = $this->syncCorrectionsForPr($prNumber);
+        $counts['archives'] = $this->syncArchivesForPr($prNumber);
+        $counts['metadata_corrections'] = $this->syncMetadataCorrectionsForPr($prNumber);
+        $counts['files'] = $this->syncFilesForPr($prNumber);
 
         Log::info('NormalizedTableSync: PR sync completed', ['pr_number' => $prNumber] + $counts);
 
         return $counts;
+    }
+
+    /**
+     * Sync procurement metadata for a specific PR only.
+     */
+    private function syncMetadataForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::METADATA->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+            $userId = $data['user_id'] ?? null;
+            if (is_array($userId)) {
+                $userId = $userId['id'] ?? null;
+            }
+
+            $attributes = [
+                'app_reference' => $data['app_reference'] ?? null,
+                'title' => $data['title'] ?? '',
+                'description' => $data['description'] ?? null,
+                'category' => $data['category'] ?? 'goods',
+                'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
+                'office' => $data['office'] ?? null,
+                'end_user' => $data['end_user'] ?? null,
+                'fund_source' => $data['funding_source'] ?? null,
+                'prepared_by' => $data['prepared_by'] ?? null,
+                'abc_amount' => (float) ($data['abc_amount'] ?? 0),
+                'delivery_location' => $data['delivery_location'] ?? null,
+                'delivery_date' => $data['delivery_date'] ?? null,
+                'delivery_term_days' => $data['delivery_term_days'] ?? null,
+                'current_status' => $data['status'] ?? 'draft',
+                'user_address' => $data['user_address'] ?? null,
+                'user_id' => $userId !== null ? (string) $userId : null,
+                'initiated_at' => $this->normaliseDate($data['created_at'] ?? null),
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'last_updated_at' => $blocktime ? date('Y-m-d H:i:s', $blocktime) : now(),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields(
+                ['pr_number' => $prNumber, ...$attributes],
+                Procurement::getHashableFields()
+            ));
+
+            $existing = Procurement::withTrashed()->where('pr_number', $prNumber)->first();
+            if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+                $existing->update([...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]);
+            } else {
+                Procurement::create([
+                    'pr_number' => $prNumber,
+                    ...$attributes,
+                    'data_hash' => $dataHash,
+                    'blockchain_hash' => $dataHash,
+                ]);
+            }
+
+            $count++;
+        }
+
+        return $count;
     }
 
     /**
@@ -222,6 +299,125 @@ class NormalizedTableSyncService
             $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementEvent::getHashableFields()));
 
             ProcurementEvent::updateOrCreate(
+                ['txid' => $txid],
+                [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
+            );
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sync documents for a specific PR only.
+     */
+    private function syncDocumentsForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::DOCUMENTS->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => $data['stage'] ?? 'unknown',
+                'current_status' => 'active',
+            ]);
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'document_type' => $data['document_type'] ?? 'unknown',
+                'stage' => $data['stage'] ?? 'unknown',
+                'filename' => $data['file_name'] ?? $data['filename'] ?? 'unknown',
+                'file_key' => $data['file_key'] ?? '',
+                'mime_type' => $data['mime_type'] ?? null,
+                'file_size' => (int) ($data['file_size'] ?? 0),
+                'hash' => $data['hash'] ?? '',
+                'description' => $data['description'] ?? null,
+                'uploaded_by' => $data['uploaded_by'] ?? '',
+                'user_address' => $data['user_address'] ?? null,
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'is_active' => true,
+                'uploaded_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementDocument::getHashableFields()));
+
+            $document = ProcurementDocument::updateOrCreate(
+                ['txid' => $txid],
+                [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
+            );
+
+            if ($document->wasRecentlyCreated) {
+                $procurement->increment('documents_count');
+            }
+
+            $procurement->update(['last_updated_at' => now()]);
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sync corrections for a specific PR only.
+     */
+    private function syncCorrectionsForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::CORRECTIONS->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => 'correction',
+                'current_status' => 'corrected',
+            ]);
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'correction_type' => $data['correction_type'] ?? 'unknown',
+                'action' => $data['action'] ?? 'correct',
+                'reason' => $data['reason'] ?? '',
+                'original_txid' => $data['original_txid'] ?? '',
+                'original_document_hash' => $data['original_document_hash'] ?? '',
+                'corrected_by' => $data['corrected_by'] ?? '',
+                'user_address' => $data['user_address'] ?? null,
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'corrected_metadata' => $data['corrected_metadata'] ?? null,
+                'corrected_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementCorrection::getHashableFields()));
+
+            ProcurementCorrection::updateOrCreate(
                 ['txid' => $txid],
                 [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
             );
@@ -871,6 +1067,211 @@ class NormalizedTableSyncService
         }
 
         Log::info('NormalizedTableSync: files synced', ['count' => $count]);
+
+        return $count;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PR-SPECIFIC SYNC METHODS (for instant updates after blockchain write)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Sync archives for a specific PR only.
+     */
+    private function syncArchivesForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::ARCHIVE->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data)) {
+                continue;
+            }
+
+            $itemPrNumber = $data['pr_number'] ?? data_get($item, 'keys.0');
+            if ($itemPrNumber !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => 'archive',
+                'current_status' => $data['action'] ?? 'archived',
+            ]);
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'action' => $data['action'] ?? 'archive',
+                'reason' => $data['reason'] ?? null,
+                'user_address' => $data['user_address'] ?? null,
+                'user_id' => isset($data['user_id']) ? (int) $data['user_id'] : null,
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'archived_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementArchive::getHashableFields()));
+
+            ProcurementArchive::updateOrCreate(
+                ['txid' => $txid],
+                [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
+            );
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sync metadata corrections for a specific PR only.
+     */
+    private function syncMetadataCorrectionsForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::PROCUREMENTS_CORRECTIONS->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data)) {
+                continue;
+            }
+
+            $itemPrNumber = $data['pr_number'] ?? data_get($item, 'keys.0');
+            if ($itemPrNumber !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => $data['corrected_category'] ?? $data['original_category'] ?? 'goods',
+                'procurement_mode' => $data['corrected_procurement_mode'] ?? $data['original_procurement_mode'] ?? 'competitive_bidding',
+                'current_stage' => 'metadata_correction',
+                'current_status' => 'corrected',
+            ]);
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'correction_type' => $data['correction_type'] ?? 'metadata',
+                'reason' => $data['reason'] ?? '',
+                'corrected_by' => $data['corrected_by'] ?? '',
+                'user_address' => $data['user_address'] ?? null,
+                'original_title' => $data['original_title'] ?? null,
+                'original_description' => $data['original_description'] ?? null,
+                'original_abc_amount' => isset($data['original_abc_amount']) ? (float) $data['original_abc_amount'] : null,
+                'original_funding_source' => $data['original_funding_source'] ?? null,
+                'original_category' => $data['original_category'] ?? null,
+                'original_procurement_mode' => $data['original_procurement_mode'] ?? null,
+                'original_office' => $data['original_office'] ?? null,
+                'original_end_user' => $data['original_end_user'] ?? null,
+                'original_delivery_date' => $this->normaliseDate($data['original_delivery_date'] ?? null),
+                'original_bac_resolution_number' => $data['original_bac_resolution_number'] ?? null,
+                'original_bac_resolution_date' => $this->normaliseDate($data['original_bac_resolution_date'] ?? null),
+                'original_approved_by' => $data['original_approved_by'] ?? null,
+                'original_approval_date' => $this->normaliseDate($data['original_approval_date'] ?? null),
+                'corrected_title' => $data['corrected_title'] ?? null,
+                'corrected_description' => $data['corrected_description'] ?? null,
+                'corrected_abc_amount' => isset($data['corrected_abc_amount']) ? (float) $data['corrected_abc_amount'] : null,
+                'corrected_funding_source' => $data['corrected_funding_source'] ?? null,
+                'corrected_category' => $data['corrected_category'] ?? null,
+                'corrected_procurement_mode' => $data['corrected_procurement_mode'] ?? null,
+                'corrected_office' => $data['corrected_office'] ?? null,
+                'corrected_end_user' => $data['corrected_end_user'] ?? null,
+                'corrected_delivery_date' => $this->normaliseDate($data['corrected_delivery_date'] ?? null),
+                'corrected_bac_resolution_number' => $data['corrected_bac_resolution_number'] ?? null,
+                'corrected_bac_resolution_date' => $this->normaliseDate($data['corrected_bac_resolution_date'] ?? null),
+                'corrected_approved_by' => $data['corrected_approved_by'] ?? null,
+                'corrected_approval_date' => $this->normaliseDate($data['corrected_approval_date'] ?? null),
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'corrected_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementMetadataCorrection::getHashableFields()));
+
+            ProcurementMetadataCorrection::updateOrCreate(
+                ['txid' => $txid],
+                [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
+            );
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sync file metadata for a specific PR only.
+     */
+    private function syncFilesForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::FILE_METADATA->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data)) {
+                continue;
+            }
+
+            $filePrNumber = $data['pr_number'] ?? null;
+            if ($filePrNumber !== $prNumber) {
+                continue;
+            }
+
+            $fileKey = $data['file_key'] ?? null;
+            if (empty($fileKey)) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $hashableData = $this->extractFields($data, File::getHashableFields());
+            $dataHash = $this->computeHash($hashableData);
+
+            $exists = File::where('file_key', $fileKey)->exists();
+            if ($exists) {
+                continue;
+            }
+
+            File::create([
+                'file_key' => $fileKey,
+                'filename' => $data['filename'] ?? 'unknown',
+                'mime_type' => $data['mime_type'] ?? 'application/octet-stream',
+                'size' => (int) ($data['size'] ?? 0),
+                'hash' => $data['hash'] ?? '',
+                'storage_method' => $data['storage_method'] ?? 'blockchain',
+                'data_txid' => $data['data_txid'] ?? null,
+                'data_key' => $data['data_key'] ?? null,
+                'pr_number' => $filePrNumber,
+                'stage' => $data['stage'] ?? null,
+                'document_type' => $data['document_type'] ?? null,
+                'txid' => $txid,
+                'data_hash' => $dataHash,
+                'blockchain_hash' => $dataHash,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'additional_metadata' => $data['additional_metadata'] ?? null,
+                'stored_at' => $data['stored_at'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now()),
+            ]);
+
+            $count++;
+        }
 
         return $count;
     }
