@@ -74,7 +74,7 @@ export function MirrorStatusTab() {
 
     if (loading) {
         return (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-48 w-full" />
             </div>
@@ -90,7 +90,7 @@ export function MirrorStatusTab() {
                 </CardHeader>
                 <CardContent>
                     <Button onClick={fetchStatus} variant="outline">
-                        <RefreshCw className="mr-2 h-4 w-4" /> Retry
+                        <RefreshCw /> Retry
                     </Button>
                 </CardContent>
             </Card>
@@ -103,12 +103,12 @@ export function MirrorStatusTab() {
     const healthPercentage = Math.max(0, 100 - breachRatio);
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {/* Health Overview */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Database className="h-5 w-5" />
+                        <Database />
                         Mirror Health
                     </CardTitle>
                     <CardDescription>
@@ -118,14 +118,14 @@ export function MirrorStatusTab() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Total Records</p>
                             <p className="text-2xl font-bold">{status.total_records.toLocaleString()}</p>
                         </div>
                         <div className="space-y-2">
                             <p className="text-muted-foreground text-sm">Unresolved Breaches</p>
                             <p
-                                className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-destructive' : 'text-primary'}`}
                             >
                                 {status.unresolved_breaches}
                             </p>
@@ -134,17 +134,17 @@ export function MirrorStatusTab() {
                             <p className="text-muted-foreground text-sm">Last Sync</p>
                             <p className="text-sm font-medium">{status.last_sync ? new Date(status.last_sync).toLocaleString() : 'Never'}</p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Last Verified</p>
                             <p className="text-sm font-medium">{status.last_verified ? new Date(status.last_verified).toLocaleString() : 'Never'}</p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Last Audit Run</p>
                             <p className="text-sm font-medium">
                                 {status.last_audit_run ? new Date(status.last_audit_run).toLocaleString() : 'Never'}
                             </p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Pending Repairs</p>
                             <p className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
                                 {status.pending_repairs}
@@ -152,7 +152,7 @@ export function MirrorStatusTab() {
                         </div>
                     </div>
 
-                    <div className="mt-6 space-y-2">
+                    <div className="mt-6 flex flex-col gap-2">
                         <div className="flex items-center justify-between text-sm">
                             <span>Integrity Score</span>
                             <span className="font-medium">{healthPercentage.toFixed(1)}%</span>
@@ -175,21 +175,21 @@ export function MirrorStatusTab() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="flex items-center gap-2">
-                                <Shield className="h-5 w-5" />
+                                <Shield />
                                 Stream Breakdown
                             </CardTitle>
                             <CardDescription>Record counts per blockchain stream in the mirror</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" onClick={fetchStatus} disabled={refreshing}>
-                            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={refreshing ? 'animate-spin' : ''} data-icon="inline-start" />
                             Refresh
                         </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {Object.keys(status.stream_counts).length === 0 ? (
+                    {(!status.stream_counts || Object.keys(status.stream_counts).length === 0) ? (
                         <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
-                            <Database className="mb-2 h-10 w-10" />
+                            <Database className="mb-2" />
                             <p>No mirror records yet. Run `php artisan blockchain:sync` to populate.</p>
                         </div>
                     ) : (
@@ -223,7 +223,7 @@ export function MirrorStatusTab() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <ShieldAlert className="h-5 w-5" />
+                        <ShieldAlert />
                         Unresolved Breaches by Type
                     </CardTitle>
                     <CardDescription>
@@ -232,7 +232,7 @@ export function MirrorStatusTab() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {Object.keys(status.breach_counts).length === 0 ? (
+                    {(!status.breach_counts || Object.keys(status.breach_counts).length === 0) ? (
                         <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
                             <CheckCircle2 className="mb-2 h-10 w-10 text-green-500" />
                             <p>No unresolved breaches. Mirror is in sync with blockchain.</p>
@@ -293,7 +293,7 @@ export function MirrorStatusTab() {
                     <CardDescription>Manual sync and verification commands</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-2 text-sm">
+                    <div className="flex flex-col gap-2 text-sm">
                         <div className="flex items-center gap-2">
                             <code className="bg-muted rounded px-2 py-1">php artisan blockchain:sync</code>
                             <span className="text-muted-foreground">— Full rebuild from blockchain</span>
