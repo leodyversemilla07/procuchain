@@ -1613,8 +1613,17 @@ class IntegrityVerificationService
             $record->update(['has_breach' => true]);
         }
 
-        // Notify
-        $this->notifyBreach($type, $prNumber, $message);
+        // Only notify for NEW breaches, not re-detections of existing pending ones
+        $existingPending = IntegrityAuditLog::where('stream', $stream)
+            ->where('stream_key', $prNumber)
+            ->where('violation_type', $type)
+            ->where('recovery_status', 'pending')
+            ->where('id', '!=', $auditLog->id)
+            ->exists();
+
+        if (! $existingPending) {
+            $this->notifyBreach($type, $prNumber, $message);
+        }
 
         Log::warning('IntegrityVerification: breach', ['type' => $type, 'pr' => $prNumber, 'table' => $tableName]);
     }
