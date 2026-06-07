@@ -36,8 +36,8 @@ class BlockchainAuditTrailRecovery extends Command
     {
         $this->newLine();
         $this->info('╔══════════════════════════════════════════════════════════════╗');
-        $this->info('║       BLOCKCHAIN AUDIT TRAIL RECOVERY                      ║');
-        $this->info('║  Permanent forensic record — survives MySQL destruction     ║');
+        $this->info('|       BLOCKCHAIN AUDIT TRAIL RECOVERY                      |');
+        $this->info('|  Permanent forensic record - survives MySQL destruction     |');
         $this->info('╚══════════════════════════════════════════════════════════════╝');
         $this->newLine();
 
@@ -73,9 +73,9 @@ class BlockchainAuditTrailRecovery extends Command
         $violations = array_filter($entries, fn ($e) => ($e['data']['type'] ?? 'violation') === 'violation');
         $recoveries = array_filter($entries, fn ($e) => ($e['data']['type'] ?? '') === 'recovery');
 
-        $this->info('  ✓ Found '.count($entries).' total entries on blockchain');
-        $this->info('    • Violations: '.count($violations));
-        $this->info('    • Recoveries: '.count($recoveries));
+        $this->info('  [OK] Found '.count($entries).' total entries on blockchain');
+        $this->info('    - Violations: '.count($violations));
+        $this->info('    - Recoveries: '.count($recoveries));
         $this->newLine();
 
         // Step 2: Display violation entries
@@ -159,9 +159,9 @@ class BlockchainAuditTrailRecovery extends Command
                 $result = $service->restoreAuditLogsToMySQL();
 
                 $this->newLine();
-                $this->info("  ✓ Imported: {$result['imported']} violations");
-                $this->info("  ✓ Skipped:  {$result['skipped']} (already exist)");
-                $this->info("  ✗ Errors:   {$result['errors']}");
+                $this->info("  [OK] Imported: {$result['imported']} violations");
+                $this->info("  [OK] Skipped:  {$result['skipped']} (already exist)");
+                $this->info("  [FAIL] Errors:   {$result['errors']}");
             } else {
                 $this->info('  Restoration cancelled.');
             }
@@ -170,13 +170,13 @@ class BlockchainAuditTrailRecovery extends Command
         // Summary
         $this->newLine();
         $this->info('╔══════════════════════════════════════════════════════════════╗');
-        $this->info('║                    SUMMARY                                 ║');
+        $this->info('|                    SUMMARY                                 |');
         $this->info('╚══════════════════════════════════════════════════════════════╝');
         $this->newLine();
 
         $this->info('  The blockchain audit trail (integrity.violations) contains:');
-        $this->info('    • '.count($violations).' violation records');
-        $this->info('    • '.count($recoveries).' recovery records');
+        $this->info('    - '.count($violations).' violation records');
+        $this->info('    - '.count($recoveries).' recovery records');
         $this->newLine();
 
         $this->info('  This data is IMMUTABLE and PERMANENT on the blockchain.');
