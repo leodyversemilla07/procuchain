@@ -43,8 +43,8 @@ class BlockchainRecordSyncService
     ): void {
         Log::info('BlockchainRecordSync: upstream sync', ['stream' => $stream, 'key' => $key]);
 
-        // Re-sync from blockchain to populate normalized tables
-        $this->normalizedSync->syncAll();
+        // Fast path: sync only this PR's data instead of all streams
+        $this->normalizedSync->syncPr($key);
     }
 
     /**

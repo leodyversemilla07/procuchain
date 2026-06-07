@@ -87,6 +87,171 @@ class NormalizedTableSyncService
         return $counts;
     }
 
+    /**
+     * Sync only a specific PR's status and events from blockchain.
+     * Used after blockchain writes for instant DB updates.
+     *
+     * @return array{stages: int, events: int, procurement_updated: bool}
+     */
+    public function syncPr(string $prNumber): array
+    {
+        Log::info('NormalizedTableSync: syncing PR', ['pr_number' => $prNumber]);
+
+        $counts = [
+            'stages' => 0,
+            'events' => 0,
+            'procurement_updated' => false,
+        ];
+
+        // 1. Sync only status items for this PR
+        $counts['stages'] = $this->syncStatusUpdatesForPr($prNumber);
+
+        // 2. Sync only events for this PR
+        $counts['events'] = $this->syncEventsForPr($prNumber);
+
+        Log::info('NormalizedTableSync: PR sync completed', ['pr_number' => $prNumber] + $counts);
+
+        return $counts;
+    }
+
+    /**
+     * Sync status updates for a specific PR only.
+     */
+    private function syncStatusUpdatesForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::STATUS->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'current_stage' => $data['stage'] ?? 'unknown',
+                'current_status' => $data['current_status'] ?? 'unknown',
+                'category' => $data['category'] ?? 'goods',
+                'procurement_mode' => $data['procurement_mode'] ?? 'competitive_bidding',
+            ]);
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'stage' => $data['stage'] ?? 'unknown',
+                'status' => $data['current_status'] ?? 'unknown',
+                'previous_status' => $data['previous_status'] ?? null,
+                'entered_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+                'user_address' => $data['user_address'] ?? null,
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'metadata' => $data['metadata'] ?? null,
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementStage::getHashableFields()));
+
+            ProcurementStage::updateOrCreate(
+                ['txid' => $txid],
+                [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
+            );
+
+            // Update procurement current stage (only if newer)
+            $enteredAt = $attributes['entered_at'];
+            if ($enteredAt && strtotime($enteredAt) > $procurement->last_updated_at?->timestamp) {
+                $procurement->update([
+                    'current_stage' => $data['stage'] ?? $procurement->current_stage,
+                    'current_status' => $data['current_status'] ?? $procurement->current_status,
+                    'previous_status' => $data['previous_status'] ?? $procurement->current_status,
+                    'last_updated_at' => $enteredAt,
+                ]);
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sync events for a specific PR only.
+     */
+    private function syncEventsForPr(string $prNumber): int
+    {
+        $items = $this->getStreamItemsForKey(StreamEnums::EVENTS->value, $prNumber);
+        $count = 0;
+
+        foreach ($items as $item) {
+            $data = $item['data']['json'] ?? [];
+            if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
+                continue;
+            }
+
+            $txid = $item['txid'] ?? '';
+            $blocktime = $item['blocktime'] ?? null;
+
+            $procurement = $this->findOrCreateProcurement($prNumber, [
+                'title' => $data['procurement_title'] ?? $prNumber,
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+                'current_stage' => $data['stage'] ?? 'unknown',
+                'current_status' => 'active',
+            ]);
+
+            $attributes = [
+                'procurement_id' => $procurement->id,
+                'event_type' => $data['event_type'] ?? 'unknown',
+                'category' => $data['category'] ?? 'general',
+                'severity' => $data['severity'] ?? 'info',
+                'details' => $data['details'] ?? '',
+                'stage' => $data['stage'] ?? 'unknown',
+                'document_count' => (int) ($data['document_count'] ?? 0),
+                'user_address' => $data['user_address'] ?? null,
+                'txid' => $txid,
+                'is_blockchain_verified' => true,
+                'last_verified_at' => now(),
+                'has_breach' => false,
+                'metadata' => $data['metadata'] ?? null,
+                'occurred_at' => $this->normaliseDate($data['timestamp'] ?? ($blocktime ? date('Y-m-d H:i:s', $blocktime) : now())),
+            ];
+
+            $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementEvent::getHashableFields()));
+
+            ProcurementEvent::updateOrCreate(
+                ['txid' => $txid],
+                [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
+            );
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Get stream items filtered by key (PR number).
+     */
+    private function getStreamItemsForKey(string $stream, string $key): array
+    {
+        try {
+            $items = $this->manager->liststreamkeyitems($stream, $key, false, 1000);
+
+            return is_array($items) ? $items : [];
+        } catch (\Exception $e) {
+            Log::error('NormalizedTableSync: failed to read stream key items', [
+                'stream' => $stream,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════
