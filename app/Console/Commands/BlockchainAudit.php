@@ -49,12 +49,12 @@ class BlockchainAudit extends Command
             $source = $this->option('source');
 
             if ($autoRepair) {
-                $this->warn('[!] Auto-repair is ENABLED — breaches will be restored from blockchain automatically.');
+                $this->warn('[!] Auto-repair is ENABLED - breaches will be restored from blockchain automatically.');
                 $this->newLine();
             }
 
             if ($deepPublisherCheck) {
-                $this->warn('Deep publisher check is ENABLED — audit will perform extra getrawtransaction calls.');
+                $this->warn('Deep publisher check is ENABLED - audit will perform extra getrawtransaction calls.');
                 $this->newLine();
             }
 
@@ -98,7 +98,7 @@ class BlockchainAudit extends Command
 
         if (empty($result['violations'])) {
             $this->newLine();
-            $this->info('  [OK] No breaches detected — mirror integrity verified.');
+            $this->info('  [OK] No breaches detected - mirror integrity verified.');
 
             return;
         }
@@ -141,7 +141,7 @@ class BlockchainAudit extends Command
 
         $summary = $report['summary'];
 
-        $this->info("Integrity Violation Report — Run {$runId}");
+        $this->info("Integrity Violation Report - Run {$runId}");
         $this->newLine();
 
         $this->line("  Total violations: {$summary['total_violations']}");
