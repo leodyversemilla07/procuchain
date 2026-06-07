@@ -199,6 +199,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::STATUS->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
@@ -206,6 +212,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $procurement = $this->findOrCreateProcurement($prNumber, [
@@ -262,6 +273,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::EVENTS->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
@@ -269,6 +286,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $procurement = $this->findOrCreateProcurement($prNumber, [
@@ -317,6 +339,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::DOCUMENTS->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
@@ -324,6 +352,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $procurement = $this->findOrCreateProcurement($prNumber, [
@@ -381,6 +414,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::CORRECTIONS->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data) || ($data['pr_number'] ?? '') !== $prNumber) {
@@ -388,6 +427,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $procurement = $this->findOrCreateProcurement($prNumber, [
@@ -1083,6 +1127,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::ARCHIVE->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data)) {
@@ -1095,6 +1145,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $procurement = $this->findOrCreateProcurement($prNumber, [
@@ -1139,6 +1194,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::PROCUREMENTS_CORRECTIONS->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data)) {
@@ -1151,6 +1212,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $procurement = $this->findOrCreateProcurement($prNumber, [
@@ -1221,6 +1287,12 @@ class NormalizedTableSyncService
         $items = $this->getStreamItemsForKey(StreamEnums::FILE_METADATA->value, $prNumber);
         $count = 0;
 
+        // Sort by blocktime to ensure correct order
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) - ($b['blocktime'] ?? 0));
+
+        // Track seen txids to skip duplicates
+        $seenTxids = [];
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data)) {
@@ -1238,6 +1310,11 @@ class NormalizedTableSyncService
             }
 
             $txid = $item['txid'] ?? '';
+            if (empty($txid) || in_array($txid, $seenTxids, true)) {
+                continue;
+            }
+            $seenTxids[] = $txid;
+
             $blocktime = $item['blocktime'] ?? null;
 
             $hashableData = $this->extractFields($data, File::getHashableFields());
