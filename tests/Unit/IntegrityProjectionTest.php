@@ -13,7 +13,8 @@ it('projects procurement metadata blockchain payloads to database mirror fields'
     ], 'procurements');
 
     expect($projected['fund_source'])->toBe('General Fund')
-        ->and($projected['current_status'])->toBe('procurement_initiated')
+        ->and($projected)->not->toHaveKey('current_status')
+        ->and($projected)->not->toHaveKey('status')
         ->and($projected['initiated_at'])->toBe('2026-05-19 21:37:15');
 });
 

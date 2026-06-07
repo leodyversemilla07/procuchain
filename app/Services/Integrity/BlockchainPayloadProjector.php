@@ -47,8 +47,13 @@ class BlockchainPayloadProjector
     private function projectProcurement(array &$data): void
     {
         $data['fund_source'] ??= $data['funding_source'] ?? null;
-        $data['current_status'] ??= $data['status'] ?? null;
         $data['initiated_at'] ??= $data['created_at'] ?? null;
+
+        // Procurement.current_status is a denormalized projection of the latest
+        // status stream item. The original metadata transaction usually contains
+        // only the initial status (for example, "draft"), so comparing it here
+        // creates false content mismatches after normal workflow progression.
+        unset($data['current_status'], $data['status']);
     }
 
     /**
