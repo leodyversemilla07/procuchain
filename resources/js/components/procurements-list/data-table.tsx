@@ -54,6 +54,7 @@ export interface ProcurementsDataTableProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
+    loadingDialog?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null;
     // Optional server-side pagination controls
     serverTotal?: number;
     pageIndex?: number; // zero-based
@@ -122,6 +123,7 @@ export function ProcurementsDataTable({
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
+    loadingDialog,
     serverTotal,
     pageIndex,
     pageSize,
@@ -292,6 +294,7 @@ export function ProcurementsDataTable({
                         onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                         onOpenPreBidDialog={onOpenPreBidDialog}
                         onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                        loadingDialog={loadingDialog}
                         userRole={userRole}
                     />
                 ))}

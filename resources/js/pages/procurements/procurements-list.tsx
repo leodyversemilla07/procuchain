@@ -422,6 +422,7 @@ export default function ProcurementsList({
                     onOpenPreProcurementDialog={handleOpenPreProcurementDialog}
                     onOpenPreBidDialog={handleOpenPreBidDialog}
                     onOpenSupplementalBidBulletinDialog={handleOpenSupplementalBidBulletinDialog}
+                    loadingDialog={loadingDialog}
                     serverTotal={pagination?.total}
                     pageIndex={pageIndex}
                     pageSize={pageSize}

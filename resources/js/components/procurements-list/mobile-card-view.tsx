@@ -22,6 +22,7 @@ interface MobileCardViewProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
+    loadingDialog?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null;
     userRole: string;
 }
 
@@ -107,6 +108,7 @@ export const MobileCardView = ({
                                             onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                                             onOpenPreBidDialog={onOpenPreBidDialog}
                                             onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                                            loadingDialog={loadingDialog}
                                         />
                                     </DropdownMenuGroup>
                                 </DropdownMenuContent>
