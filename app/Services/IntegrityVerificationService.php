@@ -657,6 +657,26 @@ class IntegrityVerificationService
         $latest = $this->latestChainItemForRecord($tableName, $prNumber, $stream);
         $latestTxid = $latest['txid'] ?? null;
         $recordTxid = $record->txid ?? null;
+        $fieldDiffs = [[
+            'field' => 'txid',
+            'old_value' => $latestTxid,
+            'new_value' => $recordTxid,
+        ]];
+
+        // If the DB row's txid belongs to a different blockchain PR, surface
+        // that as an explicit PR-number tampering diff. A plain latest-txid
+        // mismatch is not enough forensic detail for PR swap attempts.
+        $recordTxidChainData = is_string($recordTxid) && $recordTxid !== ''
+            ? $this->blockchainIndex->jsonByTxid($stream, $recordTxid)
+            : null;
+        $recordTxidPrNumber = $recordTxidChainData['pr_number'] ?? null;
+        if (is_string($recordTxidPrNumber) && $recordTxidPrNumber !== '' && $recordTxidPrNumber !== $prNumber) {
+            $fieldDiffs[] = [
+                'field' => 'pr_number',
+                'old_value' => $recordTxidPrNumber,
+                'new_value' => $prNumber,
+            ];
+        }
 
         $this->recordViolation(
             type: BreachTypeEnums::CONTENT_MISMATCH->value,
@@ -664,11 +684,7 @@ class IntegrityVerificationService
             record: $record,
             prNumber: $prNumber,
             message: 'Procurement mirror references an older blockchain revision instead of the latest trusted chain record',
-            fieldDiffs: [[
-                'field' => 'txid',
-                'old_value' => $latestTxid,
-                'new_value' => $recordTxid,
-            ]],
+            fieldDiffs: $fieldDiffs,
             chainData: is_array($latest['data']['json'] ?? null) ? $latest['data']['json'] : null,
         );
 
