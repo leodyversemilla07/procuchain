@@ -14,9 +14,10 @@ interface SupplementalBidDialogProps {
     pr_number: string;
     procurementTitle: string;
     onComplete?: (skipToStage?: string, supplementalBidNeeded?: boolean) => void;
+    onProcessingChange?: (processing: boolean) => void;
 }
 
-export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: SupplementalBidDialogProps) {
+export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete, onProcessingChange }: SupplementalBidDialogProps) {
     const [supplementalBidNeeded, setSupplementalBidNeeded] = useState<boolean | undefined>(undefined);
     const [fieldError, setFieldError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -48,6 +49,7 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
 
         setFieldError(null);
         setProcessing(true);
+        onProcessingChange?.(true);
 
         const formData = new FormData();
         formData.append('pr_number', pr_number);
@@ -63,6 +65,7 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
             });
         } finally {
             setProcessing(false);
+            onProcessingChange?.(false);
         }
     };
 

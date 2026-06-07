@@ -176,6 +176,9 @@ export default function ProcurementsList({
         handleOpenSupplementalBidBulletinDialog,
     } = useProcurementList({ initialProcurements, initialError });
 
+    // Track which dialog is processing
+    const [loadingDialog, setLoadingDialog] = useState<'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null>(null);
+
     // Keep local pagination state in sync with server meta
     useEffect(() => {
         if (pagination) {
@@ -354,6 +357,7 @@ export default function ProcurementsList({
         onOpenPreProcurementDialog: handleOpenPreProcurementDialog,
         onOpenPreBidDialog: handleOpenPreBidDialog,
         onOpenSupplementalBidBulletinDialog: handleOpenSupplementalBidBulletinDialog,
+        loadingDialog,
     });
 
     // Transform enum options to filter options
@@ -445,7 +449,11 @@ export default function ProcurementsList({
                     onOpenChange={setPreProcurementDialogOpen}
                     pr_number={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
-                    onComplete={() => router.reload({ only: ['procurements'] })}
+                    onComplete={() => {
+                        setLoadingDialog(null);
+                        router.reload({ only: ['procurements'] });
+                    }}
+                    onProcessingChange={(processing) => setLoadingDialog(processing ? 'pre-procurement' : null)}
                 />
             )}
             {preBidConferenceDialogOpen && selectedProcurement && (
@@ -454,7 +462,11 @@ export default function ProcurementsList({
                     onOpenChange={setPreBidConferenceDialogOpen}
                     pr_number={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
-                    onComplete={() => router.reload({ only: ['procurements'] })}
+                    onComplete={() => {
+                        setLoadingDialog(null);
+                        router.reload({ only: ['procurements'] });
+                    }}
+                    onProcessingChange={(processing) => setLoadingDialog(processing ? 'pre-bid' : null)}
                 />
             )}
             {supplementalBidBulletinDialogOpen && selectedProcurement && (
@@ -463,7 +475,11 @@ export default function ProcurementsList({
                     onOpenChange={setSupplementalBidBulletinDialogOpen}
                     pr_number={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
-                    onComplete={() => router.reload({ only: ['procurements'] })}
+                    onComplete={() => {
+                        setLoadingDialog(null);
+                        router.reload({ only: ['procurements'] });
+                    }}
+                    onProcessingChange={(processing) => setLoadingDialog(processing ? 'supplemental-bid-bulletin' : null)}
                 />
             )}
         </AppLayout>

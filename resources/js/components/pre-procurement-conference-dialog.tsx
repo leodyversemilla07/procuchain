@@ -16,9 +16,10 @@ interface PreProcurementDialogProps {
     pr_number: string;
     procurementTitle: string;
     onComplete?: (skipToStage?: string, conferenceHeld?: boolean) => void;
+    onProcessingChange?: (processing: boolean) => void;
 }
 
-export function PreProcurementDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: PreProcurementDialogProps) {
+export function PreProcurementDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete, onProcessingChange }: PreProcurementDialogProps) {
     const [conferenceHeld, setConferenceHeld] = useState<boolean | undefined>(undefined);
     const [fieldError, setFieldError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -54,6 +55,7 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
 
         setFieldError(null);
         setProcessing(true);
+        onProcessingChange?.(true);
 
         const formData = new FormData();
         formData.append('pr_number', pr_number);
@@ -69,6 +71,7 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
             });
         } finally {
             setProcessing(false);
+            onProcessingChange?.(false);
         }
     };
 

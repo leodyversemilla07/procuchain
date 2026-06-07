@@ -44,12 +44,14 @@ export interface ColumnsProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
+    loadingDialog?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null;
 }
 
 export const createColumns = ({
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
+    loadingDialog,
 }: ColumnsProps): ColumnDef<ProcurementListItem>[] => [
     {
         id: 'select',
@@ -192,6 +194,7 @@ const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDial
                             onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                             onOpenPreBidDialog={onOpenPreBidDialog}
                             onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                            loadingDialog={loadingDialog}
                         />
                     </DropdownMenuGroup>
                     {(procurement.stage === 'COMPLETED' || procurement.stage === 'completed' || procurement.current_status === 'COMPLETED') &&

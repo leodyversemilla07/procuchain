@@ -9,6 +9,7 @@ interface ActionButtonsProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
+    loadingDialog?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null;
 }
 
 /**
@@ -60,14 +61,20 @@ const DropdownActionItem = ({
     onClick,
     href,
     isOptional = false,
+    isLoading = false,
 }: {
     icon: React.ReactNode;
     tooltipText: string;
     onClick?: () => void;
     href?: string;
     isOptional?: boolean;
+    isLoading?: boolean;
 }) => {
     const handleClick = (e: React.MouseEvent) => {
+        if (isLoading) {
+            e.preventDefault();
+            return;
+        }
         if (href) {
             e.preventDefault();
             router.visit(href);
@@ -77,8 +84,8 @@ const DropdownActionItem = ({
     };
 
     return (
-        <DropdownMenuItem onClick={handleClick}>
-            {icon}
+        <DropdownMenuItem onClick={handleClick} disabled={isLoading}>
+            {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : icon}
             <span className={isOptional ? 'text-gray-500 italic' : ''}>{tooltipText}</span>
         </DropdownMenuItem>
     );
@@ -98,6 +105,7 @@ export const ActionButtons = ({
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
+    loadingDialog,
 }: ActionButtonsProps) => {
     // Use actions directly from Inertia props (pre-loaded from backend)
     const workflow_actions = procurement.workflow_actions || [];
@@ -141,10 +149,12 @@ export const ActionButtons = ({
         // Determine click handler based on action type
         let onClick: (() => void) | undefined;
         let href: string | undefined = action.href;
+        let isLoading = false;
 
         if (action.type === 'dialog') {
             onClick = getDialogHandler(action.action);
             href = undefined; // Don't navigate for dialogs
+            isLoading = loadingDialog === action.action;
         } else if (action.type === 'repeat' && action.href) {
             onClick = () => handleRepeatAction(action.href!);
             href = undefined; // Don't navigate for repeat actions
@@ -159,6 +169,7 @@ export const ActionButtons = ({
                 href={href}
                 onClick={onClick}
                 isOptional={action.is_optional}
+                isLoading={isLoading}
             />
         );
     };
