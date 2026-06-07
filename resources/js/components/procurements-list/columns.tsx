@@ -151,6 +151,7 @@ export const createColumns = ({
                 onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                 onOpenPreBidDialog={onOpenPreBidDialog}
                 onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                loadingDialog={loadingDialog}
             />
         ),
     },
@@ -160,7 +161,7 @@ interface ActionsCellProps extends ColumnsProps {
     procurement: ProcurementListItem;
 }
 
-const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDialog, onOpenSupplementalBidBulletinDialog }: ActionsCellProps) => {
+const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDialog, onOpenSupplementalBidBulletinDialog, loadingDialog }: ActionsCellProps) => {
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
     const [showRestoreDialog, setShowRestoreDialog] = useState(false);
 
