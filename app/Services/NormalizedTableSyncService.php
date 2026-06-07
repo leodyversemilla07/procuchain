@@ -253,16 +253,17 @@ class NormalizedTableSyncService
                 [...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]
             );
 
-            // Update procurement current stage (only if newer)
+            // Status stream items are processed in chronological order, so the
+            // latest trusted status entry should always win. Do not compare
+            // against procurement.last_updated_at because metadata repair may
+            // refresh that timestamp and otherwise block status restoration.
             $enteredAt = $attributes['entered_at'];
-            if ($enteredAt && strtotime($enteredAt) > $procurement->last_updated_at?->timestamp) {
-                $procurement->update([
-                    'current_stage' => $data['stage'] ?? $procurement->current_stage,
-                    'current_status' => $data['current_status'] ?? $procurement->current_status,
-                    'previous_status' => $data['previous_status'] ?? $procurement->current_status,
-                    'last_updated_at' => $enteredAt,
-                ]);
-            }
+            $procurement->update([
+                'current_stage' => $data['stage'] ?? $procurement->current_stage,
+                'current_status' => $data['current_status'] ?? $procurement->current_status,
+                'previous_status' => $data['previous_status'] ?? $procurement->current_status,
+                'last_updated_at' => $enteredAt,
+            ]);
 
             $count++;
         }
@@ -621,6 +622,8 @@ class NormalizedTableSyncService
         $items = $this->getStreamItems(StreamEnums::STATUS->value);
         $count = 0;
 
+        usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) <=> ($b['blocktime'] ?? 0));
+
         foreach ($items as $item) {
             $data = $item['data']['json'] ?? [];
             if (empty($data)) {
@@ -669,26 +672,17 @@ class NormalizedTableSyncService
                 ]
             );
 
-            // Update procurement current stage only if this status is newer than the current one
+            // Status stream items are processed in chronological order, so the
+            // latest trusted status entry should always win. Do not compare
+            // against procurement.last_updated_at because metadata repair may
+            // refresh that timestamp and otherwise block status restoration.
             $enteredAt = $attributes['entered_at'];
-            $shouldUpdate = false;
-
-            if ($procurement->last_updated_at === null) {
-                // No previous update, always update
-                $shouldUpdate = true;
-            } elseif ($enteredAt && strtotime($enteredAt) > $procurement->last_updated_at->timestamp) {
-                // This status is newer than the current one
-                $shouldUpdate = true;
-            }
-
-            if ($shouldUpdate) {
-                $procurement->update([
-                    'current_stage' => $data['stage'] ?? $procurement->current_stage,
-                    'current_status' => $data['current_status'] ?? $procurement->current_status,
-                    'previous_status' => $data['previous_status'] ?? $procurement->current_status,
-                    'last_updated_at' => $enteredAt ? date('Y-m-d H:i:s', strtotime($enteredAt)) : now(),
-                ]);
-            }
+            $procurement->update([
+                'current_stage' => $data['stage'] ?? $procurement->current_stage,
+                'current_status' => $data['current_status'] ?? $procurement->current_status,
+                'previous_status' => $data['previous_status'] ?? $procurement->current_status,
+                'last_updated_at' => $enteredAt ? date('Y-m-d H:i:s', strtotime($enteredAt)) : now(),
+            ]);
 
             $count++;
         }
