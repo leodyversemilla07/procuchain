@@ -134,28 +134,28 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="bg-muted/50 rounded-lg p-3">
                 <div className="flex items-center gap-2">
-                    <Activity className="text-primary h-4 w-4" />
+                    <Activity />
                     <span className="text-muted-foreground text-xs">Total Logins</span>
                 </div>
                 <p className="mt-1 text-lg font-bold sm:text-xl md:text-2xl">{stats.total}</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
                 <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <CheckCircle2 />
                     <span className="text-muted-foreground text-xs">Successful</span>
                 </div>
-                <p className="mt-1 text-lg font-bold text-green-600 sm:text-xl md:text-2xl dark:text-green-400">{stats.successful}</p>
+                <p className="mt-1 text-lg font-bold text-primary sm:text-xl md:text-2xl dark:text-primary">{stats.successful}</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
                 <div className="flex items-center gap-2">
-                    <XCircle className="text-destructive h-4 w-4" />
+                    <XCircle />
                     <span className="text-muted-foreground text-xs">Failed</span>
                 </div>
                 <p className="text-destructive mt-1 text-lg font-bold sm:text-xl md:text-2xl">{stats.failed}</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
                 <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    <AlertTriangle />
                     <span className="text-muted-foreground text-xs">Success Rate</span>
                 </div>
                 <p className="mt-1 text-lg font-bold sm:text-xl md:text-2xl">{stats.successRate}%</p>
@@ -165,13 +165,13 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
 
     // Mobile card view for login logs
     const MobileLoginCards = () => (
-        <div className="space-y-3 pt-2">
+        <div className="flex flex-col gap-3 pt-2">
             {loginLogs.map((log) => {
                 const DeviceIcon = getDeviceIcon(log.device_type);
                 return (
                     <Card key={log.id}>
                         <CardContent className="p-4">
-                            <div className="space-y-3">
+                            <div className="flex flex-col gap-3">
                                 <div className="flex items-center justify-between">
                                     <Badge variant={log.successful ? 'default' : 'destructive'}>{log.successful ? 'Success' : 'Failed'}</Badge>
                                     <Badge variant={log.logout_at ? 'secondary' : 'default'}>{getSessionDuration(log.login_at, log.logout_at)}</Badge>
@@ -179,9 +179,9 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
 
                                 <Separator />
 
-                                <div className="space-y-2">
+                                <div className="flex flex-col gap-2">
                                     <div className="flex items-start gap-2">
-                                        <Clock className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                                        <Clock />
                                         <div className="min-w-0 flex-1">
                                             <div className="text-muted-foreground text-xs font-medium">Date & Time</div>
                                             <div className="text-sm">{formatDateTime(log.login_at)}</div>
@@ -189,7 +189,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                     </div>
 
                                     <div className="flex items-start gap-2">
-                                        <DeviceIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                                        <DeviceIcon className="text-muted-foreground mt-0.5 shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <div className="text-muted-foreground text-xs font-medium">Device</div>
                                             <div className="text-sm capitalize">{log.device_type || 'Unknown'}</div>
@@ -198,13 +198,13 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                     </div>
 
                                     <div className="flex items-start gap-2">
-                                        <Globe className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                                        <Globe className="text-muted-foreground mt-0.5 shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <div className="text-muted-foreground text-xs font-medium">Location</div>
                                             <div className="font-mono text-sm break-all">{log.ip_address}</div>
                                             {log.location && (
                                                 <div className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                                                    <MapPin className="h-3 w-3 shrink-0" />
+                                                    <MapPin className="shrink-0" />
                                                     <span>{log.location}</span>
                                                 </div>
                                             )}
@@ -243,28 +243,28 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="flex items-center space-x-2">
-                                        <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
+                                    <div className="flex items-center gap-2">
+                                        <Clock />
                                         <span className="text-sm whitespace-nowrap">{formatDateTime(log.login_at)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">
-                                    <div className="flex items-center space-x-2">
-                                        <DeviceIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-                                        <div className="min-w-0 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <DeviceIcon />
+                                        <div className="min-w-0 flex flex-col gap-1">
                                             <div className="text-sm whitespace-nowrap capitalize">{log.device_type || 'Unknown'}</div>
                                             {log.browser && <div className="text-muted-foreground text-xs">{log.browser}</div>}
                                         </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="space-y-1">
-                                        <div className="flex items-center space-x-2">
-                                            <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <Globe />
                                             <span className="font-mono text-sm whitespace-nowrap">{log.ip_address}</span>
                                         </div>
                                         {log.location && (
-                                            <div className="flex items-center space-x-1">
+                                            <div className="flex items-center gap-1">
                                                 <MapPin className="text-muted-foreground h-3 w-3 shrink-0" />
                                                 <span className="text-muted-foreground text-xs">{log.location}</span>
                                             </div>
@@ -288,11 +288,11 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
     const ContentSection = () => {
         if (isLoading) {
             return (
-                <div className="space-y-2 pt-2">
+                <div className="flex flex-col gap-2 pt-2">
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="flex items-center space-x-4">
+                        <div key={i} className="flex items-center gap-4">
                             <Skeleton className="h-12 w-12 rounded" />
-                            <div className="flex-1 space-y-2">
+                            <div className="flex-1 flex flex-col gap-2">
                                 <Skeleton className="h-4 w-full" />
                                 <Skeleton className="h-3 w-3/4" />
                             </div>
@@ -320,9 +320,9 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
                 <SheetHeader className="shrink-0 border-b p-4 sm:px-6 sm:py-4">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                         <div className="bg-primary/10 dark:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-lg">
-                            <History className="text-primary h-5 w-5" />
+                            <History />
                         </div>
                         <div>
                             <SheetTitle className="text-foreground text-xl font-semibold">Login History</SheetTitle>

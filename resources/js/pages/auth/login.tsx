@@ -80,9 +80,9 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? (
-                                        <EyeOff className="text-muted-foreground h-4 w-4" />
+                                        <EyeOff />
                                     ) : (
-                                        <Eye className="text-muted-foreground h-4 w-4" />
+                                        <Eye />
                                     )}
                                 </button>
                             </div>
@@ -103,7 +103,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
             </Form>
 
             {status && (
-                <div className={`mb-4 text-center text-sm font-medium ${status.includes('account_locked') ? 'text-red-600' : 'text-green-600'}`}>
+                <div className={`mb-4 text-center text-sm font-medium ${status.includes('account_locked') ? 'text-destructive' : 'text-primary'}`}>
                     {status}
                 </div>
             )}

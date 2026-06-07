@@ -70,13 +70,13 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
     const PhaseIcon = ({ phase }: { phase: string }) => {
         switch (phase) {
             case 'pre_procurement':
-                return <ClipboardList className="text-primary h-5 w-5" />;
+                return <ClipboardList />;
             case 'procurement':
-                return <FileText className="text-primary h-5 w-5" />;
+                return <FileText />;
             case 'post_procurement':
-                return <FileCheck className="text-primary h-5 w-5" />;
+                return <FileCheck />;
             default:
-                return <GitBranch className="text-primary h-5 w-5" />;
+                return <GitBranch />;
         }
     };
 
@@ -84,7 +84,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Preview: ${mode.display_name}`} />
 
-            <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6">
                 {/* Header */}
                 <HeroCard
                     icon={Eye}
@@ -120,7 +120,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                     <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
-                                <GitBranch className="text-primary h-5 w-5 shrink-0" />
+                                <GitBranch />
                                 <div className="min-w-0">
                                     <CardTitle className="text-base sm:text-lg">{mode.display_name}</CardTitle>
                                     <CardDescription className="line-clamp-2 text-xs sm:text-sm">{mode.description}</CardDescription>
@@ -163,7 +163,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                 </Card>
 
                 {/* Phases */}
-                <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col gap-4 sm:gap-6">
                     {Object.entries(phases).map(([phaseKey, phase]) => {
                         if (phase.stages.length === 0) return null;
 
@@ -178,7 +178,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                         </Badge>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
+                                <CardContent className="flex flex-col gap-3 p-4 pt-0 sm:gap-4 sm:p-6 sm:pt-0">
                                     {phase.stages.map((stage, index) => (
                                         <Card key={stage.stage} className="border-sidebar-border/50 bg-muted/30">
                                             <CardHeader className="p-3 pb-2 sm:p-4 sm:pb-2">
@@ -201,7 +201,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                             </Badge>
                                                         )}
                                                         <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                                            <FileText className="mr-1 h-3 w-3" />
+                                                            <FileText data-icon="inline-start" />
                                                             {stage.document_counts.total_count} docs
                                                         </Badge>
                                                     </div>
@@ -211,15 +211,15 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                 <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
                                                     {/* Required Documents */}
                                                     {stage.required_documents.length > 0 && (
-                                                        <div className="space-y-2">
+                                                        <div className="flex flex-col gap-2">
                                                             <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                                                <Layers className="text-primary h-3 w-3 sm:h-4 sm:w-4" />
+                                                                <Layers className="text-primary" />
                                                                 <span className="text-xs font-medium sm:text-sm">Required Documents</span>
                                                                 <Badge variant="default" className="text-[10px] sm:text-xs">
                                                                     {stage.document_counts.required_count}
                                                                 </Badge>
                                                             </div>
-                                                            <div className="space-y-1 rounded-md border p-2 sm:space-y-2">
+                                                            <div className="flex flex-col gap-1 rounded-md border p-2 sm:gap-2">
                                                                 {stage.required_documents.map((doc) => (
                                                                     <div key={doc.value} className="bg-primary/5 rounded-md p-1.5 sm:p-2">
                                                                         <p className="text-[10px] font-medium sm:text-xs">{doc.display_name}</p>
@@ -236,15 +236,15 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
 
                                                     {/* Optional Documents */}
                                                     {stage.optional_documents.length > 0 && (
-                                                        <div className="space-y-2">
+                                                        <div className="flex flex-col gap-2">
                                                             <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                                                <CheckCircle2 className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
+                                                                <CheckCircle2 className="text-muted-foreground" />
                                                                 <span className="text-xs font-medium sm:text-sm">Optional Documents</span>
                                                                 <Badge variant="outline" className="text-[10px] sm:text-xs">
                                                                     {stage.document_counts.optional_count}
                                                                 </Badge>
                                                             </div>
-                                                            <div className="space-y-1 rounded-md border p-2 sm:space-y-2">
+                                                            <div className="flex flex-col gap-1 rounded-md border p-2 sm:gap-2">
                                                                 {stage.optional_documents.map((doc) => (
                                                                     <div key={doc.value} className="bg-muted/50 rounded-md p-1.5 sm:p-2">
                                                                         <p className="text-[10px] font-medium sm:text-xs">{doc.display_name}</p>

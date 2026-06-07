@@ -80,9 +80,9 @@ export const RecentActivitiesList = ({
 
     return (
         <Card className={cn('shadow-sm transition-shadow duration-300 hover:shadow-md', className)}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-0 pb-2">
                 <CardTitle className="flex items-center text-base font-semibold md:text-lg">
-                    <Icon className="text-primary mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110 md:h-5 md:w-5" />
+                    <Icon className="text-primary mr-2 transition-transform duration-200 group-hover:scale-110" />
                     {title}
                     {hasActivities ? <Fragment> ({safeActivities.length})</Fragment> : null}
                 </CardTitle>
@@ -91,7 +91,7 @@ export const RecentActivitiesList = ({
                         href={viewAllHref}
                         className="text-primary ml-2 flex shrink-0 items-center text-xs transition-all duration-200 hover:translate-x-1 hover:underline md:text-sm"
                     >
-                        {viewAllLabel} <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
+                        {viewAllLabel} <ArrowRight className="ml-1" />
                     </Link>
                 ) : null}
             </CardHeader>
@@ -104,7 +104,7 @@ export const RecentActivitiesList = ({
                             <EmptyMedia variant="icon">
                                 {(() => {
                                     const Icon = emptyStateIcon;
-                                    return <Icon className="h-8 w-8" />;
+                                    return <Icon />;
                                 })()}
                             </EmptyMedia>
                         </EmptyHeader>
@@ -112,7 +112,7 @@ export const RecentActivitiesList = ({
                         <EmptyDescription>{emptyStateDescription}</EmptyDescription>
                     </Empty>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         {safeActivities.map((activity, index) => {
                             const ActionIcon = resolveActionIcon(activity.action, actionIconMap);
                             const isLast = index === safeActivities.length - 1;
@@ -137,7 +137,7 @@ export const RecentActivitiesList = ({
                                                 variant="secondary"
                                                 className="mr-2 flex items-center gap-1 text-xs transition-all duration-200 group-hover:shadow-sm"
                                             >
-                                                <ActionIcon className="h-3.5 w-3.5" />
+                                                <ActionIcon />
                                                 <span>{activity.action}</span>
                                             </Badge>
                                             {activity.stage ? (

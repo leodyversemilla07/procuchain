@@ -33,9 +33,9 @@ export function WorkflowProgressPanel({
                     Workflow Progress
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 p-6">
+            <CardContent className="flex flex-col gap-6 p-6">
                 {workflowInfo && (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
                         <div className="flex items-center justify-between gap-2">
                             <ModeBadge workflowInfo={workflowInfo} />
                         </div>
@@ -52,14 +52,14 @@ export function WorkflowProgressPanel({
                                                         stage.value === procurement.stage_value
                                                             ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
                                                             : stage.is_completed
-                                                              ? 'border-green-500 bg-green-500 text-white shadow-sm'
+                                                              ? 'border-green-500 bg-primary/100 text-white shadow-sm'
                                                               : stage.is_optional
                                                                 ? 'border-muted-foreground/40 text-muted-foreground/40 border-dashed'
                                                                 : 'border-muted-foreground/20 text-muted-foreground/20 bg-muted/30'
                                                     }`}
                                                 >
                                                     {stage.is_completed ? (
-                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        <CheckCircle2 />
                                                     ) : (
                                                         <span className="text-xs font-bold">{index + 1}</span>
                                                     )}
@@ -76,7 +76,7 @@ export function WorkflowProgressPanel({
                         </div>
 
                         {documentGuide && (
-                            <div className="space-y-3 border-t pt-4">
+                            <div className="flex flex-col gap-3 border-t pt-4">
                                 <div className="flex items-center justify-between text-xs font-bold">
                                     <span className="text-muted-foreground tracking-wider uppercase">Completion</span>
                                     <span className="text-primary">{completionPercentage}%</span>
@@ -94,12 +94,12 @@ export function WorkflowProgressPanel({
                             </div>
                         )}
 
-                        <div className="space-y-2 border-t pt-4 text-[10px]">
+                        <div className="flex flex-col gap-2 border-t pt-4 text-[10px]">
                             <div className="flex items-center gap-2">
                                 <div className="bg-primary h-2 w-2 rounded-full" /> <span>Current Stage</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-green-500" /> <span>Completed</span>
+                                <div className="h-2 w-2 rounded-full bg-primary/100" /> <span>Completed</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="bg-muted/30 border-muted-foreground/20 h-2 w-2 rounded-full border" />

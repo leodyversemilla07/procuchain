@@ -96,15 +96,15 @@ export function DataTableColumnHeader<TData, TValue>({ column, title, className 
     const isSorted = column.getIsSorted();
 
     return (
-        <div className={cn('flex items-center space-x-2', className)}>
+        <div className={cn('flex items-center gap-2', className)}>
             <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{title}</div>
             <Button variant="ghost" size="sm" onClick={() => column.toggleSorting(isSorted === 'asc')} className="h-8 w-8 p-0">
                 {isSorted === 'desc' ? (
-                    <ArrowDownIcon className="h-4 w-4" />
+                    <ArrowDownIcon />
                 ) : isSorted === 'asc' ? (
-                    <ArrowUpIcon className="h-4 w-4" />
+                    <ArrowUpIcon />
                 ) : (
-                    <ArrowUpDown className="h-4 w-4" />
+                    <ArrowUpDown />
                 )}
                 <span className="sr-only">Toggle sort</span>
             </Button>
@@ -267,7 +267,7 @@ export function ProcurementsDataTable({
             />
 
             {/* Mobile Card View (visible on small screens) */}
-            <div className="space-y-3 md:hidden">
+            <div className="flex flex-col gap-3 md:hidden">
                 {/* Mobile Filters */}
                 {searchValue !== undefined && onSearchChange && stageValue !== undefined && onStageChange && stageOptions && onRefresh && (
                     <ProcurementFiltersToolbar

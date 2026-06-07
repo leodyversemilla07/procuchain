@@ -288,7 +288,7 @@ export default function UserInvitations() {
                     icon={UserPlus}
                     actions={
                         <Button onClick={() => setShowSendInvitation(true)}>
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus />
                             Send Invitation
                         </Button>
                     }
@@ -297,9 +297,9 @@ export default function UserInvitations() {
                 <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {stats.map((stat, index) => (
                         <Card key={index}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardHeader className="flex flex-row items-center justify-between gap-0 pb-2">
                                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                                <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
+                                <stat.icon className={stat.iconColor} />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stat.value}</div>
@@ -314,7 +314,7 @@ export default function UserInvitations() {
                         <div className="flex items-center justify-between">
                             <CardTitle>All Invitations</CardTitle>
                             <div className="relative w-64">
-                                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+                                <Search className="text-muted-foreground absolute top-2.5 left-2" />
                                 <Input
                                     placeholder="Search invitations..."
                                     value={globalFilter}
@@ -328,14 +328,14 @@ export default function UserInvitations() {
                         {invitations.length === 0 ? (
                             <Empty>
                                 <EmptyMedia>
-                                    <Mail className="text-muted-foreground/50 h-16 w-16" />
+                                    <Mail className="text-muted-foreground/50" />
                                 </EmptyMedia>
                                 <EmptyHeader>
                                     <EmptyTitle>No invitations yet</EmptyTitle>
                                     <EmptyDescription>Send your first invitation to add users to the system</EmptyDescription>
                                 </EmptyHeader>
                                 <Button onClick={() => setShowSendInvitation(true)}>
-                                    <Plus className="mr-2 h-4 w-4" />
+                                    <Plus />
                                     Send First Invitation
                                 </Button>
                             </Empty>
@@ -383,8 +383,8 @@ export default function UserInvitations() {
                                         {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
                                         selected.
                                     </div>
-                                    <div className="flex items-center space-x-6 lg:space-x-8">
-                                        <div className="flex items-center space-x-2">
+                                    <div className="flex items-center gap-6 lg:gap-8">
+                                        <div className="flex items-center gap-2">
                                             <Button
                                                 variant="outline"
                                                 size="sm"

@@ -139,7 +139,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                         </CardContent>
                     </Card>
                 ) : report ? (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
                         {/* Summary Cards */}
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <Card>
@@ -192,7 +192,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
                                         <h4 className="text-muted-foreground mb-2 text-sm font-medium">By Type</h4>
-                                        <div className="space-y-2">
+                                        <div className="flex flex-col gap-2">
                                             {Object.entries(report.summary.by_type).map(([type, count]) => (
                                                 <div key={type} className="flex items-center justify-between">
                                                     <span className="text-sm">{VIOLATION_TYPE_LABELS[type] ?? type}</span>
@@ -205,7 +205,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                     </div>
                                     <div>
                                         <h4 className="text-muted-foreground mb-2 text-sm font-medium">By Severity</h4>
-                                        <div className="space-y-2">
+                                        <div className="flex flex-col gap-2">
                                             {[
                                                 { label: 'Critical', value: report.summary.critical, variant: 'destructive' as const },
                                                 { label: 'High', value: report.summary.high, variant: 'default' as const },
@@ -245,7 +245,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                                         <EmptyDescription>This verification run found no integrity violations.</EmptyDescription>
                                     </Empty>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="flex flex-col gap-4">
                                         {report.violations.map((violation) => {
                                             const RecoveryIcon = RECOVERY_STATUS_STYLES[violation.recovery_status]?.icon ?? Clock;
                                             const isExpanded = expandedViolation === violation.id;
@@ -393,7 +393,7 @@ export default function VerificationReportPage({ runId, report, error }: Verific
                         </Card>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <Skeleton className="h-32 w-full" />
                         <Skeleton className="h-64 w-full" />
                     </div>

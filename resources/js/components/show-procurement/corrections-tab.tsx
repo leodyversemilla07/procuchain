@@ -142,7 +142,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {/* Header with submit button */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -151,7 +151,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                 </div>
                 <Sheet open={showCorrectionDialog} onOpenChange={setShowCorrectionDialog}>
                     <SheetTrigger render={<Button />}>
-                        <Edit className="mr-2 h-4 w-4" />
+                        <Edit />
                         Submit Correction
                     </SheetTrigger>
                     <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
@@ -161,9 +161,9 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                 Correct any inaccuracies in the procurement metadata. All corrections are recorded on the blockchain.
                             </SheetDescription>
                         </SheetHeader>
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             {/* Correction Reason */}
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label htmlFor="correction_reason">Reason for Correction *</Label>
                                 <Textarea
                                     id="correction_reason"
@@ -176,10 +176,10 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             </div>
 
                             {/* Basic Information */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Basic Information</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="title">Title</Label>
                                         <Input
                                             id="title"
@@ -188,7 +188,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             placeholder="Enter corrected title"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="abc_amount">ABC Amount</Label>
                                         <Input
                                             id="abc_amount"
@@ -199,7 +199,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             placeholder="0.00"
                                         />
                                     </div>
-                                    <div className="space-y-2 sm:col-span-2">
+                                    <div className="flex flex-col gap-2 sm:col-span-2">
                                         <Label htmlFor="description">Description</Label>
                                         <Textarea
                                             id="description"
@@ -213,10 +213,10 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             </div>
 
                             {/* Classification */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Classification</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="category">Category</Label>
                                         <Select
                                             value={correctionForm.category}
@@ -234,7 +234,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="procurement_mode">Procurement Mode</Label>
                                         <Select
                                             value={correctionForm.procurement_mode}
@@ -266,10 +266,10 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             </div>
 
                             {/* Office & End User */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Office & End User</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="office">Office</Label>
                                         <Input
                                             id="office"
@@ -278,7 +278,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             placeholder="Enter corrected office"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="end_user">End User</Label>
                                         <Input
                                             id="end_user"
@@ -291,10 +291,10 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             </div>
 
                             {/* BAC Resolution */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">BAC Resolution</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="bac_resolution_number">BAC Resolution Number</Label>
                                         <Input
                                             id="bac_resolution_number"
@@ -303,7 +303,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             placeholder="Enter BAC resolution number"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <DatePickerInput
                                             id="bac_resolution_date"
                                             value={correctionForm.bac_resolution_date}
@@ -316,10 +316,10 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             </div>
 
                             {/* PhilGEPS */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">PhilGEPS</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="philgeps_reference">PhilGEPS Reference</Label>
                                         <Input
                                             id="philgeps_reference"
@@ -328,7 +328,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             placeholder="Enter PhilGEPS reference"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <DatePickerInput
                                             id="philgeps_posting_date"
                                             value={correctionForm.philgeps_posting_date}
@@ -341,10 +341,10 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             </div>
 
                             {/* Approval */}
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Approval</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label htmlFor="approved_by">Approved By</Label>
                                         <Input
                                             id="approved_by"
@@ -353,7 +353,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             placeholder="Enter approver name"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <DatePickerInput
                                             id="approval_date"
                                             value={correctionForm.approval_date}
@@ -365,7 +365,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                 </div>
                             </div>
 
-                            <div className="flex justify-end space-x-2 pt-4">
+                            <div className="flex justify-end gap-2 pt-4">
                                 <Button type="button" variant="outline" onClick={() => setShowCorrectionDialog(false)} disabled={submitting}>
                                     Cancel
                                 </Button>
@@ -377,7 +377,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                         </>
                                     ) : (
                                         <>
-                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            <CheckCircle />
                                             Submit Correction
                                         </>
                                     )}
@@ -390,31 +390,31 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
 
             {/* Latest Correction Summary */}
             {latestCorrection && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                <div className="rounded-xl border border-amber-200 bg-muted/50/50 p-4">
                     <div className="flex items-start gap-4">
-                        <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                            <Clock className="h-5 w-5" />
+                        <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                            <Clock />
                         </div>
-                        <div className="min-w-0 flex-1 space-y-1">
+                        <div className="min-w-0 flex-1 flex flex-col gap-1">
                             <div className="flex min-w-0 flex-wrap items-center justify-between gap-1">
-                                <h4 className="shrink-0 font-semibold text-amber-900">Latest Correction</h4>
-                                <span className="text-xs font-medium text-amber-700">
+                                <h4 className="shrink-0 font-semibold text-muted-foreground">Latest Correction</h4>
+                                <span className="text-xs font-medium text-muted-foreground">
                                     {new Date(latestCorrection.timestamp).toLocaleDateString()}
                                 </span>
                             </div>
-                            <p className="min-w-0 text-sm break-words text-amber-800">{latestCorrection.reason}</p>
+                            <p className="min-w-0 text-sm break-words text-muted-foreground">{latestCorrection.reason}</p>
                             <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
-                                <span className="shrink-0 font-medium text-amber-900">Changed:</span>
+                                <span className="shrink-0 font-medium text-muted-foreground">Changed:</span>
                                 {latestCorrection.changed_fields.map((field, index) => (
                                     <Badge
                                         key={index}
                                         variant="outline"
-                                        className="border-amber-300 bg-amber-100/50 text-amber-800 hover:bg-amber-100"
+                                        className="border-amber-300 bg-muted/50 text-muted-foreground hover:bg-muted"
                                     >
                                         {formatFieldName(field)}
                                     </Badge>
                                 ))}
-                                <span className="ml-auto shrink-0 truncate text-amber-700">by {latestCorrection.corrected_by}</span>
+                                <span className="ml-auto shrink-0 truncate text-muted-foreground">by {latestCorrection.corrected_by}</span>
                             </div>
                         </div>
                     </div>
@@ -422,13 +422,13 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
             )}
 
             {/* Corrections History */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="text-lg font-semibold">History</h3>
                 </div>
 
                 {corrections.length > 0 ? (
-                    <div className="border-border relative ml-3 space-y-8 border-l pl-8">
+                    <div className="border-border relative ml-3 flex flex-col gap-8 border-l pl-8">
                         {corrections.map((correction, index) => (
                             <div key={index} className="min-w-0">
                                 {/* Timeline Dot */}

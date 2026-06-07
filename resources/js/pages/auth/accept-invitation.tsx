@@ -41,7 +41,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
         <AuthLayout title="Accept Invitation" description="Join the Procuchain Procurement System">
             <Head title="Accept Invitation" />
 
-            <div className="w-full max-w-2xl space-y-6">
+            <div className="flex w-full max-w-2xl flex-col gap-6">
                 {/* Invitation Details */}
                 <Card>
                     <CardHeader>
@@ -53,7 +53,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                     <CardContent>
                         <div className="grid gap-4">
                             <div className="flex items-center gap-3 rounded-lg border p-3">
-                                <Mail className="text-muted-foreground h-5 w-5" />
+                                <Mail />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">Email</p>
                                     <p className="text-muted-foreground text-sm">{invitation.email}</p>
@@ -61,7 +61,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                             </div>
 
                             <div className="flex items-center gap-3 rounded-lg border p-3">
-                                <Shield className="text-muted-foreground h-5 w-5" />
+                                <Shield />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">Role</p>
                                     <Badge variant="outline" className="mt-1">
@@ -71,18 +71,18 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                             </div>
 
                             <div className="flex items-center gap-3 rounded-lg border p-3">
-                                <User className="text-muted-foreground h-5 w-5" />
+                                <User />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">Invited By</p>
                                     <p className="text-muted-foreground text-sm">{invitation.invited_by}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/20">
-                                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                            <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-muted/50 p-3 dark:border-amber-900 dark:bg-muted/50/20">
+                                <Clock />
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Expires {invitation.expires_at_human}</p>
-                                    <p className="text-xs text-amber-700 dark:text-amber-300">{invitation.expires_at}</p>
+                                    <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Expires {invitation.expires_at_human}</p>
+                                    <p className="text-xs text-muted-foreground dark:text-muted-foreground">{invitation.expires_at}</p>
                                 </div>
                             </div>
                         </div>
@@ -97,7 +97,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit}>
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <Field data-invalid={!!errors.name}>
                                     <FieldLabel htmlFor="name">Full Name</FieldLabel>
                                     <Input
@@ -142,11 +142,11 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                                     />
                                 </Field>
 
-                                <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20">
-                                    <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                    <AlertTitle className="text-blue-900 dark:text-blue-100">What happens next?</AlertTitle>
-                                    <AlertDescription className="space-y-1 text-blue-700 dark:text-blue-300">
-                                        <ul className="space-y-1">
+                                <Alert>
+                                    <CheckCircle2 />
+                                    <AlertTitle>What happens next?</AlertTitle>
+                                    <AlertDescription>
+                                        <ul className="flex flex-col gap-1">
                                             <li>• Your email will be automatically verified</li>
                                             <li>• A blockchain address will be generated for you</li>
                                             <li>• You'll be logged in and redirected to your dashboard</li>

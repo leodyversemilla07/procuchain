@@ -305,7 +305,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                     actions={
                         <div className="flex items-center gap-3">
                             <Badge className="gap-1">
-                                <Shield className="h-3 w-3" />
+                                <Shield />
                                 On-chain & Recoverable
                             </Badge>
                             <Badge variant="secondary" className="font-mono">
@@ -319,12 +319,12 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 <Card className="border-primary/20 bg-primary/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                            <ArchiveRestore className="h-4 w-4" />
+                            <ArchiveRestore />
                             How Blockchain Recovery Works
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <ul className="text-muted-foreground space-y-1 text-sm">
+                        <ul className="text-muted-foreground flex flex-col gap-1 text-sm">
                             <li>
                                 • <strong className="text-foreground">Deletion</strong> is an on-chain marker — file content persists across all 4
                                 nodes
@@ -344,7 +344,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 <Card className="border-muted bg-muted/30">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                            <Network className="h-4 w-4" />
+                            <Network />
                             Node Status — Live
                         </CardTitle>
                     </CardHeader>
@@ -361,12 +361,12 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                         <span className="text-sm font-semibold">{node.name}</span>
                                         {node.is_purged ? (
                                             <Badge variant="destructive" className="gap-1 text-[10px]">
-                                                <ServerCrash className="h-3 w-3" />
+                                                <ServerCrash />
                                                 Purged
                                             </Badge>
                                         ) : (
                                             <Badge className="gap-1 text-[10px]">
-                                                <Shield className="h-3 w-3" />
+                                                <Shield />
                                                 Healthy
                                             </Badge>
                                         )}
@@ -398,11 +398,11 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                 <Card className="border-destructive/20 bg-destructive/5">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                            <ServerCrash className="text-destructive h-4 w-4" />
+                            <ServerCrash className="text-destructive" />
                             Demo: Purge All Data from a Single Node
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="flex flex-col gap-4">
                         <FieldDescription>
                             Simulate <strong className="text-foreground">catastrophic data loss</strong> on a single node by purging{' '}
                             <strong className="text-foreground">all stream data</strong> from its local storage. After purging, the node's local data
@@ -411,9 +411,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                         </FieldDescription>
 
                         {/* Step-by-step demo flow */}
-                        <div className="bg-muted/50 space-y-2 rounded-md p-3 text-sm">
+                        <div className="bg-muted/50 flex flex-col gap-2 rounded-md p-3 text-sm">
                             <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Demo Flow</p>
-                            <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-sm">
+                            <ol className="text-muted-foreground flex list-decimal flex-col gap-1 pl-4 text-sm">
                                 <li>
                                     <strong className="text-foreground">Purge</strong> — Wipe all blockchain data from one node (e.g.{' '}
                                     <code className="font-mono text-xs">hope</code>)
@@ -473,13 +473,13 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                 <AlertDialogTrigger
                                     render={<Button variant="destructive" className="gap-2" disabled={isFullPurging || !fullPurgeNodeId} />}
                                 >
-                                    {isFullPurging ? <Spinner className="h-4 w-4" /> : <ServerCrash className="h-4 w-4" />}
+                                    {isFullPurging ? <Spinner /> : <ServerCrash />}
                                     Purge All from Node
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="flex items-center gap-2">
-                                            <ServerCrash className="text-destructive h-5 w-5" />
+                                            <ServerCrash className="text-destructive" />
                                             Confirm Full Node Purge
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
@@ -498,7 +498,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                             disabled={isFullPurging}
                                             className="gap-2"
                                         >
-                                            {isFullPurging ? <Spinner className="h-4 w-4" /> : <ServerCrash className="h-4 w-4" />}
+                                            {isFullPurging ? <Spinner /> : <ServerCrash />}
                                             {isFullPurging ? 'Purging...' : 'Purge All Data'}
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
@@ -518,11 +518,11 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                     <Card className="border-primary/20 bg-primary/5">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                                <RotateCcw className="text-primary h-4 w-4" />
+                                <RotateCcw className="text-primary" />
                                 Resync Purged Node
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="flex flex-col gap-4">
                             <FieldDescription>
                                 Manually trigger a <strong className="text-foreground">blockchain resync</strong> on a purged node. The node will
                                 reconnect to its peers and re-download all stream data — proving that blockchain data cannot be permanently destroyed.
@@ -566,7 +566,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
 
                             <div className="flex items-center gap-3">
                                 <Button variant="default" className="gap-2" disabled={isResyncing || !resyncNodeId} onClick={handleResyncNode}>
-                                    {isResyncing ? <Spinner className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+                                    {isResyncing ? <Spinner /> : <RotateCcw />}
                                     {isResyncing ? 'Resyncing...' : 'Resync Node'}
                                 </Button>
 
@@ -595,7 +595,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Trash2 className="text-destructive h-5 w-5" />
+                                <Trash2 />
                                 Deleted Procurement Files — Pending Recovery
                             </CardTitle>
                         </CardHeader>
@@ -626,7 +626,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="destructive" className="gap-1">
-                                                    <Trash2 className="h-3 w-3" />
+                                                    <Trash2 />
                                                     Deleted
                                                 </Badge>
                                             </TableCell>
@@ -652,7 +652,7 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle className="flex items-center gap-2">
-                                                                <RotateCcw className="text-primary h-5 w-5" />
+                                                                <RotateCcw />
                                                                 Restore Procurement File from Blockchain
                                                             </AlertDialogTitle>
                                                             <AlertDialogDescription>
@@ -660,8 +660,8 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                                                 removed — it remains replicated across all 4 nodes.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
-                                                        <div className="space-y-3 py-2">
-                                                            <div className="bg-muted space-y-1 rounded-md p-3">
+                                                        <div className="flex flex-col gap-3 py-2">
+                                                            <div className="bg-muted flex flex-col gap-1 rounded-md p-3">
                                                                 <FieldLabel className="text-muted-foreground text-xs uppercase">
                                                                     Procurement
                                                                 </FieldLabel>
@@ -697,9 +697,9 @@ export default function RecoverableDataPage({ deletedFiles, nodes, flash }: Reco
                                                                 disabled={restoringKey === file.file_key}
                                                             >
                                                                 {restoringKey === file.file_key ? (
-                                                                    <Spinner className="mr-2 h-4 w-4" />
+                                                                    <Spinner />
                                                                 ) : (
-                                                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                                                    <RotateCcw />
                                                                 )}
                                                                 {restoringKey === file.file_key ? 'Restoring...' : 'Restore On-Chain'}
                                                             </AlertDialogAction>

@@ -12,7 +12,7 @@ import type { FC, ReactNode } from 'react';
  *
  * Usage:
  *   <TruncateBadge variant="outline" maxChars={20}>{stage}</TruncateBadge>
- *   <TruncateBadge variant="secondary" icon={<Tag className="h-3 w-3" />} maxChars={22}>{label}</TruncateBadge>
+ *   <TruncateBadge variant="secondary" icon={<Tag />} maxChars={22}>{label}</TruncateBadge>
  */
 interface TruncateBadgeProps extends VariantProps<typeof badgeVariants> {
     children: string | undefined | null;

@@ -72,11 +72,11 @@ export default function LoginLogFilterBar({
 
     return (
         <Card>
-            <CardContent className="space-y-4 p-6">
+            <CardContent className="flex flex-col gap-4 p-6">
                 {/* Search Bar and Main Actions */}
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="relative flex-1">
-                        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                         <Input
                             placeholder="Search by name, email, IP, location..."
                             value={searchTerm}
@@ -90,19 +90,19 @@ export default function LoginLogFilterBar({
                                 onClick={() => onSearchTermChange('')}
                                 className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2 p-0"
                             >
-                                <X className="h-4 w-4" />
+                                <X />
                             </Button>
                         )}
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={onToggleAdvanced} size="sm" className="whitespace-nowrap">
-                            <Filter className="mr-2 h-4 w-4" />
+                            <Filter data-icon="inline-start" />
                             Filters
-                            <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`ml-2 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
                         </Button>
                         {hasActiveFilters && (
                             <Button variant="outline" onClick={onClearAll} size="sm">
-                                <X className="mr-2 h-4 w-4" />
+                                <X />
                                 Clear
                             </Button>
                         )}
@@ -205,7 +205,7 @@ export default function LoginLogFilterBar({
                                     />
                                 }
                             >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                <CalendarIcon data-icon="inline-start" />
                                 {dateRange?.from ? (
                                     dateRange.to ? (
                                         <>
@@ -311,7 +311,7 @@ export default function LoginLogFilterBar({
                         </div>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={onExportSelected} disabled={isExporting}>
-                                <Download className="mr-2 h-4 w-4" />
+                                <Download />
                                 Export Selected
                             </Button>
                         </div>

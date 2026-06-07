@@ -84,7 +84,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                 <div className="mb-6 flex items-center gap-4">
                     <div className="flex-1">
                         <h1 className="flex items-center gap-2 text-2xl font-bold">
-                            <FileSearch className="h-6 w-6" />
+                            <FileSearch />
                             Audit Log #{logId}
                         </h1>
                         <p className="text-muted-foreground text-sm">Permanent forensic record for this violation</p>
@@ -104,7 +104,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                         </CardContent>
                     </Card>
                 ) : log ? (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
                         {/* Status Cards */}
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <Card>
@@ -156,7 +156,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                     {log.revision_history && log.revision_history.length > 0 ? (
                                         <RevisionTree revisions={log.revision_history} currentTxid={log.txid ?? undefined} />
                                     ) : log.revision_lineage && log.revision_lineage.length > 0 ? (
-                                        <div className="space-y-2">
+                                        <div className="flex flex-col gap-2">
                                             <p className="text-muted-foreground text-sm">Revision Lineage:</p>
                                             <div className="flex flex-wrap items-center gap-1">
                                                 {log.revision_lineage.map((txid, i) => (
@@ -180,7 +180,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                                 <CardHeader>
                                     <CardTitle>Record Details</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="flex flex-col gap-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <span className="text-muted-foreground text-sm">Stream:</span>
@@ -306,7 +306,7 @@ export default function AuditLogDetailPage({ logId, log, error }: AuditLogDetail
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <div className="bg-muted h-32 w-full animate-pulse rounded" />
                         <div className="bg-muted h-64 w-full animate-pulse rounded" />
                     </div>

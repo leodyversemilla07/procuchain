@@ -58,10 +58,10 @@ export default function EmailNotification() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Email notification settings" />
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <HeadingSmall title="Email notifications" description="Manage your email notification preferences" />
 
-                    <div className="flex flex-col items-start justify-start space-y-4">
+                    <div className="flex flex-col items-start justify-start gap-4">
                         <Badge variant={emailNotificationsEnabled ? 'default' : 'destructive'}>
                             {emailNotificationsEnabled ? 'Enabled' : 'Disabled'}
                         </Badge>
@@ -73,7 +73,7 @@ export default function EmailNotification() {
                         </p>
 
                         <div className="flex w-full items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
+                            <div className="flex flex-col gap-0.5">
                                 <Label htmlFor="email-notifications" className="text-base">
                                     Enable email notifications
                                 </Label>

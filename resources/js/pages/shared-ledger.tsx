@@ -1,5 +1,6 @@
 import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
 import { HeroCard } from '@/components/hero-card';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -283,7 +284,7 @@ export default function SharedLedger({
                 >
                     <div className="mt-4 flex flex-wrap gap-4">
                         <div className="flex items-center gap-2 text-sm">
-                            <Shield className="text-primary h-4 w-4" />
+                            <Shield />
                             <span className="text-muted-foreground">
                                 <strong className="text-foreground">{totalTransactions.toLocaleString()}</strong> total transactions
                             </span>
@@ -308,17 +309,17 @@ export default function SharedLedger({
 
                 {/* Purge State Warning */}
                 {node_purge_state?.is_purged && node_purge_state.was_explicitly_purged && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20">
-                        <p className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300">
+                    <div className="rounded-lg border border-amber-200 bg-muted/50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-muted/20">
+                        <p className="flex items-center gap-2 font-medium text-muted-foreground dark:text-muted-foreground">
                             <AlertTriangle />
                             This node has been purged — all stream subscriptions removed
                         </p>
-                        <p className="mt-1 text-amber-700 dark:text-amber-400">
+                        <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
                             Data on this node was wiped via <strong>unsubscribe(purge=true)</strong>. The blockchain data still exists on other nodes
                             — use <strong>Recoverable Data → Resync</strong> to restore this node's local copy.
                         </p>
                         {node_purge_state.purge_reason && (
-                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">Reason: {node_purge_state.purge_reason}</p>
+                            <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">Reason: {node_purge_state.purge_reason}</p>
                         )}
                     </div>
                 )}
@@ -336,12 +337,12 @@ export default function SharedLedger({
                     </div>
                 )}
                 {node_purge_state?.partially_purged && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-900/20">
-                        <p className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300">
+                    <div className="rounded-lg border border-amber-200 bg-muted/50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-muted/20">
+                        <p className="flex items-center gap-2 font-medium text-muted-foreground dark:text-muted-foreground">
                             <AlertTriangle />
                             Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
                         </p>
-                        <p className="mt-1 text-amber-700 dark:text-amber-400">Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}</p>
+                        <p className="mt-1 text-muted-foreground dark:text-muted-foreground">Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}</p>
                     </div>
                 )}
                 {node_purge_state?.connection_error && (
@@ -468,7 +469,7 @@ export default function SharedLedger({
                                         />
                                     }
                                 >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    <CalendarIcon />
                                     {dateRange?.from ? (
                                         dateRange.to ? (
                                             <>
@@ -497,13 +498,13 @@ export default function SharedLedger({
                     <CardFooter className="flex gap-2">
                         {hasActiveFilters && (
                             <Button variant="outline" onClick={clearFilters}>
-                                <FilterX className="mr-2 h-4 w-4" />
+                                <FilterX />
                                 Clear
                             </Button>
                         )}
                         <div className="ml-auto">
                             <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
-                                <Download className="mr-2 h-4 w-4" />
+                                <Download />
                                 Export CSV
                             </Button>
                         </div>
@@ -716,7 +717,7 @@ export default function SharedLedger({
                                                                         {/* Original TX ID link */}
                                                                         {entry.original_txid && (
                                                                             <div className="flex items-center gap-2 text-sm">
-                                                                                <ExternalLink className="text-muted-foreground h-4 w-4" />
+                                                                                <ExternalLink />
                                                                                 <span className="text-muted-foreground">References original TX:</span>
                                                                                 <code className="bg-muted rounded px-2 py-0.5 font-mono text-xs">
                                                                                     {entry.original_txid.substring(0, 16)}...

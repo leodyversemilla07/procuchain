@@ -71,12 +71,12 @@ export default function ResetPasswordDialog({ open, onOpenChange, user }: ResetP
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                     {/* Warning */}
-                    <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-900 dark:bg-yellow-900/10">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400" />
+                    <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 dark:border-yellow-900 dark:bg-muted/10">
+                        <AlertTriangle />
                         <div className="flex-1">
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                                 This will send a password reset link to the user's email address. They will be able to choose their new password.
                             </p>
                         </div>

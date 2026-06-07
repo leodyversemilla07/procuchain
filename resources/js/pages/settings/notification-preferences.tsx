@@ -114,7 +114,7 @@ export default function NotificationPreferences() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notification preferences" />
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <HeadingSmall
                         title="Notification preferences"
                         description="Choose which notifications you'd like to receive and through which channels"
@@ -124,7 +124,7 @@ export default function NotificationPreferences() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
-                                {emailEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                                {emailEnabled ? <Bell /> : <BellOff />}
                                 Email Notifications
                             </CardTitle>
                             <CardDescription>
@@ -152,7 +152,7 @@ export default function NotificationPreferences() {
                             <CardHeader>
                                 <CardTitle className="text-base">{category}</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="flex flex-col gap-4">
                                 {Object.entries(events).map(([eventType, description]) => {
                                     const pref = preferences[eventType] ?? { email: false, push: false };
                                     const isEmailDisabled = !emailEnabled;
@@ -160,7 +160,7 @@ export default function NotificationPreferences() {
                                     return (
                                         <div key={eventType}>
                                             <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                                <div className="space-y-1 sm:col-span-1">
+                                                <div className="flex flex-col gap-1 sm:col-span-1">
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant="secondary" className="text-xs font-normal">
                                                             {EVENT_TYPE_LABELS[eventType] ?? eventType}
@@ -171,7 +171,7 @@ export default function NotificationPreferences() {
 
                                                 <div className="flex items-center gap-6 sm:col-span-2">
                                                     <div className="flex items-center gap-2">
-                                                        <Mail className="text-muted-foreground h-4 w-4" />
+                                                        <Mail />
                                                         <Switch
                                                             id={`${eventType}-email`}
                                                             checked={pref.email}
@@ -184,7 +184,7 @@ export default function NotificationPreferences() {
                                                     </div>
 
                                                     <div className="flex items-center gap-2">
-                                                        <Smartphone className="text-muted-foreground h-4 w-4" />
+                                                        <Smartphone />
                                                         <Switch
                                                             id={`${eventType}-push`}
                                                             checked={pref.push}

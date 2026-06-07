@@ -77,7 +77,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                     )}
                 </FieldLabel>
             )}
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                     <div className="flex flex-1 gap-2">
                         <Input
@@ -110,7 +110,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                         onClick={addPerson}
                         disabled={!nameInput.trim() || !affiliationInput.trim()}
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus />
                         Add
                     </Button>
                 </div>
@@ -123,10 +123,10 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="hover:bg-destructive/10 hover:text-destructive -mr-1 ml-1 h-4 w-4 sm:h-5 sm:w-5"
+                               
                                 onClick={() => removePerson(index)}
                             >
-                                <X className="h-3 w-3" />
+                                <X />
                             </Button>
                         </Badge>
                     ))}

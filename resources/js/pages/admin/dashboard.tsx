@@ -478,8 +478,8 @@ export default function AdminDashboard() {
                     )}
 
                     {/* User Activity Section */}
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="mb-2 flex items-center space-x-2 sm:mb-4">
+                    <div className="flex flex-col gap-4 sm:gap-6">
+                        <div className="mb-2 flex items-center gap-2 sm:mb-4">
                             <h2 className="text-base font-semibold sm:text-lg md:text-xl">User Activity Analytics</h2>
                         </div>
 
@@ -489,7 +489,7 @@ export default function AdminDashboard() {
                                     <CardHeader className="pb-2 sm:pb-3 md:pb-4">
                                         <CardTitle className="text-sm sm:text-base md:text-lg">Login Statistics</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-2 sm:space-y-3 md:space-y-4">
+                                    <CardContent className="flex flex-col gap-2 sm:gap-3 md:gap-4">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs sm:text-sm md:text-base">Total Logins</span>
                                             <Badge variant="secondary" className="text-[10px] sm:text-xs md:text-sm">
@@ -515,7 +515,7 @@ export default function AdminDashboard() {
                                     <CardHeader className="pb-2 sm:pb-3 md:pb-4">
                                         <CardTitle className="text-sm sm:text-base md:text-lg">Security Metrics</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-2 sm:space-y-3 md:space-y-4">
+                                    <CardContent className="flex flex-col gap-2 sm:gap-3 md:gap-4">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs sm:text-sm md:text-base">Security Score</span>
                                             <Badge variant="default" className="text-[10px] sm:text-xs md:text-sm">

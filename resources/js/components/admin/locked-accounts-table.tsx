@@ -140,8 +140,8 @@ export default function LockedAccountsTable({
     // Shared lock time remaining
     const renderTimeRemaining = (user: User) =>
         user.is_currently_locked ? (
-            <div className="text-warning flex items-center space-x-1">
-                <Clock className="h-3 w-3" />
+            <div className="text-warning flex items-center gap-1">
+                <Clock />
                 <span>{user.lock_time_remaining ?? '—'}</span>
             </div>
         ) : (
@@ -150,9 +150,9 @@ export default function LockedAccountsTable({
 
     // Shared failed attempts display
     const renderFailedAttempts = (attempts: number | null | undefined) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{attempts || 0}</span>
-            {(attempts || 0) >= 3 && <AlertTriangle className="text-destructive h-4 w-4" />}
+            {(attempts || 0) >= 3 && <AlertTriangle />}
         </div>
     );
 
@@ -208,12 +208,12 @@ export default function LockedAccountsTable({
                                 ? Array.from({ length: 5 }).map((_, index) => (
                                       <TableRow key={index}>
                                           <TableCell>
-                                              <Skeleton className="h-4 w-4" />
+                                              <Skeleton />
                                           </TableCell>
                                           <TableCell>
-                                              <div className="flex items-center space-x-3">
+                                              <div className="flex items-center gap-3">
                                                   <Skeleton className="h-8 w-8 rounded-full" />
-                                                  <div className="space-y-2">
+                                                  <div className="flex flex-col gap-2">
                                                       <Skeleton className="h-4 w-32" />
                                                       <Skeleton className="h-3 w-48" />
                                                   </div>
@@ -254,9 +254,9 @@ export default function LockedAccountsTable({
                                               />
                                           </TableCell>
                                           <TableCell>
-                                              <div className="flex items-center space-x-3">
+                                              <div className="flex items-center gap-3">
                                                   <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                                                      <UserIcon className="text-muted-foreground h-4 w-4" />
+                                                      <UserIcon className="text-muted-foreground" />
                                                   </div>
                                                   <div className="min-w-0">
                                                       <div className="truncate font-medium">{user.name}</div>
@@ -268,7 +268,7 @@ export default function LockedAccountsTable({
                                               <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
                                           </TableCell>
                                           <TableCell className="hidden lg:table-cell">
-                                              <div className="flex items-center space-x-1">{render2FABadge(!!user.two_factor_enabled)}</div>
+                                              <div className="flex items-center gap-1">{render2FABadge(!!user.two_factor_enabled)}</div>
                                           </TableCell>
                                           <TableCell>
                                               <Badge variant="outline" className={getLockStatusColor(user)}>
@@ -308,23 +308,23 @@ export default function LockedAccountsTable({
 
             {/* Mobile Card View */}
             <div className="md:hidden">
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                     {isBusy
                         ? Array.from({ length: 3 }).map((_, index) => (
                               <Card key={index}>
                                   <CardContent className="p-4">
-                                      <div className="space-y-4">
+                                      <div className="flex flex-col gap-4">
                                           <div className="flex items-start justify-between">
-                                              <div className="flex items-center space-x-3">
+                                              <div className="flex items-center gap-3">
                                                   <Skeleton className="h-10 w-10 rounded-full" />
-                                                  <div className="space-y-2">
+                                                  <div className="flex flex-col gap-2">
                                                       <Skeleton className="h-4 w-32" />
                                                       <Skeleton className="h-3 w-48" />
                                                   </div>
                                               </div>
                                               <Skeleton className="h-8 w-8" />
                                           </div>
-                                          <div className="space-y-2">
+                                          <div className="flex flex-col gap-2">
                                               <Skeleton className="h-4 w-full" />
                                               <Skeleton className="h-4 w-full" />
                                               <Skeleton className="h-4 w-2/3" />
@@ -336,16 +336,16 @@ export default function LockedAccountsTable({
                         : paginatedAccounts.map((user) => (
                               <Card key={user.id}>
                                   <CardContent className="p-4">
-                                      <div className="space-y-4">
+                                      <div className="flex flex-col gap-4">
                                           {/* Header */}
                                           <div className="flex items-start justify-between">
-                                              <div className="flex items-center space-x-3">
+                                              <div className="flex items-center gap-3">
                                                   <Checkbox
                                                       checked={selectedAccounts.has(user.id)}
                                                       onCheckedChange={() => onToggleAccountSelection(user.id)}
                                                   />
                                                   <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
-                                                      <UserIcon className="text-muted-foreground h-5 w-5" />
+                                                      <UserIcon />
                                                   </div>
                                                   <div>
                                                       <div className="font-medium">{user.name}</div>
@@ -356,7 +356,7 @@ export default function LockedAccountsTable({
                                           </div>
 
                                           {/* Details */}
-                                          <div className="space-y-2 text-sm">
+                                          <div className="flex flex-col gap-2 text-sm">
                                               <div className="flex items-center justify-between">
                                                   <span className="text-muted-foreground">Role</span>
                                                   <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>

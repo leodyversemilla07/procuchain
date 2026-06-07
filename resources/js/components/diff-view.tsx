@@ -41,7 +41,7 @@ export function DiffView({ oldValues, newValues, className }: DiffViewProps) {
     return (
         <div className={className}>
             <div className="text-muted-foreground mb-1 flex items-center gap-1 text-xs">
-                <ArrowDownUp className="h-3 w-3" />
+                <ArrowDownUp />
                 <span>
                     {diff.length} change{diff.length !== 1 ? 's' : ''}
                 </span>
@@ -59,10 +59,10 @@ export function DiffView({ oldValues, newValues, className }: DiffViewProps) {
                         {diff.map((d) => (
                             <TableRow key={d.key}>
                                 <TableCell className="p-1 font-mono text-[10px] font-medium whitespace-nowrap">{d.key}</TableCell>
-                                <TableCell className="bg-red-50/50 p-1 font-mono text-[10px] break-all dark:bg-red-950/20">
+                                <TableCell className="bg-destructive/10/50 p-1 font-mono text-[10px] break-all dark:bg-destructive/10/20">
                                     {d.old || <span className="italic">(empty)</span>}
                                 </TableCell>
-                                <TableCell className="bg-green-50/50 p-1 font-mono text-[10px] break-all dark:bg-green-950/20">
+                                <TableCell className="bg-primary/10/50 p-1 font-mono text-[10px] break-all dark:bg-primary/10/20">
                                     {d.new || <span className="italic">(empty)</span>}
                                 </TableCell>
                             </TableRow>

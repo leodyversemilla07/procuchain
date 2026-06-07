@@ -34,12 +34,12 @@ export function SummaryCard({ title, value, subtitle, isValid, icon: Icon, toolt
         >
             <CardContent className="p-3 pt-4 sm:px-6 sm:pt-6 sm:pb-4">
                 <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+                    <div className="min-w-0 flex-1 flex flex-col gap-0.5 sm:flex flex-col gap-1">
                         <p className="text-muted-foreground truncate text-xs font-medium sm:text-sm">{title}</p>
                         <p
                             className={cn(
                                 'text-xl font-bold tabular-nums sm:text-2xl',
-                                isValid ? 'text-foreground' : 'text-amber-600 dark:text-amber-400',
+                                isValid ? 'text-foreground' : 'text-muted-foreground dark:text-muted-foreground',
                             )}
                         >
                             {value}
@@ -52,13 +52,13 @@ export function SummaryCard({ title, value, subtitle, isValid, icon: Icon, toolt
                     <div
                         className={cn(
                             'shrink-0 rounded-full p-1.5 sm:p-2.5',
-                            isValid ? 'bg-green-100 dark:bg-green-900/50' : 'bg-amber-100 dark:bg-amber-900/50',
+                            isValid ? 'bg-primary/20 dark:bg-primary/20/50' : 'bg-muted dark:bg-muted/50',
                         )}
                     >
                         <Icon
                             className={cn(
                                 'h-4 w-4 sm:h-5 sm:w-5',
-                                isValid ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400',
+                                isValid ? 'text-primary dark:text-primary' : 'text-muted-foreground dark:text-muted-foreground',
                             )}
                         />
                     </div>

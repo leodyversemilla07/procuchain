@@ -145,7 +145,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s GitHub Profile`}
                                                         >
-                                                            <GithubIcon className="size-5" />
+                                                            <GithubIcon />
                                                         </a>
                                                     )}
                                                     {member.email && (
@@ -154,7 +154,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`Email ${member.name}`}
                                                         >
-                                                            <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            <Mail />
                                                         </a>
                                                     )}
                                                     {member.facebook && (
@@ -165,7 +165,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s Facebook Profile`}
                                                         >
-                                                            <FacebookIcon className="size-5" />
+                                                            <FacebookIcon />
                                                         </a>
                                                     )}
                                                 </div>

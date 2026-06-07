@@ -89,7 +89,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                             <CardHeader>
                                 <CardTitle>Breach Information</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 text-sm">
+                            <CardContent className="flex flex-col gap-3 text-sm">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <span className="text-muted-foreground">Violation Type</span>
@@ -137,7 +137,7 @@ export default function BreachDetailPage({ breachId, breach, error }: BreachDeta
                             </CardHeader>
                             <CardContent>
                                 {breach.field_differences && breach.field_differences.length > 0 ? (
-                                    <div className="space-y-3">
+                                    <div className="flex flex-col gap-3">
                                         {breach.field_differences.map((diff, i) => (
                                             <div key={i} className="rounded-md border p-3">
                                                 <p className="mb-2 font-medium">{diff.field}</p>

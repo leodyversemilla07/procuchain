@@ -101,18 +101,18 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="sm">
-                                {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
+                                {isRefreshing ? <Spinner /> : <RefreshCw />}
                                 <span className="hidden sm:ml-2 sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                             </Button>
                             <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="sm">
                                 {autoRefresh ? (
                                     <>
-                                        <Spinner className="size-4" />
+                                        <Spinner />
                                         <span className="hidden sm:ml-2 sm:inline">Auto-refresh On</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Clock className="h-4 w-4" />
+                                        <Clock />
                                         <span className="hidden sm:ml-2 sm:inline">Enable Auto-refresh</span>
                                     </>
                                 )}
@@ -125,12 +125,12 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             >
                                 {isExporting ? (
                                     <>
-                                        <Spinner className="size-4" />
+                                        <Spinner />
                                         <span className="hidden sm:ml-2 sm:inline">Exporting...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Download className="h-4 w-4" />
+                                        <Download />
                                         <span className="hidden sm:ml-2 sm:inline">Export CSV</span>
                                     </>
                                 )}
@@ -177,20 +177,20 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     data="suspiciousActivities"
                     fallback={
                         <Card>
-                            <CardContent className="space-y-4 p-6">
+                            <CardContent className="flex flex-col gap-4 p-6">
                                 <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
+                                    <div className="flex flex-col gap-1">
                                         <Skeleton className="h-6 w-48" />
                                         <Skeleton className="h-4 w-64" />
                                     </div>
                                     <Skeleton className="h-9 w-24" />
                                 </div>
-                                <div className="space-y-3">
+                                <div className="flex flex-col gap-3">
                                     {Array.from({ length: 8 }).map((_, i) => (
                                         <div key={`table-skeleton-${i}`} className="flex items-center gap-4 border-b pb-3">
-                                            <Skeleton className="h-4 w-4" />
+                                            <Skeleton />
                                             <Skeleton className="h-6 w-20" />
-                                            <div className="flex-1 space-y-2">
+                                            <div className="flex flex-1 flex-col gap-2">
                                                 <Skeleton className="h-4 w-32" />
                                                 <Skeleton className="h-3 w-48" />
                                             </div>

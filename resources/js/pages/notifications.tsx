@@ -215,13 +215,13 @@ export default function Notifications() {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'success':
-                return <CheckCheck className="text-primary h-5 w-5" />;
+                return <CheckCheck />;
             case 'warning':
-                return <AlertCircle className="text-destructive h-5 w-5" />;
+                return <AlertCircle />;
             case 'info':
-                return <Clock className="text-secondary-foreground h-5 w-5" />;
+                return <Clock />;
             default:
-                return <Bell className="text-muted-foreground h-5 w-5" />;
+                return <Bell />;
         }
     };
 
@@ -235,11 +235,11 @@ export default function Notifications() {
             case 'unread':
                 return <Badge className="bg-primary/10 text-primary hover:bg-primary/20">Unread</Badge>;
             case 'success':
-                return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">Success</Badge>;
+                return <Badge variant="secondary">Success</Badge>;
             case 'warning':
-                return <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20">Warning</Badge>;
+                return <Badge variant="outline">Warning</Badge>;
             default:
-                return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20">Info</Badge>;
+                return <Badge variant="secondary">Info</Badge>;
         }
     };
 
@@ -269,14 +269,14 @@ export default function Notifications() {
             label: 'Unread',
             value: optimisticUnreadCount,
             icon: AlertCircle,
-            iconClassName: 'bg-yellow-500/10 text-yellow-500',
+            iconClassName: 'bg-secondary/50 text-secondary-foreground',
         },
         {
             id: 'read',
             label: 'Read',
             value: filteredNotifications.length - optimisticUnreadCount,
             icon: CheckCheck,
-            iconClassName: 'bg-green-500/10 text-green-500',
+            iconClassName: 'bg-primary/10 text-primary',
         },
     ];
 
@@ -284,7 +284,7 @@ export default function Notifications() {
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Select value={filter} onValueChange={(value) => value && handleFilterChange(value as FilterType)}>
                 <SelectTrigger className="w-[120px] sm:w-[140px]">
-                    <Filter className="text-muted-foreground mr-2 h-4 w-4" />
+                    <Filter data-icon="inline-start" />
                     <SelectValue placeholder="Filter">{() => selectedFilterLabel}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -301,7 +301,7 @@ export default function Notifications() {
                 onClick={handleRefresh}
                 className={cn('text-muted-foreground hover:text-foreground transition-all')}
             >
-                {refreshing ? <Spinner className="size-4" /> : <RotateCw className="h-4 w-4" />}
+                {refreshing ? <Spinner /> : <RotateCw />}
             </Button>
             {filteredNotifications.some((n: Notification) => !n.read_at) && (
                 <Button onClick={handleMarkAllAsRead} variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -330,11 +330,11 @@ export default function Notifications() {
                     <CardContent className="p-0">
                         {loading ? (
                             <div className="divide-border divide-y">
-                                <div className="space-y-4 p-4">
+                                <div className="flex flex-col gap-4 p-4">
                                     {[...Array(3)].map((_, i) => (
                                         <div key={i} className="flex items-start gap-4">
                                             <Skeleton className="h-8 w-8 rounded-full sm:h-10 sm:w-10" />
-                                            <div className="flex-1 space-y-2">
+                                            <div className="flex flex-1 flex-col gap-2">
                                                 <Skeleton className="h-4 w-[60%]" />
                                                 <Skeleton className="h-3 w-[80%]" />
                                                 <Skeleton className="h-3 w-[40%]" />
@@ -347,7 +347,7 @@ export default function Notifications() {
                             <Empty>
                                 <EmptyHeader>
                                     <EmptyMedia variant="icon">
-                                        <Bell className="h-6 w-6" />
+                                        <Bell />
                                     </EmptyMedia>
                                     <EmptyTitle>No notifications</EmptyTitle>
                                     <EmptyDescription>You're all caught up!</EmptyDescription>
@@ -375,7 +375,7 @@ export default function Notifications() {
                                                         </ItemTitle>
                                                         {getStatusBadge(getNotificationStatus(notification))}
                                                     </div>
-                                                    <div className="space-y-1">
+                                                    <div className="flex flex-col gap-1">
                                                         <ItemDescription>
                                                             Stage: {notification.data.stage_identifier} - {notification.data.action_type}
                                                         </ItemDescription>
@@ -404,7 +404,7 @@ export default function Notifications() {
                                                         handleMarkAsRead(notification.id);
                                                     }}
                                                 >
-                                                    <Check className="mr-1 h-4 w-4" />
+                                                    <Check />
                                                     Mark as read
                                                 </Button>
                                             )}

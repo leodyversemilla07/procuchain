@@ -23,7 +23,7 @@ export default function RecentViewersCard({ recentViews }: Props) {
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <Clock />
                             Recent Viewers
                         </CardTitle>
                         <CardDescription className="text-xs sm:text-sm">
@@ -39,13 +39,13 @@ export default function RecentViewersCard({ recentViews }: Props) {
                             <SheetContent side="right" className="w-full sm:max-w-2xl">
                                 <SheetHeader>
                                     <SheetTitle className="flex items-center gap-2">
-                                        <Users className="h-5 w-5" />
+                                        <Users />
                                         All Document Viewers
                                     </SheetTitle>
                                     <SheetDescription>Complete list of {recentViews.length} users who have viewed this document</SheetDescription>
                                 </SheetHeader>
                                 <ScrollArea className="mt-6 h-[calc(100vh-120px)]">
-                                    <div className="space-y-3 pr-4">
+                                    <div className="flex flex-col gap-3 pr-4">
                                         {recentViews.map((view, index) => (
                                             <div
                                                 key={view.id}
@@ -83,7 +83,7 @@ export default function RecentViewersCard({ recentViews }: Props) {
                                                             )}
                                                             <span className="hidden sm:inline">•</span>
                                                             <span className="hidden shrink-0 items-center gap-1 sm:flex">
-                                                                <Globe className="h-3 w-3" />
+                                                                <Globe />
                                                                 {view.ip_address}
                                                             </span>
                                                         </div>
@@ -100,7 +100,7 @@ export default function RecentViewersCard({ recentViews }: Props) {
             </CardHeader>
             <CardContent>
                 <ScrollArea className="h-48 sm:h-64">
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="flex flex-col gap-2 sm:flex flex-col gap-3">
                         {recentViews.slice(0, 10).map((view) => (
                             <div key={view.id} className="flex items-center justify-between gap-2 rounded-lg border p-2">
                                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">

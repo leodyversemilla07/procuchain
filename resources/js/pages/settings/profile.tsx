@@ -64,10 +64,10 @@ export default function Profile() {
             <Head title="Profile settings" />
 
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <HeadingSmall title="Profile information" description="Update your name and email address" />
 
-                    <form onSubmit={submit} className="space-y-6">
+                    <form onSubmit={submit} className="flex flex-col gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="name">Name</Label>
 

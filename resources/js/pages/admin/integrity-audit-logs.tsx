@@ -360,7 +360,7 @@ export default function IntegrityAuditLogs() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <ScrollText className="h-5 w-5" />
+                                <ScrollText />
                                 Integrity Audit Log
                             </CardTitle>
                         </CardHeader>

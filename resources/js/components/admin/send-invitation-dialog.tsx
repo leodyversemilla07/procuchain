@@ -95,7 +95,7 @@ export default function SendInvitationDialog({ open, onOpenChange, roles }: Send
                                 className="flex flex-row gap-4"
                             >
                                 {roles.map((role) => (
-                                    <div key={role} className="flex items-center space-x-2">
+                                    <div key={role} className="flex items-center gap-2">
                                         <RadioGroupItem value={role} id={`role-${role}`} aria-invalid={!!errors.role} />
                                         <Label htmlFor={`role-${role}`} className="cursor-pointer font-normal">
                                             {formatRoleName(role)}

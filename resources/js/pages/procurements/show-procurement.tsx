@@ -139,7 +139,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                 <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                     {/* Header Skeleton */}
                     <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-                        <CardContent className="space-y-4 p-4 sm:p-6">
+                        <CardContent className="flex flex-col gap-4 p-4 sm:p-6">
                             <div className="flex items-center gap-2">
                                 <Skeleton className="h-5 w-5 sm:h-6 sm:w-6" />
                                 <Skeleton className="h-7 w-64 sm:h-8" />
@@ -155,7 +155,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                     </Card>
 
                     {/* Tabs Skeleton */}
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <div className="flex gap-2">
                             <Skeleton className="h-10 w-24" />
                             <Skeleton className="h-10 w-24" />
@@ -166,7 +166,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                             <CardHeader className="p-4 sm:p-6">
                                 <Skeleton className="h-6 w-48" />
                             </CardHeader>
-                            <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
+                            <CardContent className="flex flex-col gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
                                 <Skeleton className="h-24 w-full" />
                                 <Skeleton className="h-24 w-full" />
                             </CardContent>
@@ -196,11 +196,11 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                             </CardHeader>
                             <CardContent className="flex flex-col gap-3 sm:flex-row">
                                 <Button variant="outline" className="flex-1" onClick={handleGoBack} aria-label="Go back to previous page">
-                                    <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    <ArrowLeft aria-hidden="true" />
                                     Go Back
                                 </Button>
                                 <Button variant="default" className="flex-1" onClick={handleRetry} aria-label="Retry loading procurement">
-                                    <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    <RefreshCw aria-hidden="true" />
                                     Retry
                                 </Button>
                             </CardContent>
@@ -229,7 +229,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                         </EmptyHeader>
                         <EmptyContent>
                             <Button onClick={handleGoBack} variant="outline">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                <ArrowLeft />
                                 Go Back
                             </Button>
                         </EmptyContent>
@@ -270,11 +270,11 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                 <Tabs defaultValue="details" className="w-full">
                     <TabsList className="w-full sm:w-auto">
                         <TabsTrigger value="details" aria-label="Details tab">
-                            <FileText className="size-4" aria-hidden="true" />
+                            <FileText aria-hidden="true" />
                             <span>Details</span>
                         </TabsTrigger>
                         <TabsTrigger value="documents" aria-label={`Documents tab, ${totalDocuments} documents`}>
-                            <FileText className="size-4" aria-hidden="true" />
+                            <FileText aria-hidden="true" />
                             <span className="hidden sm:inline">Documents</span>
                             <span className="sm:hidden">Docs</span>
                             <Badge variant="secondary" className="ml-1 text-[10px] sm:ml-2 sm:text-xs">
@@ -282,7 +282,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                             </Badge>
                         </TabsTrigger>
                         <TabsTrigger value="corrections" aria-label="Corrections tab">
-                            <Edit className="size-4" aria-hidden="true" />
+                            <Edit aria-hidden="true" />
                             <span className="hidden sm:inline">Corrections</span>
                             <span className="sm:hidden">Fixes</span>
                             {procurement.has_corrections && (
@@ -292,7 +292,7 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                             )}
                         </TabsTrigger>
                         <TabsTrigger value="timeline" aria-label="Timeline tab">
-                            <Clock className="size-4" aria-hidden="true" />
+                            <Clock aria-hidden="true" />
                             <span>Timeline</span>
                         </TabsTrigger>
                     </TabsList>

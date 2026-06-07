@@ -75,11 +75,11 @@ export default function Terms() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <UserCheck className="text-primary h-5 w-5" />
+                                            <UserCheck />
                                         </div>
                                         <h2 className="text-xl font-semibold">User Responsibilities</h2>
                                     </div>
-                                    <ul className="space-y-3">
+                                    <ul className="flex flex-col gap-3">
                                         {[
                                             'Maintain the confidentiality of your account credentials',
                                             'Ensure all information provided is accurate and current',
@@ -88,7 +88,7 @@ export default function Terms() {
                                             'Comply with all applicable laws and regulations',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <FileText className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <FileText />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -100,11 +100,11 @@ export default function Terms() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Shield className="text-primary h-5 w-5" />
+                                            <Shield />
                                         </div>
                                         <h2 className="text-xl font-semibold">Acceptable Use</h2>
                                     </div>
-                                    <ul className="space-y-3">
+                                    <ul className="flex flex-col gap-3">
                                         {[
                                             'Access the system using only authorized credentials',
                                             'Upload only legitimate procurement documents',
@@ -113,7 +113,7 @@ export default function Terms() {
                                             'Use the platform in accordance with government policies',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <FileText className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <FileText />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -128,7 +128,7 @@ export default function Terms() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-destructive/10 rounded-lg p-2">
-                                            <Ban className="text-destructive h-5 w-5" />
+                                            <Ban className="text-destructive" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Prohibited Activities</h2>
                                     </div>
@@ -144,7 +144,7 @@ export default function Terms() {
                                             'Using the platform for any illegal activities',
                                         ].map((item, index) => (
                                             <div key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <AlertCircle className="text-destructive mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <AlertCircle className="text-destructive mt-0.5 mr-2 shrink-0" />
                                                 <span>{item}</span>
                                             </div>
                                         ))}
@@ -159,7 +159,7 @@ export default function Terms() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <FileText className="text-primary h-5 w-5" />
+                                            <FileText />
                                         </div>
                                         <h2 className="text-xl font-semibold">Intellectual Property</h2>
                                     </div>
@@ -176,7 +176,7 @@ export default function Terms() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <RefreshCw className="text-primary h-5 w-5" />
+                                            <RefreshCw />
                                         </div>
                                         <h2 className="text-xl font-semibold">Service Modifications</h2>
                                     </div>

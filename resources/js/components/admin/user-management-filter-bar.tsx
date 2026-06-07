@@ -72,11 +72,11 @@ export function UserManagementFilterBar({
         <>
             <Card>
                 <CardContent className="p-3 sm:p-4">
-                    <div className="space-y-3 sm:space-y-4">
+                    <div className="flex flex-col gap-3 sm:gap-4">
                         {/* Search and Filter Row */}
                         <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
                             <div className="relative flex-1">
-                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                                 <Input
                                     placeholder="Search users..."
                                     value={searchQuery}
@@ -142,7 +142,7 @@ export function UserManagementFilterBar({
                                     onClick={() => onQuickFilter('verified')}
                                     className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                 >
-                                    <CheckCircle2 className="h-3 w-3" />
+                                    <CheckCircle2 />
                                     <span>Verified</span>
                                 </Button>
                                 <Button
@@ -151,7 +151,7 @@ export function UserManagementFilterBar({
                                     onClick={() => onQuickFilter('2fa')}
                                     className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                 >
-                                    <Shield className="h-3 w-3" />
+                                    <Shield />
                                     <span>2FA</span>
                                 </Button>
                                 <Button
@@ -160,7 +160,7 @@ export function UserManagementFilterBar({
                                     onClick={() => onQuickFilter('admin')}
                                     className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                 >
-                                    <UserCheck className="h-3 w-3" />
+                                    <UserCheck />
                                     <span>Admin</span>
                                 </Button>
                                 <Button
@@ -169,7 +169,7 @@ export function UserManagementFilterBar({
                                     onClick={() => onQuickFilter('unverified')}
                                     className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X />
                                     <span>Unverified</span>
                                 </Button>
                             </div>

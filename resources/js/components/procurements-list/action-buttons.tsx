@@ -16,18 +16,18 @@ interface ActionButtonsProps {
  */
 const getIconComponent = (iconName: string, variant: string) => {
     const variantColorMap: Record<string, string> = {
-        default: 'text-gray-600 dark:text-gray-400',
-        blue: 'text-blue-600 dark:text-blue-400',
-        green: 'text-green-600 dark:text-green-400',
-        indigo: 'text-indigo-600 dark:text-indigo-400',
-        amber: 'text-amber-600 dark:text-amber-400',
-        purple: 'text-purple-600 dark:text-purple-400',
+        default: 'text-gray-600 dark:text-muted-foreground',
+        blue: 'text-primary dark:text-primary',
+        green: 'text-primary dark:text-primary',
+        indigo: 'text-primary dark:text-primary',
+        amber: 'text-muted-foreground dark:text-muted-foreground',
+        purple: 'text-primary dark:text-primary',
         cyan: 'text-cyan-600 dark:text-cyan-400',
         teal: 'text-teal-600 dark:text-teal-400',
-        emerald: 'text-emerald-600 dark:text-emerald-400',
-        warning: 'text-amber-600 dark:text-amber-400',
-        success: 'text-green-600 dark:text-green-400',
-        outline: 'text-gray-500 dark:text-gray-400',
+        emerald: 'text-primary dark:text-primary',
+        warning: 'text-muted-foreground dark:text-muted-foreground',
+        success: 'text-primary dark:text-primary',
+        outline: 'text-gray-500 dark:text-muted-foreground',
     };
 
     const className = variantColorMap[variant] || variantColorMap.default;

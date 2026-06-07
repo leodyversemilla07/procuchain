@@ -33,7 +33,7 @@ export function UploadConfirmDialog({ dialog, isUploading, onOpenChange, onConfi
                         Wait, go back
                     </AlertDialogCancel>
                     <AlertDialogAction onClick={onConfirm} disabled={isUploading} className="rounded-lg px-8">
-                        {isUploading ? <Spinner className="mr-2 h-4 w-4" /> : null}
+                        {isUploading ? <Spinner /> : null}
                         Confirm
                     </AlertDialogAction>
                 </AlertDialogFooter>

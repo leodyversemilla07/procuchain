@@ -85,7 +85,7 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg sm:h-10 sm:w-10">
-                            <Clock className="text-primary h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+                            <Clock aria-hidden="true" />
                         </div>
                         <div>
                             <CardTitle className="text-base sm:text-lg">Event Timeline</CardTitle>
@@ -98,7 +98,7 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                 </div>
             </CardHeader>
             <CardContent className="pb-6 sm:pb-8">
-                <div className="border-border/50 ml-4 space-y-8 border-l sm:ml-8" role="list" aria-label="Timeline events">
+                <div className="border-border/50 ml-4 flex flex-col gap-8 border-l sm:ml-8" role="list" aria-label="Timeline events">
                     {Object.keys(timelineItemsByDate)
                         .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
                         .map((date, dateIndex) => {
@@ -122,7 +122,7 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1">
+                                    <div className="flex flex-col gap-1">
                                         {timelineItemsByDate[date]
                                             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                                             .map((item, itemIndex) => (

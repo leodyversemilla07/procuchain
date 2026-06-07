@@ -34,7 +34,7 @@ export default function LockedAccountsFilterBar({
             <CardContent className="p-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="relative min-w-0 flex-1">
-                        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Search />
                         <Input
                             placeholder="Search by name or email..."
                             value={searchQuery}

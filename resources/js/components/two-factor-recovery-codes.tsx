@@ -47,7 +47,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
         <Card>
             <CardHeader>
                 <CardTitle className="flex gap-3">
-                    <LockKeyhole className="size-4" aria-hidden="true" />
+                    <LockKeyhole aria-hidden="true" />
                     2FA Recovery Codes
                 </CardTitle>
                 <CardDescription>
@@ -57,7 +57,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
             <CardContent>
                 <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
                     <Button onClick={toggleCodesVisibility} className="w-fit" aria-expanded={codesAreVisible} aria-controls="recovery-codes-section">
-                        <RecoveryCodeIconComponent className="size-4" aria-hidden="true" />
+                        <RecoveryCodeIconComponent aria-hidden="true" />
                         {codesAreVisible ? 'Hide' : 'View'} Recovery Codes
                     </Button>
 
@@ -71,7 +71,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
                                     aria-describedby="regenerate-warning"
                                     className="gap-2"
                                 >
-                                    {processing ? <Spinner className="size-4" /> : <RefreshCw className="size-4" />}
+                                    {processing ? <Spinner /> : <RefreshCw />}
                                     Regenerate Codes
                                 </Button>
                             )}
@@ -83,7 +83,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
                     className={`relative overflow-hidden transition-all duration-300 ${codesAreVisible ? 'h-auto opacity-100' : 'h-0 opacity-0'}`}
                     aria-hidden={!codesAreVisible}
                 >
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-3 flex flex-col gap-3">
                         {errors?.length ? (
                             <AlertError errors={errors} />
                         ) : (
@@ -101,7 +101,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="space-y-2" aria-label="Loading recovery codes">
+                                        <div className="flex flex-col gap-2" aria-label="Loading recovery codes">
                                             {Array.from({ length: 8 }, (_, index) => (
                                                 <div key={index} className="bg-muted-foreground/20 h-4 animate-pulse rounded" aria-hidden="true" />
                                             ))}

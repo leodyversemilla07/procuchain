@@ -66,7 +66,7 @@ export function UserManagementTable({
                         <Empty>
                             <EmptyHeader>
                                 <EmptyMedia variant="icon">
-                                    <Users className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                    <Users />
                                 </EmptyMedia>
                             </EmptyHeader>
                             <EmptyTitle>No users found</EmptyTitle>
@@ -98,7 +98,7 @@ export function UserManagementTable({
                                     Array.from({ length: 5 }).map((_, index) => (
                                         <TableRow key={index}>
                                             <TableCell>
-                                                <Skeleton className="h-4 w-4" />
+                                                <Skeleton />
                                             </TableCell>
                                             <TableCell>
                                                 <Skeleton className="h-4 w-32" />
@@ -162,21 +162,21 @@ export function UserManagementTable({
 
             {/* Mobile Card View */}
             {filteredUsers.length > 0 && (
-                <div className="space-y-3 md:hidden">
-                    <div className="space-y-4">
+                <div className="flex flex-col gap-3 md:hidden">
+                    <div className="flex flex-col gap-4">
                         {isLoading || isRefreshing
                             ? Array.from({ length: 3 }).map((_, index) => (
                                   <Card key={index}>
                                       <CardContent className="p-4">
-                                          <div className="space-y-4">
+                                          <div className="flex flex-col gap-4">
                                               <div className="flex items-start justify-between">
-                                                  <div className="flex-1 space-y-2">
+                                                  <div className="flex-1 flex flex-col gap-2">
                                                       <Skeleton className="h-5 w-32" />
                                                       <Skeleton className="h-4 w-48" />
                                                   </div>
                                                   <Skeleton className="h-8 w-8" />
                                               </div>
-                                              <div className="space-y-2">
+                                              <div className="flex flex-col gap-2">
                                                   <Skeleton className="h-4 w-full" />
                                                   <Skeleton className="h-4 w-full" />
                                                   <Skeleton className="h-4 w-2/3" />
@@ -198,7 +198,7 @@ export function UserManagementTable({
                                                               onCheckedChange={(value) => row.toggleSelected(!!value)}
                                                           />
                                                       </div>
-                                                      <div className="min-w-0 flex-1 space-y-0.5">
+                                                      <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                                                           <CardTitle className="truncate text-sm leading-tight">{user.name}</CardTitle>
                                                           <p className="text-muted-foreground truncate text-xs">{user.email}</p>
                                                       </div>
@@ -256,7 +256,7 @@ export function UserManagementTable({
                                                   </DropdownMenu>
                                               </div>
                                           </CardHeader>
-                                          <CardContent className="space-y-2.5 p-3 pt-0 sm:px-4">
+                                          <CardContent className="flex flex-col gap-2.5 p-3 pt-0 sm:px-4">
                                               <div className="flex items-center justify-between text-xs sm:text-sm">
                                                   <span className="text-muted-foreground">Role</span>
                                                   <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
@@ -264,11 +264,11 @@ export function UserManagementTable({
                                               <div className="flex items-center justify-between text-xs sm:text-sm">
                                                   <span className="text-muted-foreground">Email Status</span>
                                                   {user.email_verified_at ? (
-                                                      <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
+                                                      <Badge className="border border-green-200 bg-primary/20 text-xs text-primary dark:border-green-800/30 dark:bg-primary/20/20 dark:text-primary">
                                                           Verified
                                                       </Badge>
                                                   ) : (
-                                                      <Badge className="border border-yellow-200 bg-yellow-100 text-xs text-yellow-800 dark:border-yellow-800/30 dark:bg-yellow-900/20 dark:text-yellow-200">
+                                                      <Badge className="border border-yellow-200 bg-muted text-xs text-muted-foreground dark:border-yellow-800/30 dark:bg-muted/20 dark:text-muted-foreground">
                                                           Pending
                                                       </Badge>
                                                   )}
@@ -277,7 +277,7 @@ export function UserManagementTable({
                                                   <span className="text-muted-foreground">2FA Status</span>
                                                   {user.two_factor_enabled ? (
                                                       <div className="flex items-center gap-1.5">
-                                                          <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
+                                                          <Badge className="border border-green-200 bg-primary/20 text-xs text-primary dark:border-green-800/30 dark:bg-primary/20/20 dark:text-primary">
                                                               <QrCode className="mr-1 h-3 w-3" />
                                                               On
                                                           </Badge>
@@ -286,7 +286,7 @@ export function UserManagementTable({
                                                           )}
                                                       </div>
                                                   ) : (
-                                                      <Badge className="border border-gray-200 bg-gray-100 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
+                                                      <Badge className="border border-border bg-muted text-xs text-foreground dark:border-border dark:bg-muted/50 dark:text-muted-foreground">
                                                           Off
                                                       </Badge>
                                                   )}

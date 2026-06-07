@@ -90,7 +90,7 @@ export default function AdminUserManagement() {
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm" className="h-9 gap-1 sm:h-8 sm:gap-2">
-                                {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
+                                {isRefreshing ? <Spinner /> : <RefreshCw />}
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
                             <Button
@@ -99,12 +99,12 @@ export default function AdminUserManagement() {
                                 size="sm"
                                 className="h-9 gap-1 sm:h-8 sm:gap-2"
                             >
-                                <Clock className="h-4 w-4" />
+                                <Clock />
                                 <span className="hidden sm:inline">Auto</span>
                             </Button>
                             <Can permission="create users">
                                 <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="h-9 gap-1 sm:h-8 sm:gap-2">
-                                    <Plus className="h-4 w-4" />
+                                    <Plus />
                                     <span className="hidden sm:inline">Add User</span>
                                 </Button>
                             </Can>
@@ -131,7 +131,7 @@ export default function AdminUserManagement() {
                     ]}
                 />
 
-                <div className="flex-1 space-y-3 sm:space-y-4">
+                <div className="flex flex-1 flex-col gap-3 sm:gap-4">
                     <UserManagementFilterBar
                         searchQuery={searchQuery}
                         onSearchQueryChange={setSearchQuery}

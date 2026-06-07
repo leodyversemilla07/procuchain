@@ -33,14 +33,14 @@ export function ClassificationBudgetSection({
 }: ClassificationBudgetSectionProps) {
     return (
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-            <CardHeader className="space-y-1 pb-2 sm:pb-4">
+            <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                    <DollarSign className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                    <DollarSign />
                     Classification &amp; Budget
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">Procurement type and approved contract budget</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex flex-col gap-6 sm:p-6">
                 {/* Category and Funding Source - Grid */}
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                     {/* Category */}
@@ -153,7 +153,7 @@ export function ClassificationBudgetSection({
 
                         {/* Negotiated Procurement Sub-types */}
                         {data.procurement_mode === 'negotiated_procurement' && (
-                            <div className="border-primary/30 mt-4 ml-6 space-y-3 border-l-2 pl-4">
+                            <div className="border-primary/30 mt-4 ml-6 flex flex-col gap-3 border-l-2 pl-4">
                                 <FieldLabel className="text-sm">
                                     Type of Negotiated Procurement
                                     <span className="text-destructive ml-1 text-xs">*</span>
@@ -229,12 +229,12 @@ export function ClassificationBudgetSection({
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="text-muted-foreground text-xs font-medium sm:text-sm">Requirements:</span>
                         {selectedMode.requires_philgeps && (
-                            <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
+                            <Badge variant="outline" className="border-amber-500 text-muted-foreground dark:text-muted-foreground">
                                 PhilGEPS Required
                             </Badge>
                         )}
                         {selectedMode.requires_bac_resolution && (
-                            <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-300">
+                            <Badge variant="outline" className="border-blue-500 text-primary dark:text-primary">
                                 BAC Resolution Required
                             </Badge>
                         )}

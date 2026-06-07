@@ -50,7 +50,7 @@ export default function TwoFactorChallenge() {
                         <TabsTrigger value="recovery">Recovery Code</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="code" className="space-y-4">
+                    <TabsContent value="code" className="flex flex-col gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="code">Authentication Code</Label>
                             <Input
@@ -69,7 +69,7 @@ export default function TwoFactorChallenge() {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="recovery" className="space-y-4">
+                    <TabsContent value="recovery" className="flex flex-col gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="recovery_code">Recovery Code</Label>
                             <Input

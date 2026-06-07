@@ -42,11 +42,11 @@ interface LoginLogTableProps {
 const getDeviceIcon = (deviceType?: string) => {
     switch (deviceType?.toLowerCase()) {
         case 'mobile':
-            return <Smartphone className="h-4 w-4" />;
+            return <Smartphone />;
         case 'tablet':
-            return <Tablet className="h-4 w-4" />;
+            return <Tablet />;
         default:
-            return <Monitor className="h-4 w-4" />;
+            return <Monitor />;
     }
 };
 
@@ -96,11 +96,11 @@ export default function LoginLogTable({
         <Card>
             {/* Mobile Card View */}
             <div className="md:hidden">
-                <CardContent className="space-y-4 p-4">
+                <CardContent className="flex flex-col gap-4 p-4">
                     {loading ? (
                         Array.from({ length: 3 }).map((_, i) => (
                             <Card key={`mobile-skeleton-${i}`}>
-                                <CardContent className="space-y-3 p-4">
+                                <CardContent className="flex flex-col gap-3 p-4">
                                     <div className="flex items-center justify-between">
                                         <Skeleton className="h-6 w-24" />
                                         <Skeleton className="h-6 w-16" />
@@ -120,11 +120,11 @@ export default function LoginLogTable({
                                 key={`mobile-${log.category}-${log.id}`}
                                 className={log.category === 'suspicious' ? 'border-destructive/50' : undefined}
                             >
-                                <CardContent className="space-y-3 p-4">
+                                <CardContent className="flex flex-col gap-3 p-4">
                                     <div className="flex items-center justify-between">
                                         {log.category === 'suspicious' ? (
                                             <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                                                <AlertTriangle className="h-3 w-3" />
+                                                <AlertTriangle />
                                                 Suspicious
                                             </Badge>
                                         ) : (
@@ -252,7 +252,7 @@ export default function LoginLogTable({
                                         <TableCell>
                                             {log.category === 'suspicious' ? (
                                                 <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                                                    <AlertTriangle className="h-3 w-3" />
+                                                    <AlertTriangle />
                                                     Suspicious
                                                 </Badge>
                                             ) : (
@@ -262,7 +262,7 @@ export default function LoginLogTable({
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="max-w-[180px] space-y-1">
+                                            <div className="max-w-[180px] flex flex-col gap-1">
                                                 <div className="truncate font-medium" title={log.user?.name || 'Unknown User'}>
                                                     {highlightSearchTerm(log.user?.name || 'Unknown User', debouncedSearchTerm)}
                                                 </div>
@@ -274,12 +274,12 @@ export default function LoginLogTable({
                                         <TableCell>{getRoleBadge(log.user?.primary_role)}</TableCell>
                                         <TableCell>
                                             {log.user?.two_factor_enabled ? (
-                                                <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
+                                                <Badge className="border border-green-200 bg-primary/20 px-2 py-1 text-xs text-primary dark:border-green-800/30 dark:bg-primary/20/20 dark:text-primary">
                                                     <QrCode className="mr-1 h-3 w-3" />
                                                     Enabled
                                                 </Badge>
                                             ) : (
-                                                <Badge className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
+                                                <Badge className="border border-border bg-muted px-2 py-1 text-xs text-foreground dark:border-border dark:bg-muted/50 dark:text-muted-foreground">
                                                     Disabled
                                                 </Badge>
                                             )}
@@ -287,14 +287,14 @@ export default function LoginLogTable({
                                         <TableCell>{getStatusBadge(log.successful)}</TableCell>
                                         <TableCell>
                                             <div className="max-w-[140px]">
-                                                <div className="flex items-center space-x-2">
-                                                    <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                <div className="flex items-center gap-2">
+                                                    <Globe />
                                                     <span className="truncate font-mono text-sm" title={log.ip_address}>
                                                         {highlightSearchTerm(log.ip_address, debouncedSearchTerm)}
                                                     </span>
                                                 </div>
                                                 {log.location && (
-                                                    <div className="mt-1 flex items-center space-x-1">
+                                                    <div className="mt-1 flex items-center gap-1">
                                                         <MapPin className="text-muted-foreground h-3 w-3 shrink-0" />
                                                         <span className="text-muted-foreground truncate text-xs" title={log.location}>
                                                             {highlightSearchTerm(log.location, debouncedSearchTerm)}
@@ -304,9 +304,9 @@ export default function LoginLogTable({
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center space-x-2">
+                                            <div className="flex items-center gap-2">
                                                 {getDeviceIcon(log.device_type)}
-                                                <div className="max-w-20 space-y-1">
+                                                <div className="max-w-20 flex flex-col gap-1">
                                                     <div className="truncate text-sm">{log.device_type || 'Unknown'}</div>
                                                     {log.platform && (
                                                         <div className="text-muted-foreground truncate text-xs" title={log.platform}>
@@ -322,8 +322,8 @@ export default function LoginLogTable({
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center space-x-2">
-                                                <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
+                                            <div className="flex items-center gap-2">
+                                                <Clock />
                                                 <span className="text-sm text-nowrap">{formatDateTime(log.login_at)}</span>
                                             </div>
                                         </TableCell>

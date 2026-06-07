@@ -179,7 +179,7 @@ function StageCard({ stage, index }: { stage: Stage; index: number }) {
             <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
                 <div className="flex items-start justify-between gap-2 sm:gap-3">
                     <div className="bg-primary/10 rounded-lg p-1.5 sm:p-2">
-                        <Icon className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                        <Icon />
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
                         {stage.optional && (
@@ -200,13 +200,13 @@ function StageCard({ stage, index }: { stage: Stage; index: number }) {
                 <CardTitle className="text-base sm:text-lg">{stage.name}</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">{stage.description}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
+            <CardContent className="flex flex-col gap-3 p-4 pt-0 sm:gap-4 sm:p-6 sm:pt-0">
                 <div>
                     <h4 className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm">Key Activities</h4>
-                    <ul className="space-y-1">
+                    <ul className="flex flex-col gap-1">
                         {stage.details.slice(0, 3).map((detail, i) => (
                             <li key={i} className="text-muted-foreground flex items-start gap-1.5 text-xs sm:gap-2 sm:text-sm">
-                                <CheckCircle2 className="text-primary mt-0.5 h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
+                                <CheckCircle2 className="text-primary mt-0.5 shrink-0" />
                                 <span>{detail}</span>
                             </li>
                         ))}
@@ -240,13 +240,13 @@ function StageCard({ stage, index }: { stage: Stage; index: number }) {
 
 function FlowDiagram({ stages }: { stages: Stage[] }) {
     const phaseColors: Record<string, string> = {
-        pre_procurement: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-        procurement: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-        post_procurement: 'bg-green-500/10 text-green-600 dark:text-green-400',
+        pre_procurement: 'bg-secondary/50 text-secondary-foreground',
+        procurement: 'bg-muted text-muted-foreground',
+        post_procurement: 'bg-primary/10 text-primary',
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {/* Visual Flow */}
             <div className="overflow-x-auto pb-4">
                 <div className="min-w-[320px] sm:min-w-[600px] lg:min-w-[800px]">
@@ -274,12 +274,12 @@ function FlowDiagram({ stages }: { stages: Stage[] }) {
                                                     <span className="text-xs font-medium sm:text-sm sm:whitespace-nowrap">{stage.name}</span>
                                                     {stage.optional && (
                                                         <span title="Optional Stage" className="hidden sm:inline">
-                                                            <AlertCircle className="text-muted-foreground h-3 w-3" />
+                                                            <AlertCircle />
                                                         </span>
                                                     )}
                                                     {stage.repeatable && (
                                                         <span title="Can be repeated" className="hidden sm:inline">
-                                                            <RefreshCw className="text-muted-foreground h-3 w-3" />
+                                                            <RefreshCw />
                                                         </span>
                                                     )}
                                                 </div>
@@ -323,7 +323,7 @@ function WorkflowByMode({ stages }: { stages: Stage[] }) {
 
     let stageNumber = 0;
     return (
-        <div className="space-y-12">
+        <div className="flex flex-col gap-12">
             {phases.map((phase) => {
                 const phaseStages = stages.filter((s) => s.phase === phase.id);
                 if (phaseStages.length === 0) return null;
@@ -335,7 +335,7 @@ function WorkflowByMode({ stages }: { stages: Stage[] }) {
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="bg-primary/10 rounded-lg p-2 sm:p-3">
-                                            <PhaseIcon className="text-primary h-5 w-5 sm:h-6 sm:w-6" />
+                                            <PhaseIcon />
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-semibold sm:text-xl">{phase.name}</h3>
@@ -465,7 +465,7 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                                             >
                                                                 <div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
                                                                     <div className="bg-primary/10 rounded-lg p-1.5 sm:p-2">
-                                                                        <ModeIcon className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                                                        <ModeIcon />
                                                                     </div>
                                                                     <Badge variant="secondary" className="text-[10px] sm:text-xs">
                                                                         {meta.section}
@@ -507,8 +507,8 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                                                 }`}
                                                             >
                                                                 <div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
-                                                                    <div className="rounded-lg bg-amber-500/10 p-1.5 sm:p-2">
-                                                                        <ModeIcon className="h-4 w-4 text-amber-600 sm:h-5 sm:w-5 dark:text-amber-400" />
+                                                                    <div className="rounded-lg bg-muted/500/10 p-1.5 sm:p-2">
+                                                                        <ModeIcon />
                                                                     </div>
                                                                     <Badge variant="secondary" className="text-[10px] sm:text-xs">
                                                                         {meta.section}
@@ -535,10 +535,10 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                     <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
                                         <div className="flex items-center gap-3 sm:gap-4">
                                             <div
-                                                className={`rounded-lg p-2 sm:p-3 ${currentModeMetadata.category === 'competitive' ? 'bg-primary/10' : 'bg-amber-500/10'}`}
+                                                className={`rounded-lg p-2 sm:p-3 ${currentModeMetadata.category === 'competitive' ? 'bg-primary/10' : 'bg-muted/500/10'}`}
                                             >
                                                 <CurrentModeIcon
-                                                    className={`h-5 w-5 sm:h-6 sm:w-6 ${currentModeMetadata.category === 'competitive' ? 'text-primary' : 'text-amber-600 dark:text-amber-400'}`}
+                                                    className={`h-5 w-5 sm:h-6 sm:w-6 ${currentModeMetadata.category === 'competitive' ? 'text-primary' : 'text-muted-foreground dark:text-muted-foreground'}`}
                                                 />
                                             </div>
                                             <div>
@@ -557,7 +557,7 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                                 className={`text-[10px] sm:text-xs ${
                                                     currentModeMetadata.category === 'competitive'
                                                         ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                                                        : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400'
+                                                        : 'bg-muted/500/10 text-muted-foreground hover:bg-muted/500/20 dark:text-muted-foreground'
                                                 }`}
                                             >
                                                 {currentModeMetadata.category === 'competitive' ? 'Competitive' : 'Alternative'}

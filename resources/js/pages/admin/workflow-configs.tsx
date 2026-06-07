@@ -126,7 +126,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Workflow Configuration" />
 
-            <div className="space-y-8 p-6">
+            <div className="flex flex-col gap-8 p-6">
                 {/* Header */}
                 <HeroCard
                     icon={Settings}
@@ -135,7 +135,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                 />
 
                 {/* Competitive Modes Section */}
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <h2 className="text-xl font-semibold">Competitive Modes</h2>
                         <Badge variant="secondary">{competitiveModes.length}</Badge>
@@ -151,7 +151,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                 </div>
 
                 {/* Alternative Modes Section */}
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <h2 className="text-xl font-semibold">Alternative Modes</h2>
                         <Badge variant="secondary">{alternativeModes.length}</Badge>

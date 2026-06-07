@@ -89,7 +89,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Correct Documents - ${procurement.title}`} />
 
-            <div className="w-full space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Page Header */}
                 <div>
                     <h1 className="mb-2 text-2xl font-bold sm:text-3xl">{procurement.title}</h1>
@@ -104,7 +104,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
                 {/* Info Alert */}
                 <Alert className="border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10">
-                    <Info className="text-primary h-4 w-4" />
+                    <Info />
                     <AlertTitle>About Document Corrections</AlertTitle>
                     <AlertDescription>
                         You can correct document mistakes while maintaining blockchain immutability. Both the original and correction records remain
@@ -121,7 +121,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                 <CardDescription className="text-sm">{procurement.documents.length} document(s) uploaded</CardDescription>
                             </div>
                             <Button variant="outline" onClick={handleViewAllCorrections} className="w-full gap-2 sm:w-auto">
-                                <History className="h-4 w-4" />
+                                <History />
                                 <span className="hidden sm:inline">View All Corrections History</span>
                                 <span className="sm:hidden">All Corrections</span>
                             </Button>
@@ -130,11 +130,11 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                     <CardContent>
                         {procurement.documents.length === 0 ? (
                             <div className="py-12 text-center">
-                                <FileText className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
+                                <FileText className="text-muted-foreground mx-auto mb-3" />
                                 <p className="text-muted-foreground">No documents uploaded yet</p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 {procurement.documents.map((document) => (
                                     <div key={document.id} className="rounded-lg border p-3 sm:p-4">
                                         {/* Correction Alert (if document is corrected) */}
@@ -142,14 +142,14 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                             <div className="min-w-0 flex-1">
                                                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                                                    <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
+                                                    <FileText className="text-muted-foreground shrink-0" />
                                                     <h3 className="truncate text-sm font-semibold sm:text-base">{document.file_name}</h3>
                                                     <Badge variant="outline" className="text-xs">
                                                         {document.document_type_display || document.document_type}
                                                     </Badge>
                                                     {document.is_corrected && (
                                                         <Badge variant="secondary" className="gap-1 text-xs">
-                                                            <AlertCircle className="h-3 w-3" />
+                                                            <AlertCircle />
                                                             Corrected
                                                         </Badge>
                                                     )}
@@ -185,7 +185,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                                     onClick={() => handleViewDocumentHistory(document)}
                                                     className="w-full gap-2 sm:w-auto"
                                                 >
-                                                    <History className="h-4 w-4" />
+                                                    <History />
                                                     <span className="hidden sm:inline">Document History</span>
                                                     <span className="sm:hidden">History</span>
                                                 </Button>
@@ -196,7 +196,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                                         onClick={() => handleCorrectDocument(document)}
                                                         className="w-full gap-2 sm:w-auto"
                                                     >
-                                                        <AlertCircle className="h-4 w-4" />
+                                                        <AlertCircle />
                                                         Correct Document
                                                     </Button>
                                                 )}
@@ -211,8 +211,8 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
                 {/* Permission Message for Non-Admin Users */}
                 {!canCorrectDocuments && (
-                    <Alert className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
-                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <Alert className="border-amber-200 bg-muted/50/50 dark:border-amber-900 dark:bg-muted/50/20">
+                        <AlertCircle />
                         <AlertTitle>Limited Permissions</AlertTitle>
                         <AlertDescription>
                             Only administrators and BAC members can submit document corrections. You can view correction history but cannot submit

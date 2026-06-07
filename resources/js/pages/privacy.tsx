@@ -75,14 +75,14 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Database className="text-primary h-5 w-5" />
+                                            <Database />
                                         </div>
                                         <h2 className="text-xl font-semibold">Information We Collect</h2>
                                     </div>
                                     <div className="grid gap-6 md:grid-cols-2">
                                         <div>
                                             <h3 className="mb-3 font-medium">Personal Information</h3>
-                                            <ul className="space-y-2">
+                                            <ul className="flex flex-col gap-2">
                                                 {[
                                                     'Name and contact information',
                                                     'Government employee ID and credentials',
@@ -91,7 +91,7 @@ export default function Privacy() {
                                                     'Authentication credentials',
                                                 ].map((item, index) => (
                                                     <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                        <UserCheck className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                        <UserCheck className="text-primary mt-0.5 mr-2 shrink-0" />
                                                         <span>{item}</span>
                                                     </li>
                                                 ))}
@@ -99,7 +99,7 @@ export default function Privacy() {
                                         </div>
                                         <div>
                                             <h3 className="mb-3 font-medium">Usage Information</h3>
-                                            <ul className="space-y-2">
+                                            <ul className="flex flex-col gap-2">
                                                 {[
                                                     'Login timestamps and session data',
                                                     'Document upload and access history',
@@ -108,7 +108,7 @@ export default function Privacy() {
                                                     'Activity logs and audit trails',
                                                 ].map((item, index) => (
                                                     <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                        <Eye className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                        <Eye className="text-primary mt-0.5 mr-2 shrink-0" />
                                                         <span>{item}</span>
                                                     </li>
                                                 ))}
@@ -125,11 +125,11 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Lock className="text-primary h-5 w-5" />
+                                            <Lock className="text-primary" />
                                         </div>
                                         <h2 className="text-xl font-semibold">How We Use Your Data</h2>
                                     </div>
-                                    <ul className="space-y-3">
+                                    <ul className="flex flex-col gap-3">
                                         {[
                                             'Authenticate and authorize system access',
                                             'Process and store procurement documents',
@@ -139,7 +139,7 @@ export default function Privacy() {
                                             'Improve system performance and security',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Shield className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <Shield className="text-primary mt-0.5 mr-2 shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -151,11 +151,11 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Globe className="text-primary h-5 w-5" />
+                                            <Globe className="text-primary" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Data Sharing</h2>
                                     </div>
-                                    <ul className="space-y-3">
+                                    <ul className="flex flex-col gap-3">
                                         {[
                                             'Shared only with authorized BAC personnel',
                                             'Disclosed when required by law or regulation',
@@ -165,7 +165,7 @@ export default function Privacy() {
                                             'Protected by role-based access controls',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Shield className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <Shield />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -180,7 +180,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Database className="text-primary h-5 w-5" />
+                                            <Database />
                                         </div>
                                         <h2 className="text-xl font-semibold">Blockchain & Data Security</h2>
                                     </div>
@@ -199,7 +199,7 @@ export default function Privacy() {
                                             'Multi-factor authentication support',
                                         ].map((item, index) => (
                                             <div key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Lock className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <Lock />
                                                 <span>{item}</span>
                                             </div>
                                         ))}
@@ -214,11 +214,11 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <UserCheck className="text-primary h-5 w-5" />
+                                            <UserCheck />
                                         </div>
                                         <h2 className="text-xl font-semibold">Your Rights</h2>
                                     </div>
-                                    <ul className="space-y-3">
+                                    <ul className="flex flex-col gap-3">
                                         {[
                                             'Access your personal data stored in the system',
                                             'Request correction of inaccurate information',
@@ -227,7 +227,7 @@ export default function Privacy() {
                                             'Request account deactivation (subject to retention policies)',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Shield className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <Shield />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -239,14 +239,14 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Bell className="text-primary h-5 w-5" />
+                                            <Bell />
                                         </div>
                                         <h2 className="text-xl font-semibold">Cookies & Tracking</h2>
                                     </div>
                                     <p className="text-muted-foreground mb-4 text-sm">
                                         ProcuChain uses essential cookies and similar technologies to:
                                     </p>
-                                    <ul className="space-y-3">
+                                    <ul className="flex flex-col gap-3">
                                         {[
                                             'Maintain your authenticated session',
                                             'Remember your preferences and settings',
@@ -254,7 +254,7 @@ export default function Privacy() {
                                             'Analyze system usage for improvements',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Eye className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <Eye className="text-primary mt-0.5 mr-2 shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}

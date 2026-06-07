@@ -38,7 +38,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 {/* Left Icon */}
                 <div className="shrink-0">
                     <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
-                        <FileText className="h-5 w-5" />
+                        <FileText />
                     </div>
                 </div>
 
@@ -56,13 +56,13 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                             {doc.file_size_formatted && (
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <HardDrive className="h-3 w-3" />
+                                    <HardDrive />
                                     {doc.file_size_formatted}
                                 </span>
                             )}
                             {doc.formatted_date_only && (
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <Calendar className="h-3 w-3" />
+                                    <Calendar />
                                     {doc.formatted_date_only}
                                 </span>
                             )}
@@ -78,7 +78,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                             />
                                         }
                                     >
-                                        <Hash className="h-3 w-3" />
+                                        <Hash />
                                         <span className="font-mono">{shortenHash(doc.hash || '', 6, 4)}</span>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -97,7 +97,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setShowCorrectionDetails(true)}
-                                className="h-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                                className="h-8 text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground"
                             >
                                 <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
                                 Corrections
@@ -140,7 +140,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
             {/* Mobile Actions (Bottom) */}
             <div className="mt-1 flex items-center justify-between gap-2 border-t pt-2 sm:hidden">
                 {doc.has_corrections && (
-                    <Button variant="ghost" size="sm" onClick={() => setShowCorrectionDetails(true)} className="h-8 px-2 text-xs text-amber-600">
+                    <Button variant="ghost" size="sm" onClick={() => setShowCorrectionDetails(true)} className="h-8 px-2 text-xs text-muted-foreground">
                         <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
                         Corrections
                     </Button>

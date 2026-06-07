@@ -116,7 +116,7 @@ export default function BlockchainExplorer({
                     actions={
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing}>
-                                {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                {isRefreshing ? <Spinner data-icon="inline-start" /> : <RefreshCw data-icon="inline-start" />}
                                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
                             </Button>
                             <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="default">

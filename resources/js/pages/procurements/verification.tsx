@@ -29,14 +29,14 @@ export default function VerificationPage(props: VerificationPageProps) {
                 <div className="flex h-full flex-1 flex-col p-3 sm:p-4 md:p-6 lg:p-8">
                     <div className="mb-6">
                         <Button variant="ghost" size="sm" render={<Link href={getRoleBasedUrl(`/procurements-list/${displayPrNumber}`)} />}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            <ArrowLeft data-icon="inline-start" />
                             Back to Procurement
                         </Button>
                     </div>
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
                         <div className="rounded-lg border p-6">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                <div className="space-y-2">
+                                <div className="flex flex-col gap-2">
                                     <Skeleton className="h-8 w-64" />
                                     <Skeleton className="h-4 w-48" />
                                 </div>
@@ -47,7 +47,7 @@ export default function VerificationPage(props: VerificationPageProps) {
                             {[...Array(4)].map((_, i) => (
                                 <div key={i} className="rounded-lg border p-6">
                                     <div className="flex items-center justify-between">
-                                        <div className="space-y-2">
+                                        <div className="flex flex-col gap-2">
                                             <Skeleton className="h-4 w-24" />
                                             <Skeleton className="h-8 w-16" />
                                         </div>
@@ -56,14 +56,14 @@ export default function VerificationPage(props: VerificationPageProps) {
                                 </div>
                             ))}
                         </div>
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-64 w-full rounded-lg" />
                         </div>
                     </div>
                     <div className="flex items-center justify-center py-8">
                         <div className="text-muted-foreground flex items-center gap-3">
-                            <Spinner className="size-5" />
+                            <Spinner />
                             <span>Loading verification report...</span>
                         </div>
                     </div>
@@ -79,10 +79,10 @@ export default function VerificationPage(props: VerificationPageProps) {
             <div className="flex h-full flex-1 flex-col p-3 sm:p-4 md:p-6 lg:p-8 print:p-0">
                 {/* Success Banner */}
                 {allValid && (
-                    <Alert className="mb-6 border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20 print:hidden">
-                        <ShieldCheck className="h-5 w-5 text-green-600" />
-                        <AlertTitle className="text-green-800 dark:text-green-200">Verification Successful</AlertTitle>
-                        <AlertDescription className="text-green-700 dark:text-green-300">
+                    <Alert className="mb-6 print:hidden">
+                        <ShieldCheck />
+                        <AlertTitle>Verification Successful</AlertTitle>
+                        <AlertDescription>
                             All documents have passed integrity, completeness, cross-reference, and compliance checks.
                         </AlertDescription>
                     </Alert>
@@ -91,7 +91,7 @@ export default function VerificationPage(props: VerificationPageProps) {
                 {/* Error Banner */}
                 {!allValid && report.summary.critical_issues > 0 && (
                     <Alert variant="destructive" className="mb-6 print:hidden">
-                        <AlertCircle className="h-5 w-5" />
+                        <AlertCircle />
                         <AlertTitle>Verification Issues Detected</AlertTitle>
                         <AlertDescription>
                             {report.summary.critical_issues} critical issue{report.summary.critical_issues !== 1 ? 's' : ''}
@@ -101,7 +101,7 @@ export default function VerificationPage(props: VerificationPageProps) {
                     </Alert>
                 )}
 
-                <div className="space-y-6 print:space-y-4">
+                <div className="flex flex-col gap-6 print:gap-4">
                     {/* Header */}
                     <HeroCard
                         icon={allValid ? ShieldCheck : ClipboardCheck}
@@ -119,8 +119,8 @@ export default function VerificationPage(props: VerificationPageProps) {
                                             {props.procurementStatus.stage_formatted}
                                         </Badge>
                                         <Badge
-                                            variant="outline"
-                                            className="border-blue-200 bg-blue-50/50 text-[10px] font-normal text-blue-700 sm:text-xs dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
+                                            variant="secondary"
+                                            className="text-[10px] font-normal sm:text-xs"
                                         >
                                             {props.procurementStatus.status_formatted || props.procurementStatus.current_status}
                                         </Badge>
@@ -142,11 +142,11 @@ export default function VerificationPage(props: VerificationPageProps) {
                         className={cn(
                             'border-2 transition-colors',
                             allValid
-                                ? 'border-green-200 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20'
-                                : 'border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20',
+                                ? 'border-primary/30 bg-primary/5'
+                                : 'border-muted bg-muted/50',
                         )}
-                        iconWrapperClassName={allValid ? 'bg-green-100 dark:bg-green-900' : 'bg-amber-100 dark:bg-amber-900'}
-                        iconClassName={allValid ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}
+                        iconWrapperClassName={allValid ? 'bg-primary/10' : 'bg-muted'}
+                        iconClassName={allValid ? 'text-primary' : 'text-muted-foreground'}
                         actions={
                             <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
                                 <VerificationStatus status={overallStatus} lastVerified={report.generated_at} size="lg" />
@@ -206,8 +206,8 @@ export default function VerificationPage(props: VerificationPageProps) {
                             className={cn(
                                 'border-l-4 transition-all',
                                 report.summary.critical_issues > 0
-                                    ? 'border-red-200 border-l-red-500 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
-                                    : 'border-yellow-200 border-l-yellow-500 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20',
+                                    ? 'border-destructive/30 border-l-destructive bg-destructive/5'
+                                    : 'border-muted border-l-muted-foreground bg-muted/50',
                             )}
                         >
                             <CardContent className="p-3 sm:px-6 sm:py-4">
@@ -215,28 +215,28 @@ export default function VerificationPage(props: VerificationPageProps) {
                                     <div
                                         className={cn(
                                             'mt-0.5 shrink-0 rounded-full p-1.5 sm:p-2',
-                                            report.summary.critical_issues > 0 ? 'bg-red-100 dark:bg-red-900' : 'bg-yellow-100 dark:bg-yellow-900',
+                                            report.summary.critical_issues > 0 ? 'bg-destructive/10' : 'bg-muted',
                                         )}
                                     >
                                         {report.summary.critical_issues > 0 ? (
-                                            <XCircle className="h-4 w-4 text-red-600 sm:h-5 sm:w-5 dark:text-red-400" />
+                                            <XCircle className="text-destructive" />
                                         ) : (
-                                            <AlertTriangle className="h-4 w-4 text-yellow-600 sm:h-5 sm:w-5 dark:text-yellow-400" />
+                                            <AlertTriangle className="text-muted-foreground" />
                                         )}
                                     </div>
-                                    <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+                                    <div className="min-w-0 flex-1 flex flex-col gap-0.5 sm:gap-1">
                                         <h4 className="text-sm font-semibold sm:text-base">
                                             {report.summary.critical_issues > 0 ? 'Action Required' : 'Attention Needed'}
                                         </h4>
                                         <p className="text-muted-foreground text-xs sm:text-sm">
                                             {report.summary.critical_issues > 0 && (
-                                                <span className="font-medium text-red-600 dark:text-red-400">
+                                                <span className="font-medium text-destructive">
                                                     {report.summary.critical_issues} critical issue{report.summary.critical_issues !== 1 ? 's' : ''}
                                                 </span>
                                             )}
                                             {report.summary.critical_issues > 0 && report.summary.warnings > 0 && ' and '}
                                             {report.summary.warnings > 0 && (
-                                                <span className="font-medium text-yellow-600 dark:text-yellow-400">
+                                                <span className="font-medium text-muted-foreground">
                                                     {report.summary.warnings} warning{report.summary.warnings !== 1 ? 's' : ''}
                                                 </span>
                                             )}{' '}

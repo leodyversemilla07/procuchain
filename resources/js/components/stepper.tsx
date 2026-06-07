@@ -74,7 +74,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                                                 },
                                             )}
                                         >
-                                            {isCompleted ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">{step.id}</span>}
+                                            {isCompleted ? <Check /> : <span className="text-xs font-semibold">{step.id}</span>}
                                         </div>
 
                                         {/* Step Label — truncates on narrow viewports */}
@@ -103,7 +103,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
 
             {/* Mobile Stepper - Compact Vertical */}
             <div className="md:hidden">
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     {visibleMobileSteps.map((step) => {
                         const isCompleted = step.id < currentStep;
                         const isCurrent = step.id === currentStep;
@@ -129,7 +129,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                                         },
                                     )}
                                 >
-                                    {isCompleted ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">{step.id}</span>}
+                                    {isCompleted ? <Check /> : <span className="text-xs font-semibold">{step.id}</span>}
                                 </div>
 
                                 {/* Step Info */}
@@ -166,7 +166,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                         onClick={() => setShowAllSteps(true)}
                         className="text-muted-foreground hover:text-foreground mt-2 flex w-full items-center justify-center gap-1 rounded-lg border border-dashed py-2 text-xs font-medium transition-colors"
                     >
-                        <ChevronRight className="h-3 w-3" />
+                        <ChevronRight />
                         Show {steps.length - visibleMobileSteps.length} more stages
                     </button>
                 )}

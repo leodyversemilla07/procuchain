@@ -213,9 +213,9 @@ export default function ReportIndex() {
                         <CardTitle>Report Filters</CardTitle>
                         <CardDescription>Configure filters to generate custom procurement reports</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="flex flex-col gap-4">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label>Filter Type</Label>
                                 <Select value={filters.filter_type} onValueChange={(value) => value && handleFilterChange('filter_type', value)}>
                                     <SelectTrigger className="w-full">
@@ -234,7 +234,7 @@ export default function ReportIndex() {
 
                             {filters.filter_type === 'month' && (
                                 <>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label>Month</Label>
                                         <Select
                                             value={filters.month?.toString()}
@@ -254,7 +254,7 @@ export default function ReportIndex() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label>Year</Label>
                                         <Select
                                             value={filters.year?.toString()}
@@ -279,7 +279,7 @@ export default function ReportIndex() {
 
                             {filters.filter_type === 'quarter' && (
                                 <>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label>Quarter</Label>
                                         <Select
                                             value={filters.quarter?.toString()}
@@ -298,7 +298,7 @@ export default function ReportIndex() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label>Year</Label>
                                         <Select
                                             value={filters.year?.toString()}
@@ -322,7 +322,7 @@ export default function ReportIndex() {
                             )}
 
                             {filters.filter_type === 'year' && (
-                                <div className="space-y-2">
+                                <div className="flex flex-col gap-2">
                                     <Label>Year</Label>
                                     <Select
                                         value={filters.year?.toString()}
@@ -346,7 +346,7 @@ export default function ReportIndex() {
 
                             {filters.filter_type === 'date_range' && (
                                 <>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label>Date From</Label>
                                         <Input
                                             type="date"
@@ -354,7 +354,7 @@ export default function ReportIndex() {
                                             onChange={(e) => handleFilterChange('date_from', e.target.value)}
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         <Label>Date To</Label>
                                         <Input
                                             type="date"
@@ -365,7 +365,7 @@ export default function ReportIndex() {
                                 </>
                             )}
 
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label>Search Query</Label>
                                 <Input
                                     placeholder="Search title, ID, description..."
@@ -379,12 +379,12 @@ export default function ReportIndex() {
                             <Button onClick={generateReport} disabled={loading}>
                                 {loading ? (
                                     <>
-                                        <Spinner className="mr-2 h-4 w-4" />
+                                        <Spinner />
                                         Generating...
                                     </>
                                 ) : (
                                     <>
-                                        <BarChart3 className="mr-2 h-4 w-4" />
+                                        <BarChart3 />
                                         Generate Report
                                     </>
                                 )}
@@ -393,15 +393,15 @@ export default function ReportIndex() {
                             {reportData && (
                                 <>
                                     <Button onClick={() => exportReport('csv')} variant="outline">
-                                        <Download className="mr-2 h-4 w-4" />
+                                        <Download />
                                         Export CSV
                                     </Button>
                                     <Button onClick={() => exportReport('json')} variant="outline">
-                                        <Download className="mr-2 h-4 w-4" />
+                                        <Download />
                                         Export JSON
                                     </Button>
                                     <Button onClick={() => exportReport('pdf')} variant="outline">
-                                        <Download className="mr-2 h-4 w-4" />
+                                        <Download />
                                         Export PDF
                                     </Button>
                                 </>
@@ -418,7 +418,7 @@ export default function ReportIndex() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Total Procurements</CardTitle>
-                                    <FileText className="text-muted-foreground h-4 w-4" />
+                                    <FileText />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{reportData.summary.total_count}</div>
@@ -428,7 +428,7 @@ export default function ReportIndex() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Total ABC Amount</CardTitle>
-                                    <TrendingUp className="text-muted-foreground h-4 w-4" />
+                                    <TrendingUp />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">₱{reportData.summary.total_abc_amount.toLocaleString()}</div>
@@ -438,7 +438,7 @@ export default function ReportIndex() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Unique Stages</CardTitle>
-                                    <Calendar className="text-muted-foreground h-4 w-4" />
+                                    <Calendar />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{Object.keys(reportData.summary.by_stage).length}</div>
@@ -448,7 +448,7 @@ export default function ReportIndex() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Procurement Modes</CardTitle>
-                                    <BarChart3 className="text-muted-foreground h-4 w-4" />
+                                    <BarChart3 />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{Object.keys(reportData.summary.by_mode).length}</div>

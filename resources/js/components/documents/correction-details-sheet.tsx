@@ -113,7 +113,7 @@ export default function CorrectionDetailsSheet({ open, onOpenChange, correction,
             <SheetContent side="right" className="w-full overflow-x-hidden overflow-y-auto sm:max-w-4xl">
                 <SheetHeader>
                     <SheetTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                        <History className="h-5 w-5" />
+                        <History />
                         {correction ? 'Correction Details & History' : 'Correction History'}
                     </SheetTitle>
                     <SheetDescription className="text-sm">
@@ -144,7 +144,7 @@ export default function CorrectionDetailsSheet({ open, onOpenChange, correction,
 
                         {error && (
                             <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
+                                <AlertCircle />
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
@@ -169,7 +169,7 @@ export default function CorrectionDetailsSheet({ open, onOpenChange, correction,
 
                         {corrections.length > 0 && (
                             <Alert className="border-primary/20 bg-primary/5">
-                                <AlertCircle className="h-4 w-4" />
+                                <AlertCircle />
                                 <AlertDescription className="text-sm">
                                     All corrections are permanently recorded on the blockchain alongside the original documents, ensuring complete
                                     audit trail transparency.
@@ -180,7 +180,7 @@ export default function CorrectionDetailsSheet({ open, onOpenChange, correction,
                         {!loading && (
                             <div className="flex justify-center sm:justify-end">
                                 <Button variant="outline" size="sm" onClick={fetchCorrections} className="w-full gap-2 sm:w-auto">
-                                    <History className="h-4 w-4" />
+                                    <History />
                                     Refresh
                                 </Button>
                             </div>
@@ -211,9 +211,9 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
                 <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Correction Type</h3>
                 <div className="flex items-center gap-3">
                     {correction.action === 'replace' ? (
-                        <FileCheck className="h-5 w-5 text-emerald-600" />
+                        <FileCheck className="text-primary" />
                     ) : (
-                        <FileX className="h-5 w-5 text-red-600" />
+                        <FileX className="text-destructive" />
                     )}
                     <Badge variant={correction.action === 'replace' ? 'default' : 'secondary'}>
                         {formatCorrectionType(correction.correction_type, correction.correction_type_display)}
@@ -235,14 +235,14 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div className="grid gap-1.5 rounded-lg border p-3">
                         <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-                            <FileText className="h-3 w-3" />
+                            <FileText />
                             Original Transaction
                         </div>
                         <p className="font-mono text-sm break-all">{correction.original_txid || 'N/A'}</p>
                     </div>
                     <div className="grid gap-1.5 rounded-lg border p-3">
                         <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-                            <Hash className="h-3 w-3" />
+                            <Hash />
                             Original Hash
                         </div>
                         <p className="font-mono text-sm break-all">{correction.original_document_hash || correction.document_hash || 'N/A'}</p>
@@ -254,25 +254,25 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
             {correction.action === 'replace' && correction.corrected_metadata && (
                 <div className="grid gap-4">
                     <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Corrected Information</h3>
-                    <div className="rounded-lg border bg-emerald-50 p-4 dark:bg-emerald-950/20">
+                    <div className="rounded-lg border bg-primary/10 p-4 dark:bg-primary/10/20">
                         <div className="grid gap-3">
                             {correction.corrected_metadata.file_name && (
                                 <div className="flex items-center gap-2">
-                                    <FileText className="h-4 w-4 text-emerald-600" />
+                                    <FileText className="text-primary" />
                                     <span className="text-sm font-medium">New File:</span>
                                     <span className="text-sm">{correction.corrected_metadata.file_name}</span>
                                 </div>
                             )}
                             {correction.corrected_metadata.file_size && (
                                 <div className="flex items-center gap-2">
-                                    <FileText className="h-4 w-4 text-emerald-600" />
+                                    <FileText className="text-primary" />
                                     <span className="text-sm font-medium">File Size:</span>
                                     <span className="text-sm">{(correction.corrected_metadata.file_size / 1024 / 1024).toFixed(2)} MB</span>
                                 </div>
                             )}
                             {correction.corrected_metadata.hash && (
                                 <div className="flex items-center gap-2">
-                                    <Hash className="h-4 w-4 text-emerald-600" />
+                                    <Hash className="text-primary" />
                                     <span className="text-sm font-medium">New Hash:</span>
                                     <span className="font-mono text-sm break-all">{correction.corrected_metadata.hash}</span>
                                 </div>
@@ -288,14 +288,14 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div className="grid gap-1.5 rounded-lg border p-3">
                         <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-                            <User className="h-3 w-3" />
+                            <User />
                             Corrected By
                         </div>
                         <p className="text-sm font-medium">{correction.corrected_by}</p>
                     </div>
                     <div className="grid gap-1.5 rounded-lg border p-3">
                         <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-                            <Calendar className="h-3 w-3" />
+                            <Calendar />
                             Correction Date
                         </div>
                         <p className="text-sm">{new Date(correction.timestamp).toLocaleString()}</p>
@@ -308,7 +308,7 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
                 <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Blockchain Transaction</h3>
                 <div className="grid gap-1.5 rounded-lg border p-3">
                     <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
-                        <Hash className="h-3 w-3" />
+                        <Hash />
                         Transaction ID
                     </div>
                     <p className="font-mono text-sm break-all">{correction.txid}</p>
@@ -317,7 +317,7 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
 
             {/* Immutability Note */}
             <Alert className="border-primary/20 bg-primary/5">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle />
                 <AlertDescription className="text-sm">
                     Note: Both the original and correction records remain permanently on the blockchain for audit trail purposes. This ensures
                     complete transparency and compliance with immutability requirements.
@@ -352,9 +352,9 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                 <div className="flex items-center gap-3">
                                     {correction.action === 'replace' ? (
-                                        <FileCheck className="h-5 w-5 shrink-0 text-emerald-600 sm:h-6 sm:w-6" />
+                                        <FileCheck />
                                     ) : (
-                                        <FileX className="h-5 w-5 shrink-0 text-red-600 sm:h-6 sm:w-6" />
+                                        <FileX />
                                     )}
                                     <div className="min-w-0 flex-1">
                                         <h4 className="text-sm font-semibold sm:text-base">
@@ -407,8 +407,8 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                             </div>
 
                             {correction.action === 'replace' && correction.corrected_metadata && (
-                                <div className="-mx-4 mt-4 -mb-4 grid gap-3 rounded-b-lg border-t bg-emerald-50 px-4 py-4 sm:-mx-5 sm:-mb-5 sm:px-5 dark:bg-emerald-950/20">
-                                    <p className="text-xs font-semibold text-emerald-900 sm:text-sm dark:text-emerald-100">
+                                <div className="-mx-4 mt-4 -mb-4 grid gap-3 rounded-b-lg border-t bg-primary/10 px-4 py-4 sm:-mx-5 sm:-mb-5 sm:px-5 dark:bg-primary/10/20">
+                                    <p className="text-xs font-semibold text-primary sm:text-sm dark:text-primary">
                                         New Document Information
                                     </p>
                                     <div className="grid gap-2 text-xs sm:text-sm">

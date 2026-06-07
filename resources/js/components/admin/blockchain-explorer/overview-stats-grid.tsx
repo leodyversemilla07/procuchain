@@ -18,7 +18,7 @@ export function OverviewStatsGrid({ isRefreshing, overview, streams, addresses }
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Chain Height</CardTitle>
-                    <TrendingUp className="text-muted-foreground h-4 w-4" />
+                    <TrendingUp className="text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     {showSkeleton ? (
@@ -40,7 +40,7 @@ export function OverviewStatsGrid({ isRefreshing, overview, streams, addresses }
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Connections</CardTitle>
-                    <Network className="text-muted-foreground h-4 w-4" />
+                    <Network className="text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     {showSkeleton ? (
@@ -60,7 +60,7 @@ export function OverviewStatsGrid({ isRefreshing, overview, streams, addresses }
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Streams</CardTitle>
-                    <Database className="text-muted-foreground h-4 w-4" />
+                    <Database className="text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     {showSkeleton ? (
@@ -80,7 +80,7 @@ export function OverviewStatsGrid({ isRefreshing, overview, streams, addresses }
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Wallet Addresses</CardTitle>
-                    <Wallet className="text-muted-foreground h-4 w-4" />
+                    <Wallet className="text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     {showSkeleton ? (

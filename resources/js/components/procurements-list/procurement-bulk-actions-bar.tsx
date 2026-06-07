@@ -35,7 +35,7 @@ export function ProcurementBulkActionsBar({
                     {children}
                     {onExport ? (
                         <Button variant="default" size="sm" disabled={disabled} className="w-full whitespace-nowrap sm:w-auto" onClick={onExport}>
-                            <Download className="h-4 w-4" />
+                            <Download />
                             <span className="ml-2">{exportLabel}</span>
                         </Button>
                     ) : null}

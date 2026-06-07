@@ -41,10 +41,10 @@ export default function DeleteUser() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <HeadingSmall title="Delete account" description="Deactivate your account — data remains on-chain and recoverable" />
-            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
-                <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
+            <div className="flex flex-col gap-4 rounded-lg border border-red-100 bg-destructive/10 p-4 dark:border-red-200/10 dark:bg-destructive/10">
+                <div className="relative flex flex-col gap-0.5 text-destructive dark:text-destructive">
                     <p className="font-medium">Warning</p>
                     <p className="text-sm">
                         Please proceed with caution. Your account will be deactivated but your data remains on-chain and can be restored by an
@@ -60,7 +60,7 @@ export default function DeleteUser() {
                             Your account will be deactivated and you will lose access. However, your data is recorded on the blockchain and remains
                             recoverable by an authorized administrator. Please enter your password to confirm.
                         </DialogDescription>
-                        <form className="space-y-6" onSubmit={deleteUser}>
+                        <form className="flex flex-col gap-6" onSubmit={deleteUser}>
                             <div className="grid gap-2">
                                 <Label htmlFor="password" className="sr-only">
                                     Password
@@ -84,7 +84,7 @@ export default function DeleteUser() {
                                 <DialogClose render={<Button variant="secondary" onClick={closeModal} />}>Cancel</DialogClose>
 
                                 <Button variant="destructive" disabled={processing} type="submit" className="gap-2">
-                                    {processing && <Spinner className="size-4" />}
+                                    {processing && <Spinner />}
                                     Delete account
                                 </Button>
                             </DialogFooter>

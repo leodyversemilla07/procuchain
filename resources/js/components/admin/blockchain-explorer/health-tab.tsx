@@ -48,22 +48,22 @@ export function HealthTab({ health, isHealthy, isCircuitOpen, isResetDialogOpen,
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {/* Overall Health Status */}
             <Card
                 className={
                     isHealthy
-                        ? 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20'
-                        : 'border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20'
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-destructive/30 bg-destructive/5'
                 }
             >
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             {isHealthy ? (
-                                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                                <CheckCircle className="text-primary" />
                             ) : (
-                                <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                                <XCircle className="text-destructive" />
                             )}
                             <div>
                                 <CardTitle className="text-2xl">{isHealthy ? 'System Healthy' : 'System Unhealthy'}</CardTitle>
@@ -83,15 +83,15 @@ export function HealthTab({ health, isHealthy, isCircuitOpen, isResetDialogOpen,
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <Activity className="h-5 w-5" />
+                                <Activity />
                                 <CardTitle>Circuit Breaker</CardTitle>
                             </div>
                             <Badge variant={isCircuitOpen ? 'destructive' : 'secondary'}>{isCircuitOpen ? 'OPEN' : 'CLOSED'}</Badge>
                         </div>
                         <CardDescription>Protects system from cascading failures</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4 p-4 sm:p-6">
-                        <div className="space-y-2">
+                    <CardContent className="flex flex-col gap-4 p-4 sm:p-6">
+                        <div className="flex flex-col gap-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Status</span>
                                 <span className="font-medium">{isCircuitOpen ? 'Blocking Requests' : 'Allowing Requests'}</span>
@@ -109,12 +109,12 @@ export function HealthTab({ health, isHealthy, isCircuitOpen, isResetDialogOpen,
                         </div>
 
                         {isCircuitOpen && (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 sm:p-4 dark:border-amber-900 dark:bg-amber-950/20">
+                            <div className="rounded-lg border border-amber-200 bg-muted/50 p-3 sm:p-4 dark:border-amber-900 dark:bg-muted/50/20">
                                 <div className="flex gap-2">
-                                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                                    <div className="flex-1 space-y-2">
-                                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Circuit breaker is open</p>
-                                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                                    <AlertCircle />
+                                    <div className="flex-1 flex flex-col gap-2">
+                                        <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Circuit breaker is open</p>
+                                        <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                                             All blockchain requests are currently blocked due to repeated failures. The system will automatically
                                             retry after the recovery time.
                                         </p>
@@ -146,12 +146,12 @@ export function HealthTab({ health, isHealthy, isCircuitOpen, isResetDialogOpen,
                 <Card>
                     <CardHeader>
                         <div className="flex items-center gap-2">
-                            <Activity className="h-5 w-5" />
+                            <Activity />
                             <CardTitle>Queue Status</CardTitle>
                         </div>
                         <CardDescription>Background job processing metrics</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3 p-4 sm:p-6">
+                    <CardContent className="flex flex-col gap-3 p-4 sm:p-6">
                         <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Pending Jobs</span>
                             <Badge variant="secondary">{health.queue.pending_jobs}</Badge>
@@ -162,8 +162,8 @@ export function HealthTab({ health, isHealthy, isCircuitOpen, isResetDialogOpen,
                         </div>
 
                         {health.queue.failed_jobs_24h > 0 && (
-                            <div className="rounded-lg border border-red-200 bg-red-50 p-3 wrap-break-word dark:border-red-900 dark:bg-red-950/20">
-                                <p className="text-sm text-red-900 dark:text-red-100">
+                            <div className="rounded-lg border border-red-200 bg-destructive/10 p-3 wrap-break-word dark:border-red-900 dark:bg-destructive/10/20">
+                                <p className="text-sm text-destructive dark:text-destructive">
                                     {health.queue.failed_jobs_24h} job{health.queue.failed_jobs_24h !== 1 ? 's' : ''} failed in the last 24 hours.
                                     Check the failed jobs queue for details.
                                 </p>
@@ -175,20 +175,20 @@ export function HealthTab({ health, isHealthy, isCircuitOpen, isResetDialogOpen,
 
             {/* Recommendations */}
             {(!isHealthy || isCircuitOpen || health.queue.failed_jobs_24h > 0) && (
-                <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+                <Card className="border-amber-200 bg-muted/50/50 dark:border-amber-900 dark:bg-muted/50/20">
                     <CardHeader>
                         <div className="flex items-center gap-2">
-                            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            <AlertCircle />
                             <CardTitle>Recommended Actions</CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 sm:p-6">
-                        <ul className="list-inside list-disc space-y-2 text-sm wrap-break-word">
+                        <ul className="list-inside list-disc flex flex-col gap-2 text-sm wrap-break-word">
                             {isCircuitOpen && <li>Circuit breaker is open - check blockchain node connectivity at 159.65.12.99:6487</li>}
                             {health.queue.failed_jobs_24h > 0 && (
                                 <li>
                                     Review failed jobs:{' '}
-                                    <code className="rounded bg-black/10 px-1 py-0.5 text-xs dark:bg-white/10">php artisan queue:failed</code>
+                                    <code className="rounded bg-black/10 px-1 py-0.5 text-xs dark:bg-muted/10">php artisan queue:failed</code>
                                 </li>
                             )}
                         </ul>

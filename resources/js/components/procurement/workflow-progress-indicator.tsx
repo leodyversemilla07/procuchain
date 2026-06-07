@@ -85,7 +85,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mt-3 space-y-1.5 sm:mt-4 sm:space-y-2">
+                <div className="mt-3 flex flex-col gap-1.5 sm:mt-4 sm:flex flex-col gap-2">
                     <Progress value={workflow.progress_percentage} className="h-1.5 sm:h-2" />
                     <p className="text-muted-foreground text-[10px] sm:text-xs">{workflow.progress_percentage}% complete</p>
                 </div>
@@ -100,7 +100,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                 className="bg-background/90 border-border hover:bg-muted absolute top-1/2 left-0 z-10 -translate-y-1/2 rounded-full border p-1 shadow-md backdrop-blur-sm transition-colors"
                                 aria-label="Scroll left"
                             >
-                                <ChevronLeft className="h-4 w-4" />
+                                <ChevronLeft />
                             </button>
                         )}
                         <div ref={scrollContainerRef} className="scrollbar-hide overflow-x-auto px-6" onScroll={checkScrollArrows}>
@@ -116,7 +116,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                             stage.is_current
                                                                 ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
                                                                 : stage.is_completed
-                                                                  ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                                                                  ? 'border-primary bg-primary/100 text-white hover:bg-primary dark:border-primary/80 dark:bg-primary dark:hover:bg-primary/90'
                                                                   : stage.is_optional
                                                                     ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
                                                                     : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
@@ -133,7 +133,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                 }
                                             />
                                             <TooltipContent side="bottom">
-                                                <div className="space-y-1">
+                                                <div className="flex flex-col gap-1">
                                                     <p className="text-xs font-medium sm:text-sm">{stage.display_name}</p>
                                                     <div className="flex flex-wrap items-center gap-1 text-xs">
                                                         {stage.is_current && (
@@ -144,7 +144,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                         {stage.is_completed && (
                                                             <Badge
                                                                 variant="secondary"
-                                                                className="bg-green-100 px-1.5 py-0 text-[10px] text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                                className="bg-primary/20 px-1.5 py-0 text-[10px] text-primary dark:bg-primary/20/30 dark:text-primary"
                                                             >
                                                                 Completed
                                                             </Badge>
@@ -168,7 +168,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                 className="bg-background/90 border-border hover:bg-muted absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-full border p-1 shadow-md backdrop-blur-sm transition-colors"
                                 aria-label="Scroll right"
                             >
-                                <ChevronRight className="h-4 w-4" />
+                                <ChevronRight />
                             </button>
                         )}
                     </div>
@@ -186,16 +186,16 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                     stage.is_current
                                                         ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
                                                         : stage.is_completed
-                                                          ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                                                          ? 'border-primary bg-primary/100 text-white hover:bg-primary dark:border-primary/80 dark:bg-primary dark:hover:bg-primary/90'
                                                           : stage.is_optional
                                                             ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
                                                             : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
                                                 }`}
                                             >
                                                 {stage.is_completed ? (
-                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    <CheckCircle2 />
                                                 ) : stage.is_optional ? (
-                                                    <SkipForward className="h-3 w-3" />
+                                                    <SkipForward />
                                                 ) : (
                                                     <span className="text-xs font-medium">{index + 1}</span>
                                                 )}
@@ -203,7 +203,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                         }
                                     />
                                     <TooltipContent>
-                                        <div className="space-y-1">
+                                        <div className="flex flex-col gap-1">
                                             <p className="font-medium">{stage.display_name}</p>
                                             <div className="flex items-center gap-2 text-xs">
                                                 {stage.is_current && (
@@ -214,7 +214,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                 {stage.is_completed && (
                                                     <Badge
                                                         variant="secondary"
-                                                        className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                        className="bg-primary/20 text-primary dark:bg-primary/20/30 dark:text-primary"
                                                     >
                                                         Completed
                                                     </Badge>
@@ -240,7 +240,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                         <span>Current</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 sm:h-3 sm:w-3 dark:bg-green-600" />
+                        <div className="h-2.5 w-2.5 rounded-full bg-primary/100 sm:h-3 sm:w-3 dark:bg-primary" />
                         <span>Completed</span>
                     </div>
                     <div className="flex items-center gap-1">

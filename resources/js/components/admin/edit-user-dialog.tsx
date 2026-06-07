@@ -137,7 +137,7 @@ export default function EditUserDialog({ open, onOpenChange, formData, setFormDa
                             Cancel
                         </Button>
                         <Button type="submit">
-                            <Edit className="mr-2 h-4 w-4" />
+                            <Edit />
                             Update User
                         </Button>
                     </DialogFooter>

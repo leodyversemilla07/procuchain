@@ -61,7 +61,7 @@ export function ProcurementFiltersToolbar({
             {/* Search row */}
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative max-w-md flex-1">
-                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
+                    <Search />
                     <Input
                         id="procurement-search"
                         name="search"
@@ -136,7 +136,7 @@ export function ProcurementFiltersToolbar({
                         className="flex h-9 w-full items-center justify-center gap-2 sm:w-auto"
                         aria-label={isRefreshing ? 'Refreshing data' : 'Refresh procurement data'}
                     >
-                        {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="size-4" />}
+                        {isRefreshing ? <Spinner /> : <RefreshCw />}
                         <span>Refresh</span>
                     </Button>
                 </div>

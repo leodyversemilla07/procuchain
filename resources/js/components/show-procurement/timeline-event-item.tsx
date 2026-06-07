@@ -26,11 +26,11 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
         const eventItem = item as Event;
         if (eventItem.document_count && eventItem.document_count > 0) {
             Icon = FileCheck;
-            iconClassName = 'text-blue-500';
+            iconClassName = 'text-primary';
             borderClassName = 'border-blue-200 dark:border-blue-800';
         } else if (eventItem.event_type === 'correction') {
             Icon = AlertCircle;
-            iconClassName = 'text-amber-500';
+            iconClassName = 'text-muted-foreground';
             borderClassName = 'border-amber-200 dark:border-amber-800';
         } else {
             Icon = FileText;
@@ -61,10 +61,10 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
 
         if (eventItem.document_count && eventItem.document_count > 0) {
             eventDetails = (
-                <div className="space-y-1.5">
+                <div className="flex flex-col gap-1.5">
                     <p>{eventItem.details}</p>
                     <div className="text-muted-foreground bg-muted/50 flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-xs">
-                        <FileText className="h-3 w-3" />
+                        <FileText />
                         <span>
                             {eventItem.document_count} {eventItem.document_count === 1 ? 'document' : 'documents'} processed
                         </span>
@@ -99,7 +99,7 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
                     borderClassName,
                 )}
             >
-                <Icon className={cn('h-4 w-4', iconClassName)} />
+                <Icon className={iconClassName} />
             </div>
 
             {/* Content Container */}

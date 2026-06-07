@@ -37,13 +37,13 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <FileText />
                     Document Information
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">Complete details about this document</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-3">
+            <CardContent className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                             <Hash className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -133,7 +133,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
 
                 <div className="border-t pt-3">
                     <h4 className="text-primary mb-3 text-xs font-medium sm:text-sm">File Details</h4>
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
                             <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                                 <HardDrive className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -166,7 +166,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
 
                 <div className="border-t pt-3">
                     <h4 className="text-primary mb-3 text-xs font-medium sm:text-sm">Blockchain & Security</h4>
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
                             <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                                 <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -215,7 +215,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
 
                 <div className="border-t pt-3">
                     <h4 className="text-primary mb-3 text-xs font-medium sm:text-sm">Viewing Statistics</h4>
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
                             <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                                 <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -254,14 +254,14 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
 
                 {/* Correction Button */}
                 {canCorrectDocuments && (
-                    <div className="space-y-3 border-t pt-4">
+                    <div className="flex flex-col gap-3 border-t pt-4">
                         <div className="grid grid-cols-1 gap-2">
                             <Button
                                 variant="outline"
-                                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                                className="border-amber-200 text-muted-foreground hover:bg-muted/50"
                                 onClick={() => setShowCorrectionSheet(true)}
                             >
-                                <AlertTriangle className="mr-2 h-4 w-4" />
+                                <AlertTriangle />
                                 Quick Correct
                             </Button>
                         </div>

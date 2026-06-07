@@ -77,11 +77,11 @@ export default function About() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-destructive/10 rounded-lg p-2">
-                                            <AlertTriangle className="text-destructive h-5 w-5" />
+                                            <AlertTriangle className="text-destructive" />
                                         </div>
                                         <h2 className="text-2xl font-semibold">The Problem</h2>
                                     </div>
-                                    <ul className="space-y-2">
+                                    <ul className="flex flex-col gap-2">
                                         {[
                                             'Lack of transparency in government procurement processes',
                                             'Vulnerability to document tampering and fraud',
@@ -90,7 +90,7 @@ export default function About() {
                                             'Challenges in establishing accountability',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm sm:text-base">
-                                                <XCircle className="text-destructive mt-1 mr-2 h-3.5 w-3.5 shrink-0 sm:mr-3 sm:h-4 sm:w-4" />
+                                                <XCircle className="text-destructive mt-1 mr-2 shrink-0 sm:mr-3" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -102,11 +102,11 @@ export default function About() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <CheckCircle className="text-primary h-5 w-5" />
+                                            <CheckCircle className="text-primary" />
                                         </div>
                                         <h2 className="text-2xl font-semibold">Our Solution</h2>
                                     </div>
-                                    <ul className="space-y-2">
+                                    <ul className="flex flex-col gap-2">
                                         {[
                                             'Blockchain-based document verification and storage',
                                             'Immutable audit trail for all procurement activities',
@@ -115,7 +115,7 @@ export default function About() {
                                             'Digital verification of document authenticity',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm sm:text-base">
-                                                <CheckCircle className="text-primary mt-1 mr-2 h-3.5 w-3.5 sm:mr-3 sm:h-4 sm:w-4" />
+                                                <CheckCircle className="text-primary mt-1 mr-2 sm:mr-3" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -141,7 +141,7 @@ export default function About() {
                                             <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:gap-8">
                                                 <div className="flex justify-center">
                                                     <div className="bg-card border-border flex h-16 w-16 items-center justify-center rounded-lg border p-3 sm:h-20 sm:w-20 sm:p-4 md:h-24 md:w-24">
-                                                        <Database className="text-primary h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
+                                                        <Database className="text-primary" />
                                                     </div>
                                                 </div>
                                                 <div className="flex-1">

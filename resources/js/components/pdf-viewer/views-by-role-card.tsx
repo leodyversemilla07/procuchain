@@ -14,12 +14,12 @@ export default function ViewsByRoleCard({ viewStats }: Props) {
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <BarChart3 />
                     Views by Role
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     {Object.entries(viewStats.views_by_role).map(([role, count]) => (
                         <div key={role} className="flex items-center justify-between">
                             <Badge variant="secondary" className={cn('text-xs', getRoleBadgeColor(role))}>

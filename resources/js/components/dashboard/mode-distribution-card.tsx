@@ -213,7 +213,7 @@ export const ModeDistributionCard = ({
                 )}
 
                 {(variant === 'breakdown' || variant === 'both') && typeBreakdown && (
-                    <div className="mt-4 space-y-3">
+                    <div className="mt-4 flex flex-col gap-3">
                         <ModeTypeBar
                             icon={Scale}
                             label={typeBreakdown.competitive.label}
@@ -256,7 +256,7 @@ interface ModeTypeBarProps {
 
 const ModeTypeBar = ({ icon: Icon, label, count, percentage, reference, colorClass }: ModeTypeBarProps) => {
     return (
-        <div className="space-y-1.5">
+        <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5">
                     <Icon className="text-muted-foreground h-3.5 w-3.5" />

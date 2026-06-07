@@ -122,7 +122,7 @@ export function MirrorStatusTab() {
                             <p className="text-muted-foreground text-sm">Total Records</p>
                             <p className="text-2xl font-bold">{status.total_records.toLocaleString()}</p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Unresolved Breaches</p>
                             <p
                                 className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-destructive' : 'text-primary'}`}
@@ -130,7 +130,7 @@ export function MirrorStatusTab() {
                                 {status.unresolved_breaches}
                             </p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Last Sync</p>
                             <p className="text-sm font-medium">{status.last_sync ? new Date(status.last_sync).toLocaleString() : 'Never'}</p>
                         </div>
@@ -146,7 +146,7 @@ export function MirrorStatusTab() {
                         </div>
                         <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Pending Repairs</p>
-                            <p className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
+                            <p className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-muted-foreground dark:text-muted-foreground' : ''}`}>
                                 {status.pending_repairs}
                             </p>
                         </div>
@@ -234,7 +234,7 @@ export function MirrorStatusTab() {
                 <CardContent>
                     {(!status.breach_counts || Object.keys(status.breach_counts).length === 0) ? (
                         <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
-                            <CheckCircle2 className="mb-2 h-10 w-10 text-green-500" />
+                            <CheckCircle2 className="mb-2 h-10 w-10 text-primary" />
                             <p>No unresolved breaches. Mirror is in sync with blockchain.</p>
                         </div>
                     ) : (
@@ -266,12 +266,12 @@ export function MirrorStatusTab() {
                                                 <Badge
                                                     className={
                                                         severity === 'critical'
-                                                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                                            ? 'bg-destructive/20 text-destructive dark:bg-destructive/20/30 dark:text-destructive'
                                                             : severity === 'high'
-                                                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                                                              ? 'bg-muted text-muted-foreground dark:bg-muted/30 dark:text-muted-foreground'
                                                               : severity === 'medium'
-                                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                ? 'bg-muted text-muted-foreground dark:bg-muted/30 dark:text-muted-foreground'
+                                                                : 'bg-primary/20 text-primary dark:bg-primary/20/30 dark:text-primary'
                                                     }
                                                 >
                                                     {severity}

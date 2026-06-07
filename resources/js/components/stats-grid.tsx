@@ -58,7 +58,7 @@ export const StatsGrid = ({ items, userRole, className, gridClassName }: StatsGr
                                     <p className="text-xl font-bold sm:text-2xl">{item.value}</p>
                                 </div>
                                 <div className={cn('rounded-full p-1.5 sm:p-2', item.iconClassName)}>
-                                    <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    <IconComponent />
                                 </div>
                             </div>
                         </CardContent>

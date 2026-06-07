@@ -35,7 +35,7 @@ export function CompletionDialog({ open, isMarkingComplete, stageName, prNumber,
                         Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction onClick={onConfirm} disabled={isMarkingComplete} className="rounded-lg px-8">
-                        {isMarkingComplete ? <Spinner className="mr-2 h-4 w-4" /> : null}
+                        {isMarkingComplete ? <Spinner /> : null}
                         Confirm
                     </AlertDialogAction>
                 </AlertDialogFooter>

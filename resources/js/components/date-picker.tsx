@@ -72,7 +72,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
                     }
                 >
                     {dateValue ? format(dateValue, 'PPP') : <span>{placeholder}</span>}
-                    <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
+                    <ChevronDownIcon className="text-muted-foreground ml-2" />
                 </PopoverTrigger>
                 <PopoverContent className={`w-auto p-0 ${popoverClassName}`} align="start">
                     <Calendar

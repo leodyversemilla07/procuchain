@@ -392,7 +392,7 @@ export default function ProcurementsList({
                                     className="shrink-0"
                                     render={<Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2" />}
                                 >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus />
                                     <span>New Procurement</span>
                                 </Button>
                             </Can>

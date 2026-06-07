@@ -64,18 +64,18 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                            <Eye className="h-3 w-3" />
+                            <Eye />
                             <span className="hidden sm:inline">{viewStats.total_views} views</span>
                             <span className="sm:hidden">{viewStats.total_views}</span>
                         </Badge>
                         <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                            <Users className="h-3 w-3" />
+                            <Users />
                             <span className="hidden sm:inline">{viewStats.unique_viewers} unique</span>
                             <span className="sm:hidden">{viewStats.unique_viewers}</span>
                         </Badge>
                         {pdfError && (
                             <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                                <FileText className="h-3 w-3" />
+                                <FileText />
                                 <span className="hidden sm:inline">PDF Blocked</span>
                                 <span className="sm:hidden">Blocked</span>
                             </Badge>
@@ -84,7 +84,7 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-amber-200 text-xs text-amber-700 hover:bg-amber-50"
+                                className="border-amber-200 text-xs text-muted-foreground hover:bg-muted/50"
                                 onClick={() => setShowCorrectionSheet(true)}
                             >
                                 <AlertTriangle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />

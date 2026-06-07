@@ -22,7 +22,7 @@ export default function ConfirmPassword() {
 
             <Form action={store()} resetOnSuccess={['password']}>
                 {({ errors, processing }) => (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="password">Password</Label>
                             <div className="relative">
@@ -44,9 +44,9 @@ export default function ConfirmPassword() {
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? (
-                                        <EyeOff className="text-muted-foreground h-4 w-4" />
+                                        <EyeOff />
                                     ) : (
-                                        <Eye className="text-muted-foreground h-4 w-4" />
+                                        <Eye />
                                     )}
                                 </Button>
                             </div>
@@ -56,7 +56,7 @@ export default function ConfirmPassword() {
 
                         <div className="flex items-center">
                             <Button className="w-full" type="submit" disabled={processing}>
-                                {processing && <Spinner className="h-4 w-4" />}
+                                {processing && <Spinner />}
                                 Confirm password
                             </Button>
                         </div>

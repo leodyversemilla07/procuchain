@@ -118,7 +118,7 @@ export default function NetworkVisualizationPage({ nodes, connections, overview 
                                 Block #{overview.blocks}
                             </Badge>
                             <Badge className="gap-1">
-                                <Share2 className="h-3 w-3" />
+                                <Share2 />
                                 {overview.connected_nodes}/{overview.total_nodes} Replicated
                             </Badge>
                         </div>

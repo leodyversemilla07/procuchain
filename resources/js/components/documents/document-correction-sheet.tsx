@@ -192,7 +192,7 @@ export function DocumentCorrectionSheet({
             <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl lg:max-w-2xl">
                 <SheetHeader>
                     <SheetTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                        <AlertTriangle className="h-5 w-5 text-amber-600" />
+                        <AlertTriangle />
                         Correct Document
                     </SheetTitle>
                     <SheetDescription className="text-sm">
@@ -278,7 +278,7 @@ export function DocumentCorrectionSheet({
 
                     {/* Information Alert */}
                     <Alert className="border-primary/20 bg-primary/5">
-                        <FileText className="h-4 w-4" />
+                        <FileText />
                         <AlertDescription className="text-sm">
                             <strong>Blockchain Immutability:</strong> The original document and this correction will both be permanently recorded on
                             the blockchain. This maintains a complete audit trail while allowing you to correct mistakes.

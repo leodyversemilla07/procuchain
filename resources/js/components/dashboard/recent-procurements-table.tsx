@@ -65,9 +65,9 @@ export const RecentProcurementsTable = ({
 
     return (
         <Card className={cn('shadow-sm transition-shadow duration-300 hover:shadow-md', className)}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-0 pb-2">
                 <CardTitle className="flex items-center text-base font-semibold md:text-lg">
-                    <Icon className="text-primary mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110 md:h-5 md:w-5" />
+                    <Icon className="text-primary mr-2 transition-transform duration-200 group-hover:scale-110" />
                     {title}
                     {hasProcurements ? ` (${safeProcurements.length})` : ''}
                 </CardTitle>
@@ -79,7 +79,7 @@ export const RecentProcurementsTable = ({
                         cacheFor="1m"
                     >
                         View all
-                        <ChevronRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
+                        <ChevronRight className="ml-1" />
                     </Link>
                 ) : null}
             </CardHeader>
@@ -92,7 +92,7 @@ export const RecentProcurementsTable = ({
                             <EmptyMedia variant="icon">
                                 {(() => {
                                     const Icon = emptyStateIcon;
-                                    return <Icon className="h-8 w-8" />;
+                                    return <Icon />;
                                 })()}
                             </EmptyMedia>
                         </EmptyHeader>
@@ -102,7 +102,7 @@ export const RecentProcurementsTable = ({
                 ) : (
                     <>
                         {/* Mobile card layout */}
-                        <div className="space-y-3 sm:hidden">
+                        <div className="flex flex-col gap-3 sm:hidden">
                             {safeProcurements.map((procurement) => (
                                 <div
                                     key={procurement.id}
@@ -143,7 +143,7 @@ export const RecentProcurementsTable = ({
                                                 />
                                             }
                                         >
-                                            <EyeIcon className="h-4 w-4" />
+                                            <EyeIcon />
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>{actionTooltip}</p>
@@ -204,7 +204,7 @@ export const RecentProcurementsTable = ({
                                                             />
                                                         }
                                                     >
-                                                        <EyeIcon className="h-4 w-4" />
+                                                        <EyeIcon />
                                                     </TooltipTrigger>
                                                     <TooltipContent>
                                                         <p>{actionTooltip}</p>

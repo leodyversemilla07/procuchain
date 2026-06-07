@@ -92,7 +92,7 @@ export default function Header() {
                             onClick={cycleAppearance}
                             className="text-muted-foreground hover:bg-muted hover:text-foreground hidden rounded-lg p-2 md:block"
                         >
-                            <ThemeIcon className="h-5 w-5" />
+                            <ThemeIcon />
                         </button>
 
                         <div className="hidden lg:block">
@@ -117,7 +117,7 @@ export default function Header() {
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg p-2 lg:hidden"
                         >
-                            <Menu className="h-6 w-6" />
+                            <Menu />
                         </button>
                     </div>
                 </div>
@@ -132,12 +132,12 @@ export default function Header() {
                             <div className="flex items-center justify-between border-b p-4">
                                 <span className="text-lg font-bold">Menu</span>
                                 <button onClick={() => setMobileMenuOpen(false)} className="hover:bg-muted rounded-lg p-2">
-                                    <X className="h-5 w-5" />
+                                    <X />
                                 </button>
                             </div>
 
                             <nav className="flex-1 overflow-y-auto p-4">
-                                <div className="space-y-1">
+                                <div className="flex flex-col gap-1">
                                     <Link
                                         href={home.url()}
                                         onClick={() => setMobileMenuOpen(false)}
@@ -185,13 +185,13 @@ export default function Header() {
                                 </div>
                             </nav>
 
-                            <div className="space-y-3 border-t p-4">
+                            <div className="flex flex-col gap-3 border-t p-4">
                                 <button
                                     onClick={cycleAppearance}
                                     className="hover:bg-muted flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-medium"
                                 >
                                     <span>Theme</span>
-                                    <ThemeIcon className="h-5 w-5" />
+                                    <ThemeIcon />
                                 </button>
 
                                 {auth.user ? (

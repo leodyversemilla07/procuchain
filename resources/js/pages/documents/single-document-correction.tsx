@@ -51,7 +51,7 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
 
                 <div className="w-full p-4 md:p-6 lg:p-8">
                     <Alert className="border-destructive/20 bg-destructive/5">
-                        <AlertCircle className="text-destructive h-4 w-4" />
+                        <AlertCircle />
                         <AlertTitle>Access Denied</AlertTitle>
                         <AlertDescription>
                             You don't have permission to correct documents. Only administrators and BAC members can submit corrections.
@@ -66,11 +66,11 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Correct Document - ${document.file_name}`} />
 
-            <div className="w-full space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Header */}
                 <div className="flex items-center gap-4">
                     <Button variant="outline" size="sm" render={<a href={`/documents/corrections/${document.pr_number}`} />}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        <ArrowLeft data-icon="inline-start" />
                         Back to All Documents
                     </Button>
                     <div>
@@ -81,7 +81,7 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
 
                 {/* Info Alert */}
                 <Alert className="border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10">
-                    <Info className="text-primary h-4 w-4" />
+                    <Info className="text-primary" />
                     <AlertTitle>About Document Corrections</AlertTitle>
                     <AlertDescription>
                         You can correct document mistakes while maintaining blockchain immutability. Both the original and correction records remain
@@ -93,14 +93,14 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
+                            <FileText />
                             Document Details
                         </CardTitle>
                         <CardDescription>Information about the document you want to correct</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-3">
+                            <div className="flex flex-col gap-3">
                                 <div>
                                     <label className="text-muted-foreground text-sm font-medium">File Name</label>
                                     <p className="font-medium">{document.file_name}</p>
@@ -116,7 +116,7 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
                                     <p className="font-medium">{(document.file_size / 1024 / 1024).toFixed(2)} MB</p>
                                 </div>
                             </div>
-                            <div className="space-y-3">
+                            <div className="flex flex-col gap-3">
                                 <div>
                                     <label className="text-muted-foreground text-sm font-medium">Procurement</label>
                                     <p className="font-medium">{document.procurement_title}</p>
@@ -144,10 +144,10 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
                         {/* Correction Status */}
                         {document.is_corrected && (
                             <div className="mt-4 border-t pt-4">
-                                <Alert className="border-amber-200 bg-amber-50/50">
-                                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                                    <AlertTitle className="text-amber-800">Document Already Corrected</AlertTitle>
-                                    <AlertDescription className="text-amber-700">
+                                <Alert className="border-amber-200 bg-muted/50/50">
+                                    <AlertCircle />
+                                    <AlertTitle className="text-muted-foreground">Document Already Corrected</AlertTitle>
+                                    <AlertDescription className="text-muted-foreground">
                                         This document has already been corrected. You can still submit additional corrections if needed.
                                         <br />
                                         <strong>Last corrected:</strong> {new Date(document.corrected_at!).toLocaleDateString()} by{' '}
@@ -169,7 +169,7 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
                     </CardHeader>
                     <CardContent>
                         <Button onClick={() => setShowCorrectionSheet(true)} className="w-full sm:w-auto" size="lg">
-                            <AlertCircle className="mr-2 h-5 w-5" />
+                            <AlertCircle />
                             Open Correction Form
                         </Button>
                     </CardContent>

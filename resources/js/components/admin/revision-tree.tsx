@@ -43,36 +43,36 @@ function getNodeStatus(revision: RevisionNode): 'current' | 'breached' | 'repair
 
 const STATUS_STYLES = {
     current: {
-        border: 'border-green-500 dark:border-green-400',
-        bg: 'bg-green-50 dark:bg-green-950/30',
+        border: 'border-primary',
+        bg: 'bg-primary/10',
         icon: CheckCircle2,
-        iconColor: 'text-green-600 dark:text-green-400',
+        iconColor: 'text-primary',
         label: 'Latest',
-        badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        badgeClass: 'bg-primary/20 text-primary',
     },
     breached: {
-        border: 'border-red-500 dark:border-red-400',
-        bg: 'bg-red-50 dark:bg-red-950/30',
+        border: 'border-destructive',
+        bg: 'bg-destructive/10',
         icon: AlertTriangle,
-        iconColor: 'text-red-600 dark:text-red-400',
+        iconColor: 'text-destructive',
         label: 'Breached',
-        badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        badgeClass: 'bg-destructive/20 text-destructive'
     },
     repaired: {
-        border: 'border-yellow-500 dark:border-yellow-400',
-        bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+        border: 'border-muted-foreground',
+        bg: 'bg-muted/50',
         icon: CheckCircle2,
-        iconColor: 'text-yellow-600 dark:text-yellow-400',
+        iconColor: 'text-muted-foreground',
         label: 'Repaired',
-        badgeClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+        badgeClass: 'bg-muted text-muted-foreground'
     },
     normal: {
-        border: 'border-gray-300 dark:border-gray-600',
-        bg: 'bg-gray-50 dark:bg-gray-900/30',
+        border: 'border-border',
+        bg: 'bg-muted',
         icon: Circle,
-        iconColor: 'text-gray-500 dark:text-gray-400',
+        iconColor: 'text-muted-foreground',
         label: 'Historical',
-        badgeClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+        badgeClass: 'bg-muted text-muted-foreground'
     },
 };
 
@@ -110,7 +110,7 @@ function RevisionNodeCard({
                 <Badge variant="outline" className={cn('font-mono text-xs', styles.badgeClass)}>
                     Rev #{revision.revision_number}
                 </Badge>
-                <StatusIcon className={cn('h-4 w-4', styles.iconColor)} />
+                <StatusIcon className={styles.iconColor} />
             </div>
 
             {/* TXID */}
@@ -121,7 +121,7 @@ function RevisionNodeCard({
             {/* Timestamp */}
             {revision.blocktime && (
                 <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <Clock className="h-3 w-3" />
+                    <Clock />
                     <span>{formatDistanceToNow(parseISO(revision.blocktime), { addSuffix: true })}</span>
                 </div>
             )}
@@ -129,7 +129,7 @@ function RevisionNodeCard({
             {/* Publisher (non-compact) */}
             {!compact && revision.publisher_address && (
                 <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-                    <User className="h-3 w-3" />
+                    <User />
                     <span className="truncate" title={revision.publisher_address}>
                         {truncateHash(revision.publisher_address, 4)}
                     </span>
@@ -151,7 +151,7 @@ function RevisionDetails({ revision }: { revision: RevisionNode }) {
     const styles = STATUS_STYLES[status];
 
     return (
-        <div className="space-y-3 text-sm">
+        <div className="flex flex-col gap-3 text-sm">
             <div className="flex items-center gap-2">
                 <Badge variant="outline" className={cn('font-mono text-xs', styles.badgeClass)}>
                     Rev #{revision.revision_number}
@@ -183,16 +183,16 @@ function RevisionDetails({ revision }: { revision: RevisionNode }) {
             </div>
 
             {revision.breach_type && (
-                <div className="rounded-md bg-red-50 p-2 text-xs dark:bg-red-950/30">
-                    <span className="font-medium text-red-700 dark:text-red-400">Breach:</span>{' '}
-                    <span className="text-red-600 dark:text-red-400">{revision.breach_type}</span>
+                <div className="rounded-md bg-destructive/10 p-2 text-xs dark:bg-destructive/10/30">
+                    <span className="font-medium text-destructive dark:text-destructive">Breach:</span>{' '}
+                    <span className="text-destructive dark:text-destructive">{revision.breach_type}</span>
                 </div>
             )}
 
             {revision.repaired_at && (
-                <div className="rounded-md bg-green-50 p-2 text-xs dark:bg-green-950/30">
-                    <span className="font-medium text-green-700 dark:text-green-400">Repaired:</span>{' '}
-                    <span className="text-green-600 dark:text-green-400">
+                <div className="rounded-md bg-primary/10 p-2 text-xs dark:bg-primary/10/30">
+                    <span className="font-medium text-primary dark:text-primary">Repaired:</span>{' '}
+                    <span className="text-primary dark:text-primary">
                         {formatDistanceToNow(parseISO(revision.repaired_at), { addSuffix: true })}
                     </span>
                 </div>
@@ -264,14 +264,14 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
         <Card className={className}>
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <GitBranch className="h-5 w-5" />
+                    <GitBranch />
                     Revision Tree
                 </CardTitle>
                 <CardDescription>
                     {revisions.length} revision{revisions.length !== 1 ? 's' : ''} • Click nodes for details
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
                 {/* Scrollable tree */}
                 <div className="overflow-x-auto pb-2">
                     {chains.map((chain, chainIndex) => (
@@ -295,7 +295,7 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
                                             <div className="flex flex-col items-center px-1 pt-4">
                                                 <div className="bg-border h-0.5 w-6" />
                                                 <svg
-                                                    className="text-border -ml-1 h-4 w-4"
+                                                   
                                                     viewBox="0 0 24 24"
                                                     fill="none"
                                                     stroke="currentColor"

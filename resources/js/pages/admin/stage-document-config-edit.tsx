@@ -184,7 +184,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
     const DocumentItem = ({ doc, onRemove, onMove, moveLabel }: { doc: Document; onRemove: () => void; onMove?: () => void; moveLabel?: string }) => (
         <div className="bg-card flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start">
             <div className="flex min-w-0 flex-1 items-start gap-3">
-                <FileText className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                <FileText />
                 <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{doc.display_name}</div>
                     <div className="text-muted-foreground truncate text-xs">{doc.description}</div>
@@ -206,7 +206,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
     const AvailableDocItem = ({ doc }: { doc: Document }) => (
         <div className="bg-muted/30 hover:bg-muted/50 flex flex-col gap-3 rounded-lg border p-3 transition-colors sm:flex-row sm:items-start">
             <div className="flex min-w-0 flex-1 items-start gap-3 overflow-hidden">
-                <FileText className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                <FileText />
                 <div className="min-w-0 flex-1 overflow-hidden">
                     <div className="truncate text-sm font-medium">{doc.display_name}</div>
                     <div className="text-muted-foreground truncate text-xs">{doc.description}</div>
@@ -227,7 +227,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
         <AppLayout breadcrumbs={breadcrumbs(mode.display_name, stage.display_name)}>
             <Head title={`Configure ${stage.display_name}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="flex flex-col gap-6 p-6">
                 {/* Header */}
                 <HeroCard
                     icon={FileText}
@@ -236,11 +236,11 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                     actions={
                         <>
                             <Button variant="outline" size="sm" onClick={handleReset}>
-                                <RotateCcw className="mr-2 h-4 w-4" />
+                                <RotateCcw data-icon="inline-start" />
                                 Reset to Defaults
                             </Button>
                             <Button onClick={handleSave} disabled={!isModified || isSubmitting} size="sm">
-                                <Save className="mr-2 h-4 w-4" />
+                                <Save data-icon="inline-start" />
                                 {isSubmitting ? (
                                     <>
                                         <Spinner data-icon="inline-start" /> Saving...
@@ -257,7 +257,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                 {isModified && (
                     <Card className="border-secondary bg-secondary/50">
                         <CardContent className="flex items-center gap-3 p-4">
-                            <AlertTriangle className="text-secondary-foreground h-5 w-5" />
+                            <AlertTriangle />
                             <p className="text-sm">You have unsaved changes. Click "Save Changes" to apply them.</p>
                         </CardContent>
                     </Card>
@@ -266,12 +266,12 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                 {/* Summary */}
                 <div className="flex flex-wrap items-center gap-4 text-sm sm:gap-6">
                     <div className="flex items-center gap-2">
-                        <FileCheck className="text-primary h-4 w-4" />
+                        <FileCheck className="text-primary" />
                         <span className="text-muted-foreground">Required:</span>
                         <Badge variant="default">{requiredDocs.length}</Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                        <FileText className="text-muted-foreground h-4 w-4" />
+                        <FileText className="text-muted-foreground" />
                         <span className="text-muted-foreground">Optional:</span>
                         <Badge variant="secondary">{optionalDocs.length}</Badge>
                     </div>
@@ -317,7 +317,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                 {/* Main Content */}
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Left: Selected Documents */}
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <Tabs
                             value={selectedDocsTab}
                             onValueChange={(value) => setSelectedDocsTab(value as 'required' | 'optional')}
@@ -336,7 +336,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                                             <CardDescription>These documents must be uploaded to complete the stage</CardDescription>
                                         </div>
                                         <ScrollArea className="h-[400px]">
-                                            <div className="space-y-2 pr-4">
+                                            <div className="flex flex-col gap-2 pr-4">
                                                 {requiredDocs.length === 0 ? (
                                                     <div className="text-muted-foreground py-8 text-center text-sm">
                                                         No required documents selected
@@ -368,7 +368,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                                             <CardDescription>These documents can be uploaded but are not required</CardDescription>
                                         </div>
                                         <ScrollArea className="h-[400px]">
-                                            <div className="space-y-2 pr-4">
+                                            <div className="flex flex-col gap-2 pr-4">
                                                 {optionalDocs.length === 0 ? (
                                                     <div className="text-muted-foreground py-8 text-center text-sm">
                                                         No optional documents selected
@@ -402,7 +402,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                             <CardTitle className="text-base">Available Documents</CardTitle>
                             <CardDescription>Click to add documents to required or optional list</CardDescription>
                             <div className="relative mt-2">
-                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                                 <Input
                                     placeholder="Search documents..."
                                     value={searchQuery}
@@ -412,7 +412,7 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="h-[450px] space-y-2 overflow-y-auto">
+                            <div className="flex h-[450px] flex-col gap-2 overflow-y-auto">
                                 {availableDocuments.length === 0 ? (
                                     <div className="text-muted-foreground py-8 text-center text-sm">
                                         {searchQuery ? 'No documents match your search' : 'All documents have been added'}

@@ -87,7 +87,7 @@ export default function ProcurementCorrections({ procurement, corrections, docum
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Corrections - ${procurement.pr_number}`} />
 
-            <div className="w-full space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Header */}
                 <HeroCard icon={Edit} title="Procurement Corrections" description={`Manage corrections for ${procurement.pr_number}`} />
 
@@ -95,14 +95,14 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
+                            <FileText />
                             Procurement Overview
                         </CardTitle>
                         <CardDescription>Current procurement information</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="flex flex-col gap-4">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <div>
                                     <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">PR Number</label>
                                     <p className="font-mono text-sm font-medium">{procurement.pr_number}</p>
@@ -113,10 +113,10 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                                 </div>
                                 <div>
                                     <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">ABC Amount</label>
-                                    <p className="text-sm font-semibold text-green-600 dark:text-green-400">{procurement.formatted_abc_amount}</p>
+                                    <p className="text-sm font-semibold text-primary">{procurement.formatted_abc_amount}</p>
                                 </div>
                             </div>
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <div>
                                     <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Category</label>
                                     <p className="text-sm">{procurement.category_display}</p>
@@ -137,18 +137,18 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                         {procurement.has_corrections && procurement.latest_correction && (
                             <>
                                 <Separator />
-                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+                                <div className="rounded-lg border border-amber-200 bg-muted/50 p-4 dark:border-amber-800 dark:bg-muted/50/20">
                                     <div className="flex items-start gap-3">
-                                        <AlertCircle className="mt-0.5 h-5 w-5 text-amber-600" />
+                                        <AlertCircle className="mt-0.5 text-muted-foreground" />
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-amber-800 dark:text-amber-200">Latest Correction</h4>
-                                            <div className="mt-2 space-y-2 text-sm">
+                                            <h4 className="font-medium text-muted-foreground dark:text-muted-foreground">Latest Correction</h4>
+                                            <div className="mt-2 flex flex-col gap-2 text-sm">
                                                 <div className="flex items-center gap-2">
-                                                    <User className="text-muted-foreground h-4 w-4" />
+                                                    <User className="text-muted-foreground" />
                                                     <span>Corrected by {procurement.latest_correction.corrected_by}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Calendar className="text-muted-foreground h-4 w-4" />
+                                                    <Calendar className="text-muted-foreground" />
                                                     <span>{new Date(procurement.latest_correction.timestamp).toLocaleString()}</span>
                                                 </div>
                                                 <div>
@@ -196,18 +196,18 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <File className="h-5 w-5" />
+                            <File />
                             Document Corrections
                         </CardTitle>
                         <CardDescription>Correct individual documents for this procurement</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {documents.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 {documents.map((document) => (
                                     <div key={document.id} className="flex items-center justify-between rounded-lg border p-4">
                                         <div className="flex items-center gap-3">
-                                            <FileText className="text-muted-foreground h-5 w-5" />
+                                            <FileText />
                                             <div>
                                                 <p className="font-medium">{document.document_type_display}</p>
                                                 <p className="text-muted-foreground text-sm">
@@ -224,7 +224,7 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                                                 setShowDocumentCorrectionSheet(true);
                                             }}
                                         >
-                                            <Edit className="mr-2 h-4 w-4" />
+                                            <Edit />
                                             Correct
                                         </Button>
                                     </div>

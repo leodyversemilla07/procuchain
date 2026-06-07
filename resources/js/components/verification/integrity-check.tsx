@@ -37,9 +37,9 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         {isValid ? (
-                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            <CheckCircle />
                         ) : (
-                            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                            <XCircle />
                         )}
                         <CardTitle className="text-base">{documentType || 'Document'}</CardTitle>
                     </div>
@@ -52,9 +52,9 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
 
             {showDetails && (
                 <CardContent className="pt-0">
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         {/* Hash Information */}
-                        <div className="bg-muted/50 space-y-2 rounded-lg p-2 sm:p-3">
+                        <div className="bg-muted/50 flex flex-col gap-2 rounded-lg p-2 sm:p-3">
                             <div className="flex items-center gap-2 text-xs sm:text-sm">
                                 <Hash className="text-muted-foreground h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 <span className="font-medium">Hash Verification</span>
@@ -100,13 +100,13 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
                             <div className="flex items-center gap-1 text-xs">
                                 {result.hash_match ? (
                                     <>
-                                        <FileCheck className="h-3 w-3 text-green-600" />
-                                        <span className="text-green-600 dark:text-green-400">Hashes match</span>
+                                        <FileCheck className="h-3 w-3 text-primary" />
+                                        <span className="text-primary dark:text-primary">Hashes match</span>
                                     </>
                                 ) : (
                                     <>
-                                        <AlertTriangle className="h-3 w-3 text-red-600" />
-                                        <span className="text-red-600 dark:text-red-400">Hash mismatch detected</span>
+                                        <AlertTriangle className="h-3 w-3 text-destructive" />
+                                        <span className="text-destructive dark:text-destructive">Hash mismatch detected</span>
                                     </>
                                 )}
                             </div>
@@ -114,9 +114,9 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
 
                         {/* Errors */}
                         {result.errors.length > 0 && (
-                            <div className="space-y-1">
+                            <div className="flex flex-col gap-1">
                                 {result.errors.map((error, index) => (
-                                    <div key={index} className="flex items-start gap-2 text-xs text-red-600 dark:text-red-400">
+                                    <div key={index} className="flex items-start gap-2 text-xs text-destructive dark:text-destructive">
                                         <XCircle className="mt-0.5 h-3 w-3 shrink-0" />
                                         <span>{error}</span>
                                     </div>
@@ -126,9 +126,9 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
 
                         {/* Warnings */}
                         {result.warnings.length > 0 && (
-                            <div className="space-y-1">
+                            <div className="flex flex-col gap-1">
                                 {result.warnings.map((warning, index) => (
-                                    <div key={index} className="flex items-start gap-2 text-xs text-yellow-600 dark:text-yellow-400">
+                                    <div key={index} className="flex items-start gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
                                         <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                                         <span>{warning}</span>
                                     </div>

@@ -79,14 +79,14 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Database className="h-5 w-5" />
+                                <Database />
                                 Database Mirror Record
                             </CardTitle>
                             <CardDescription>This is the mutable cache in MySQL</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {demoRecord ? (
-                                <div className="space-y-3">
+                                <div className="flex flex-col gap-3">
                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                         <div>
                                             <span className="text-muted-foreground">Status:</span>
@@ -110,7 +110,7 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                                    <AlertTriangle className="text-muted-foreground mb-3 h-12 w-12" />
+                                    <AlertTriangle className="text-muted-foreground mb-3" />
                                     <p className="text-muted-foreground font-medium">Record DELETED from Database</p>
                                     <p className="text-muted-foreground text-sm">
                                         The attacker removed this record, but it still exists on the blockchain
@@ -124,14 +124,14 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                     <Card className="border-primary/20 bg-primary/5">
                         <CardHeader>
                             <CardTitle className="text-primary flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5" />
+                                <CheckCircle2 />
                                 Blockchain Record (Source of Truth)
                             </CardTitle>
                             <CardDescription>Immutable data on the blockchain</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {blockchainData ? (
-                                <div className="space-y-3">
+                                <div className="flex flex-col gap-3">
                                     <div className="flex items-center gap-2">
                                         <Badge>✓ Immutable</Badge>
                                         <Badge variant="secondary">✓ Always Available</Badge>
@@ -166,18 +166,18 @@ export default function IntegrityDemoPage({ demoRecord, blockchainData, status, 
                             {status === 'initial' && (
                                 <>
                                     <Button variant="destructive" onClick={() => handleAction('delete')} disabled={processing}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <Trash2 />
                                         {processing ? 'Deleting...' : 'Delete from Database'}
                                     </Button>
                                     <Button variant="outline" onClick={() => handleAction('modify')} disabled={processing}>
-                                        <AlertTriangle className="mr-2 h-4 w-4" />
+                                        <AlertTriangle />
                                         {processing ? 'Modifying...' : 'Modify Data (Tamper)'}
                                     </Button>
                                 </>
                             )}
                             {status === 'deleted' && (
                                 <Button onClick={() => handleAction('restore')} disabled={processing}>
-                                    <Download className="mr-2 h-4 w-4" />
+                                    <Download />
                                     {processing ? 'Restoring...' : 'Restore from Blockchain'}
                                 </Button>
                             )}

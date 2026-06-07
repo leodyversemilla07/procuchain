@@ -84,12 +84,12 @@ function SortableStageItem({
             } ${isDragging ? 'shadow-lg' : ''}`}
         >
             <button type="button" className="cursor-grab touch-none active:cursor-grabbing" {...attributes} {...listeners}>
-                <GripVertical className="text-muted-foreground h-4 w-4" />
+                <GripVertical className="text-muted-foreground" />
             </button>
 
             <Checkbox id={`stage-${stage.value}`} checked={isSelected} onCheckedChange={() => onToggleStage(stage.value)} />
 
-            <div className="flex-1 space-y-0.5">
+            <div className="flex flex-1 flex-col gap-0.5">
                 <Label htmlFor={`stage-${stage.value}`} className="cursor-pointer font-medium">
                     {stage.display_name}
                 </Label>
@@ -293,7 +293,7 @@ export default function WorkflowConfigEdit({
                 <CardTitle className="text-lg">{title}</CardTitle>
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="flex flex-col gap-2">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, phase)}>
                     <SortableContext items={stages.map((s) => s.value)} strategy={verticalListSortingStrategy}>
                         {stages.map((stage) => (
@@ -318,7 +318,7 @@ export default function WorkflowConfigEdit({
         <AppLayout breadcrumbs={breadcrumbs(mode.display_name)}>
             <Head title={`Configure ${mode.display_name}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="flex flex-col gap-6 p-6">
                 {/* Header */}
                 <HeroCard
                     icon={GitBranch}
@@ -329,17 +329,17 @@ export default function WorkflowConfigEdit({
                             {isDifferentFromDefault && (
                                 <>
                                     <Button variant="outline" size="sm" onClick={handleResetLocal}>
-                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                        <RotateCcw />
                                         Reset Locally
                                     </Button>
                                     <Button variant="destructive" size="sm" onClick={handleResetAndSave}>
-                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                        <RotateCcw />
                                         Reset & Save
                                     </Button>
                                 </>
                             )}
                             <Button onClick={handleSave} disabled={!isModified || isSubmitting || processing} size="sm">
-                                <Save className="mr-2 h-4 w-4" />
+                                <Save />
                                 {isSubmitting ? (
                                     <>
                                         <Spinner data-icon="inline-start" /> Saving...
@@ -356,7 +356,7 @@ export default function WorkflowConfigEdit({
                 {isModified && (
                     <Card className="border-secondary bg-secondary/50">
                         <CardContent className="flex items-center gap-3 p-4">
-                            <AlertTriangle className="text-secondary-foreground h-5 w-5" />
+                            <AlertTriangle />
                             <p className="text-sm">You have unsaved changes. Click "Save Changes" to apply them.</p>
                         </CardContent>
                     </Card>
@@ -365,7 +365,7 @@ export default function WorkflowConfigEdit({
                 {/* Instructions */}
                 <Card className="border-primary/20 bg-primary/5">
                     <CardContent className="flex items-center gap-3 p-4">
-                        <GripVertical className="text-primary h-5 w-5" />
+                        <GripVertical />
                         <p className="text-sm">
                             <strong>Tip:</strong> Drag the grip icon to reorder stages within each phase. Check/uncheck to include/exclude stages.
                         </p>

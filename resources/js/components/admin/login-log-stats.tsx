@@ -20,25 +20,25 @@ export default function LoginLogStats({ statistics }: LoginLogStatsProps) {
                         label: 'Total Logins',
                         value: statistics.total_logins?.toLocaleString() || '0',
                         icon: Activity,
-                        iconClassName: 'text-blue-600 dark:text-blue-400',
+                        iconClassName: 'text-primary',
                     },
                     {
                         label: 'Success Rate',
                         value: statistics.total_logins > 0 ? `${successRate}%` : '0%',
                         icon: Shield,
-                        iconClassName: 'text-green-600 dark:text-green-400',
+                        iconClassName: 'text-primary',
                     },
                     {
                         label: "Today's Logins",
                         value: statistics.today_logins?.toString() || '0',
                         icon: CalendarIcon,
-                        iconClassName: 'text-purple-600 dark:text-purple-400',
+                        iconClassName: 'text-primary',
                     },
                     {
                         label: 'Unique Users',
                         value: statistics.unique_users?.toString() || '0',
                         icon: User,
-                        iconClassName: 'text-orange-600 dark:text-orange-400',
+                        iconClassName: 'text-primary',
                     },
                 ]}
             />
@@ -47,13 +47,13 @@ export default function LoginLogStats({ statistics }: LoginLogStatsProps) {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
+                        <TrendingUp />
                         Login Activity Trend
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4 md:grid-cols-3">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-xs sm:text-sm">This Week</p>
                             <div className="flex items-baseline gap-2">
                                 <p className="text-xl font-bold sm:text-2xl">{statistics.this_week_logins?.toLocaleString() || '0'}</p>
@@ -62,7 +62,7 @@ export default function LoginLogStats({ statistics }: LoginLogStatsProps) {
                                 </Badge>
                             </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-xs sm:text-sm">This Month</p>
                             <div className="flex items-baseline gap-2">
                                 <p className="text-xl font-bold sm:text-2xl">{statistics.this_month_logins?.toLocaleString() || '0'}</p>
@@ -71,7 +71,7 @@ export default function LoginLogStats({ statistics }: LoginLogStatsProps) {
                                 </Badge>
                             </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-xs sm:text-sm">Success Rate</p>
                             <div className="flex items-baseline gap-2">
                                 <p className="text-xl font-bold sm:text-2xl">{successRate}%</p>

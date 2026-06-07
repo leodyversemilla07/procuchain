@@ -28,14 +28,14 @@ export function OfficePurposeSection({
 }: OfficePurposeSectionProps) {
     return (
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-            <CardHeader className="space-y-1 pb-2 sm:pb-4">
+            <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                    <Building2 className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                    <Building2 />
                     Office &amp; Purpose
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">Requesting office and procurement justification</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex flex-col gap-6 sm:p-6">
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                     {/* Office */}
                     <Field>

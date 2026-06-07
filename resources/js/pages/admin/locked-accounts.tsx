@@ -83,7 +83,7 @@ export default function AdminLockedAccounts() {
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" className="flex items-center gap-2">
-                                {isRefreshing ? <Spinner className="size-4" /> : <RefreshCw className="h-4 w-4" />}
+                                {isRefreshing ? <Spinner /> : <RefreshCw />}
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
                             <Button
@@ -91,22 +91,22 @@ export default function AdminLockedAccounts() {
                                 variant={autoRefresh ? 'default' : 'outline'}
                                 className="flex items-center gap-2"
                             >
-                                <Clock className="h-4 w-4" />
+                                <Clock />
                                 <span className="hidden sm:inline">Auto</span>
                             </Button>
                             <Button onClick={exportToCSV} disabled={isExporting} variant="outline" className="flex items-center gap-2">
-                                <Download className={`h-4 w-4 ${isExporting ? 'animate-pulse' : ''}`} />
+                                <Download className={isExporting ? 'animate-pulse' : ''} />
                                 <span className="hidden sm:inline">Export</span>
                             </Button>
                             {selectedAccounts.size > 0 && canManageUsers && (
                                 <>
                                     <Button onClick={handleBulkUnlock} variant="default" className="flex items-center gap-2">
-                                        <Unlock className="h-4 w-4" />
+                                        <Unlock />
                                         <span className="hidden sm:inline">Unlock ({selectedAccounts.size})</span>
                                         <span className="sm:hidden">{selectedAccounts.size}</span>
                                     </Button>
                                     <Button onClick={handleBulkResetAttempts} variant="outline" className="flex items-center gap-2">
-                                        <RotateCcw className="h-4 w-4" />
+                                        <RotateCcw />
                                         <span className="hidden sm:inline">Reset ({selectedAccounts.size})</span>
                                     </Button>
                                 </>
@@ -133,7 +133,7 @@ export default function AdminLockedAccounts() {
                     <Card className="border-destructive/50 bg-destructive/10">
                         <CardContent className="p-4">
                             <div className="text-destructive flex items-center gap-2">
-                                <AlertTriangle className="h-5 w-5" />
+                                <AlertTriangle />
                                 <span>{flash.error}</span>
                             </div>
                         </CardContent>
@@ -169,11 +169,11 @@ export default function AdminLockedAccounts() {
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between text-base font-medium">
                             <span>Lock Activity Insights</span>
-                            <Shield className="text-muted-foreground h-5 w-5" />
+                            <Shield className="text-muted-foreground" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="text-muted-foreground text-sm">High-Risk Accounts</div>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-bold">
@@ -184,7 +184,7 @@ export default function AdminLockedAccounts() {
                                 </Badge>
                             </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="text-muted-foreground text-sm">Accounts with 2FA</div>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-bold">{filteredAccounts.filter((u) => u.two_factor_enabled).length}</span>
@@ -193,7 +193,7 @@ export default function AdminLockedAccounts() {
                                 </Badge>
                             </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <div className="text-muted-foreground text-sm">Expiring Soon</div>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-bold">

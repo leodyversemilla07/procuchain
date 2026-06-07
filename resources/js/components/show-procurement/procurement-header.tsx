@@ -61,7 +61,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
             <Card className="shadow-sm transition-shadow duration-200 hover:shadow-md">
                 <CardHeader className="p-4 sm:p-6">
                     {/* Title and ID Section */}
-                    <div className="space-y-1.5 sm:space-y-2">
+                    <div className="flex flex-col gap-1.5 sm:flex flex-col gap-2">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                             <CardTitle className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
                             {procurementModeLabel && (
@@ -86,7 +86,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
             {/* Workflow Visualization or Progress Bar */}
             {workflow ? (
                 <div className="mt-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-foreground/10 sm:mt-4 sm:p-6">
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <div className="text-muted-foreground text-xs font-medium sm:text-sm">
                             <span className="tracking-wider uppercase">Workflow Progress</span>
                         </div>
@@ -106,7 +106,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 <Card className="mt-3 shadow-sm sm:mt-4">
                     <CardHeader className="p-4 sm:p-6">
                         <div
-                            className="space-y-2"
+                            className="flex flex-col gap-2"
                             role="progressbar"
                             aria-valuenow={progress}
                             aria-valuemin={0}
@@ -136,7 +136,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 {status?.phase && (
                     <div className="bg-card rounded-lg border p-4 shadow-sm">
                         <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium sm:text-sm">
-                            <FileCheck className="h-4 w-4" aria-hidden="true" />
+                            <FileCheck aria-hidden="true" />
                             Current Phase
                         </div>
                         <TruncateBadge variant="outline" className="text-xs font-medium sm:text-sm" maxChars={20}>
@@ -149,10 +149,10 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 {status?.stage && (
                     <div className="bg-card rounded-lg border p-4 shadow-sm">
                         <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium sm:text-sm">
-                            <FileCheck className="h-4 w-4" aria-hidden="true" />
+                            <FileCheck aria-hidden="true" />
                             Current Stage
                         </div>
-                        <div className="space-y-1">
+                        <div className="flex flex-col gap-1">
                             <TruncateBadge variant="secondary" className="text-xs font-medium sm:text-sm" maxChars={20}>
                                 {status.stage_formatted || status.stage}
                             </TruncateBadge>
@@ -170,7 +170,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 {status?.status_formatted && (
                     <div className="bg-card rounded-lg border p-4 shadow-sm">
                         <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium sm:text-sm">
-                            <Clock className="h-4 w-4" aria-hidden="true" />
+                            <Clock aria-hidden="true" />
                             Status
                         </div>
                         <TruncateBadge
@@ -187,7 +187,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 {status?.timestamp && (
                     <div className="bg-card rounded-lg border p-4 shadow-sm">
                         <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium sm:text-sm">
-                            <Calendar className="h-4 w-4" aria-hidden="true" />
+                            <Calendar aria-hidden="true" />
                             Last Updated
                         </div>
                         <time className="text-foreground text-xs font-medium sm:text-sm">{status.formatted_date}</time>

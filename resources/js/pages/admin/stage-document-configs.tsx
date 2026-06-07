@@ -98,7 +98,7 @@ export default function StageDocumentConfigs({
                             {stages.map((stage) => (
                                 <TableRow key={stage.stage}>
                                     <TableCell>
-                                        <div className="space-y-0.5">
+                                        <div className="flex flex-col gap-0.5">
                                             <div className="font-medium">{stage.display_name}</div>
                                             <div className="text-muted-foreground line-clamp-1 text-xs">{stage.description}</div>
                                         </div>
@@ -118,7 +118,7 @@ export default function StageDocumentConfigs({
                                     </TableCell>
                                     <TableCell>
                                         {stage.is_customized ? (
-                                            <div className="space-y-0.5">
+                                            <div className="flex flex-col gap-0.5">
                                                 <Badge variant="outline" className="text-xs">
                                                     Customized
                                                 </Badge>
@@ -137,7 +137,7 @@ export default function StageDocumentConfigs({
                                             nativeButton={false}
                                             render={<Link href={stageDocumentsEdit({ mode: selectedMode, stage: stage.stage }).url} />}
                                         >
-                                            <Edit className="mr-2 h-4 w-4" />
+                                            <Edit data-icon="inline-start" />
                                             Edit
                                         </Button>
                                     </TableCell>
@@ -159,7 +159,7 @@ export default function StageDocumentConfigs({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Stage Document Configuration" />
 
-            <div className="space-y-6 p-6">
+            <div className="flex flex-col gap-6 p-6">
                 {/* Header */}
                 <HeroCard
                     icon={FileText}
@@ -170,7 +170,7 @@ export default function StageDocumentConfigs({
                 {/* Mode Selector */}
                 <Card>
                     <CardContent className="flex items-center gap-4 p-4">
-                        <Settings className="text-muted-foreground h-5 w-5" />
+                        <Settings className="text-muted-foreground" />
                         <div className="flex-1">
                             <Label className="text-sm font-medium">Procurement Mode</Label>
                             <p className="text-muted-foreground text-xs">Select a procurement mode to view and configure its stage documents</p>
@@ -229,7 +229,7 @@ export default function StageDocumentConfigs({
                 </div>
 
                 {/* Stage Tables by Phase */}
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <StageTable stages={preProcurement} title="Pre-Procurement Phase" description="Planning & Preparation stages" />
                     <StageTable stages={procurement} title="Procurement Phase" description="Bidding & Evaluation stages" />
                     <StageTable stages={postProcurement} title="Post-Procurement Phase" description="Award & Implementation stages" />

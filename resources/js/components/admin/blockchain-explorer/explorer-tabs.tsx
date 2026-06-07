@@ -58,7 +58,7 @@ export function ExplorerTabs({
                                 <CardDescription>Current blockchain state and parameters</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <dl className="space-y-3 text-sm">
+                                <dl className="flex flex-col gap-3 text-sm">
                                     <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
                                         <dt className="text-muted-foreground font-medium">Chain Name</dt>
                                         <dd className="text-right sm:text-left">{overview.chain}</dd>
@@ -97,7 +97,7 @@ export function ExplorerTabs({
                                 <CardDescription>Local node details and configuration</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <dl className="space-y-3 text-sm">
+                                <dl className="flex flex-col gap-3 text-sm">
                                     <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
                                         <dt className="text-muted-foreground font-medium">Version</dt>
                                         <dd className="text-right sm:text-left">{overview.version}</dd>
@@ -116,10 +116,10 @@ export function ExplorerTabs({
                                 <CardDescription>Latest blocks added to the blockchain</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3 md:hidden">
+                                <div className="flex flex-col gap-3 md:hidden">
                                     {latestBlocks.slice(0, 10).map((block) => (
                                         <Card key={block.hash} className="p-3">
-                                            <div className="space-y-2">
+                                            <div className="flex flex-col gap-2">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <Badge variant="outline" className="text-xs">
                                                         #{block.height}
@@ -128,7 +128,7 @@ export function ExplorerTabs({
                                                         {formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })}
                                                     </span>
                                                 </div>
-                                                <div className="space-y-1">
+                                                <div className="flex flex-col gap-1">
                                                     <div className="text-muted-foreground text-xs">Hash</div>
                                                     <div className="font-mono text-xs break-all">{truncateHash(block.hash, 20)}</div>
                                                 </div>
@@ -188,19 +188,19 @@ export function ExplorerTabs({
                         <CardDescription>Latest blocks mined on the blockchain</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-3 md:hidden">
+                        <div className="flex flex-col gap-3 md:hidden">
                             {latestBlocks.map((block) => (
                                 <Card key={block.hash} className="p-4">
                                     <button onClick={() => onToggleBlockExpansion(block.hash)} className="w-full touch-manipulation">
                                         <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 space-y-2 text-left">
+                                            <div className="flex-1 flex flex-col gap-2 text-left">
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="outline">#{block.height}</Badge>
                                                     <span className="text-muted-foreground text-xs">
                                                         {formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })}
                                                     </span>
                                                 </div>
-                                                <div className="space-y-1">
+                                                <div className="flex flex-col gap-1">
                                                     <div className="text-muted-foreground text-xs">Hash</div>
                                                     <div className="font-mono text-xs break-all">{truncateHash(block.hash, 20)}</div>
                                                 </div>
@@ -224,7 +224,7 @@ export function ExplorerTabs({
                                         </div>
                                     </button>
                                     {expandedBlocks.has(block.hash) && (
-                                        <div className="mt-3 space-y-3 border-t pt-3">
+                                        <div className="mt-3 flex flex-col gap-3 border-t pt-3">
                                             <div>
                                                 <div className="text-muted-foreground text-xs">Full Hash</div>
                                                 <div className="mt-1 font-mono text-xs break-all">{block.hash}</div>
@@ -286,7 +286,7 @@ export function ExplorerTabs({
                                                     <TableCell colSpan={7} className="bg-muted/20">
                                                         <Collapsible open>
                                                             <CollapsibleContent className="px-4 py-3">
-                                                                <div className="space-y-2">
+                                                                <div className="flex flex-col gap-2">
                                                                     <p className="text-sm font-medium">Block Details</p>
                                                                     <div className="grid gap-2 text-sm">
                                                                         <div className="flex gap-2">
@@ -343,10 +343,10 @@ export function ExplorerTabs({
                             </Empty>
                         ) : (
                             <>
-                                <div className="space-y-3 md:hidden">
+                                <div className="flex flex-col gap-3 md:hidden">
                                     {streams.map((stream) => (
                                         <Card key={stream.name} className="p-4">
-                                            <div className="space-y-3">
+                                            <div className="flex flex-col gap-3">
                                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                                     <h3 className="font-medium break-all">{stream.name}</h3>
                                                     <div className="flex flex-wrap gap-1">
@@ -439,10 +439,10 @@ export function ExplorerTabs({
                             </Empty>
                         ) : (
                             <>
-                                <div className="space-y-3 md:hidden">
+                                <div className="flex flex-col gap-3 md:hidden">
                                     {addresses.map((address) => (
                                         <Card key={address.address} className="p-4">
-                                            <div className="space-y-2">
+                                            <div className="flex flex-col gap-2">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="text-muted-foreground text-xs">Address</div>
                                                     {address.ismine && (
@@ -490,12 +490,12 @@ export function ExplorerTabs({
                     <CardContent>
                         {peers.length > 0 ? (
                             <>
-                                <div className="space-y-3 md:hidden">
+                                <div className="flex flex-col gap-3 md:hidden">
                                     {peers.map((peer) => (
                                         <Card key={peer.id} className="p-4">
                                             <button onClick={() => onTogglePeerExpansion(peer.id)} className="w-full touch-manipulation">
                                                 <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex-1 space-y-2 text-left">
+                                                    <div className="flex-1 flex flex-col gap-2 text-left">
                                                         <div className="font-mono text-sm break-all">{peer.addr}</div>
                                                         <div className="flex flex-wrap gap-2">
                                                             <Badge variant={peer.inbound ? 'secondary' : 'default'} className="text-xs">
@@ -522,7 +522,7 @@ export function ExplorerTabs({
                                                 </div>
                                             </button>
                                             {expandedPeers.has(peer.id) && (
-                                                <div className="mt-3 space-y-3 border-t pt-3">
+                                                <div className="mt-3 flex flex-col gap-3 border-t pt-3">
                                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                                         <div>
                                                             <div className="text-muted-foreground text-xs">Version</div>
@@ -618,10 +618,10 @@ export function ExplorerTabs({
                                                             <TableCell colSpan={8} className="bg-muted/20">
                                                                 <Collapsible open>
                                                                     <CollapsibleContent className="px-4 py-3">
-                                                                        <div className="space-y-3">
+                                                                        <div className="flex flex-col gap-3">
                                                                             <p className="text-sm font-medium">Detailed Connection Information</p>
                                                                             <div className="grid gap-4 md:grid-cols-2">
-                                                                                <div className="space-y-2">
+                                                                                <div className="flex flex-col gap-2">
                                                                                     <div className="flex justify-between text-sm">
                                                                                         <span className="text-muted-foreground">Local Address:</span>
                                                                                         <span className="font-mono text-xs">
@@ -649,7 +649,7 @@ export function ExplorerTabs({
                                                                                         <span>{(peer.startingheight || 0).toLocaleString()}</span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="space-y-2">
+                                                                                <div className="flex flex-col gap-2">
                                                                                     <div className="flex justify-between text-sm">
                                                                                         <span className="text-muted-foreground">Last Send:</span>
                                                                                         <span>
@@ -728,7 +728,7 @@ export function ExplorerTabs({
             {/* Search Results Tab */}
             <TabsContent value="search">
                 {searchResults ? (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
                         {searchResults.block && (
                             <Card>
                                 <CardHeader>

@@ -101,7 +101,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                     </div>
 
                     {/* Statistics Panel */}
-                    <div ref={statisticsPanelRef} className="order-1 space-y-4 sm:space-y-6 lg:order-2">
+                    <div ref={statisticsPanelRef} className="order-1 flex flex-col gap-4 sm:gap-6 lg:order-2">
                         <StatisticsCards viewStats={viewStats} />
                         <DocumentInfoCard document={document} fileKey={fileKey} viewStats={viewStats} />
                         <ViewsByRoleCard viewStats={viewStats} />

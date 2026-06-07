@@ -35,11 +35,11 @@ export default function BlockIpConfirmationDialog({ open, onOpenChange, ipAddres
                     <DialogDescription>This will prevent access from this IP address</DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     {/* Warning */}
                     <div className="bg-muted/50 rounded-lg p-4">
                         <div className="flex items-start gap-3">
-                            <AlertTriangle className="text-destructive mt-0.5 h-5 w-5 shrink-0" />
+                            <AlertTriangle className="text-destructive mt-0.5 shrink-0" />
                             <p className="text-muted-foreground text-sm">
                                 • You are about to block IP address{' '}
                                 <code className="bg-background rounded px-1.5 py-0.5 font-mono text-sm">{ipAddress}</code>
@@ -53,13 +53,13 @@ export default function BlockIpConfirmationDialog({ open, onOpenChange, ipAddres
                         <FieldLabel>Block Duration</FieldLabel>
                         <FieldGroup>
                             <RadioGroup value={duration} onValueChange={(value) => setDuration(value as 'temporary' | 'permanent')}>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-2">
                                     <RadioGroupItem value="permanent" id="permanent" />
                                     <Label htmlFor="permanent" className="cursor-pointer font-normal">
                                         Permanent <span className="text-muted-foreground text-sm">— Block indefinitely until manually unblocked</span>
                                     </Label>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-2">
                                     <RadioGroupItem value="temporary" id="temporary" />
                                     <Label htmlFor="temporary" className="cursor-pointer font-normal">
                                         Temporary <span className="text-muted-foreground text-sm">— Block for 30 days</span>
@@ -99,7 +99,7 @@ export default function BlockIpConfirmationDialog({ open, onOpenChange, ipAddres
                             </>
                         ) : (
                             <>
-                                <ShieldBan className="mr-2 h-4 w-4" />
+                                <ShieldBan />
                                 Block IP Address
                             </>
                         )}

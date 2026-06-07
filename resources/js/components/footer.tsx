@@ -41,7 +41,7 @@ export default function Footer() {
                         href="mailto:semilla.leodyver@minsu.edu.ph"
                         className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm"
                     >
-                        <Mail className="h-4 w-4" />
+                        <Mail />
                         Email Us
                     </a>
                 </div>

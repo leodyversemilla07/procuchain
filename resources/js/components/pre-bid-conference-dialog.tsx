@@ -82,7 +82,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
             }}
         >
             <DialogContent className="max-h-[90vh] w-[90%] overflow-y-auto sm:max-w-[500px] md:max-w-[600px]">
-                <DialogHeader className="space-y-3">
+                <DialogHeader className="flex flex-col gap-3">
                     <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">Pre-Bid Conference Decision</DialogTitle>
                     <DialogDescription className="text-sm leading-relaxed sm:text-base">
                         Please indicate whether a pre-bid conference was held for this procurement.
@@ -97,8 +97,8 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                     </div>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                    <div className="space-y-4">
+                <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-6">
+                    <div className="flex flex-col gap-4">
                         <Label className="text-sm font-medium sm:text-base">
                             Was a pre-bid conference held? <span className="text-destructive">*</span>
                         </Label>
@@ -117,7 +117,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                                 <RadioGroupItem value="true" id="conference-yes" />
                                 <div className="flex flex-1 items-center justify-between">
                                     <span className="font-medium">Yes, Conference Held</span>
-                                    {conferenceHeld === true && <CheckCircle2 className="text-primary h-4 w-4" />}
+                                    {conferenceHeld === true && <CheckCircle2 />}
                                 </div>
                             </Label>
                             <Label
@@ -129,13 +129,13 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                                 <RadioGroupItem value="false" id="conference-no" />
                                 <div className="flex flex-1 items-center justify-between">
                                     <span className="font-medium">No, Skip Conference</span>
-                                    {conferenceHeld === false && <AlertCircle className="h-4 w-4 text-amber-500" />}
+                                    {conferenceHeld === false && <AlertCircle />}
                                 </div>
                             </Label>
                         </RadioGroup>
                         {fieldError && (
                             <div className="border-destructive/50 bg-destructive/10 flex items-start gap-2 rounded-lg border p-3">
-                                <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
+                                <AlertCircle />
                                 <p className="text-destructive text-sm" id="conference-error" aria-live="polite">
                                     {fieldError}
                                 </p>
@@ -147,14 +147,14 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                         <div
                             className={`flex items-start gap-3 rounded-lg border p-4 ${
                                 conferenceHeld
-                                    ? 'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30'
-                                    : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'
+                                    ? 'border-blue-200 bg-primary/10 dark:border-blue-900 dark:bg-primary/10/30'
+                                    : 'border-amber-200 bg-muted/50 dark:border-amber-900 dark:bg-muted/50/30'
                             }`}
                         >
                             {conferenceHeld ? (
-                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
+                                <CheckCircle2 />
                             ) : (
-                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                <AlertCircle />
                             )}
                             <div className="flex-1">
                                 <p className="text-foreground text-sm font-medium sm:text-base">
@@ -162,7 +162,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                                 </p>
                                 <p
                                     className={`mt-1 text-sm ${
-                                        conferenceHeld ? 'text-blue-700 dark:text-blue-300' : 'text-amber-700 dark:text-amber-300'
+                                        conferenceHeld ? 'text-primary dark:text-primary' : 'text-muted-foreground dark:text-muted-foreground'
                                     }`}
                                 >
                                     {conferenceHeld
@@ -191,7 +191,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4" />
+                                    <CheckCircle2 />
                                     Submit Decision
                                 </span>
                             )}

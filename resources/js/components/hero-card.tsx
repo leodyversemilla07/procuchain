@@ -30,7 +30,7 @@ export const HeroCard = ({
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex min-w-0 items-center gap-2 sm:gap-3 md:gap-4">
                         <div className={cn('rounded-lg p-1.5 sm:p-2', iconWrapperClassName)}>
-                            <Icon className={cn('h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6', iconClassName)} />
+                            <Icon className={iconClassName} />
                         </div>
                         <div className="min-w-0">
                             {typeof title === 'string' ? (

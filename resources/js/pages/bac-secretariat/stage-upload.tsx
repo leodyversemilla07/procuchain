@@ -234,7 +234,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
                         )}
                     </WorkflowProgressPanel>
 
-                    <div className="space-y-6 lg:col-span-2">
+                    <div className="flex flex-col gap-6 lg:col-span-2">
                         <DocumentUploadList
                             documentGuide={documentGuide}
                             uploadedDocuments={uploadedDocuments}

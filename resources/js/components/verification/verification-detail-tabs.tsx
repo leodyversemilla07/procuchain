@@ -41,16 +41,16 @@ function IntegrityTab({ results }: { results: IntegrityResult[] }) {
     const invalidCount = results.length - validCount;
 
     return (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle />
                     <span className="font-medium">{validCount} verified</span>
                 </div>
                 {invalidCount > 0 && (
                     <div className="flex items-center gap-1.5">
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <span className="font-medium text-red-600">{invalidCount} failed</span>
+                        <XCircle />
+                        <span className="font-medium text-destructive">{invalidCount} failed</span>
                     </div>
                 )}
             </div>
@@ -68,15 +68,15 @@ function IntegrityTab({ results }: { results: IntegrityResult[] }) {
 // =============================================================================
 
 function CompletenessTab({ result }: { result: CompletenessResult }) {
-    const progressColor = result.completion_percentage === 100 ? 'bg-green-500' : result.completion_percentage >= 50 ? 'bg-amber-500' : 'bg-red-500';
+    const progressColor = result.completion_percentage === 100 ? 'bg-primary/100' : result.completion_percentage >= 50 ? 'bg-muted/500' : 'bg-destructive/100';
 
     return (
         <Card>
             <CardHeader className="pb-3 sm:pb-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                            <FileText className="text-muted-foreground h-4 w-4 sm:h-5 sm:w-5" />
+                            <FileText />
                             Document Completeness
                         </CardTitle>
                         <CardDescription className="text-xs sm:text-sm">Stage: {result.stage_display_name}</CardDescription>
@@ -86,24 +86,24 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                             <span className="text-muted-foreground text-xs">Required:</span>
                             <span className="text-xs font-semibold tabular-nums sm:text-sm">{result.document_counts.required}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 rounded-md border border-green-200 bg-green-50 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-green-800 dark:bg-green-950/50">
-                            <span className="text-xs text-green-600/70 dark:text-green-400/70">Uploaded:</span>
-                            <span className="text-xs font-semibold text-green-600 tabular-nums sm:text-sm dark:text-green-400">
+                        <div className="flex items-center gap-1.5 rounded-md border border-green-200 bg-primary/10 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-green-800 dark:bg-primary/10/50">
+                            <span className="text-xs text-primary/70 dark:text-primary/70">Uploaded:</span>
+                            <span className="text-xs font-semibold text-primary tabular-nums sm:text-sm dark:text-primary">
                                 {result.document_counts.uploaded}
                             </span>
                         </div>
                         {result.document_counts.uploaded_optional > 0 && (
-                            <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-blue-800 dark:bg-blue-950/50">
-                                <span className="text-xs text-blue-600/70 dark:text-blue-400/70">Optional:</span>
-                                <span className="text-xs font-semibold text-blue-600 tabular-nums sm:text-sm dark:text-blue-400">
+                            <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-primary/10 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-blue-800 dark:bg-primary/10/50">
+                                <span className="text-xs text-primary/70 dark:text-primary/70">Optional:</span>
+                                <span className="text-xs font-semibold text-primary tabular-nums sm:text-sm dark:text-primary">
                                     {result.document_counts.uploaded_optional}
                                 </span>
                             </div>
                         )}
                         {result.document_counts.missing > 0 && (
-                            <div className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-red-800 dark:bg-red-950/50">
-                                <span className="text-xs text-red-600/70 dark:text-red-400/70">Missing:</span>
-                                <span className="text-xs font-semibold text-red-600 tabular-nums sm:text-sm dark:text-red-400">
+                            <div className="flex items-center gap-1.5 rounded-md border border-red-200 bg-destructive/10 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-red-800 dark:bg-destructive/10/50">
+                                <span className="text-xs text-destructive/70 dark:text-destructive/70">Missing:</span>
+                                <span className="text-xs font-semibold text-destructive tabular-nums sm:text-sm dark:text-destructive">
                                     {result.document_counts.missing}
                                 </span>
                             </div>
@@ -121,10 +121,10 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                         </Badge>
                     </div>
                 </div>
-                <div className="mt-3 space-y-1.5 sm:mt-4">
+                <div className="mt-3 flex flex-col gap-1.5 sm:mt-4">
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className={cn('font-bold tabular-nums', result.completion_percentage === 100 ? 'text-green-600' : 'text-foreground')}>
+                        <span className={cn('font-bold tabular-nums', result.completion_percentage === 100 ? 'text-primary' : 'text-foreground')}>
                             {result.completion_percentage.toFixed(0)}%
                         </span>
                     </div>
@@ -140,15 +140,15 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-0 sm:space-y-6">
+            <CardContent className="flex flex-col gap-4 pt-0 sm:flex flex-col gap-6">
                 {result.is_complete && result.missing_documents.length === 0 && (
-                    <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50/50 p-3 sm:p-4 dark:border-green-800 dark:bg-green-950/20">
-                        <div className="shrink-0 rounded-full bg-green-100 p-2 dark:bg-green-900">
-                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-primary/10/50 p-3 sm:p-4 dark:border-green-800 dark:bg-primary/10/20">
+                        <div className="shrink-0 rounded-full bg-primary/20 p-2 dark:bg-primary/20">
+                            <CheckCircle />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-green-800 dark:text-green-200">All Documents Uploaded</p>
-                            <p className="text-xs text-green-600/80 dark:text-green-400/80">
+                            <p className="text-sm font-medium text-primary dark:text-primary">All Documents Uploaded</p>
+                            <p className="text-xs text-primary/80 dark:text-primary/80">
                                 All {result.document_counts.required} required documents for this stage have been successfully uploaded.
                             </p>
                         </div>
@@ -156,10 +156,10 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                 )}
 
                 {result.missing_documents.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <h4 className="flex items-center gap-2 text-sm font-semibold">
-                                <XCircle className="h-4 w-4 text-red-500" />
+                                <XCircle />
                                 Missing Documents
                             </h4>
                             <Badge variant="outline" className="text-xs">
@@ -170,9 +170,9 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                             {result.missing_documents.map((doc, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-center gap-3 bg-red-50/50 px-4 py-3 transition-colors hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/30"
+                                    className="flex items-center gap-3 bg-destructive/10/50 px-4 py-3 transition-colors hover:bg-destructive/10 dark:bg-destructive/10/20 dark:hover:bg-destructive/10/30"
                                 >
-                                    <FileWarning className="h-4 w-4 shrink-0 text-red-500" />
+                                    <FileWarning />
                                     <span className="text-sm">{doc}</span>
                                 </div>
                             ))}
@@ -184,7 +184,7 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                     <details className="group">
                         <summary className="flex cursor-pointer list-none items-center justify-between">
                             <h4 className="flex items-center gap-2 text-sm font-semibold">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                <CheckCircle />
                                 Uploaded Documents
                             </h4>
                             <Badge variant="secondary" className="text-xs group-open:hidden">
@@ -194,7 +194,7 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                         <div className="mt-3 divide-y overflow-hidden rounded-lg border">
                             {result.uploaded_documents.map((doc, index) => (
                                 <div key={index} className="hover:bg-muted/50 flex items-center gap-3 px-4 py-2.5 transition-colors">
-                                    <FileCheck className="h-4 w-4 shrink-0 text-green-500" />
+                                    <FileCheck />
                                     <span className="text-sm">{doc}</span>
                                 </div>
                             ))}
@@ -203,19 +203,19 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                 )}
 
                 {result.warnings.length > 0 && (
-                    <div className="space-y-2 pt-2">
+                    <div className="flex flex-col gap-2 pt-2">
                         <h4 className="flex items-center gap-2 text-sm font-semibold">
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            <AlertTriangle />
                             Warnings
                         </h4>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             {result.warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm dark:border-yellow-800 dark:bg-yellow-950/30"
+                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 text-sm dark:border-yellow-800 dark:bg-muted/50/30"
                                 >
-                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
-                                    <span className="text-yellow-800 dark:text-yellow-200">{warning}</span>
+                                    <Info />
+                                    <span className="text-muted-foreground dark:text-muted-foreground">{warning}</span>
                                 </div>
                             ))}
                         </div>
@@ -239,9 +239,9 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
         <Card>
             <CardHeader className="pb-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                         <CardTitle className="flex items-center gap-2 text-lg">
-                            <Link2 className="text-muted-foreground h-5 w-5" />
+                            <Link2 />
                             Cross-Reference Validation
                         </CardTitle>
                         <CardDescription>
@@ -261,24 +261,24 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                     </Badge>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="flex flex-col gap-6">
                 {hasChecks && (
                     <div className="flex items-center gap-4 border-b pb-2 text-sm">
                         <div className="flex items-center gap-1.5">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle />
                             <span className="font-medium">{matchCount} matched</span>
                         </div>
                         {mismatchCount > 0 && (
                             <div className="flex items-center gap-1.5">
-                                <XCircle className="h-4 w-4 text-red-600" />
-                                <span className="font-medium text-red-600">{mismatchCount} mismatched</span>
+                                <XCircle />
+                                <span className="font-medium text-destructive">{mismatchCount} mismatched</span>
                             </div>
                         )}
                     </div>
                 )}
 
                 {hasChecks ? (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <h4 className="text-sm font-semibold">PR Number Verification</h4>
                         <div className="divide-y overflow-hidden rounded-lg border">
                             {result.pr_number_checks.map((check, index) => (
@@ -287,15 +287,15 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                                     className={cn(
                                         'flex flex-col gap-2 px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3',
                                         check.matches
-                                            ? 'bg-green-50/50 hover:bg-green-50 dark:bg-green-950/20 dark:hover:bg-green-950/30'
-                                            : 'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/30',
+                                            ? 'bg-primary/10/50 hover:bg-primary/10 dark:bg-primary/10/20 dark:hover:bg-primary/10/30'
+                                            : 'bg-destructive/10/50 hover:bg-destructive/10 dark:bg-destructive/10/20 dark:hover:bg-destructive/10/30',
                                     )}
                                 >
                                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                         {check.matches ? (
-                                            <CheckCircle className="h-4 w-4 shrink-0 text-green-600 sm:h-5 sm:w-5" />
+                                            <CheckCircle />
                                         ) : (
-                                            <XCircle className="h-4 w-4 shrink-0 text-red-600 sm:h-5 sm:w-5" />
+                                            <XCircle />
                                         )}
                                         <div className="min-w-0">
                                             <p className="truncate text-xs font-medium sm:text-sm">{check.document_type_display}</p>
@@ -307,14 +307,14 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                                             className={cn(
                                                 'rounded px-1.5 py-0.5 font-mono text-[10px] sm:px-2 sm:py-1 sm:text-xs',
                                                 check.matches
-                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+                                                    ? 'bg-primary/20 text-primary dark:bg-primary/20 dark:text-primary'
+                                                    : 'bg-destructive/20 text-destructive dark:bg-destructive/20 dark:text-destructive',
                                             )}
                                         >
                                             {check.pr_number_in_doc}
                                         </code>
                                         {!check.matches && (
-                                            <p className="mt-0.5 text-[10px] text-red-600 sm:mt-1 sm:text-xs">Expected: {check.expected_pr_number}</p>
+                                            <p className="mt-0.5 text-[10px] text-destructive sm:mt-1 sm:text-xs">Expected: {check.expected_pr_number}</p>
                                         )}
                                     </div>
                                 </div>
@@ -329,19 +329,19 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                 )}
 
                 {result.errors.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <h4 className="flex items-center gap-2 text-sm font-semibold">
-                            <XCircle className="h-4 w-4 text-red-500" />
+                            <XCircle />
                             Issues Found
                         </h4>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             {result.errors.map((error, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm dark:border-red-800 dark:bg-red-950/30"
+                                    className="flex items-start gap-3 rounded-lg border border-red-200 bg-destructive/10 p-3 text-sm dark:border-red-800 dark:bg-destructive/10/30"
                                 >
-                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-                                    <span className="text-red-800 dark:text-red-200">{error}</span>
+                                    <AlertTriangle />
+                                    <span className="text-destructive dark:text-destructive">{error}</span>
                                 </div>
                             ))}
                         </div>
@@ -349,19 +349,19 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                 )}
 
                 {result.warnings.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <h4 className="flex items-center gap-2 text-sm font-semibold">
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            <AlertTriangle />
                             Warnings
                         </h4>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             {result.warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm dark:border-yellow-800 dark:bg-yellow-950/30"
+                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 text-sm dark:border-yellow-800 dark:bg-muted/50/30"
                                 >
-                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
-                                    <span className="text-yellow-800 dark:text-yellow-200">{warning}</span>
+                                    <Info />
+                                    <span className="text-muted-foreground dark:text-muted-foreground">{warning}</span>
                                 </div>
                             ))}
                         </div>
@@ -385,9 +385,9 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
         <Card>
             <CardHeader className="pb-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                         <CardTitle className="flex items-center gap-2 text-lg">
-                            <Scale className="text-muted-foreground h-5 w-5" />
+                            <Scale />
                             RA 12009 (NGPA) Compliance
                         </CardTitle>
                         <CardDescription>Stage: {result.stage_display_name}</CardDescription>
@@ -405,15 +405,15 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                     </Badge>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="flex flex-col gap-6">
                 {result.document_type_checks.length > 0 && (
                     <div className="flex items-center gap-4 border-b pb-2 text-sm">
                         <div className="flex items-center gap-1.5">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle />
                             <span className="font-medium">{validCount} valid</span>
                         </div>
                         <div className="text-muted-foreground flex items-center gap-1.5">
-                            <FileText className="h-4 w-4" />
+                            <FileText />
                             <span>
                                 {requiredDocs.length} required, {optionalDocs.length} optional
                             </span>
@@ -422,7 +422,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                 )}
 
                 {requiredDocs.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <h4 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                             Required Documents
                             <Badge variant="outline" className="text-[10px] font-normal sm:text-xs">
@@ -436,15 +436,15 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                                     className={cn(
                                         'flex flex-col gap-2 px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3',
                                         check.valid
-                                            ? 'bg-green-50/50 hover:bg-green-50 dark:bg-green-950/20 dark:hover:bg-green-950/30'
-                                            : 'bg-amber-50/50 hover:bg-amber-50 dark:bg-amber-950/20 dark:hover:bg-amber-950/30',
+                                            ? 'bg-primary/10/50 hover:bg-primary/10 dark:bg-primary/10/20 dark:hover:bg-primary/10/30'
+                                            : 'bg-muted/50/50 hover:bg-muted/50 dark:bg-muted/50/20 dark:hover:bg-muted/50/30',
                                     )}
                                 >
                                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                         {check.valid ? (
-                                            <CheckCircle className="h-4 w-4 shrink-0 text-green-600 sm:h-5 sm:w-5" />
+                                            <CheckCircle />
                                         ) : (
-                                            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 sm:h-5 sm:w-5" />
+                                            <AlertTriangle />
                                         )}
                                         <div className="min-w-0">
                                             <p className="truncate text-xs font-medium sm:text-sm">{check.document_type_display}</p>
@@ -455,7 +455,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                                         variant={check.valid ? 'default' : 'outline'}
                                         className={cn(
                                             'ml-6 w-fit shrink-0 text-[10px] sm:ml-0 sm:text-xs',
-                                            !check.valid && 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400',
+                                            !check.valid && 'border-amber-300 text-muted-foreground dark:border-amber-700 dark:text-muted-foreground',
                                         )}
                                     >
                                         {check.valid ? 'Valid' : 'Review'}
@@ -479,9 +479,9 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                                 <div key={index} className="hover:bg-muted/50 flex items-center justify-between px-4 py-2.5 transition-colors">
                                     <div className="flex min-w-0 items-center gap-3">
                                         {check.valid ? (
-                                            <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
+                                            <CheckCircle />
                                         ) : (
-                                            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                                            <AlertTriangle />
                                         )}
                                         <span className="truncate text-sm">{check.document_type_display}</span>
                                     </div>
@@ -502,19 +502,19 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                 )}
 
                 {result.errors.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <h4 className="flex items-center gap-2 text-sm font-semibold">
-                            <XCircle className="h-4 w-4 text-red-500" />
+                            <XCircle />
                             Compliance Violations
                         </h4>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             {result.errors.map((error, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm dark:border-red-800 dark:bg-red-950/30"
+                                    className="flex items-start gap-3 rounded-lg border border-red-200 bg-destructive/10 p-3 text-sm dark:border-red-800 dark:bg-destructive/10/30"
                                 >
-                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-                                    <span className="text-red-800 dark:text-red-200">{error}</span>
+                                    <AlertTriangle />
+                                    <span className="text-destructive dark:text-destructive">{error}</span>
                                 </div>
                             ))}
                         </div>
@@ -522,19 +522,19 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                 )}
 
                 {result.warnings.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <h4 className="flex items-center gap-2 text-sm font-semibold">
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            <AlertTriangle />
                             Compliance Warnings
                         </h4>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             {result.warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm dark:border-yellow-800 dark:bg-yellow-950/30"
+                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 text-sm dark:border-yellow-800 dark:bg-muted/50/30"
                                 >
-                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
-                                    <span className="text-yellow-800 dark:text-yellow-200">{warning}</span>
+                                    <Info />
+                                    <span className="text-muted-foreground dark:text-muted-foreground">{warning}</span>
                                 </div>
                             ))}
                         </div>
@@ -559,36 +559,36 @@ export function VerificationDetailTabs({ report }: VerificationDetailTabsProps) 
             <TabsList variant="line" className="w-full">
                 <TabsTrigger value="integrity">
                     <div className="relative">
-                        <FileCheck className="size-4" />
+                        <FileCheck />
                         {!report.summary.integrity_valid && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-red-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-destructive/100 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Integrity</span>
                 </TabsTrigger>
                 <TabsTrigger value="completeness">
                     <div className="relative">
-                        <FileText className="size-4" />
+                        <FileText />
                         {!report.completeness_result.is_complete && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-muted/500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Completeness</span>
                 </TabsTrigger>
                 <TabsTrigger value="crossref">
                     <div className="relative">
-                        <Link2 className="size-4" />
+                        <Link2 />
                         {!report.summary.cross_references_consistent && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-red-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-destructive/100 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Cross-Ref</span>
                 </TabsTrigger>
                 <TabsTrigger value="compliance">
                     <div className="relative">
-                        <Scale className="size-4" />
+                        <Scale />
                         {!report.summary.ra_12009_compliant && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-muted/500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Compliance</span>

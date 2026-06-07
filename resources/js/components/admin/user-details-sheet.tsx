@@ -96,44 +96,44 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
 
     // Shared content component
     const UserDetailsContent = () => (
-        <div className="space-y-6 p-4 sm:px-6 sm:py-4">
+        <div className="flex flex-col gap-6 p-4 sm:px-6 sm:py-4">
             {/* Basic Information */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <h3 className="text-sm font-semibold tracking-wide uppercase">Basic Information</h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-muted-foreground text-xs font-medium">User ID</label>
                         <p className="font-mono text-sm">#{user.id}</p>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-muted-foreground text-xs font-medium">Full Name</label>
                         <p className="flex items-center gap-2 text-sm wrap-break-word">
-                            <User className="h-4 w-4 shrink-0" />
+                            <User />
                             <span className="wrap-break-word">{user.name}</span>
                         </p>
                     </div>
 
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="flex flex-col gap-2 md:col-span-2">
                         <label className="text-muted-foreground text-xs font-medium">Email Address</label>
                         <p className="flex items-center gap-2 text-sm break-all">
-                            <Mail className="h-4 w-4 shrink-0" />
+                            <Mail />
                             <span className="break-all">{user.email}</span>
                         </p>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-muted-foreground text-xs font-medium">Email Verification</label>
                         <div>
                             {user.email_verified_at ? (
                                 <Badge variant="default" className="gap-1">
-                                    <CheckCircle2 className="h-3 w-3" />
+                                    <CheckCircle2 />
                                     Verified
                                 </Badge>
                             ) : (
                                 <Badge variant="secondary" className="gap-1">
-                                    <XCircle className="h-3 w-3" />
+                                    <XCircle />
                                     Not Verified
                                 </Badge>
                             )}
@@ -145,20 +145,20 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
             <Separator />
 
             {/* Role & Permissions */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <h3 className="text-sm font-semibold tracking-wide uppercase">Role & Permissions</h3>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     <label className="text-muted-foreground text-xs font-medium">Assigned Role</label>
                     <div className="flex flex-wrap gap-2">
                         {user.role ? (
                             <Badge variant="default" className="gap-1">
-                                <Shield className="h-3 w-3" />
+                                <Shield />
                                 {getRoleDisplayName(user.role)}
                             </Badge>
                         ) : user.roles && Array.isArray(user.roles) && user.roles.length > 0 ? (
                             user.roles.map((role: { id: number; name: string }) => (
                                 <Badge key={role.id} variant="default" className="gap-1">
-                                    <Shield className="h-3 w-3" />
+                                    <Shield />
                                     {role.name}
                                 </Badge>
                             ))
@@ -172,21 +172,21 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
             <Separator />
 
             {/* Security */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <h3 className="text-sm font-semibold tracking-wide uppercase">Security</h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-muted-foreground text-xs font-medium">Two-Factor Authentication</label>
                         <div>
                             {user.two_factor_enabled ? (
                                 <Badge variant="default" className="gap-1">
-                                    <ShieldCheck className="h-3 w-3" />
+                                    <ShieldCheck />
                                     Enabled
                                 </Badge>
                             ) : (
                                 <Badge variant="secondary" className="gap-1">
-                                    <XCircle className="h-3 w-3" />
+                                    <XCircle />
                                     Disabled
                                 </Badge>
                             )}
@@ -194,14 +194,14 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
                     </div>
 
                     {user.two_factor_confirmed_at && (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-muted-foreground text-xs font-medium">2FA Confirmed At</label>
                             <p className="text-sm wrap-break-word">{formatDateTime(user.two_factor_confirmed_at)}</p>
                         </div>
                     )}
 
                     {user.two_factor_recovery_codes && (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-muted-foreground text-xs font-medium">Recovery Codes</label>
                             <p className="text-sm">{getRecoveryCodesCount()} codes available</p>
                         </div>
@@ -214,12 +214,12 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
             {/* Blockchain */}
             {user.blockchain_address && (
                 <>
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                         <h3 className="text-sm font-semibold tracking-wide uppercase">Blockchain</h3>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-muted-foreground text-xs font-medium">Blockchain Address</label>
                             <div className="bg-muted flex items-start gap-2 rounded-md p-3">
-                                <Link2 className="mt-0.5 h-4 w-4 shrink-0" />
+                                <Link2 />
                                 <span className="font-mono text-sm break-all">{user.blockchain_address}</span>
                             </div>
                         </div>
@@ -229,11 +229,11 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
             )}
 
             {/* Account Dates */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
                 <h3 className="text-sm font-semibold tracking-wide uppercase">Account Information</h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-muted-foreground text-xs font-medium">Account Created</label>
                         <p className="text-sm wrap-break-word">
                             {formatDateTime(user.created_at) !== 'N/A' ? (
@@ -244,7 +244,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
                         </p>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-muted-foreground text-xs font-medium">Last Updated</label>
                         <p className="text-sm wrap-break-word">
                             {formatDateTime(user.updated_at) !== 'N/A' ? (
@@ -256,21 +256,21 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
                     </div>
 
                     {user.email_verified_at && (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-muted-foreground text-xs font-medium">Email Verified At</label>
                             <p className="text-sm wrap-break-word">{formatDateTime(user.email_verified_at)}</p>
                         </div>
                     )}
 
                     {user.locked_at && (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-muted-foreground text-xs font-medium">Account Locked</label>
                             <p className="text-sm wrap-break-word">{formatDateTime(user.locked_at)}</p>
                         </div>
                     )}
 
                     {user.lock_expires_at && (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-muted-foreground text-xs font-medium">Lock Expires</label>
                             <p className="text-sm wrap-break-word">{formatDateTime(user.lock_expires_at)}</p>
                         </div>
@@ -285,9 +285,9 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
                 <SheetHeader className="shrink-0 border-b p-4 sm:px-6 sm:py-4">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                         <div className="bg-primary/10 dark:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-lg">
-                            <User className="text-primary h-5 w-5" />
+                            <User />
                         </div>
                         <div>
                             <SheetTitle className="text-foreground text-xl font-semibold">User Details</SheetTitle>

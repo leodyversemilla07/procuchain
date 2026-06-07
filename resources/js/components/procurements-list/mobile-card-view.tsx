@@ -82,15 +82,15 @@ export const MobileCardView = ({
                     </div>
 
                     {/* Content */}
-                    <div className="min-w-0 flex-1 space-y-3">
+                    <div className="min-w-0 flex-1 flex flex-col gap-3">
                         {/* ID and Actions */}
                         <div className="flex items-start justify-between gap-2">
                             <Link
                                 href={getProcurementUrl(procurement.id)}
-                                className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                className="font-medium text-primary hover:underline dark:text-primary"
                                 aria-label={`View procurement ${procurement.id}`}
                             >
-                                <span className="rounded border border-blue-100 bg-blue-50 px-2 py-1 font-mono text-xs dark:border-blue-800/60 dark:bg-blue-900/30">
+                                <span className="rounded border border-blue-100 bg-primary/10 px-2 py-1 font-mono text-xs dark:border-blue-800/60 dark:bg-primary/20/30">
                                     {procurement.id}
                                 </span>
                             </Link>
@@ -117,14 +117,14 @@ export const MobileCardView = ({
                         <div>
                             <Link
                                 href={getProcurementUrl(procurement.id)}
-                                className="line-clamp-2 font-medium text-gray-900 hover:text-blue-600 hover:underline dark:text-gray-100"
+                                className="line-clamp-2 font-medium text-foreground hover:text-primary hover:underline dark:text-foreground"
                             >
                                 {procurement.title}
                             </Link>
                         </div>
 
                         {/* Stage and Status with Labels */}
-                        <div className="min-w-0 space-y-2">
+                        <div className="min-w-0 flex flex-col gap-2">
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className="text-muted-foreground shrink-0 text-xs font-medium">Stage:</span>
                                 <TruncateBadge
@@ -154,7 +154,7 @@ export const MobileCardView = ({
                         </div>
 
                         {/* Meta Info */}
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                                 <FileIcon className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>{procurement.document_count} docs</span>

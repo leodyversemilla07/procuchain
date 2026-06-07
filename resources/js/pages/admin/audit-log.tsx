@@ -151,7 +151,7 @@ export default function AuditLog() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
-                            <Search className="h-4 w-4" />
+                            <Search />
                             Filters
                         </CardTitle>
                     </CardHeader>
@@ -184,7 +184,7 @@ export default function AuditLog() {
                                         />
                                     }
                                 >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    <CalendarIcon data-icon="inline-start" />
                                     {dateRange?.from ? (
                                         dateRange.to ? (
                                             <>
@@ -212,12 +212,12 @@ export default function AuditLog() {
                     </CardContent>
                     <CardFooter className="flex gap-2">
                         <Button onClick={applyFilters}>
-                            <Search className="mr-2 h-4 w-4" />
+                            <Search data-icon="inline-start" />
                             Apply Filters
                         </Button>
                         {hasActiveFilters && (
                             <Button variant="outline" onClick={clearFilters}>
-                                <FilterX className="mr-2 h-4 w-4" />
+                                <FilterX data-icon="inline-start" />
                                 Clear
                             </Button>
                         )}
@@ -238,7 +238,7 @@ export default function AuditLog() {
                         {safeLogs.data.length === 0 ? (
                             <Empty className="py-16">
                                 <EmptyMedia>
-                                    <FileSearch className="h-12 w-12" />
+                                    <FileSearch />
                                 </EmptyMedia>
                                 <EmptyHeader>
                                     <EmptyTitle>No audit log entries</EmptyTitle>

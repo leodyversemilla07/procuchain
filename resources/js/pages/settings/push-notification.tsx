@@ -261,17 +261,17 @@ export default function PushNotification() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Push notification settings" />
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <HeadingSmall title="Push notifications" description="Manage your push notification preferences" />
 
                     {!isSupported ? (
-                        <div className="flex flex-col items-start justify-start space-y-4">
+                        <div className="flex flex-col items-start justify-start gap-4">
                             <Badge variant="destructive">Not Supported</Badge>
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <p className="text-muted-foreground">Push notifications are not supported in your current environment.</p>
                                 {typeof window !== 'undefined' && !window.isSecureContext && window.location.protocol === 'http:' && (
                                     <Alert>
-                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertCircle />
                                         <AlertDescription>
                                             <strong>HTTPS Required:</strong> Push notifications require a secure connection (HTTPS). Your site is
                                             currently running on HTTP. Please use HTTPS or access via localhost/127.0.0.1 for testing.
@@ -280,7 +280,7 @@ export default function PushNotification() {
                                 )}
                                 {typeof window !== 'undefined' && window.isSecureContext && (
                                     <Alert>
-                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertCircle />
                                         <AlertDescription>
                                             Your browser may not support push notifications. Please use a modern browser like Chrome, Firefox, Safari,
                                             or Edge.
@@ -290,7 +290,7 @@ export default function PushNotification() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-start justify-start space-y-4">
+                        <div className="flex flex-col items-start justify-start gap-4">
                             <div className="flex items-center gap-2">
                                 {isSubscribed ? (
                                     <Badge variant="default">Enabled</Badge>
@@ -313,7 +313,7 @@ export default function PushNotification() {
 
                             {showPermissionAlert && (
                                 <Alert>
-                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertCircle />
                                     <AlertDescription>
                                         Notification permission is currently denied. Please enable notifications in your browser settings to receive
                                         push notifications.
@@ -323,16 +323,16 @@ export default function PushNotification() {
 
                             {error && (
                                 <Alert variant="destructive">
-                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertCircle />
                                     <AlertDescription>{error}</AlertDescription>
                                 </Alert>
                             )}
 
-                            <div className="w-full space-y-3 rounded-lg border p-4">
+                            <div className="flex w-full flex-col gap-3 rounded-lg border p-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Permission Status</span>
                                     {permission === 'granted' ? (
-                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
+                                        <Badge variant="default">
                                             Granted
                                         </Badge>
                                     ) : permission === 'denied' ? (
@@ -345,13 +345,13 @@ export default function PushNotification() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Subscription Status</span>
                                     {isSubscribed ? (
-                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
-                                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                                        <Badge variant="default">
+                                            <CheckCircle2 data-icon="inline-start" />
                                             Active
                                         </Badge>
                                     ) : (
                                         <Badge variant="secondary">
-                                            <BellOff className="mr-1 h-3 w-3" />
+                                            <BellOff data-icon="inline-start" />
                                             Inactive
                                         </Badge>
                                     )}
@@ -408,11 +408,11 @@ export default function PushNotification() {
 
                             {isSubscribed && (
                                 <Alert>
-                                    <Bell className="h-4 w-4" />
+                                    <Bell />
                                     <AlertDescription>
-                                        <div className="space-y-2">
+                                        <div className="flex flex-col gap-2">
                                             <p className="font-medium">What you'll receive notifications for:</p>
-                                            <ul className="marker:text-muted-foreground ml-4 list-disc space-y-1.5 text-sm">
+                                            <ul className="marker:text-muted-foreground ml-4 flex list-disc flex-col gap-1.5 text-sm">
                                                 <li>Procurement stage updates and transitions</li>
                                                 <li>Document uploads and validations</li>
                                                 <li>Important system alerts and deadlines</li>

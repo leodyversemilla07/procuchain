@@ -36,14 +36,14 @@ export function BasicInfoSection({
 }: BasicInfoSectionProps) {
     return (
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-            <CardHeader className="space-y-1 pb-2 sm:pb-4">
+            <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                    <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                    <FileText />
                     Basic Information
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">Required procurement details per RA 12009 (NGPA)</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex flex-col gap-6 sm:p-6">
                 {/* PR Number and PPMP Reference - Grid */}
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                     {/* PR Number */}

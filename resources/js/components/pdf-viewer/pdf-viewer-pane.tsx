@@ -148,7 +148,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
                             <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
                                 Unable to display the PDF in the browser. You can view the document using the options below.
                             </p>
-                            <div className="space-y-2 sm:space-y-3">
+                            <div className="flex flex-col gap-2 sm:flex flex-col gap-3">
                                 <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
                                     <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                     Open PDF in New Tab

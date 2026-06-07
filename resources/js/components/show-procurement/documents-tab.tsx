@@ -37,10 +37,10 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                    <Layers className="text-muted-foreground h-5 w-5" />
+                    <Layers />
                     <h3 className="text-lg font-semibold">Procurement Documents</h3>
                 </div>
                 <Badge variant="secondary">
@@ -48,7 +48,7 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
                 </Badge>
             </div>
 
-            <div className="space-y-8">
+            <div className="flex flex-col gap-8">
                 {sortedStageKeys.map((stage, stageIndex) => {
                     const isLatestStage = stageIndex === 0;
                     const stageDocuments = documentsByStage[stage];

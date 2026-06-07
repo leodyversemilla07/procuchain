@@ -140,7 +140,7 @@ export default function CreateUserDialog({ open, onOpenChange, formData, setForm
                             Cancel
                         </Button>
                         <Button type="submit">
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus />
                             Create User
                         </Button>
                     </DialogFooter>

@@ -380,7 +380,7 @@ export default function IntegrityBreaches() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <ShieldAlert className="h-5 w-5" />
+                                <ShieldAlert />
                                 Detected Breaches
                             </CardTitle>
                         </CardHeader>
@@ -604,13 +604,13 @@ export default function IntegrityBreaches() {
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <ShieldAlert className="h-5 w-5" />
+                            <ShieldAlert />
                             Breach Details
                         </DialogTitle>
                         <DialogDescription>Full details for breach #{selectedBreach?.id}</DialogDescription>
                     </DialogHeader>
                     {selectedBreach && (
-                        <div className="space-y-3 text-sm">
+                        <div className="flex flex-col gap-3 text-sm">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <span className="text-muted-foreground">Violation Type:</span>

@@ -72,13 +72,13 @@ export default function ProcurementInitiationForm({
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Draft Recovery Banner */}
                 {showDraftBanner && (
-                    <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                    <Card className="border-amber-500/50 bg-muted/50/50 dark:bg-muted/50/20">
                         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-start gap-3">
-                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                <AlertCircle />
                                 <div>
-                                    <p className="font-medium text-amber-800 dark:text-amber-200">You have an unsaved draft</p>
-                                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                                    <p className="font-medium text-muted-foreground dark:text-muted-foreground">You have an unsaved draft</p>
+                                    <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                                         Last saved: {draftSavedAt ? new Date(draftSavedAt).toLocaleString() : 'Unknown'}
                                     </p>
                                 </div>
@@ -89,9 +89,9 @@ export default function ProcurementInitiationForm({
                                     variant="outline"
                                     size="sm"
                                     onClick={discardDraft}
-                                    className="border-amber-500/50 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                                    className="border-amber-500/50 text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted/30"
                                 >
-                                    <Trash2 className="mr-1.5 h-4 w-4" />
+                                    <Trash2 />
                                     Discard
                                 </Button>
                                 <Button
@@ -101,9 +101,9 @@ export default function ProcurementInitiationForm({
                                         const draft = loadDraft();
                                         if (draft) restoreDraft(draft);
                                     }}
-                                    className="bg-amber-600 text-white hover:bg-amber-700"
+                                    className="bg-muted-foreground text-white hover:bg-muted-foreground/90"
                                 >
-                                    <Save className="mr-1.5 h-4 w-4" />
+                                    <Save />
                                     Restore Draft
                                 </Button>
                             </div>
@@ -126,14 +126,14 @@ export default function ProcurementInitiationForm({
                         !showDraftBanner &&
                         draftSavedAt && (
                             <Badge variant="secondary" className="gap-1.5 text-xs">
-                                <Save className="h-3 w-3" />
+                                <Save />
                                 Draft saved {new Date(draftSavedAt).toLocaleTimeString()}
                             </Badge>
                         )
                     }
                 />
 
-                <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+                <form onSubmit={onSubmit} className="flex flex-col gap-4 sm:gap-6">
                     {/* Section 1: Basic Information */}
                     <BasicInfoSection
                         data={data}
@@ -175,9 +175,9 @@ export default function ProcurementInitiationForm({
 
                     {/* Next Steps Info */}
                     <Card className="border-sidebar-border/70 dark:border-sidebar-border bg-muted/30 shadow-md">
-                        <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                        <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                             <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                                <Upload className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                <Upload className="text-primary" />
                                 Next: Progressive Document Upload
                             </CardTitle>
                             <CardDescription className="text-muted-foreground text-sm">
@@ -203,7 +203,7 @@ export default function ProcurementInitiationForm({
                                             onClick={clearDraft}
                                             className="text-muted-foreground hover:text-destructive h-auto p-1 text-xs"
                                         >
-                                            <Trash2 className="mr-1 h-3 w-3" />
+                                            <Trash2 data-icon="inline-start" />
                                             Clear Draft
                                         </Button>
                                     )}
@@ -218,12 +218,12 @@ export default function ProcurementInitiationForm({
                                     >
                                         {isSavingDraft ? (
                                             <>
-                                                <Spinner className="h-4 w-4" />
+                                                <Spinner />
                                                 Saving...
                                             </>
                                         ) : (
                                             <>
-                                                <Save className="h-4 w-4" />
+                                                <Save />
                                                 Save Draft
                                             </>
                                         )}
@@ -235,12 +235,12 @@ export default function ProcurementInitiationForm({
                                     >
                                         {processing ? (
                                             <>
-                                                <Spinner className="h-4 w-4" />
+                                                <Spinner />
                                                 Creating...
                                             </>
                                         ) : (
                                             <>
-                                                <CheckCircle2 className="h-4 w-4" />
+                                                <CheckCircle2 />
                                                 Create Procurement
                                             </>
                                         )}

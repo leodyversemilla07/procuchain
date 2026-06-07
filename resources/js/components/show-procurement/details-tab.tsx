@@ -57,7 +57,7 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
             <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
                 <div className="flex items-center gap-3">
                     <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg sm:h-10 sm:w-10">
-                        <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                        <FileText />
                     </div>
                     <div>
                         <CardTitle className="text-base sm:text-lg">Procurement Details</CardTitle>
@@ -68,14 +68,14 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
             <CardContent className="p-0">
                 <div className="grid gap-6 p-4 sm:p-6">
                     {/* Primary Info Section */}
-                    <div className="bg-muted/30 space-y-4 rounded-lg border p-4">
+                    <div className="bg-muted/30 flex flex-col gap-4 rounded-lg border p-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Procurement Title</label>
                             <h3 className="text-base leading-tight font-semibold sm:text-lg">{details.title}</h3>
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                            <div className="space-y-1">
+                            <div className="flex flex-col gap-1">
                                 <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">PR Number</label>
                                 <div className="flex items-center gap-2">
                                     <span className="font-mono font-medium">{details.pr_number}</span>
@@ -85,17 +85,17 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                                         className="text-muted-foreground hover:text-foreground h-6 w-6"
                                         onClick={() => copyToClipboard(details.pr_number, 'PR Number')}
                                     >
-                                        <Copy className="h-3 w-3" />
+                                        <Copy />
                                     </Button>
                                 </div>
                             </div>
                             {details.app_reference && (
-                                <div className="space-y-1">
+                                <div className="flex flex-col gap-1">
                                     <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">AIP Code Reference</label>
                                     <p className="font-medium">{details.app_reference}</p>
                                 </div>
                             )}
-                            <div className="space-y-1 sm:col-span-2">
+                            <div className="flex flex-col gap-1 sm:col-span-2">
                                 <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Description</label>
                                 <p className="text-muted-foreground line-clamp-3 text-sm transition-all hover:line-clamp-none">
                                     {details.description}
@@ -106,9 +106,9 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
 
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Financial & Classification */}
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
-                                <Banknote className="h-4 w-4" />
+                                <Banknote />
                                 <span>Financial & Classification</span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -134,16 +134,16 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                         </div>
 
                         {/* Office & Stakeholders */}
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
-                                <Building2 className="h-4 w-4" />
+                                <Building2 />
                                 <span>Office & Stakeholders</span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <DetailItem label="Requesting Office" value={details.office} icon={<MapPin className="h-3 w-3" />} />
-                                <DetailItem label="End User" value={details.end_user} icon={<User className="h-3 w-3" />} />
-                                <DetailItem label="Prepared By" value={details.prepared_by} icon={<User className="h-3 w-3" />} />
-                                <DetailItem label="Approved By" value={details.approved_by} icon={<User className="h-3 w-3" />} />
+                                <DetailItem label="Requesting Office" value={details.office} icon={<MapPin />} />
+                                <DetailItem label="End User" value={details.end_user} icon={<User />} />
+                                <DetailItem label="Prepared By" value={details.prepared_by} icon={<User />} />
+                                <DetailItem label="Approved By" value={details.approved_by} icon={<User />} />
                             </div>
                         </div>
                     </div>
@@ -153,9 +153,9 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                     {/* Additional Details Grid */}
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Legal & Reference */}
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
-                                <ClipboardList className="h-4 w-4" />
+                                <ClipboardList />
                                 <span>Reference & Legal</span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -163,34 +163,34 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                                 <DetailItem
                                     label="BAC Res. Date"
                                     value={details.bac_resolution_date_formatted}
-                                    icon={<Calendar className="h-3 w-3" />}
+                                    icon={<Calendar />}
                                 />
                                 <DetailItem label="PhilGEPS Ref." value={details.philgeps_reference} />
                                 <DetailItem
                                     label="PhilGEPS Posting"
                                     value={details.philgeps_posting_date_formatted}
-                                    icon={<Calendar className="h-3 w-3" />}
+                                    icon={<Calendar />}
                                 />
                             </div>
                         </div>
 
                         {/* Timeline & Delivery */}
-                        <div className="space-y-4">
+                        <div className="flex flex-col gap-4">
                             <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
-                                <Clock className="h-4 w-4" />
+                                <Clock />
                                 <span>Timeline & Delivery</span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <DetailItem label="Created At" value={details.created_at_formatted} icon={<Calendar className="h-3 w-3" />} />
-                                <DetailItem label="Approval Date" value={details.approval_date_formatted} icon={<Calendar className="h-3 w-3" />} />
+                                <DetailItem label="Created At" value={details.created_at_formatted} icon={<Calendar />} />
+                                <DetailItem label="Approval Date" value={details.approval_date_formatted} icon={<Calendar />} />
                                 {details.delivery_location && (
-                                    <DetailItem label="Delivery Location" value={details.delivery_location} icon={<MapPin className="h-3 w-3" />} />
+                                    <DetailItem label="Delivery Location" value={details.delivery_location} icon={<MapPin />} />
                                 )}
                                 {(details.delivery_date_formatted || details.delivery_term_days) && (
                                     <DetailItem
                                         label="Delivery Term"
                                         value={details.delivery_date_formatted || `${details.delivery_term_days} Days`}
-                                        icon={<Calendar className="h-3 w-3" />}
+                                        icon={<Calendar />}
                                     />
                                 )}
                             </div>
@@ -216,7 +216,7 @@ const DetailItem = ({
     if (!value) return null;
 
     return (
-        <div className="min-w-0 space-y-1">
+        <div className="min-w-0 flex flex-col gap-1">
             <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
                 {icon}
                 {label}

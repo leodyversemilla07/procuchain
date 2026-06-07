@@ -26,22 +26,22 @@ export function StageCompletionFooter({
     return (
         <CardFooter className="bg-muted/5 flex flex-col gap-4 rounded-b-xl border-t p-6 lg:col-span-2">
             {isStageCompleted ? (
-                <div className="flex w-full items-center justify-between rounded-xl border border-green-500/20 bg-green-500/10 p-4">
-                    <div className="flex items-center gap-3 text-green-700">
-                        <div className="rounded-full bg-green-500 p-1">
-                            <CheckCircle2 className="h-4 w-4 text-white" />
+                <div className="flex w-full items-center justify-between rounded-xl border border-green-500/20 bg-primary/100/10 p-4">
+                    <div className="flex items-center gap-3 text-primary">
+                        <div className="rounded-full bg-primary/100 p-1">
+                            <CheckCircle2 />
                         </div>
                         <span className="text-xs font-bold tracking-tight uppercase">Stage Complete</span>
                     </div>
                     {nextStageInfo && (
-                        <Button variant="outline" className="border-green-500/20 bg-white text-green-700" render={<Link href={nextStageInfo.url} />}>
-                            NEXT: {nextStageInfo.name} <ArrowRight className="ml-2 h-4 w-4" />
+                        <Button variant="outline" className="border-green-500/20 bg-white text-primary" render={<Link href={nextStageInfo.url} />}>
+                            NEXT: {nextStageInfo.name} <ArrowRight />
                         </Button>
                     )}
                 </div>
             ) : isStageFuture ? (
                 <Button disabled className="h-12 w-full font-black uppercase">
-                    <Lock className="mr-2 h-4 w-4" /> Locked
+                    <Lock /> Locked
                 </Button>
             ) : (
                 <Button
@@ -49,7 +49,7 @@ export function StageCompletionFooter({
                     onClick={onMarkComplete}
                     className="h-12 w-full text-sm font-bold tracking-tight uppercase shadow-lg transition-all hover:-translate-y-px active:translate-y-0"
                 >
-                    {isMarkingComplete ? <Spinner className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                    {isMarkingComplete ? <Spinner /> : <CheckCircle2 />}
                     Mark as Complete
                 </Button>
             )}

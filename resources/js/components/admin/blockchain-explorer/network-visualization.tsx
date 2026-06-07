@@ -392,7 +392,7 @@ function StatsBar({ nodes, connections }: { nodes: NodeInfo[]; connections: Conn
                                 s.good ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
                             )}
                         >
-                            <s.icon className="h-4 w-4" />
+                            <s.icon />
                         </div>
                         <div>
                             <p className="font-mono text-lg leading-none font-bold">{s.value}</p>
@@ -418,7 +418,7 @@ function NodeInfoPanel({ node }: { node: NodeInfo }) {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg border', ident.color)}>
-                            <ident.icon className="text-foreground h-5 w-5" />
+                            <ident.icon />
                         </div>
                         <div>
                             <CardTitle className="text-base">{ident.label}</CardTitle>
@@ -470,7 +470,7 @@ function ConnectionTable({ connections }: { connections: ConnectionLine[] }) {
         <Card>
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm">
-                    <Wifi className="text-primary h-4 w-4" />
+                    <Wifi />
                     Network Connections
                 </CardTitle>
                 <CardDescription>
@@ -530,7 +530,7 @@ export function NetworkVisualization({ nodes, connections, onRefresh, isRefreshi
     const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
 
     return (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
             <StatsBar nodes={nodes} connections={connections} />
 
             {/* Topology */}
@@ -544,7 +544,7 @@ export function NetworkVisualization({ nodes, connections, onRefresh, isRefreshi
                     ) : (
                         <Card className="h-full">
                             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                                <Network className="text-muted-foreground/30 mb-3 h-8 w-8" />
+                                <Network className="text-muted-foreground/30 mb-3" />
                                 <p className="text-muted-foreground text-sm">Click a node in the topology</p>
                                 <p className="text-muted-foreground/50 text-xs">for detailed information</p>
                             </CardContent>

@@ -55,10 +55,10 @@ export default function Password() {
             <Head title="Profile settings" />
 
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                     <HeadingSmall title="Update password" description="Ensure your account is using a long, random password to stay secure" />
 
-                    <form onSubmit={updatePassword} className="space-y-6">
+                    <form onSubmit={updatePassword} className="flex flex-col gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="current_password">Current password</Label>
 
@@ -111,7 +111,7 @@ export default function Password() {
 
                         <div className="flex items-center gap-4">
                             <Button disabled={processing} className="gap-2">
-                                {processing && <Spinner className="size-4" />}
+                                {processing && <Spinner />}
                                 Save password
                             </Button>
 
