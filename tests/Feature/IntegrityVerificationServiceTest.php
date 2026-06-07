@@ -6,6 +6,7 @@ use App\Models\Procurement;
 use App\Models\ProcurementCorrection;
 use App\Models\ProcurementEvent;
 use App\Services\BlockchainAuditTrailService;
+use App\Services\Integrity\BlockchainVerificationIndex;
 use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
 use App\Services\NormalizedTableSyncService;
@@ -791,6 +792,74 @@ describe('IntegrityVerificationService', function () {
 
         expect($result['success'])->toBeFalse();
         expect($result['error'])->toBe('Already processed');
+    });
+
+    it('restores a pending hash mismatch violation and refreshes hash after sync', function () {
+        // Arrange: create procurement with stale hash
+        $proc = Procurement::create([
+            'pr_number' => 'PR-TEST-HASH',
+            'title' => 'Initial PR',
+            'data_hash' => 'old-stale-hash',
+            'txid' => 'test-restore-txid',
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+            'current_stage' => 'procurement_initiation',
+            'current_status' => 'draft',
+        ]);
+
+        $auditLog = IntegrityAuditLog::recordViolation(
+            stream: 'procurement.metadata',
+            streamKey: 'PR-TEST-HASH',
+            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            txid: 'test-restore-txid',
+        );
+
+        // Mock sync service to update procurement and return counts
+        $syncMock = $this->mock(NormalizedTableSyncService::class);
+        $syncMock->shouldReceive('syncAll')->once()->andReturnUsing(function () use ($proc) {
+            $proc->update([
+                'title' => 'Restored PR',
+                'data_hash' => 'new-done-hash',
+            ]);
+
+            return ['procurements' => 1, 'stages' => 0, 'documents' => 0, 'events' => 0];
+        });
+
+        // Mock blockchain index to return the matching chain record
+        $this->mock(BlockchainVerificationIndex::class, function ($mock) {
+            $mock->shouldReceive('jsonByTxid')->andReturn([
+                'pr_number' => 'PR-TEST-HASH',
+                'title' => 'Restored PR',
+            ]);
+            $mock->shouldReceive('hasTxid')->andReturn(true);
+            $mock->shouldReceive('prNumbers')->andReturn(['PR-TEST-HASH']);
+            $mock->shouldReceive('isLoaded')->andReturn(true);
+            $mock->shouldReceive('itemsByPrNumber')->andReturn([]);
+            $mock->shouldReceive('loadStream')->andReturn(null);
+        });
+
+        $this->mock(Manager::class, function ($mock) {
+            $mock->shouldReceive('liststreamitems')->andReturn([
+                [
+                    'data' => [
+                        'json' => [
+                            'pr_number' => 'PR-TEST-HASH',
+                        ],
+                    ],
+                ],
+            ]);
+            $mock->shouldReceive('liststreamkeyitems')->andReturn([]);
+        });
+
+        $service = app(IntegrityVerificationService::class);
+        $result = $service->restoreViolation($auditLog);
+
+        expect($result['success'])->toBeTrue();
+        expect($result['items_restored'])->toBe(1);
+
+        $auditLog->refresh();
+        expect($auditLog->recovery_status)->toBe('restored');
+        expect($auditLog->recovery_result)->toHaveKey('restored_by');
     });
 });
 
