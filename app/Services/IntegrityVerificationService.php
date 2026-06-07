@@ -261,6 +261,10 @@ class IntegrityVerificationService
             // longer reproduces before marking it restored.
             $syncCounts = $this->syncService->syncAll();
 
+            // Hash must be refreshed after sync so the post-repair verifier
+            // sees the new DB state matches the chain.
+            $this->refreshHashesAfterRepair();
+
             if (! $this->violationIsResolved($auditLog)) {
                 $auditLog->markFailed('Post-repair verification failed; the violation still reproduces after syncing from blockchain.');
                 $this->failedCount++;
