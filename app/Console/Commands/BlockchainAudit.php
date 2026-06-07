@@ -49,7 +49,7 @@ class BlockchainAudit extends Command
             $source = $this->option('source');
 
             if ($autoRepair) {
-                $this->warn('⚠ Auto-repair is ENABLED — breaches will be restored from blockchain automatically.');
+                $this->warn('[!] Auto-repair is ENABLED — breaches will be restored from blockchain automatically.');
                 $this->newLine();
             }
 
@@ -98,7 +98,7 @@ class BlockchainAudit extends Command
 
         if (empty($result['violations'])) {
             $this->newLine();
-            $this->info('  ✓ No breaches detected — mirror integrity verified.');
+            $this->info('  [OK] No breaches detected — mirror integrity verified.');
 
             return;
         }
@@ -117,7 +117,7 @@ class BlockchainAudit extends Command
                 default => 'white',
             };
 
-            $this->line("    • <fg={$color}>{$label}</>: {$count}");
+            $this->line("    - <fg={$color}>{$label}</>: {$count}");
         }
 
         if ($autoRepair) {
@@ -163,7 +163,7 @@ class BlockchainAudit extends Command
             foreach ($summary['by_type'] as $type => $count) {
                 $enum = BreachTypeEnums::tryFrom($type);
                 $label = $enum ? $enum->getDisplayName() : $type;
-                $this->line("    • {$label}: {$count}");
+                $this->line("    - {$label}: {$count}");
             }
         }
 
