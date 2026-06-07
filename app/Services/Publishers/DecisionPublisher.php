@@ -2,6 +2,7 @@
 
 namespace App\Services\Publishers;
 
+use App\DataTransferObjects\ProcurementData;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Services\Procurement\StageStatusMapper;
@@ -101,7 +102,7 @@ class DecisionPublisher
         string $procurementTitle,
         bool $wasHeld,
         string $userAddress,
-        ?array $procurement = null
+        ProcurementData|array|null $procurement = null
     ): array {
         $config = self::DECISION_CONFIG[$decisionType] ?? null;
 
@@ -190,7 +191,7 @@ class DecisionPublisher
         string $procurementTitle,
         string $userAddress,
         array $config,
-        ?array $procurement = null
+        ProcurementData|array|null $procurement = null
     ): array {
         /** @var StageEnums $stage */
         $stage = $config['stage'];
@@ -221,10 +222,15 @@ class DecisionPublisher
             userAddress: $userAddress
         );
 
+        // Get title from procurement (supports both DTO and array)
+        $title = $procurement instanceof ProcurementData
+            ? $procurement->title
+            : ($procurement['title'] ?? $procurementTitle);
+
         // Publish stage transition
         $this->statusPublisher->publishTransition(
             $prNumber,
-            $procurement['title'] ?? $procurementTitle,
+            $title,
             $stage,
             $nextStage,
             $skippedStatus,
