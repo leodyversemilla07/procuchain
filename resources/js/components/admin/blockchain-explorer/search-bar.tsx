@@ -17,7 +17,7 @@ export function SearchBar({ searchQuery, isSearching, onSearchQueryChange, onSea
             <CardContent>
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="relative flex-1">
-                        <Search />
+                        <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                         <Input
                             placeholder="Search blocks, transactions, addresses..."
                             value={searchQuery}
@@ -35,7 +35,7 @@ export function SearchBar({ searchQuery, isSearching, onSearchQueryChange, onSea
                             </>
                         ) : (
                             <>
-                                <Search />
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                                 Search
                             </>
                         )}

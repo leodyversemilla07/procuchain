@@ -61,7 +61,7 @@ export function ProcurementFiltersToolbar({
             {/* Search row */}
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative max-w-md flex-1">
-                    <Search />
+                    <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                     <Input
                         id="procurement-search"
                         name="search"

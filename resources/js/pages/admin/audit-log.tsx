@@ -151,7 +151,7 @@ export default function AuditLog() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
-                            <Search />
+                            <Search className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" />
                             Filters
                         </CardTitle>
                     </CardHeader>
