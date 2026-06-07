@@ -63,11 +63,13 @@ class StageCompletionHandler
         );
 
         $nextStageName = null;
+        $nextStageUrl = null;
 
         if (isset($data['next_stage'])) {
             $nextStage = StageEnums::from($data['next_stage']);
             $nextStageStatus = StatusEnums::from($data['next_stage_status']);
             $nextStageName = $nextStage->getDisplayName();
+            $nextStageUrl = $this->buildNextStageUrl($data['pr_number'], $nextStage);
 
             $this->statusPublisher->publishTransition(
                 prNumber: $data['pr_number'],
@@ -98,6 +100,7 @@ class StageCompletionHandler
             'event_txid' => $eventResult['event_txid'] ?? null,
             'next_stage' => $data['next_stage'] ?? null,
             'next_stage_name' => $nextStageName,
+            'next_stage_url' => $nextStageUrl,
         ];
     }
 
@@ -143,7 +146,32 @@ class StageCompletionHandler
             'success' => true,
             'next_stage' => $nextStage->value,
             'next_stage_name' => $nextStage->getDisplayName(),
+            'next_stage_url' => $this->buildNextStageUrl($data['pr_number'], $nextStage),
         ];
+    }
+
+    /**
+     * Build the URL for the next stage based on its phase.
+     */
+    private function buildNextStageUrl(string $prNumber, StageEnums $nextStage): string
+    {
+        $phase = $nextStage->getPhase();
+
+        return match ($phase) {
+            'pre_procurement' => route('bac-secretariat.procurement.pre-procurement.show', [
+                'pr_number' => $prNumber,
+                'stage' => $nextStage->value,
+            ]),
+            'procurement' => route('bac-secretariat.procurement.bidding.show', [
+                'pr_number' => $prNumber,
+                'stage' => $nextStage->value,
+            ]),
+            'post_procurement' => route('bac-secretariat.procurement.post-procurement.show', [
+                'pr_number' => $prNumber,
+                'stage' => $nextStage->value,
+            ]),
+            default => '#',
+        };
     }
 
     private function sendStageNotification(array $data, StageEnums $stage, StatusEnums $completionStatus, ?string $nextStageName): void

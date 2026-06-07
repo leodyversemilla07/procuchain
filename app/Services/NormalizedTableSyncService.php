@@ -250,7 +250,7 @@ class NormalizedTableSyncService
 
             $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementStage::getHashableFields()));
 
-            ProcurementStage::updateOrCreate(
+            $procurementStage = ProcurementStage::updateOrCreate(
                 ['txid' => $txid],
                 [
                     ...$attributes,
@@ -259,13 +259,26 @@ class NormalizedTableSyncService
                 ]
             );
 
-            // Update procurement current stage
-            $procurement->update([
-                'current_stage' => $data['stage'] ?? $procurement->current_stage,
-                'current_status' => $data['current_status'] ?? $procurement->current_status,
-                'previous_status' => $data['previous_status'] ?? $procurement->current_status,
-                'last_updated_at' => now(),
-            ]);
+            // Update procurement current stage only if this status is newer than the current one
+            $enteredAt = $attributes['entered_at'];
+            $shouldUpdate = false;
+
+            if ($procurement->last_updated_at === null) {
+                // No previous update, always update
+                $shouldUpdate = true;
+            } elseif ($enteredAt && strtotime($enteredAt) > $procurement->last_updated_at->timestamp) {
+                // This status is newer than the current one
+                $shouldUpdate = true;
+            }
+
+            if ($shouldUpdate) {
+                $procurement->update([
+                    'current_stage' => $data['stage'] ?? $procurement->current_stage,
+                    'current_status' => $data['current_status'] ?? $procurement->current_status,
+                    'previous_status' => $data['previous_status'] ?? $procurement->current_status,
+                    'last_updated_at' => $enteredAt ? date('Y-m-d H:i:s', strtotime($enteredAt)) : now(),
+                ]);
+            }
 
             $count++;
         }
