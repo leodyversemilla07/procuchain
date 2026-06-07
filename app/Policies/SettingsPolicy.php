@@ -64,10 +64,9 @@ class SettingsPolicy
     }
 
     /**
-     * Determine whether the user can view the workflow page.
-     * All authenticated users can view workflow definitions.
+     * Determine whether the user can view the public workflow page.
      */
-    public function viewWorkflow(User $user): bool
+    public function viewWorkflow(?User $user = null): bool
     {
         return true;
     }

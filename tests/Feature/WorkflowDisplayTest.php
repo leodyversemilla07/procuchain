@@ -39,8 +39,7 @@ describe('Public Workflow Page', function () {
     it('uses default workflow definitions when database configs have not been materialized', function () {
         expect(ProcurementWorkflowConfig::query()->count())->toBe(0);
 
-        $response = $this->actingAs($this->bacSecretariat)
-            ->get(route('workflow'));
+        $response = $this->get(route('workflow'));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
