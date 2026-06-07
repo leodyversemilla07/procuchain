@@ -105,7 +105,7 @@ class IntegrityVerificationService
         // Prevent concurrent verification runs (race condition protection)
         $lockKey = 'integrity:verification:lock';
         if (! cache()->lock($lockKey, 300)->get()) {
-            Log::warning('IntegrityVerification: skipped — another run is in progress', ['source' => $source]);
+            Log::warning('IntegrityVerification: skipped - another run is in progress', ['source' => $source]);
 
             return [
                 'run_id' => $this->runId ?? uniqid('skip-'),
@@ -557,7 +557,7 @@ class IntegrityVerificationService
                         tableName: $tableName,
                         record: $record,
                         prNumber: $prNumber,
-                        message: "Unauthorized publisher {$publisher} — expected {$authorizedAddress}",
+                        message: "Unauthorized publisher {$publisher} - expected {$authorizedAddress}",
                         chainData: ['publishers' => $publishers, 'authorized_address' => $authorizedAddress],
                     );
 
@@ -961,7 +961,7 @@ class IntegrityVerificationService
                     tableName: 'procurements',
                     record: $record,
                     prNumber: $record->pr_number,
-                    message: 'Record exists in database but not on blockchain — unauthorized injection',
+                    message: 'Record exists in database but not on blockchain - unauthorized injection',
                     chainData: null,
                 );
             }
@@ -1282,7 +1282,7 @@ class IntegrityVerificationService
             ->get();
 
         if ($pending->isEmpty()) {
-            Log::info('IntegrityVerification: auto-repair skipped — no pending violations', [
+            Log::info('IntegrityVerification: auto-repair skipped - no pending violations', [
                 'run_id' => $this->runId,
             ]);
 
