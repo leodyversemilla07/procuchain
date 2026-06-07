@@ -596,6 +596,10 @@ class NormalizedTableSyncService
             // UniqueConstraintViolationException from the pr_number unique index.
             $existing = Procurement::withTrashed()->where('pr_number', $prNumber)->first();
             if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+
                 $existing->update([...$attributes, 'data_hash' => $dataHash, 'blockchain_hash' => $dataHash]);
             } else {
                 Procurement::create([
