@@ -235,3 +235,73 @@ it('deduplicates identical pending violations in audit log', function () {
     expect($third->id)->not->toBe($first->id)
         ->and(IntegrityAuditLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(2);
 });
+
+it('detects unauthorized records with tampered pr_number via txid lookup', function () {
+    $procurement = Procurement::create([
+        'pr_number' => 'PR-TAMPERED-VALUE',
+        'title' => 'Modified Title',
+        'description' => 'Original Description',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'BAC Office',
+        'end_user' => 'BAC Office',
+        'abc_amount' => 500000,
+        'current_stage' => 'procurement_initiation',
+        'current_status' => 'draft',
+        'txid' => 'metadata-tampered-txid',
+    ]);
+
+    $originalChainData = [
+        'pr_number' => 'PR-ORIGINAL-VALUE',
+        'title' => 'Original Title',
+        'description' => 'Original Description',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'BAC Office',
+        'end_user' => 'BAC Office',
+        'funding_source' => 'General Fund',
+        'abc_amount' => '500000',
+        'status' => 'draft',
+    ];
+
+    $this->mock(Manager::class, function ($mock) use ($originalChainData) {
+        $mock->shouldReceive('liststreamitems')
+            ->andReturnUsing(function (string $stream) use ($originalChainData) {
+                if ($stream === 'procurement.metadata') {
+                    return [
+                        [
+                            'txid' => 'metadata-tampered-txid',
+                            'data' => ['json' => $originalChainData],
+                        ],
+                    ];
+                }
+
+                return [];
+            });
+        $mock->shouldReceive('getrawtransaction')
+            ->with('metadata-tampered-txid', 1)
+            ->andReturn([
+                'data' => [
+                    [
+                        'json' => $originalChainData,
+                    ],
+                ],
+            ]);
+        $mock->shouldReceive('getrawtransaction')
+            ->andReturn([]);
+        $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
+    });
+
+    $result = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'tamper-test');
+
+    $log = IntegrityAuditLog::where('stream', 'procurement.metadata')
+        ->where('violation_type', BreachTypeEnums::UNAUTHORIZED_RECORD->value)
+        ->first();
+
+    expect($log)->not->toBeNull();
+    expect($log->field_differences)->toContain([
+        'field' => 'pr_number',
+        'old_value' => 'PR-ORIGINAL-VALUE',
+        'new_value' => 'PR-TAMPERED-VALUE',
+    ]);
+});
