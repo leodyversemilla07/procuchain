@@ -233,7 +233,7 @@ class DecisionPublisher
             $title,
             $stage,
             $nextStage,
-            $skippedStatus,
+            $this->getEnteredStatus($nextStage),
             $userAddress
         );
 
@@ -318,5 +318,19 @@ class DecisionPublisher
         }
 
         return $config['stage'];
+    }
+
+    /**
+     * Get the initial status when entering a stage.
+     */
+    private function getEnteredStatus(StageEnums $stage): StatusEnums
+    {
+        return match ($stage) {
+            StageEnums::BIDDING_DOCUMENTS => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+            StageEnums::PRE_BID_CONFERENCE => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+            StageEnums::SUPPLEMENTAL_BID_BULLETIN => StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
+            StageEnums::BID_OPENING => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            default => StatusEnums::PROCUREMENT_SUBMITTED,
+        };
     }
 }

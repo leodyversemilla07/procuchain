@@ -87,7 +87,7 @@ describe('DecisionPublisher', function () {
                     return $prNumber === 'PR-001'
                         && $fromStage === StageEnums::PRE_PROCUREMENT_CONFERENCE
                         && $toStage === StageEnums::BIDDING_DOCUMENTS
-                        && $status === StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED;
+                        && $status === StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED;
                 });
 
             $this->eventPublisher
