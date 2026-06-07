@@ -962,9 +962,32 @@ class IntegrityVerificationService
                 $fieldDiffs = null;
                 $chainData = null;
 
-                // Try to recover the original blockchain payload by txid
+                // The DB pr_number has been tampered, so we cannot use it as a stream key
+                // to look up the blockchain entry — the chain still stores the record under
+                // the ORIGINAL pr_number. Instead, look up by txid across the full index
+                // (which is keyed by txid, not by pr_number), then fall back to a
+                // pr_number-based lookup only when there is no txid to go on.
                 if ($record->txid) {
-                    $chainData = $this->fetchChainData(StreamEnums::METADATA->value, $record->pr_number, $record->txid);
+                    // Primary: resolve by txid — works regardless of the tampered pr_number
+                    $chainData = $this->blockchainIndex->jsonByTxid(StreamEnums::METADATA->value, $record->txid);
+
+                    // Fallback: the index may not be loaded yet; try a direct RPC call by txid
+                    if (! $chainData) {
+                        try {
+                            $txData = $this->manager->getrawtransaction($record->txid, 1);
+                            if (is_array($txData)) {
+                                foreach ($txData['data'] ?? [] as $dataItem) {
+                                    if (isset($dataItem['json']) && is_array($dataItem['json'])) {
+                                        $chainData = $dataItem['json'];
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (\Exception) {
+                            // Non-fatal — field diff will be empty but breach is still recorded
+                        }
+                    }
+
                     if ($chainData) {
                         $fieldDiffs = $this->computeFieldDifferences(
                             $this->recordToArray($record, 'procurements'),
