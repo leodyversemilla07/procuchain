@@ -3,6 +3,7 @@
 use App\Enums\BreachTypeEnums;
 use App\Models\IntegrityAuditLog;
 use App\Models\Procurement;
+use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Services\BlockchainAuditTrailService;
 use App\Services\IntegrityVerificationService;
@@ -457,4 +458,202 @@ it('auto repairs a tampered pr_number back to the trusted blockchain PR', functi
     expect(Procurement::where('pr_number', 'PR-AUTO-REPAIR-ORIGINAL')->exists())->toBeTrue();
     expect(IntegrityAuditLog::where('source', 'auto-repair-pr-tamper-test')->where('recovery_status', 'restored')->count())
         ->toBeGreaterThanOrEqual(1);
+});
+
+it('detects procurement txid removed from a blockchain-backed row', function () {
+    Procurement::create([
+        'pr_number' => 'PR-TXID-NULL',
+        'title' => 'Original Title',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'current_stage' => 'procurement_initiation',
+        'current_status' => 'draft',
+        'txid' => null,
+    ]);
+
+    $chainData = ['pr_number' => 'PR-TXID-NULL', 'title' => 'Original Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
+
+    $this->mock(Manager::class, function ($mock) use ($chainData) {
+        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
+            ? [['txid' => 'metadata-null-original-txid', 'data' => ['json' => $chainData]]]
+            : []);
+        $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
+        $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
+    });
+
+    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'missing-txid-test');
+
+    expect(IntegrityAuditLog::where('source', 'missing-txid-test')
+        ->where('stream', 'procurement.metadata')
+        ->where('violation_type', BreachTypeEnums::UNAUTHORIZED_RECORD->value)
+        ->exists())->toBeTrue();
+});
+
+it('detects procurement txid swapped to another valid PR txid', function () {
+    Procurement::create([
+        'pr_number' => 'PR-TXID-SWAP-A',
+        'title' => 'A Title',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'current_stage' => 'procurement_initiation',
+        'current_status' => 'draft',
+        'txid' => 'metadata-txid-b',
+    ]);
+
+    $chainA = ['pr_number' => 'PR-TXID-SWAP-A', 'title' => 'A Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
+    $chainB = ['pr_number' => 'PR-TXID-SWAP-B', 'title' => 'B Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
+
+    $this->mock(Manager::class, function ($mock) use ($chainA, $chainB) {
+        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
+            ? [
+                ['txid' => 'metadata-txid-a', 'data' => ['json' => $chainA]],
+                ['txid' => 'metadata-txid-b', 'data' => ['json' => $chainB]],
+            ]
+            : []);
+        $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
+        $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
+    });
+
+    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'txid-swap-test');
+
+    $matchingDiff = IntegrityAuditLog::where('source', 'txid-swap-test')
+        ->where('stream', 'procurement.metadata')
+        ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+        ->get()
+        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'pr_number'
+            && ($diff['old_value'] ?? null) === 'PR-TXID-SWAP-B'
+            && ($diff['new_value'] ?? null) === 'PR-TXID-SWAP-A');
+
+    expect($matchingDiff)->toBeTrue();
+});
+
+it('detects child row procurement_id moved to another procurement', function () {
+    $original = Procurement::create(['pr_number' => 'PR-CHILD-ORIGINAL', 'title' => 'Original PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'current_stage' => 'procurement_initiation', 'current_status' => 'draft']);
+    $other = Procurement::create(['pr_number' => 'PR-CHILD-OTHER', 'title' => 'Other PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'current_stage' => 'procurement_initiation', 'current_status' => 'draft']);
+
+    ProcurementEvent::create([
+        'procurement_id' => $other->id,
+        'event_type' => 'document_upload',
+        'category' => 'document',
+        'severity' => 'info',
+        'details' => 'Document uploaded',
+        'stage' => 'procurement_initiation',
+        'txid' => 'event-original-txid',
+        'occurred_at' => now(),
+    ]);
+
+    $chainEvent = ['pr_number' => $original->pr_number, 'event_type' => 'document_upload', 'category' => 'document', 'severity' => 'info', 'details' => 'Document uploaded', 'stage' => 'procurement_initiation', 'timestamp' => now()->toIso8601String()];
+
+    $this->mock(Manager::class, function ($mock) use ($chainEvent) {
+        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.events'
+            ? [['txid' => 'event-original-txid', 'data' => ['json' => $chainEvent]]]
+            : []);
+        $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
+        $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
+    });
+
+    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'child-procurement-id-test');
+
+    $expectedDiff = IntegrityAuditLog::where('source', 'child-procurement-id-test')
+        ->where('stream', 'procurement.events')
+        ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+        ->get()
+        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'procurement_id'
+            && ($diff['old_value'] ?? null) === $original->id
+            && ($diff['new_value'] ?? null) === $other->id);
+
+    expect($expectedDiff)->toBeTrue();
+});
+
+it('detects tampered procurement document hash', function () {
+    $procurement = Procurement::create(['pr_number' => 'PR-DOC-HASH', 'title' => 'Document Hash PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'current_stage' => 'procurement_initiation', 'current_status' => 'draft']);
+
+    ProcurementDocument::create([
+        'procurement_id' => $procurement->id,
+        'document_type' => 'purchase_request',
+        'stage' => 'procurement_initiation',
+        'filename' => 'purchase-request.pdf',
+        'file_key' => 'PR-DOC-HASH/purchase-request.pdf',
+        'hash' => 'tampered-hash',
+        'uploaded_by' => 'Alice',
+        'txid' => 'document-hash-txid',
+        'uploaded_at' => now(),
+    ]);
+
+    $chainDocument = ['pr_number' => $procurement->pr_number, 'document_type' => 'purchase_request', 'stage' => 'procurement_initiation', 'file_name' => 'purchase-request.pdf', 'file_key' => 'PR-DOC-HASH/purchase-request.pdf', 'hash' => 'original-hash', 'uploaded_by' => 'Alice', 'timestamp' => now()->toIso8601String()];
+
+    $this->mock(Manager::class, function ($mock) use ($chainDocument) {
+        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.documents'
+            ? [['txid' => 'document-hash-txid', 'data' => ['json' => $chainDocument]]]
+            : []);
+        $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
+        $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
+    });
+
+    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'document-hash-test');
+
+    $hashDiff = IntegrityAuditLog::where('source', 'document-hash-test')
+        ->where('stream', 'procurement.documents')
+        ->get()
+        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'hash'
+            && ($diff['old_value'] ?? null) === 'original-hash'
+            && ($diff['new_value'] ?? null) === 'tampered-hash');
+
+    expect($hashDiff)->toBeTrue();
+});
+
+it('restores a hard-deleted procurement from blockchain metadata', function () {
+    $chainData = ['pr_number' => 'PR-HARD-DELETED', 'title' => 'Restored Hard Deleted PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
+
+    $this->mock(Manager::class, function ($mock) use ($chainData) {
+        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
+            ? [['txid' => 'hard-deleted-txid', 'data' => ['json' => $chainData]]]
+            : []);
+        $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
+        $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
+    });
+
+    $result = app(IntegrityVerificationService::class)->verifyPr('PR-HARD-DELETED', true, 'hard-delete-restore-test');
+
+    expect($result['violations'])->toHaveKey(BreachTypeEnums::ROW_DELETED->value);
+    expect($result['restored'])->toBeGreaterThanOrEqual(1);
+    expect(Procurement::where('pr_number', 'PR-HARD-DELETED')->value('title'))->toBe('Restored Hard Deleted PR');
+});
+
+it('restores integrity audit logs from the blockchain audit trail stream', function () {
+    $chainViolation = [
+        'type' => 'violation',
+        'violation_id' => 90001,
+        'stream' => 'procurement.metadata',
+        'stream_key' => 'PR-AUDIT-RESTORE',
+        'txid' => 'audit-restore-txid',
+        'violation_type' => BreachTypeEnums::CONTENT_MISMATCH->value,
+        'severity' => 'critical',
+        'field_differences' => [['field' => 'title', 'old_value' => 'Chain', 'new_value' => 'DB']],
+        'mirror_snapshot' => ['title' => 'DB'],
+        'chain_snapshot' => ['title' => 'Chain'],
+        'recovery_status' => 'pending',
+        'verification_run_id' => 'audit-restore-run',
+        'source' => 'audit_restore_test',
+        'detected_at' => now()->toIso8601String(),
+    ];
+
+    $this->mock(Manager::class, function ($mock) use ($chainViolation) {
+        $mock->shouldReceive('liststreamitems')
+            ->with('integrity.violations', true, 10000)
+            ->andReturn([
+                ['key' => '90001', 'txid' => 'integrity-violation-chain-txid', 'data' => ['json' => $chainViolation], 'blocktime' => now()->timestamp],
+            ]);
+    });
+
+    $result = app(BlockchainAuditTrailService::class)->restoreAuditLogsToMySQL();
+    $restored = IntegrityAuditLog::where('stream_key', 'PR-AUDIT-RESTORE')->first();
+
+    expect($result['imported'])->toBe(1);
+    expect($restored)->not->toBeNull();
+    expect($restored->violation_type)->toBe(BreachTypeEnums::CONTENT_MISMATCH->value);
+    expect($restored->recovery_status)->toBe('superseded');
 });
