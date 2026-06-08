@@ -64,6 +64,7 @@ class StageCompletionHandler
 
         $nextStageName = null;
         $nextStageUrl = null;
+        $transitionTxid = null;
 
         if (isset($data['next_stage'])) {
             $nextStage = StageEnums::from($data['next_stage']);
@@ -71,7 +72,7 @@ class StageCompletionHandler
             $nextStageName = $nextStage->getDisplayName();
             $nextStageUrl = $this->buildNextStageUrl($data['pr_number'], $nextStage);
 
-            $this->statusPublisher->publishTransition(
+            $transitionResult = $this->statusPublisher->publishTransition(
                 prNumber: $data['pr_number'],
                 procurementTitle: $data['procurement_title'],
                 fromStage: $stage,
@@ -80,6 +81,8 @@ class StageCompletionHandler
                 userAddress: $data['user_address'],
                 previousStatus: $completionStatus,
             );
+
+            $transitionTxid = $transitionResult['status_txid'] ?? null;
 
             $this->eventPublisher->publishStageTransition(
                 prNumber: $data['pr_number'],
@@ -101,6 +104,7 @@ class StageCompletionHandler
             'next_stage' => $data['next_stage'] ?? null,
             'next_stage_name' => $nextStageName,
             'next_stage_url' => $nextStageUrl,
+            'transition_txid' => $transitionTxid,
         ];
     }
 
@@ -110,7 +114,7 @@ class StageCompletionHandler
         $nextStageStatus = StatusEnums::from($data['next_stage_status']);
         $currentStageEnum = StageEnums::from($data['current_stage']);
 
-        $this->statusPublisher->publish(
+        $statusResult = $this->statusPublisher->publish(
             prNumber: $data['pr_number'],
             procurementTitle: $data['procurement_title'],
             stage: $nextStage,
@@ -125,7 +129,7 @@ class StageCompletionHandler
             ],
         );
 
-        $this->eventPublisher->publish(
+        $eventResult = $this->eventPublisher->publish(
             prNumber: $data['pr_number'],
             procurementTitle: $data['procurement_title'],
             stage: $nextStage->value,
@@ -144,6 +148,8 @@ class StageCompletionHandler
 
         return [
             'success' => true,
+            'status_txid' => $statusResult['status_txid'] ?? null,
+            'event_txid' => $eventResult['event_txid'] ?? null,
             'next_stage' => $nextStage->value,
             'next_stage_name' => $nextStage->getDisplayName(),
             'next_stage_url' => $this->buildNextStageUrl($data['pr_number'], $nextStage),

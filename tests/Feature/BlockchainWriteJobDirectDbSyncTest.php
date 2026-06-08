@@ -1,0 +1,279 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Jobs\BlockchainWriteJob;
+use App\Jobs\Handlers\ProcurementInitiationHandler;
+use App\Jobs\Handlers\ProcurementUpdateHandler;
+use App\Jobs\Handlers\StageTransitionHandler;
+use App\Models\Procurement;
+use App\Models\ProcurementStage;
+use App\Services\BlockchainRecordSyncService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+
+describe('BlockchainWriteJob direct DB sync', function () {
+
+    beforeEach(function () {
+        Log::spy();
+        config(['cache.default' => 'array']);
+
+        // Mock the BlockchainRecordSyncService to prevent real blockchain connections
+        // during the transaction-based sync phase
+        $mockSync = Mockery::mock(BlockchainRecordSyncService::class);
+        $mockSync->shouldReceive('upstream')->byDefault();
+        app()->instance(BlockchainRecordSyncService::class, $mockSync);
+    });
+
+    it('updates procurement current_stage and current_status in DB after publish_decision (bulletin needed)', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2025-DDB-001',
+            'title' => 'Direct DB Sync Test',
+            'current_stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+            'current_status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+        ]);
+
+        $mockHandler = Mockery::mock(ProcurementUpdateHandler::class);
+        $mockHandler->shouldReceive('executeDecision')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'held' => true,
+                'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value,
+                'status_txid' => 'tx-status-held-001',
+                'event_txid' => 'tx-event-held-001',
+            ]);
+
+        app()->instance(ProcurementUpdateHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'publish_decision',
+            [
+                'pr_number' => 'PR-2025-DDB-001',
+                'user_address' => '0xTEST',
+                'decision_type' => 'supplemental_bid_bulletin',
+                'procurement_title' => 'Direct DB Sync Test',
+                'was_held' => true,
+            ],
+            'job-direct-sync-1',
+            1,
+        );
+        $job->handle();
+
+        $procurement->refresh();
+        expect($procurement->current_stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
+            ->and($procurement->current_status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value);
+
+        $stageRecord = ProcurementStage::where('procurement_id', $procurement->id)
+            ->where('txid', 'tx-status-held-001')
+            ->first();
+        expect($stageRecord)->not->toBeNull()
+            ->and($stageRecord->stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
+            ->and($stageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value);
+
+        $cached = Cache::get('blockchain_job:job-direct-sync-1');
+        expect($cached['status'])->toBe('done');
+    });
+
+    it('updates procurement current_stage and current_status in DB after publish_decision (bulletin skipped)', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2025-DDB-002',
+            'title' => 'Skip DB Sync Test',
+            'current_stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+            'current_status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+        ]);
+
+        $mockHandler = Mockery::mock(ProcurementUpdateHandler::class);
+        $mockHandler->shouldReceive('executeDecision')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'held' => false,
+                'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value,
+                'next_stage' => StageEnums::BID_OPENING->value,
+                'status_txid' => 'tx-status-skip-001',
+                'event_txid' => 'tx-event-skip-001',
+                'transition_txid' => 'tx-trans-skip-001',
+            ]);
+
+        app()->instance(ProcurementUpdateHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'publish_decision',
+            [
+                'pr_number' => 'PR-2025-DDB-002',
+                'user_address' => '0xTEST',
+                'decision_type' => 'supplemental_bid_bulletin',
+                'procurement_title' => 'Skip DB Sync Test',
+                'was_held' => false,
+            ],
+            'job-direct-sync-2',
+            1,
+        );
+        $job->handle();
+
+        $procurement->refresh();
+        expect($procurement->current_stage)->toBe(StageEnums::BID_OPENING->value)
+            ->and($procurement->current_status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value);
+
+        $statusStageRecord = ProcurementStage::where('txid', 'tx-status-skip-001')->first();
+        expect($statusStageRecord)->not->toBeNull()
+            ->and($statusStageRecord->stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
+            ->and($statusStageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value);
+
+        $transitionStageRecord = ProcurementStage::where('txid', 'tx-trans-skip-001')->first();
+        expect($transitionStageRecord)->not->toBeNull()
+            ->and($transitionStageRecord->stage)->toBe(StageEnums::BID_OPENING->value);
+
+        $cached = Cache::get('blockchain_job:job-direct-sync-2');
+        expect($cached['status'])->toBe('done');
+    });
+
+    it('creates procurement in DB after initiate_procurement', function () {
+        // Ensure no procurement exists yet
+        expect(Procurement::where('pr_number', 'PR-2025-DDB-005')->exists())->toBeFalse();
+
+        $mockHandler = Mockery::mock(ProcurementInitiationHandler::class);
+        $mockHandler->shouldReceive('execute')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'pr_number' => 'PR-2025-DDB-005',
+                'transactions' => [
+                    'metadata' => ['txid' => 'tx-meta-init-001', 'step' => 'metadata'],
+                    'status' => ['status_txid' => 'tx-status-init-001', 'stage' => 'procurement_initiation', 'current_status' => 'procurement_initiated'],
+                    'event' => ['event_txid' => 'tx-event-init-001'],
+                ],
+            ]);
+
+        app()->instance(ProcurementInitiationHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'initiate_procurement',
+            [
+                'pr_number' => 'PR-2025-DDB-005',
+                'procurement_data' => [
+                    'pr_number' => 'PR-2025-DDB-005',
+                    'app_reference' => 'APP-001',
+                    'title' => 'Initiation DB Sync Test',
+                    'description' => 'Testing initiation direct sync',
+                    'abc_amount' => '50000',
+                    'funding_source' => 'GAA',
+                    'category' => 'goods',
+                    'procurement_mode' => 'competitive_bidding',
+                    'office' => 'Test Office',
+                    'user_address' => '0xTEST',
+                    'user_id' => '1',
+                    'status' => 'draft',
+                    'created_at' => now()->toIso8601String(),
+                ],
+                'user_name' => 'Test User',
+            ],
+            'job-init-sync',
+            1,
+        );
+        $job->handle();
+
+        // Verify procurement was created in DB
+        $procurement = Procurement::where('pr_number', 'PR-2025-DDB-005')->first();
+        expect($procurement)->not->toBeNull()
+            ->and($procurement->title)->toBe('Initiation DB Sync Test')
+            ->and($procurement->current_stage)->toBe('procurement_initiation')
+            ->and($procurement->current_status)->toBe('procurement_initiated');
+
+        // Verify procurement_stage record
+        $stageRecord = ProcurementStage::where('txid', 'tx-status-init-001')->first();
+        expect($stageRecord)->not->toBeNull()
+            ->and($stageRecord->stage)->toBe('procurement_initiation')
+            ->and($stageRecord->status)->toBe('procurement_initiated');
+
+        $cached = Cache::get('blockchain_job:job-init-sync');
+        expect($cached['status'])->toBe('done');
+    });
+
+    it('does not fail when procurement does not exist in DB for stage operations', function () {
+        $mockHandler = Mockery::mock(ProcurementUpdateHandler::class);
+        $mockHandler->shouldReceive('executeDecision')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'held' => true,
+                'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value,
+                'status_txid' => 'tx-no-proc-001',
+                'event_txid' => 'tx-no-proc-ev-001',
+            ]);
+
+        app()->instance(ProcurementUpdateHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'publish_decision',
+            [
+                'pr_number' => 'PR-NONEXISTENT',
+                'user_address' => '0xTEST',
+                'decision_type' => 'supplemental_bid_bulletin',
+                'procurement_title' => 'Nonexistent Test',
+                'was_held' => true,
+            ],
+            'job-no-proc',
+            1,
+        );
+        $job->handle();
+
+        $cached = Cache::get('blockchain_job:job-no-proc');
+        expect($cached['status'])->toBe('done');
+    });
+
+    it('handles direct DB sync for skip_stage operation', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2025-DDB-004',
+            'title' => 'Skip Stage Test',
+            'current_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            'current_status' => StatusEnums::PROCUREMENT_SUBMITTED->value,
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+        ]);
+
+        $mockHandler = Mockery::mock(StageTransitionHandler::class);
+        $mockHandler->shouldReceive('executeSkip')
+            ->once()
+            ->andReturn([
+                'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+                'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value,
+                'next_stage' => StageEnums::BIDDING_DOCUMENTS->value,
+                'status_txid' => 'tx-skip-stage-001',
+                'event_txid' => 'tx-skip-stage-ev-001',
+                'transition_txid' => 'tx-skip-trans-001',
+            ]);
+
+        app()->instance(StageTransitionHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'skip_stage',
+            [
+                'pr_number' => 'PR-2025-DDB-004',
+                'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+                'reason' => 'Not required',
+                'user_address' => '0xTEST',
+            ],
+            'job-skip-stage',
+            1,
+        );
+        $job->handle();
+
+        $procurement->refresh();
+        expect($procurement->current_stage)->toBe(StageEnums::BIDDING_DOCUMENTS->value)
+            ->and($procurement->current_status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value);
+
+        $cached = Cache::get('blockchain_job:job-skip-stage');
+        expect($cached['status'])->toBe('done');
+    });
+});

@@ -455,7 +455,9 @@ export default function ProcurementsList({
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => {
                         setLoadingDialog(null);
-                        router.reload({ only: ['procurements'] });
+                        setTimeout(() => {
+                            router.reload({ only: ['procurements'] });
+                        }, 500);
                     }}
                     onProcessingChange={(processing) => setLoadingDialog(processing ? 'pre-procurement' : null)}
                 />
@@ -468,7 +470,9 @@ export default function ProcurementsList({
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => {
                         setLoadingDialog(null);
-                        router.reload({ only: ['procurements'] });
+                        setTimeout(() => {
+                            router.reload({ only: ['procurements'] });
+                        }, 500);
                     }}
                     onProcessingChange={(processing) => setLoadingDialog(processing ? 'pre-bid' : null)}
                 />
@@ -481,7 +485,11 @@ export default function ProcurementsList({
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => {
                         setLoadingDialog(null);
-                        router.reload({ only: ['procurements'] });
+                        // Delay reload slightly to allow backend DB sync to complete
+                        // after the blockchain write job finishes
+                        setTimeout(() => {
+                            router.reload({ only: ['procurements'] });
+                        }, 500);
                     }}
                     onProcessingChange={(processing) => setLoadingDialog(processing ? 'supplemental-bid-bulletin' : null)}
                 />

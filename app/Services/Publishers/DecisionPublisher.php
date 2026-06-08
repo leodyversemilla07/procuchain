@@ -151,7 +151,7 @@ class DecisionPublisher
         $heldStatus = $config['held_status'];
 
         // Publish status update
-        $this->statusPublisher->publish(
+        $statusResult = $this->statusPublisher->publish(
             $prNumber,
             $procurementTitle,
             $stage,
@@ -160,7 +160,7 @@ class DecisionPublisher
         );
 
         // Publish decision event
-        $this->eventPublisher->publish(
+        $eventResult = $this->eventPublisher->publish(
             prNumber: $prNumber,
             procurementTitle: $procurementTitle,
             stage: $stage->value,
@@ -177,6 +177,8 @@ class DecisionPublisher
             'held' => true,
             'stage' => $stage->value,
             'status' => $heldStatus->value,
+            'status_txid' => $statusResult['status_txid'] ?? null,
+            'event_txid' => $eventResult['event_txid'] ?? null,
         ];
     }
 
@@ -201,7 +203,7 @@ class DecisionPublisher
         $nextStage = $config['next_stage'];
 
         // Publish skipped status
-        $this->statusPublisher->publish(
+        $statusResult = $this->statusPublisher->publish(
             $prNumber,
             $procurementTitle,
             $stage,
@@ -210,7 +212,7 @@ class DecisionPublisher
         );
 
         // Publish skipped event
-        $this->eventPublisher->publish(
+        $eventResult = $this->eventPublisher->publish(
             prNumber: $prNumber,
             procurementTitle: $procurementTitle,
             stage: $stage->value,
@@ -228,7 +230,7 @@ class DecisionPublisher
             : ($procurement['title'] ?? $procurementTitle);
 
         // Publish stage transition
-        $this->statusPublisher->publishTransition(
+        $transitionResult = $this->statusPublisher->publishTransition(
             $prNumber,
             $title,
             $stage,
@@ -251,6 +253,9 @@ class DecisionPublisher
             'stage' => $stage->value,
             'status' => $skippedStatus->value,
             'next_stage' => $nextStage->value,
+            'status_txid' => $statusResult['status_txid'] ?? null,
+            'event_txid' => $eventResult['event_txid'] ?? null,
+            'transition_txid' => $transitionResult['status_txid'] ?? null,
         ];
     }
 
