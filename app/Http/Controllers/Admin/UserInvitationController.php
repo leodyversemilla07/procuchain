@@ -110,6 +110,7 @@ class UserInvitationController extends Controller
 
             return redirect()->back()->with('success', "Invitation sent successfully to {$invitation->email}.");
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to send user invitation', [
                 'error' => 'An error occurred with the user invitation.',
                 'invited_by' => $request->user()->id,
@@ -157,6 +158,7 @@ class UserInvitationController extends Controller
 
             return redirect()->back()->with('success', "Invitation resent to {$invitation->email}.");
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to resend user invitation', [
                 'error' => 'An error occurred with the user invitation.',
                 'invitation_id' => $invitation->id,
@@ -198,6 +200,7 @@ class UserInvitationController extends Controller
 
             return redirect()->back()->with('success', 'Invitation revoked successfully.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to revoke user invitation', [
                 'error' => 'An error occurred with the user invitation.',
                 'invitation_id' => $invitation->id,

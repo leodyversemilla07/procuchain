@@ -44,6 +44,7 @@ class AuditLogController extends Controller
                 'filters' => $request->only(['action', 'user_id', 'date_from', 'date_to']),
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch audit logs', [
                 'admin_id' => $request->user()->id,
                 'error' => $e->getMessage(),

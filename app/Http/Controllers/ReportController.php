@@ -74,6 +74,7 @@ class ReportController extends Controller
 
             return response()->json($report);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Report generation failed', [
                 'error' => 'An error occurred generating the report.',
                 'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
@@ -145,6 +146,7 @@ class ReportController extends Controller
 
             return response()->json($exportData);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Report export failed', [
                 'error' => 'An error occurred generating the report.',
             ]);
@@ -179,6 +181,7 @@ class ReportController extends Controller
 
             return response()->json($results);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Procurement search failed', [
                 'error' => 'An error occurred generating the report.',
             ]);

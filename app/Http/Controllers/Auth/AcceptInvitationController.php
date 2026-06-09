@@ -124,6 +124,7 @@ class AcceptInvitationController extends Controller
             return redirect($this->redirectToDashboard($request, $user))
                 ->with('success', 'Welcome to Procuchain! Your account has been created successfully.');
         } catch (\Exception $e) {
+            report($e);
             DB::rollBack();
 
             Log::error('Failed to accept invitation', [

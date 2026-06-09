@@ -52,6 +52,7 @@ class ProcurementCorrectionController extends Controller
         } catch (\RuntimeException $e) {
             return back()->with('error', 'An error occurred with the procurement correction.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to submit procurement correction', [
                 'pr_number' => $prNumber,
                 'error' => 'An error occurred with the procurement correction.',
@@ -78,6 +79,7 @@ class ProcurementCorrectionController extends Controller
                 'count' => count($corrections),
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to retrieve procurement correction history from blockchain', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred with the procurement correction.',
@@ -129,6 +131,7 @@ class ProcurementCorrectionController extends Controller
 
             return Inertia::render('procurements/procurement-corrections', $pageData);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch procurement correction data from blockchain', [
                 'pr_number' => $prNumber,
                 'error' => 'An error occurred with the procurement correction.',

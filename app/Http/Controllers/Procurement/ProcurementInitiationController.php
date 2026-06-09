@@ -213,6 +213,7 @@ class ProcurementInitiationController extends BaseController
 
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
+            report($e);
             \Log::error('Failed to upload single document', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
@@ -285,6 +286,7 @@ class ProcurementInitiationController extends BaseController
 
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred initiating the procurement.',

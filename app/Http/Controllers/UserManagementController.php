@@ -130,6 +130,7 @@ class UserManagementController extends Controller
 
             return redirect()->back()->with('success', 'User created successfully with blockchain address.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to create user', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred managing users. Please try again.',
@@ -197,6 +198,7 @@ class UserManagementController extends Controller
 
             return redirect()->back()->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to update user', [
                 ...$this->auditContext($request),
                 'user_id' => $user->id,
@@ -237,6 +239,7 @@ class UserManagementController extends Controller
 
             return redirect()->back()->with('success', 'User deleted successfully.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to delete user', [
                 ...$this->auditContext($request),
                 'user_id' => $user->id,
@@ -319,6 +322,7 @@ class UserManagementController extends Controller
 
             return redirect()->back()->with('success', $message);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to bulk delete users', [
                 ...$this->auditContext($request),
                 'user_ids' => $validated['user_ids'] ?? [],
@@ -379,6 +383,7 @@ class UserManagementController extends Controller
                 return redirect()->back()->with('error', 'Failed to send password reset link. Please try again.');
             }
         } catch (\Exception $e) {
+            report($e);
             Log::error('Error sending password reset link', [
                 ...$this->auditContext($request),
                 'user_id' => $user->id,

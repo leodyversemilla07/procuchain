@@ -131,6 +131,7 @@ class BacSecretariatController extends BaseDashboardController
             return $priorityActions;
 
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to retrieve priority actions', [
                 'error' => 'An error occurred processing the BAC secretariat request.',
             ]);

@@ -39,6 +39,7 @@ class LoginLogController extends Controller
                 'suspiciousActivities' => Inertia::defer(fn () => $this->loginAnalytics->getSuspiciousActivities()),
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch login logs', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',
@@ -69,6 +70,7 @@ class LoginLogController extends Controller
                 'data' => $recentLogins,
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch recent logins', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',
@@ -95,6 +97,7 @@ class LoginLogController extends Controller
                 'data' => $statistics,
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch login statistics', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',
@@ -121,6 +124,7 @@ class LoginLogController extends Controller
                 'data' => $activities,
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch suspicious activities', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',
@@ -176,6 +180,7 @@ class LoginLogController extends Controller
 
             return back()->with('success', 'IP address blocked successfully.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to block IP address', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',
@@ -215,6 +220,7 @@ class LoginLogController extends Controller
 
             return back()->with('success', 'IP address unblocked successfully.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to unblock IP address', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',
@@ -238,6 +244,7 @@ class LoginLogController extends Controller
                 'data' => $blockedIps,
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to fetch blocked IPs', [
                 ...$this->auditContext($request),
                 'error' => 'An error occurred loading login logs. Please try again.',

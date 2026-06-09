@@ -87,6 +87,7 @@ class DocumentCorrectionController extends Controller
 
             return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to submit document correction', [
                 'txid' => $txid,
                 'error' => 'An error occurred with the document correction.',
@@ -183,6 +184,7 @@ class DocumentCorrectionController extends Controller
                 'count' => count($corrections),
             ]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to retrieve correction history from blockchain', [
                 'pr_number' => $procurement,
                 'error' => 'An error occurred with the document correction.',

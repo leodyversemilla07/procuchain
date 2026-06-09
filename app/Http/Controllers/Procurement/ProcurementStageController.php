@@ -91,6 +91,7 @@ class ProcurementStageController extends BaseController
 
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to upload single document', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
@@ -135,6 +136,7 @@ class ProcurementStageController extends BaseController
 
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Error marking stage as complete', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
@@ -172,6 +174,7 @@ class ProcurementStageController extends BaseController
 
             return response()->json($result, 202);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Error skipping stage', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
@@ -319,6 +322,7 @@ class ProcurementStageController extends BaseController
 
             return response()->json($result, 202);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Error repeating stage', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
@@ -364,6 +368,7 @@ class ProcurementStageController extends BaseController
 
             return response()->json($result, 202);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to update delivery details', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred processing the procurement stage.',
@@ -410,6 +415,7 @@ class ProcurementStageController extends BaseController
 
             return response()->json($result, 202);
         } catch (\Exception $e) {
+            report($e);
             Log::error("Failed to dispatch {$decisionType} decision job", [
                 'pr_number' => $prNumber,
                 'error' => 'An error occurred processing the procurement stage.',

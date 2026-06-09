@@ -167,6 +167,7 @@ class IntegrityBreachController extends Controller
 
             return back()->with('success', 'Breach repaired from blockchain and verified clean.');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Integrity breach repair failed', [
                 'breach_id' => $id,
                 'error' => $e->getMessage(),
@@ -213,6 +214,7 @@ class IntegrityBreachController extends Controller
 
             return back()->with('success', "PR {$prNumber} repaired from blockchain and verified clean.");
         } catch (\Exception $e) {
+            report($e);
             Log::error('Integrity breach PR repair failed', [
                 'pr_number' => $prNumber,
                 'error' => $e->getMessage(),
@@ -319,6 +321,7 @@ class IntegrityBreachController extends Controller
 
             return response()->json(['success' => true, 'counts' => $counts]);
         } catch (\Exception $e) {
+            report($e);
             Log::error('Manual normalized table sync failed', [
                 'error' => $e->getMessage(),
             ]);

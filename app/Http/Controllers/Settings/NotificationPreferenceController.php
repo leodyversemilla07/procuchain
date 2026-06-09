@@ -58,6 +58,7 @@ class NotificationPreferenceController extends Controller
 
             return redirect()->back()->with('success', 'Notification preferences updated successfully!');
         } catch (\Exception $e) {
+            report($e);
             Log::error('Failed to update notification preferences', [
                 'user_id' => $user->id,
                 'error' => 'An error occurred updating notification preferences.',
