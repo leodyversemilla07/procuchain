@@ -16,6 +16,7 @@ use App\Models\ProcurementStage;
 use App\Services\BlockchainRecordSyncService;
 use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
+use App\Services\NormalizedTableSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,9 @@ class IntegrityBreachController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('view-audit-log');
+
+        // Automatically run verification when the breaches page is presented
+        $this->runAutomaticVerification();
 
         $query = IntegrityAuditLog::query();
 
@@ -310,7 +314,7 @@ class IntegrityBreachController extends Controller
         $this->authorize('update-audit-log');
 
         try {
-            $syncService = app(\App\Services\NormalizedTableSyncService::class);
+            $syncService = app(NormalizedTableSyncService::class);
             $counts = $syncService->syncAll();
 
             return response()->json(['success' => true, 'counts' => $counts]);
@@ -340,6 +344,35 @@ class IntegrityBreachController extends Controller
                 'events' => ProcurementEvent::count(),
             ],
         ]);
+    }
+
+    /**
+     * Run integrity verification automatically in the background.
+     * This ensures breaches are detected without manual intervention.
+     */
+    private function runAutomaticVerification(): void
+    {
+        $lockKey = 'integrity:auto:verification:lock';
+
+        // Skip if verification is already running or was run recently (within 60 seconds)
+        if (Cache::get($lockKey)) {
+            return;
+        }
+
+        try {
+            // Set lock to prevent concurrent runs
+            Cache::put($lockKey, true, 60);
+
+            $service = app(IntegrityVerificationService::class);
+            $service->verifyAndRepair(false, 'auto');
+        } catch (\Exception $e) {
+            Log::warning('Automatic integrity verification failed', [
+                'error' => $e->getMessage(),
+            ]);
+            // Silently fail - don't block the page from loading
+        } finally {
+            Cache::forget($lockKey);
+        }
     }
 
     // ─── Audit Logs Page ─────────────────────────────────────────────
@@ -434,67 +467,5 @@ class IntegrityBreachController extends Controller
             'logId' => $id,
             'log' => $log,
         ]);
-    }
-
-    // ─── Integrity Demo ───────────────────────────────────────────────
-
-    public function demoPage(): Response
-    {
-        $this->authorize('view-audit-log');
-
-        // Get a real PR from the database for demo
-        $procurement = Procurement::first();
-        $prNumber = $procurement?->pr_number ?? 'No PRs found';
-
-        return Inertia::render('admin/integrity-demo', [
-            'prNumber' => $prNumber,
-            'hasData' => Procurement::count() > 0,
-        ]);
-    }
-
-    public function demoAction(Request $request): RedirectResponse
-    {
-        $this->authorize('update-audit-log');
-
-        $validated = $request->validate([
-            'action' => ['required', 'string', 'in:sync,verify,verify_pr'],
-            'pr_number' => ['nullable', 'string', 'regex:/^PR-\d{4}-\d{3}(-\d{4})?$/'],
-        ]);
-
-        $action = $validated['action'];
-        $prNumber = $validated['pr_number'] ?? null;
-
-        try {
-            if ($action === 'sync') {
-                $syncService = app(NormalizedTableSyncService::class);
-                $counts = $syncService->syncAll();
-
-                return back()->with('success', 'Sync completed: '.json_encode($counts));
-            }
-
-            if ($action === 'verify') {
-                $service = app(IntegrityVerificationService::class);
-                $result = $service->verifyAndRepair(false, 'demo');
-
-                return back()->with('success', 'Verification completed: '.json_encode($result['violations']));
-            }
-
-            if ($action === 'verify_pr' && $prNumber) {
-                $service = app(IntegrityVerificationService::class);
-                $result = $service->verifyPr($prNumber, false);
-
-                return back()->with('success', "PR {$prNumber} verified: ".json_encode($result['violations']));
-            }
-
-            return back()->with('error', 'Unknown action');
-        } catch (\Exception $e) {
-            Log::error('Integrity demo action failed', [
-                'action' => $action,
-                'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-            ]);
-
-            return back()->with('error', 'Action failed. Please try again or contact support.');
-        }
     }
 }

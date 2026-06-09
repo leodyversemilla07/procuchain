@@ -11,7 +11,6 @@ use App\Http\Controllers\BlockchainExplorerController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NodeNetworkController;
 use App\Http\Controllers\ProcurementListController;
-use App\Http\Controllers\RecoverableDataController;
 use App\Http\Controllers\SharedLedgerController;
 use App\Http\Controllers\UserManagementController;
 use App\Services\BlockchainRecordSyncService;
@@ -103,16 +102,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
     // Shared Ledger
     Route::get('/shared-ledger', [SharedLedgerController::class, 'index'])->name('shared-ledger');
 
-    // Recoverable Data — blockchain recovery management
-    Route::prefix('recoverable-data')->name('recoverable-data.')->group(function () {
-        Route::get('/', [RecoverableDataController::class, 'index'])->name('index');
-        Route::post('/restore', [RecoverableDataController::class, 'restore'])->name('restore');
-        Route::post('/delete-from-node', [RecoverableDataController::class, 'deleteFromNode'])->name('delete-from-node');
-        Route::post('/purge-all-from-node', [RecoverableDataController::class, 'purgeAllFromNode'])->name('purge-all-from-node');
-        Route::post('/resync-node', [RecoverableDataController::class, 'resyncNode'])->name('resync-node');
-        Route::get('/node-operation/{jobId}/status', [RecoverableDataController::class, 'nodeOperationStatus'])->name('node-operation-status');
-    });
-
     // Integrity Breaches — mirror breach management
     Route::prefix('integrity-breaches')->name('integrity-breaches.')->group(function () {
         Route::get('/', [IntegrityBreachController::class, 'index'])->name('index');
@@ -136,7 +125,4 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->wher
     // Breach Detail Page
     Route::get('/integrity-breaches/detail/{id}', [IntegrityBreachController::class, 'show'])->name('integrity-breaches.detail');
 
-    // Integrity Demo
-    Route::get('/integrity-demo', [IntegrityBreachController::class, 'demoPage'])->name('integrity-demo.page');
-    Route::post('/integrity-demo', [IntegrityBreachController::class, 'demoAction'])->middleware('throttle:5,1')->name('integrity-demo.action');
 });

@@ -108,7 +108,6 @@ export default function IntegrityBreaches() {
     const [selectedBreach, setSelectedBreach] = useState<BreachRecord | null>(null);
     const [repairing, setRepairing] = useState<number | null>(null);
     const [repairingPr, setRepairingPr] = useState(false);
-    const [verifying, setVerifying] = useState(false);
     const [verifyAndRepairing, setVerifyAndRepairing] = useState(false);
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
 
@@ -120,7 +119,6 @@ export default function IntegrityBreaches() {
 
                 if (data.status === 'completed') {
                     clearInterval(interval);
-                    setVerifying(false);
                     setVerifyAndRepairing(false);
                     toast.dismiss(toastId);
 
@@ -137,7 +135,6 @@ export default function IntegrityBreaches() {
                     });
                 } else if (data.status === 'failed') {
                     clearInterval(interval);
-                    setVerifying(false);
                     setVerifyAndRepairing(false);
                     toast.dismiss(toastId);
                     toast.error('Verification failed', {
@@ -160,23 +157,6 @@ export default function IntegrityBreaches() {
                 preserveScroll: true,
                 preserveState: false,
                 onFinish: () => setRepairing(null),
-            },
-        );
-    };
-
-    const handleVerify = () => {
-        setVerifying(true);
-        const toastId = toast.info('Verification in progress…', {
-            description: 'Checking all records against the blockchain.',
-            duration: Infinity,
-        });
-        router.post(
-            integrityBreaches.verify.url(),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onFinish: () => pollVerificationStatus(toastId),
             },
         );
     };
@@ -298,13 +278,9 @@ export default function IntegrityBreaches() {
                 />
 
                 <div className="ml-auto flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleVerify} disabled={verifying || verifyAndRepairing}>
-                        <ShieldCheck data-icon="inline-start" />
-                        {verifying ? 'Verifying...' : 'Run Verification'}
-                    </Button>
                     <AlertDialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
                         <AlertDialogTrigger
-                            render={<Button variant="destructive" size="sm" disabled={verifying || verifyAndRepairing} />}
+                            render={<Button variant="destructive" size="sm" disabled={verifyAndRepairing} />}
                             nativeButton={false}
                         >
                             <Wrench data-icon="inline-start" />

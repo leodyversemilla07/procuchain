@@ -64,8 +64,6 @@ class BlockchainAuditTrailRecovery extends Command
             $this->newLine();
             $this->info('  This means no violations have been detected yet,');
             $this->info('  or the integrity.violations stream has not been created.');
-            $this->newLine();
-            $this->info('  Run php artisan integrity:demo to generate sample violations.');
 
             return self::SUCCESS;
         }

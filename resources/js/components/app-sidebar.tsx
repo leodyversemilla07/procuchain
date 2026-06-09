@@ -15,7 +15,6 @@ import { index as adminInvitations } from '@/routes/admin/invitations';
 import adminLoginLogs from '@/routes/admin/login-logs';
 import adminNetwork from '@/routes/admin/network';
 import { index as adminProcurementsList } from '@/routes/admin/procurements';
-import adminRecoverableData from '@/routes/admin/recoverable-data';
 import { index as stageDocumentsIndex } from '@/routes/admin/stage-documents';
 import adminUsers from '@/routes/admin/users';
 import { index as workflowConfigIndex, preview as workflowPreview } from '@/routes/admin/workflow-config';
@@ -44,7 +43,6 @@ import {
     Share2,
     Shield,
     ShieldAlert,
-    ShieldCheck,
     ShieldOff,
     Table2,
     Upload,
@@ -230,21 +228,9 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         });
 
         items.push({
-            title: 'Integrity Demo',
-            href: '/admin/integrity-demo',
-            icon: ShieldCheck,
-        });
-
-        items.push({
             title: 'Network View',
             href: adminNetwork.index.url(),
             icon: Share2,
-        });
-
-        items.push({
-            title: 'Recoverable Data',
-            href: adminRecoverableData.index.url(),
-            icon: Database,
         });
 
         // Procurement Configuration (Workflow & Documents)
