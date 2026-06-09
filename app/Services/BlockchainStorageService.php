@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Services\Blockchain\FileLifecycleManager;
 use App\Services\Blockchain\FileRetriever;
 use App\Services\Blockchain\FileUploader;
-use App\Services\Blockchain\NodeOperationsService;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +21,7 @@ use Illuminate\Support\Facades\Log;
  * - FileUploader: upload + chunked encoding
  * - FileRetriever: retrieval + chunk reassembly
  * - FileLifecycleManager: delete, restore, status checks
- * - NodeOperationsService: per-node purge/resync/health
+
  *
  * @see config/blockchain.php for upload limits and chunking configuration
  */
@@ -37,8 +36,6 @@ class BlockchainStorageService implements BlockchainStorageInterface
     private FileRetriever $retriever;
 
     private FileLifecycleManager $lifecycle;
-
-    private NodeOperationsService $nodeOps;
 
     public function __construct(
         private Manager $multichain
@@ -57,7 +54,6 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
         $this->retriever = new FileRetriever($multichain);
         $this->lifecycle = new FileLifecycleManager($multichain);
-        $this->nodeOps = new NodeOperationsService($multichain);
     }
 
     // ── Upload ──────────────────────────────────────────────
@@ -140,28 +136,6 @@ class BlockchainStorageService implements BlockchainStorageInterface
     public function getDeletedFiles(): array
     {
         return $this->lifecycle->getDeletedFiles();
-    }
-
-    // ── Node Operations (purge/resync/health) ───────────────
-
-    public function deleteFromNode(string $fileKey, string $nodeId, string $reason = ''): array
-    {
-        return $this->nodeOps->deleteFromNode($fileKey, $nodeId, $reason);
-    }
-
-    public function resyncNode(string $nodeId, string $reason = ''): array
-    {
-        return $this->nodeOps->resyncNode($nodeId, $reason);
-    }
-
-    public function purgeAllFromNode(string $nodeId, string $reason = ''): array
-    {
-        return $this->nodeOps->purgeAllFromNode($nodeId, $reason);
-    }
-
-    public function getAvailableNodes(): array
-    {
-        return $this->nodeOps->getAvailableNodes();
     }
 
     // ── Config helpers ──────────────────────────────────────
