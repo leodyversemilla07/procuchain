@@ -22,6 +22,7 @@ The application currently includes:
 - role-based dashboards for `admin`, `bac_secretariat`, `bac_chairman`, and `hope`
 - configurable workflow and document requirements per procurement mode
 - procurement stage upload and completion flows
+- automatic integrity verification (runs on page load)
 - blockchain explorer and operational health monitoring
 - reports and filtered procurement search
 - PDF viewing, document verification, corrections, audit logs, invitations, and security tooling
@@ -42,14 +43,15 @@ Historical implementation notes for the original reporting/search feature are st
 ## Stack
 
 - PHP 8.4 / Laravel 13
-- Inertia v2 + React 19 + TypeScript
+- Inertia v3 + React 19 + TypeScript
 - Tailwind CSS v4
 - MySQL
-- MultiChain
+- MultiChain (auto-syncing across nodes)
 - Laravel Fortify
 - Spatie Laravel Permission
 - Laravel Wayfinder
 - Pest / PHPUnit
+- Sentry (error monitoring)
 
 ## Local Quick Start
 

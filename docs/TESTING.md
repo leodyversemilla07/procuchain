@@ -140,3 +140,16 @@ npm run types
 npm run test:js
 php artisan test --compact <relevant-test-file>
 ```
+
+## Codebase Stats
+
+| Metric | Count |
+|--------|-------|
+| PHP Files | ~290 |
+| TypeScript/React Files | ~440 |
+| Controllers | 43 |
+| Models | 23 |
+| Services | ~70 |
+| Tests | 128 |
+| Lines of PHP | ~50K |
+| Lines of TypeScript | ~67K |
