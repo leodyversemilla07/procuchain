@@ -14,6 +14,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasColumn('integrity_audit_logs', 'mirror_id')) {
+            return;
+        }
+
         Schema::table('integrity_audit_logs', function (Blueprint $table) {
             $table->renameColumn('mirror_id', 'record_id');
         });

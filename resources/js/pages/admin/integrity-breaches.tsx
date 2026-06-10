@@ -32,10 +32,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import integrityBreaches from '@/routes/admin/integrity-breaches';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Database, Shield, ShieldAlert, ShieldCheck, Wrench } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface BreachRecord {
@@ -82,6 +82,12 @@ interface PageProps {
     };
     success?: string;
     error?: string;
+    verificationStatus: {
+        status: string;
+        started_at?: string;
+        result?: { verified?: number; restored?: number; violations?: Record<string, number> };
+        error?: string;
+    };
     [key: string]: unknown;
 }
 
@@ -104,49 +110,43 @@ function truncateHash(hash: string | null | undefined, len = 12): string {
 }
 
 export default function IntegrityBreaches() {
-    const { breaches, filters, breachTypes, streams, stats, success, error } = usePage<PageProps>().props;
+    const { breaches, filters, breachTypes, streams, stats, success, error, verificationStatus } = usePage<PageProps>().props;
     const [selectedBreach, setSelectedBreach] = useState<BreachRecord | null>(null);
     const [repairing, setRepairing] = useState<number | null>(null);
     const [repairingPr, setRepairingPr] = useState(false);
     const [verifyAndRepairing, setVerifyAndRepairing] = useState(false);
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+    const toastIdRef = useRef<string | number | null>(null);
 
-    const pollVerificationStatus = (toastId: string | number) => {
-        const interval = setInterval(async () => {
-            try {
-                const res = await fetch(integrityBreaches.verifyStatus.url());
-                const data = await res.json();
+    const { start, stop } = usePoll(3000, {
+        only: ['verificationStatus', 'breaches', 'stats'],
+    }, {
+        autoStart: false,
+    });
 
-                if (data.status === 'completed') {
-                    clearInterval(interval);
-                    setVerifyAndRepairing(false);
-                    toast.dismiss(toastId);
+    useEffect(() => {
+        if (!verificationStatus || verificationStatus.status === 'idle' || verificationStatus.status === 'running') return;
 
-                    const result = data.result;
-                    const breachCount = Object.values((result?.violations ?? {}) as Record<string, number>).reduce((a, b) => a + b, 0);
-                    toast.success('Verification complete', {
-                        description: `${result?.verified ?? 0} records checked, ${breachCount} breaches found, ${result?.restored ?? 0} restored.`,
-                    });
+        stop();
+        setVerifyAndRepairing(false);
 
-                    // Reload the page to show fresh data
-                    router.reload({
-                        only: ['breaches', 'stats'],
-                        onError: () => window.location.reload(),
-                    });
-                } else if (data.status === 'failed') {
-                    clearInterval(interval);
-                    setVerifyAndRepairing(false);
-                    toast.dismiss(toastId);
-                    toast.error('Verification failed', {
-                        description: data.error ?? 'An unexpected error occurred.',
-                    });
-                }
-                // 'running' → keep polling
-            } catch {
-                // Ignore polling errors — retry on next interval
-            }
-        }, 3000);
-    };
+        if (toastIdRef.current) {
+            toast.dismiss(toastIdRef.current);
+            toastIdRef.current = null;
+        }
+
+        if (verificationStatus.status === 'completed') {
+            const result = verificationStatus.result;
+            const breachCount = Object.values((result?.violations ?? {}) as Record<string, number>).reduce((a, b) => a + b, 0);
+            toast.success('Verification complete', {
+                description: `${result?.verified ?? 0} records checked, ${breachCount} breaches found, ${result?.restored ?? 0} restored.`,
+            });
+        } else if (verificationStatus.status === 'failed') {
+            toast.error('Verification failed', {
+                description: verificationStatus.error ?? 'An unexpected error occurred.',
+            });
+        }
+    }, [verificationStatus]);
 
     const handleRepair = (id: number) => {
         setRepairing(id);
@@ -164,7 +164,7 @@ export default function IntegrityBreaches() {
     const handleVerifyAndRepair = () => {
         setVerifyDialogOpen(false);
         setVerifyAndRepairing(true);
-        const toastId = toast.info('Verifying and repairing all breaches…', {
+        toastIdRef.current = toast.info('Verifying and repairing all breaches…', {
             description: 'Checking records, repairing tampered data from the blockchain.',
             duration: Infinity,
         });
@@ -174,7 +174,7 @@ export default function IntegrityBreaches() {
             {
                 preserveScroll: true,
                 preserveState: true,
-                onFinish: () => pollVerificationStatus(toastId as string),
+                onFinish: () => start(),
             },
         );
     };

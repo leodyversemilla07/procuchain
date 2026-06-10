@@ -1370,52 +1370,64 @@ class IntegrityVerificationService
             // Requirement 5: "Restore original records from trusted blockchain data."
             // Records in DB not on chain = unauthorized injection → must be removed
             if (! empty($blockchainPrNumbers)) {
-                $deletedCount = Procurement::withTrashed()
-                    ->whereNotIn('pr_number', $blockchainPrNumbers)
-                    ->forceDelete();
+                $dbCount = Procurement::withTrashed()->count();
+                $chainCount = count($blockchainPrNumbers);
 
-                $deletedStages = ! empty($stageTxids)
-                    ? ProcurementStage::whereNotNull('txid')->whereNotIn('txid', $stageTxids)->delete()
-                    : 0;
-                $deletedDocuments = ! empty($documentTxids)
-                    ? ProcurementDocument::withTrashed()->whereNotNull('txid')->whereNotIn('txid', $documentTxids)->forceDelete()
-                    : 0;
-                $deletedEvents = ! empty($eventTxids)
-                    ? ProcurementEvent::whereNotNull('txid')->whereNotIn('txid', $eventTxids)->delete()
-                    : 0;
-                $deletedCorrections = ! empty($correctionTxids)
-                    ? ProcurementCorrection::whereNotNull('txid')->whereNotIn('txid', $correctionTxids)->delete()
-                    : 0;
-                $deletedArchives = ! empty($archiveTxids)
-                    ? ProcurementArchive::whereNotNull('txid')->whereNotIn('txid', $archiveTxids)->delete()
-                    : 0;
-                $deletedMetadataCorrections = ! empty($metadataCorrectionTxids)
-                    ? ProcurementMetadataCorrection::whereNotNull('txid')->whereNotIn('txid', $metadataCorrectionTxids)->delete()
-                    : 0;
-                $deletedFiles = ! empty($fileTxids)
-                    ? File::withTrashed()->whereNotNull('txid')->whereNotIn('txid', $fileTxids)->forceDelete()
-                    : 0;
-
-                // Also clean up orphaned child records. Parent force-deletes should cascade,
-                // but this removes any orphan rows left by earlier soft-delete repairs.
-                ProcurementStage::whereDoesntHave('procurement')->delete();
-                ProcurementDocument::withTrashed()->whereDoesntHave('procurement')->forceDelete();
-                ProcurementEvent::whereDoesntHave('procurement')->delete();
-                ProcurementCorrection::whereDoesntHave('procurement')->delete();
-                ProcurementArchive::whereDoesntHave('procurement')->delete();
-                ProcurementMetadataCorrection::whereDoesntHave('procurement')->delete();
-
-                if ($deletedCount > 0 || $deletedStages > 0 || $deletedDocuments > 0 || $deletedEvents > 0 || $deletedCorrections > 0 || $deletedArchives > 0 || $deletedMetadataCorrections > 0 || $deletedFiles > 0) {
-                    Log::info('IntegrityVerification: removed unauthorized DB records', [
-                        'deleted_procurements' => $deletedCount,
-                        'deleted_stages' => $deletedStages,
-                        'deleted_documents' => $deletedDocuments,
-                        'deleted_events' => $deletedEvents,
-                        'deleted_corrections' => $deletedCorrections,
-                        'deleted_archives' => $deletedArchives,
-                        'deleted_metadata_corrections' => $deletedMetadataCorrections,
-                        'deleted_files' => $deletedFiles,
+                // Safety guard: if blockchain returned suspiciously few PRs
+                // compared to what's in the DB, it likely means a partial read
+                // due to connection degradation. Don't risk wiping legitimate records.
+                if ($dbCount > 0 && $chainCount < max(1, intdiv($dbCount, 2))) {
+                    Log::warning('IntegrityVerification: safety guard triggered — skipping forceDelete (partial blockchain read)', [
+                        'db_count' => $dbCount,
+                        'chain_count' => $chainCount,
                     ]);
+                } else {
+                    $deletedCount = Procurement::withTrashed()
+                        ->whereNotIn('pr_number', $blockchainPrNumbers)
+                        ->forceDelete();
+
+                    $deletedStages = ! empty($stageTxids)
+                        ? ProcurementStage::whereNotNull('txid')->whereNotIn('txid', $stageTxids)->delete()
+                        : 0;
+                    $deletedDocuments = ! empty($documentTxids)
+                        ? ProcurementDocument::withTrashed()->whereNotNull('txid')->whereNotIn('txid', $documentTxids)->forceDelete()
+                        : 0;
+                    $deletedEvents = ! empty($eventTxids)
+                        ? ProcurementEvent::whereNotNull('txid')->whereNotIn('txid', $eventTxids)->delete()
+                        : 0;
+                    $deletedCorrections = ! empty($correctionTxids)
+                        ? ProcurementCorrection::whereNotNull('txid')->whereNotIn('txid', $correctionTxids)->delete()
+                        : 0;
+                    $deletedArchives = ! empty($archiveTxids)
+                        ? ProcurementArchive::whereNotNull('txid')->whereNotIn('txid', $archiveTxids)->delete()
+                        : 0;
+                    $deletedMetadataCorrections = ! empty($metadataCorrectionTxids)
+                        ? ProcurementMetadataCorrection::whereNotNull('txid')->whereNotIn('txid', $metadataCorrectionTxids)->delete()
+                        : 0;
+                    $deletedFiles = ! empty($fileTxids)
+                        ? File::withTrashed()->whereNotNull('txid')->whereNotIn('txid', $fileTxids)->forceDelete()
+                        : 0;
+
+                    // Also clean up orphaned child records
+                    ProcurementStage::whereDoesntHave('procurement')->delete();
+                    ProcurementDocument::withTrashed()->whereDoesntHave('procurement')->forceDelete();
+                    ProcurementEvent::whereDoesntHave('procurement')->delete();
+                    ProcurementCorrection::whereDoesntHave('procurement')->delete();
+                    ProcurementArchive::whereDoesntHave('procurement')->delete();
+                    ProcurementMetadataCorrection::whereDoesntHave('procurement')->delete();
+
+                    if ($deletedCount > 0 || $deletedStages > 0 || $deletedDocuments > 0 || $deletedEvents > 0 || $deletedCorrections > 0 || $deletedArchives > 0 || $deletedMetadataCorrections > 0 || $deletedFiles > 0) {
+                        Log::info('IntegrityVerification: removed unauthorized DB records', [
+                            'deleted_procurements' => $deletedCount,
+                            'deleted_stages' => $deletedStages,
+                            'deleted_documents' => $deletedDocuments,
+                            'deleted_events' => $deletedEvents,
+                            'deleted_corrections' => $deletedCorrections,
+                            'deleted_archives' => $deletedArchives,
+                            'deleted_metadata_corrections' => $deletedMetadataCorrections,
+                            'deleted_files' => $deletedFiles,
+                        ]);
+                    }
                 }
             }
 
@@ -1486,8 +1498,7 @@ class IntegrityVerificationService
         ];
 
         foreach ($tables as $tableName => $modelClass) {
-            $records = $modelClass::query()->get();
-            foreach ($records as $record) {
+            foreach ($modelClass::query()->lazy() as $record) {
                 $currentHash = $this->computeRecordHash($record, $tableName);
                 if ($record->data_hash !== $currentHash) {
                     $record->forceFill([

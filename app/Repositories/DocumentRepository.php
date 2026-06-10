@@ -53,12 +53,13 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function findByProcurement(string $prNumber): Collection
     {
-        return ProcurementDocument::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+        return ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
             ->orderByDesc('uploaded_at')
             ->get()
             ->map(fn ($d) => DocumentData::fromBlockchainArray([
-                'pr_number' => $d->procurement->pr_number ?? '',
-                'procurement_title' => $d->procurement->title ?? '',
+                'pr_number' => $d->procurement?->pr_number ?? '',
+                'procurement_title' => $d->procurement?->title ?? '',
                 'user_address' => $d->user_address ?? '',
                 'stage' => $d->stage,
                 'status' => '',
@@ -71,7 +72,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'data_txid' => $d->txid ?? '',
                 'metadata_txid' => '',
                 'uploaded_by' => $d->uploaded_by,
-                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'timestamp' => $d->uploaded_at?->toIso8601String() ?? '',
                 'description' => $d->description,
             ]));
     }
@@ -81,13 +82,14 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function findByStage(string $prNumber, string $stage): Collection
     {
-        return ProcurementDocument::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+        return ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
             ->where('stage', $stage)
             ->orderByDesc('uploaded_at')
             ->get()
             ->map(fn ($d) => DocumentData::fromBlockchainArray([
-                'pr_number' => $d->procurement->pr_number ?? '',
-                'procurement_title' => $d->procurement->title ?? '',
+                'pr_number' => $d->procurement?->pr_number ?? '',
+                'procurement_title' => $d->procurement?->title ?? '',
                 'user_address' => $d->user_address ?? '',
                 'stage' => $d->stage,
                 'status' => '',
@@ -100,7 +102,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'data_txid' => $d->txid ?? '',
                 'metadata_txid' => '',
                 'uploaded_by' => $d->uploaded_by,
-                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'timestamp' => $d->uploaded_at?->toIso8601String() ?? '',
                 'description' => $d->description,
             ]));
     }
@@ -110,15 +112,15 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function findByHash(string $hash): ?DocumentData
     {
-        $doc = ProcurementDocument::where('hash', $hash)->first();
+        $doc = ProcurementDocument::with('procurement')->where('hash', $hash)->first();
 
         if (! $doc) {
             return null;
         }
 
         return DocumentData::fromBlockchainArray([
-            'pr_number' => $doc->procurement->pr_number ?? '',
-            'procurement_title' => $doc->procurement->title ?? '',
+            'pr_number' => $doc->procurement?->pr_number ?? '',
+            'procurement_title' => $doc->procurement?->title ?? '',
             'user_address' => $doc->user_address ?? '',
             'stage' => $doc->stage,
             'status' => '',
@@ -131,7 +133,7 @@ class DocumentRepository implements DocumentRepositoryInterface
             'data_txid' => $doc->txid ?? '',
             'metadata_txid' => '',
             'uploaded_by' => $doc->uploaded_by,
-            'timestamp' => $doc->uploaded_at->toIso8601String(),
+            'timestamp' => $doc->uploaded_at?->toIso8601String() ?? '',
             'description' => $doc->description,
         ]);
     }
@@ -141,15 +143,15 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function findByFileKey(string $fileKey): ?DocumentData
     {
-        $doc = ProcurementDocument::where('file_key', $fileKey)->first();
+        $doc = ProcurementDocument::with('procurement')->where('file_key', $fileKey)->first();
 
         if (! $doc) {
             return null;
         }
 
         return DocumentData::fromBlockchainArray([
-            'pr_number' => $doc->procurement->pr_number ?? '',
-            'procurement_title' => $doc->procurement->title ?? '',
+            'pr_number' => $doc->procurement?->pr_number ?? '',
+            'procurement_title' => $doc->procurement?->title ?? '',
             'user_address' => $doc->user_address ?? '',
             'stage' => $doc->stage,
             'status' => '',
@@ -162,7 +164,7 @@ class DocumentRepository implements DocumentRepositoryInterface
             'data_txid' => $doc->txid ?? '',
             'metadata_txid' => '',
             'uploaded_by' => $doc->uploaded_by,
-            'timestamp' => $doc->uploaded_at->toIso8601String(),
+            'timestamp' => $doc->uploaded_at?->toIso8601String() ?? '',
             'description' => $doc->description,
         ]);
     }
@@ -172,15 +174,15 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function findByTxid(string $txid): ?DocumentData
     {
-        $doc = ProcurementDocument::where('txid', $txid)->first();
+        $doc = ProcurementDocument::with('procurement')->where('txid', $txid)->first();
 
         if (! $doc) {
             return null;
         }
 
         return DocumentData::fromBlockchainArray([
-            'pr_number' => $doc->procurement->pr_number ?? '',
-            'procurement_title' => $doc->procurement->title ?? '',
+            'pr_number' => $doc->procurement?->pr_number ?? '',
+            'procurement_title' => $doc->procurement?->title ?? '',
             'user_address' => $doc->user_address ?? '',
             'stage' => $doc->stage,
             'status' => '',
@@ -193,7 +195,7 @@ class DocumentRepository implements DocumentRepositoryInterface
             'data_txid' => $doc->txid ?? '',
             'metadata_txid' => '',
             'uploaded_by' => $doc->uploaded_by,
-            'timestamp' => $doc->uploaded_at->toIso8601String(),
+            'timestamp' => $doc->uploaded_at?->toIso8601String() ?? '',
             'description' => $doc->description,
         ]);
     }
@@ -222,12 +224,13 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function findRecent(int $limit = 10): Collection
     {
-        return ProcurementDocument::orderByDesc('uploaded_at')
+        return ProcurementDocument::with('procurement')
+            ->orderByDesc('uploaded_at')
             ->take($limit)
             ->get()
             ->map(fn ($d) => DocumentData::fromBlockchainArray([
-                'pr_number' => $d->procurement->pr_number ?? '',
-                'procurement_title' => $d->procurement->title ?? '',
+                'pr_number' => $d->procurement?->pr_number ?? '',
+                'procurement_title' => $d->procurement?->title ?? '',
                 'user_address' => $d->user_address ?? '',
                 'stage' => $d->stage,
                 'status' => '',
@@ -240,7 +243,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'data_txid' => $d->txid ?? '',
                 'metadata_txid' => '',
                 'uploaded_by' => $d->uploaded_by,
-                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'timestamp' => $d->uploaded_at?->toIso8601String() ?? '',
                 'description' => $d->description,
             ]));
     }
@@ -250,12 +253,13 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function all(int $limit = 5000): Collection
     {
-        return ProcurementDocument::orderByDesc('uploaded_at')
+        return ProcurementDocument::with('procurement')
+            ->orderByDesc('uploaded_at')
             ->take($limit)
             ->get()
             ->map(fn ($d) => DocumentData::fromBlockchainArray([
-                'pr_number' => $d->procurement->pr_number ?? '',
-                'procurement_title' => $d->procurement->title ?? '',
+                'pr_number' => $d->procurement?->pr_number ?? '',
+                'procurement_title' => $d->procurement?->title ?? '',
                 'user_address' => $d->user_address ?? '',
                 'stage' => $d->stage,
                 'status' => '',
@@ -268,7 +272,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'data_txid' => $d->txid ?? '',
                 'metadata_txid' => '',
                 'uploaded_by' => $d->uploaded_by,
-                'timestamp' => $d->uploaded_at->toIso8601String(),
+                'timestamp' => $d->uploaded_at?->toIso8601String() ?? '',
                 'description' => $d->description,
             ]));
     }

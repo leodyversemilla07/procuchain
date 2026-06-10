@@ -86,6 +86,7 @@ class IntegrityBreachController extends Controller
                 'critical' => (clone $activePending)->where('severity', 'critical')->count(),
                 'high' => (clone $activePending)->where('severity', 'high')->count(),
             ],
+            'verificationStatus' => $this->getVerificationStatus(),
         ]);
     }
 
@@ -281,11 +282,20 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
+        return response()->json($this->getVerificationStatus());
+    }
+
+    /**
+     * Get the current verification run status from cache.
+     * Also returns/clears result data on completion/failure.
+     */
+    private function getVerificationStatus(): array
+    {
         $cacheKey = 'verification_run_'.auth()->id();
         $status = Cache::get("{$cacheKey}_status");
 
         if (! $status) {
-            return response()->json(['status' => 'idle']);
+            return ['status' => 'idle'];
         }
 
         $response = [
@@ -305,7 +315,7 @@ class IntegrityBreachController extends Controller
             Cache::forget("{$cacheKey}_started_at");
         }
 
-        return response()->json($response);
+        return $response;
     }
 
     /**

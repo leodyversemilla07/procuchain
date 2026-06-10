@@ -258,10 +258,11 @@ class NormalizedTableSyncService
             // against procurement.last_updated_at because metadata repair may
             // refresh that timestamp and otherwise block status restoration.
             $enteredAt = $attributes['entered_at'];
+            $previousStatus = $procurement->current_status;
             $procurement->update([
                 'current_stage' => $data['stage'] ?? $procurement->current_stage,
                 'current_status' => $data['current_status'] ?? $procurement->current_status,
-                'previous_status' => $data['previous_status'] ?? $procurement->current_status,
+                'previous_status' => $data['previous_status'] ?? $previousStatus,
                 'last_updated_at' => $enteredAt,
             ]);
 
