@@ -8,11 +8,13 @@ STAGING_DIR="/var/app/staging"
 
 echo "PREDEPLOY: Installing Node.js and building frontend assets..."
 
-# Check if Node.js is already installed
-if ! command -v node &> /dev/null; then
-  echo "PREDEPLOY: Installing Node.js 24.x..."
+# Ensure Node.js 24.x is installed (upgrade if older version exists)
+CURRENT_NODE=$(node -v 2>/dev/null || echo "none")
+if [[ "$CURRENT_NODE" != v24* ]]; then
+  echo "PREDEPLOY: Installing Node.js 24.x (current: $CURRENT_NODE)..."
   curl -fsSL https://rpm.nodesource.com/setup_24.x | bash - &>/dev/null
-  yum install -y nodejs &>/dev/null
+  PKG_MGR=$(command -v dnf && echo "dnf" || echo "yum")
+  $PKG_MGR install -y nodejs &>/dev/null
 fi
 
 echo "PREDEPLOY: Node version: $(node -v)"
@@ -22,7 +24,7 @@ cd "$STAGING_DIR"
 
 # Install dependencies
 echo "PREDEPLOY: Running npm install..."
-npm install --production=false 2>&1 | tail -3
+npm install --production=false --legacy-peer-deps 2>&1 | tail -10
 
 # Build assets
 echo "PREDEPLOY: Running npm run build..."
