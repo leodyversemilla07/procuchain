@@ -10,8 +10,8 @@ echo "PREDEPLOY: Installing Node.js and building frontend assets..."
 
 # Check if Node.js is already installed
 if ! command -v node &> /dev/null; then
-  echo "PREDEPLOY: Installing Node.js 20.x..."
-  curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - &>/dev/null
+  echo "PREDEPLOY: Installing Node.js 24.x..."
+  curl -fsSL https://rpm.nodesource.com/setup_24.x | bash - &>/dev/null
   yum install -y nodejs &>/dev/null
 fi
 
