@@ -439,6 +439,14 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe('IntegrityAuditLog — Blockchain Publishing', function () {
+    beforeEach(function () {
+        // Ensure BlockchainAuditTrailService is mocked for each test in this block
+        $this->mock(BlockchainAuditTrailService::class, function ($mock) {
+            $mock->shouldReceive('publishViolation')->andReturn('mock-txid');
+            $mock->shouldReceive('publishRecovery')->andReturn('mock-recovery-txid');
+        });
+    });
+
     it('skips automatic blockchain publish during unit tests', function () {
         $managerMock = $this->mock(Manager::class);
         $managerMock->shouldNotReceive('publish');
@@ -507,10 +515,12 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
             publishToChain: false,
         );
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
-            ->once()
-            ->andThrow(new Exception('Connection refused'));
+        // Override the mock to throw an exception for this test
+        $this->mock(BlockchainAuditTrailService::class, function ($mock) {
+            $mock->shouldReceive('publishViolation')
+                ->once()
+                ->andThrow(new Exception('Connection refused'));
+        });
 
         $txid = $log->publishToBlockchain();
 

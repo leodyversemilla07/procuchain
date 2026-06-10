@@ -17,6 +17,7 @@ class NotificationPreferenceService
         'account_security',
         'user_invitations',
         'system_announcements',
+        'integrity_breach',
     ];
 
     /**
@@ -35,6 +36,7 @@ class NotificationPreferenceService
         ],
         'Security' => [
             'account_security' => 'Account lock/unlock and suspicious login alerts',
+            'integrity_breach' => 'Data integrity breach alerts (critical/high severity)',
         ],
         'System' => [
             'user_invitations' => 'User invitation emails',

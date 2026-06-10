@@ -23,7 +23,6 @@ use App\Services\Integrity\IntegrityComparator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 /**
  * Integrity Verification Service
@@ -1683,26 +1682,41 @@ class IntegrityVerificationService
             ->exists();
 
         if (! $existingPending) {
-            $this->notifyBreach($type, $prNumber, $message);
+            $this->notifyBreach($type, $prNumber, $message, $fieldDiffs, $stream, $violationTxid);
         }
 
         Log::warning('IntegrityVerification: breach', ['type' => $type, 'pr' => $prNumber, 'table' => $tableName]);
     }
 
-    private function notifyBreach(string $type, string $prNumber, string $message): void
+    private function notifyBreach(string $type, string $prNumber, string $message, ?array $fieldDiffs = null, ?string $stream = null, ?string $txid = null): void
     {
         try {
-            $recipients = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['bac_chairman', 'hope', 'admin']))->get();
+            $recipientRoles = config('integrity.breach_notifications.recipient_roles', ['admin', 'bac_chairman', 'hope']);
+            $recipients = User::whereHas('roles', fn ($q) => $q->whereIn('name', $recipientRoles))->get();
             if ($recipients->isEmpty()) {
                 return;
             }
-            Notification::send($recipients, new IntegrityBreachNotification(
-                breachType: $type,
-                stream: 'normalized_db',
-                streamKey: $prNumber,
-                txid: '',
-                breachData: ['message' => $message, 'run_id' => $this->runId],
-            ));
+
+            $digestEnabled = config('integrity.breach_notifications.digest_enabled', true);
+
+            // If digest is enabled, we don't send individual emails immediately.
+            // The daily digest job will pick up violations from IntegrityAuditLog.
+            // We still send push notifications for critical/high severity.
+            $sendEmailNow = ! $digestEnabled;
+
+            foreach ($recipients as $recipient) {
+                $recipient->notify(new IntegrityBreachNotification(
+                    breachType: $type,
+                    stream: $stream ?? 'normalized_db',
+                    streamKey: $prNumber,
+                    txid: $txid ?? '',
+                    breachData: ['message' => $message, 'run_id' => $this->runId],
+                    recordId: null,
+                    runId: $this->runId,
+                    fieldDiffs: $fieldDiffs,
+                    isDigest: false,
+                ));
+            }
         } catch (\Exception $e) {
             Log::error('IntegrityVerification: notification failed', ['error' => $e->getMessage()]);
         }

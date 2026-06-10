@@ -40,6 +40,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
     account_security: 'Account Security',
     user_invitations: 'User Invitations',
     system_announcements: 'System Announcements',
+    integrity_breach: 'Integrity Breaches',
 };
 
 export default function NotificationPreferences() {

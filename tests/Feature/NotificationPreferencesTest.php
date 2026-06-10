@@ -107,7 +107,7 @@ describe('User notification preference helpers', function () {
         $defaults = User::getDefaultNotificationPreferences();
 
         expect($defaults)->toBeArray()
-            ->and($defaults)->toHaveCount(6)
+            ->and($defaults)->toHaveCount(7)
             ->and($defaults)->toHaveKeys([
                 'procurement_stage_updates',
                 'procurement_corrections',
@@ -115,6 +115,7 @@ describe('User notification preference helpers', function () {
                 'account_security',
                 'user_invitations',
                 'system_announcements',
+                'integrity_breach',
             ]);
     });
 

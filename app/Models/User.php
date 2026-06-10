@@ -141,6 +141,7 @@ class User extends Authenticatable
             'account_security' => ['email' => true, 'push' => true],
             'user_invitations' => ['email' => true, 'push' => false],
             'system_announcements' => ['email' => true, 'push' => true],
+            'integrity_breach' => ['email' => true, 'push' => true],
         ];
     }
 

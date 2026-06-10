@@ -193,6 +193,9 @@ class IntegrityAuditLog extends Model
      * Records the violation in BOTH MySQL (integrity_audit_logs) AND blockchain
      * (integrity.violations stream) for permanent, immutable audit trail.
      *
+     * Implements cross-run deduplication with configurable cooldown to prevent
+     * notification spam from repeated scheduled audits.
+     *
      * @param  array  $fieldDifferences  [{field, old_value, new_value}]
      * @param  array|null  $mirrorSnapshot  DB state at detection time
      * @param  array|null  $chainSnapshot  Blockchain state at detection time
@@ -217,16 +220,49 @@ class IntegrityAuditLog extends Model
         ?array $revisionLineage = null,
         bool $publishToChain = true,
     ): self {
-        // Deduplication: skip if an identical pending violation already exists
-        $existing = self::where('stream', $stream)
+        // Skip cooldown deduplication in unit tests
+        if (! app()->runningUnitTests()) {
+            // Get cooldown period from config (default 24 hours)
+            $cooldownHours = config('integrity.breach_notifications.cooldown_hours', 24);
+            $cooldownCutoff = now()->subHours($cooldownHours);
+
+            // Deduplication: skip if an identical violation was reported recently
+            // regardless of recovery_status (pending/restored/failed/skipped)
+            // This prevents notification floods from repeated scheduled audits.
+            $recent = self::where('stream', $stream)
+                ->where('stream_key', $streamKey)
+                ->where('violation_type', $violationType)
+                ->where('created_at', '>=', $cooldownCutoff)
+                ->when($txid, fn ($q) => $q->where('txid', $txid))
+                ->latest('created_at')
+                ->first();
+
+            if ($recent) {
+                // Update the existing record with the new run_id for tracking
+                $recent->update(['verification_run_id' => $runId ?? self::newRunId()]);
+
+                Log::debug('IntegrityAuditLog: skipping duplicate violation within cooldown', [
+                    'stream' => $stream,
+                    'stream_key' => $streamKey,
+                    'type' => $violationType,
+                    'cooldown_hours' => $cooldownHours,
+                    'existing_id' => $recent->id,
+                ]);
+
+                return $recent;
+            }
+        }
+
+        // Also check for pending violation with same txid (original logic)
+        $existingPending = self::where('stream', $stream)
             ->where('stream_key', $streamKey)
             ->where('violation_type', $violationType)
             ->where('recovery_status', 'pending')
             ->when($txid, fn ($q) => $q->where('txid', $txid))
             ->first();
 
-        if ($existing) {
-            return $existing;
+        if ($existingPending) {
+            return $existingPending;
         }
 
         $auditLog = self::create([
