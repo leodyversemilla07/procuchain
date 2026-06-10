@@ -28,6 +28,6 @@ it('uses the stricter production content security policy and hsts in production'
     );
 
     expect($response->headers->get('Content-Security-Policy'))->toContain("script-src 'self'")
-        ->toContain("'unsafe-eval'")  // required by Inertia + React in production
+        ->not->toContain("'unsafe-eval'")
         ->and($response->headers->get('Strict-Transport-Security'))->toBe('max-age=31536000; includeSubDomains; preload');
 });
