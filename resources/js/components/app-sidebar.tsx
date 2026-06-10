@@ -33,7 +33,6 @@ import {
     Bell,
     Blocks,
     BookOpen,
-    Database,
     Eye,
     FileText,
     GitBranch,

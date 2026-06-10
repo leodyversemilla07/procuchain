@@ -1,4 +1,4 @@
-import { Activity, AlertCircle, ArrowUpCircle, FileCheck, FileText } from 'lucide-react';
+import { AlertCircle, ArrowUpCircle, FileCheck, FileText } from 'lucide-react';
 import type { FC, JSX } from 'react';
 
 import { TruncateBadge } from '@/components/truncate-badge';
@@ -14,7 +14,7 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) =>
     const formattedTimeOnly = 'formatted_time_only' in item ? item.formatted_time_only : '';
 
     // Determine Icon and Styles
-    let Icon = Activity;
+    let Icon: React.ComponentType<{ className?: string }>;
     let iconClassName = 'text-muted-foreground';
     let borderClassName = 'border-muted-foreground/20';
 

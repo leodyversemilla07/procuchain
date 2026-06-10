@@ -117,6 +117,7 @@ export default function IntegrityBreaches() {
     const [verifyAndRepairing, setVerifyAndRepairing] = useState(false);
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
     const toastIdRef = useRef<string | number | null>(null);
+    const isFirstMount = useRef(true);
 
     const { start, stop } = usePoll(3000, {
         only: ['verificationStatus', 'breaches', 'stats'],
@@ -125,17 +126,19 @@ export default function IntegrityBreaches() {
     });
 
     useEffect(() => {
-        if (verificationStatus?.status === 'running' && !verifyAndRepairing) {
-            setVerifyAndRepairing(true);
-            toastIdRef.current = toast.info('Verification in progress…', {
-                description: 'Checking records, repairing tampered data from the blockchain.',
-                duration: Infinity,
-            });
-            start();
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            if (verificationStatus?.status === 'running') {
+                setVerifyAndRepairing(true);
+                toastIdRef.current = toast.info('Verification in progress…', {
+                    description: 'Checking records, repairing tampered data from the blockchain.',
+                    duration: Infinity,
+                });
+                start();
+                return;
+            }
         }
-    }, []);
 
-    useEffect(() => {
         if (!verificationStatus || verificationStatus.status === 'idle' || verificationStatus.status === 'running') return;
 
         stop();
@@ -157,7 +160,7 @@ export default function IntegrityBreaches() {
                 description: verificationStatus.error ?? 'An unexpected error occurred.',
             });
         }
-    }, [verificationStatus]);
+    }, [verificationStatus, start, stop]);
 
     const handleRepair = (id: number) => {
         setRepairing(id);

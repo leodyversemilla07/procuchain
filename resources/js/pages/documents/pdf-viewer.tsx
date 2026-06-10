@@ -62,7 +62,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
         }, 2000);
 
         // Debounced resize handler
-        let resizeTimeout: NodeJS.Timeout;
+        let resizeTimeout: ReturnType<typeof setTimeout>;
         const debouncedResize = () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(updateHeight, 300);

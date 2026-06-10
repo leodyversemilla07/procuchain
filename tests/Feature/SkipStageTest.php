@@ -27,6 +27,7 @@ use function Pest\Laravel\mock;
 beforeEach(function () {
     $this->bacSecretariat = User::factory()->create();
     $this->bacSecretariat->assignRole('bac_secretariat');
+    $this->bacSecretariat->givePermissionTo('approve procurement');
     $this->bacSecretariat->blockchain_address = 'test_address_123';
     $this->bacSecretariat->save();
 

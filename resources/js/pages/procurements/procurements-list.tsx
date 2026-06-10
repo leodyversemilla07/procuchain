@@ -177,7 +177,7 @@ export default function ProcurementsList({
     } = useProcurementList({ initialProcurements, initialError });
 
     // Track which dialog is processing
-    const [loadingDialog, setLoadingDialog] = useState<'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null>(null);
+    const [, setLoadingDialog] = useState<'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null>(null);
 
     // Register the setter for global access
     useEffect(() => {
