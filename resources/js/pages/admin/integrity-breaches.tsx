@@ -125,6 +125,17 @@ export default function IntegrityBreaches() {
     });
 
     useEffect(() => {
+        if (verificationStatus?.status === 'running' && !verifyAndRepairing) {
+            setVerifyAndRepairing(true);
+            toastIdRef.current = toast.info('Verification in progress…', {
+                description: 'Checking records, repairing tampered data from the blockchain.',
+                duration: Infinity,
+            });
+            start();
+        }
+    }, []);
+
+    useEffect(() => {
         if (!verificationStatus || verificationStatus.status === 'idle' || verificationStatus.status === 'running') return;
 
         stop();
