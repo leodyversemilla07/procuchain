@@ -25,17 +25,17 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
     const [processing, setProcessing] = useState(false);
     const { submitAndPoll } = useBlockchainJob();
 
-    const handleSuccess = (held: boolean) => {
+    const handleSuccess = (held: boolean, blockchainResult?: { next_stage_name?: string; next_stage_url?: string }) => {
         onOpenChange(false);
 
         const message = held
-            ? 'You will now proceed to upload pre-procurement conference documents.'
-            : 'The pre-procurement conference stage has been skipped.';
+            ? `You will now proceed to ${blockchainResult?.next_stage_name ?? 'upload pre-procurement conference documents'}`
+            : `The pre-procurement conference stage has been skipped.${blockchainResult?.next_stage_name ? ` Next: ${blockchainResult.next_stage_name}` : ''}`;
 
         toast.success('Decision submitted successfully!', { description: message });
 
         if (onComplete) {
-            onComplete(undefined, held);
+            onComplete(blockchainResult?.next_stage_url, held);
         }
 
         if (!held) {
@@ -63,8 +63,8 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
         formData.append('conference_held', conferenceHeld ? '1' : '0');
 
         try {
-            await submitAndPoll('/bac-secretariat/publish-pre-procurement-conference-decision', formData);
-            handleSuccess(conferenceHeld);
+            const result = await submitAndPoll('/bac-secretariat/publish-pre-procurement-conference-decision', formData);
+            handleSuccess(conferenceHeld, result.result as { next_stage_name?: string; next_stage_url?: string } | undefined);
         } catch (err) {
             toast.error('Failed to submit decision', {
                 description: err instanceof Error ? err.message : 'Please try again or contact support if the problem persists.',

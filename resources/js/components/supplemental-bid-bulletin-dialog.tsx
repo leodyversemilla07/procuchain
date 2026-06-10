@@ -23,17 +23,17 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
     const [processing, setProcessing] = useState(false);
     const { submitAndPoll } = useBlockchainJob();
 
-    const handleSuccess = (needed: boolean) => {
+    const handleSuccess = (needed: boolean, blockchainResult?: { next_stage_name?: string; next_stage_url?: string }) => {
         onOpenChange(false);
 
         const message = needed
-            ? 'You will now proceed to upload supplemental bid bulletin documents.'
-            : 'The supplemental bid bulletin stage has been skipped.';
+            ? `You will now proceed to ${blockchainResult?.next_stage_name ?? 'upload supplemental bid bulletin documents'}`
+            : `The supplemental bid bulletin stage has been skipped.${blockchainResult?.next_stage_name ? ` Next: ${blockchainResult.next_stage_name}` : ''}`;
 
         toast.success('Decision submitted successfully!', { description: message });
 
         if (onComplete) {
-            onComplete(undefined, needed);
+            onComplete(blockchainResult?.next_stage_url, needed);
         }
 
         setSupplementalBidNeeded(undefined);
@@ -57,8 +57,8 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
         formData.append('supplemental_bid_needed', supplementalBidNeeded ? '1' : '0');
 
         try {
-            await submitAndPoll('/bac-secretariat/publish-supplemental-bid-bulletin-decision', formData);
-            handleSuccess(supplementalBidNeeded);
+            const result = await submitAndPoll('/bac-secretariat/publish-supplemental-bid-bulletin-decision', formData);
+            handleSuccess(supplementalBidNeeded, result.result as { next_stage_name?: string; next_stage_url?: string } | undefined);
         } catch (err) {
             toast.error('Failed to submit decision', {
                 description: err instanceof Error ? err.message : 'Please try again or contact support if the problem persists.',
