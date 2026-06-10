@@ -78,12 +78,12 @@ function validateRequiredFields(data, requiredFields) {
 /**
  * Validate file size is within limits
  * @param {number|string} fileSize - The file size in bytes
- * @param {number} maxSize - Maximum allowed size in bytes (default: 10MB)
+ * @param {number} maxSize - Maximum allowed size in bytes (default: 50MB)
  * @returns {object} { valid: boolean, error: string|null }
  */
 function validateFileSize(fileSize, maxSize) {
     if (!maxSize) {
-        maxSize = 10485760; // 10MB default
+        maxSize = 52428800; // 50MB default (aligned with application limit)
     }
 
     var size = parseInt(fileSize, 10);

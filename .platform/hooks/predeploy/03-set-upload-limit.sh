@@ -5,7 +5,7 @@
 set -e
 
 STAGING_NGINX="/var/proxy/staging/nginx/nginx.conf"
-TARGET_SIZE="100M"
+TARGET_SIZE="52M"
 
 echo "=== Setting client_max_body_size to ${TARGET_SIZE} in staging nginx ==="
 

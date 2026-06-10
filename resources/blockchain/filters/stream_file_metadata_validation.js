@@ -138,10 +138,10 @@ function filterstreamitem() {
         return 'File size must be a positive number';
     }
 
-    // Maximum file size: 100MB (increased from 50MB)
-    var maxFileSize = 100 * 1024 * 1024;
+    // Maximum file size: 50MB (aligned with application upload limit)
+    var maxFileSize = 50 * 1024 * 1024;
     if (data.size > maxFileSize) {
-        return 'File size exceeds maximum allowed (100MB)';
+        return 'File size exceeds maximum allowed (50MB)';
     }
 
     // Validate hash is SHA-256 (64 hex characters)

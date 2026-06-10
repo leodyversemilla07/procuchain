@@ -187,9 +187,9 @@ function filterstreamitem() {
                 return 'file_size in corrected_metadata must be a non-negative number';
             }
 
-            // Maximum 10MB
-            if (data.corrected_metadata.file_size > 10485760) {
-                return 'file_size in corrected_metadata exceeds maximum allowed (10MB)';
+            // Maximum 50MB (aligned with application upload limit)
+            if (data.corrected_metadata.file_size > 52428800) {
+                return 'file_size in corrected_metadata exceeds maximum allowed (50MB)';
             }
         }
     }
