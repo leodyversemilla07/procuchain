@@ -221,17 +221,7 @@ final class ProcurementFetcherService
     public function getDocumentByFileKey(string $fileKey): ?DocumentData
     {
         try {
-            Log::info('Attempting to get blockchain data', ['file_key' => $fileKey]);
-
-            $allDocuments = $this->documentRepository->all();
-
-            Log::info('Retrieved document stream items', [
-                'file_key' => $fileKey,
-                'total_items' => count($allDocuments),
-            ]);
-
-            $document = collect($allDocuments)
-                ->first(fn (DocumentData $doc) => $doc->fileKey === $fileKey);
+            $document = $this->documentRepository->findByFileKey($fileKey);
 
             if (! $document) {
                 Log::info('No blockchain document found for file key', ['file_key' => $fileKey]);
@@ -262,19 +252,10 @@ final class ProcurementFetcherService
     public function getHashByPrNumber(string $prNumber, string $fileKey): ?string
     {
         try {
-            Log::info('Attempting alternative hash lookup', [
-                'pr_number' => $prNumber,
-                'file_key' => $fileKey,
-            ]);
+            $prDocuments = $this->documentRepository->findByProcurement($prNumber);
 
-            $allDocuments = $this->documentRepository->all();
-
-            $document = collect($allDocuments)
-                ->first(function (DocumentData $doc) use ($prNumber, $fileKey) {
-                    if ($doc->prNumber === $prNumber) {
-                        return true;
-                    }
-
+            $document = collect($prDocuments)
+                ->first(function (DocumentData $doc) use ($fileKey) {
                     $fileKeyParts = explode('/', $fileKey);
                     $docFileKeyParts = explode('/', $doc->fileKey);
 
@@ -313,10 +294,7 @@ final class ProcurementFetcherService
     public function validateDocumentExists(string $fileKey): ?DocumentData
     {
         try {
-            $allDocuments = $this->documentRepository->all();
-
-            return collect($allDocuments)
-                ->first(fn (DocumentData $doc) => $doc->fileKey === $fileKey);
+            return $this->documentRepository->findByFileKey($fileKey);
         } catch (\Exception $e) {
             Log::error('Blockchain validation failed', [
                 'file_key' => $fileKey,

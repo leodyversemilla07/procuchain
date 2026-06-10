@@ -1,5 +1,5 @@
 import { getXsrfToken } from '@/lib/csrf';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export type BlockchainJobStatus = 'pending' | 'retrying' | 'done' | 'failed';
 
@@ -29,6 +29,10 @@ export function useBlockchainJob() {
             intervalRef.current = null;
         }
     }, []);
+
+    useEffect(() => {
+        return () => stopPolling();
+    }, [stopPolling]);
 
     /** Poll the status endpoint until done/failed/timeout. */
     const pollUntilDone = useCallback(

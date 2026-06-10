@@ -130,7 +130,8 @@ abstract class BaseDashboardController extends BaseController
         try {
             Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
             // Read from normalized DB tables
-            $states = ProcurementStage::orderByDesc('entered_at')
+            $states = ProcurementStage::with('procurement')
+                ->orderByDesc('entered_at')
                 ->take(config('dashboard.stream_limits.status_items'))
                 ->get()
                 ->map(fn ($stage) => [

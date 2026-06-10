@@ -59,7 +59,7 @@ class ProcurementStageController extends BaseController
         string $pr_number,
         StageEnums $stage
     ): JsonResponse {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('upload-document', $pr_number);
 
         $user = $request->user();
 
@@ -118,7 +118,7 @@ class ProcurementStageController extends BaseController
      */
     public function markStageComplete(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('approve-procurement', $pr_number);
 
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
@@ -152,7 +152,7 @@ class ProcurementStageController extends BaseController
      */
     public function skipStage(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('approve-procurement', $pr_number);
 
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
@@ -200,7 +200,7 @@ class ProcurementStageController extends BaseController
      */
     public function validateUpload(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('upload-document', $pr_number);
 
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
@@ -292,7 +292,7 @@ class ProcurementStageController extends BaseController
      */
     public function repeatStage(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('approve-procurement', $pr_number);
 
         if (! $stage->isProcurement()) {
             abort(403, 'Invalid stage for Procurement phase');
@@ -347,7 +347,7 @@ class ProcurementStageController extends BaseController
         UpdateDeliveryDetailsRequest $request,
         string $pr_number
     ): JsonResponse {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('approve-procurement', $pr_number);
 
         try {
             $result = $this->stageMutationService->queueDeliveryDetails(
@@ -394,7 +394,7 @@ class ProcurementStageController extends BaseController
         bool $wasHeld,
         string $auditAction = 'procurement.decision_published',
     ): JsonResponse {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('publish-procurement', $prNumber);
 
         try {
             $result = $this->stageMutationService->queueDecisionPublishing(

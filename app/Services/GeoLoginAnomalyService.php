@@ -107,7 +107,7 @@ class GeoLoginAnomalyService
     {
         try {
             // Using ip-api.com (free tier: 45 requests/minute)
-            $url = "http://ip-api.com/json/{$ipAddress}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,isp";
+            $url = "https://ip-api.com/json/{$ipAddress}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,isp";
 
             $context = stream_context_create([
                 'http' => [

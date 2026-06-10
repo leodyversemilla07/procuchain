@@ -34,7 +34,7 @@ final class DocumentVerificationController extends Controller
      */
     public function verify(VerifyProcurementRequest $request, string $prNumber): JsonResponse
     {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('correct-procurement', $prNumber);
 
         Log::info('Starting procurement verification', [
             'pr_number' => $prNumber,
@@ -92,7 +92,7 @@ final class DocumentVerificationController extends Controller
      */
     public function verifyIntegrity(Request $request, string $prNumber): JsonResponse
     {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('correct-procurement', $prNumber);
 
         Log::info('Starting integrity verification', [
             'pr_number' => $prNumber,

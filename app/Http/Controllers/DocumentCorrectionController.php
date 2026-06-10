@@ -103,7 +103,7 @@ class DocumentCorrectionController extends Controller
      */
     public function getCorrectionHistory(Request $request, string $procurement): JsonResponse
     {
-        $this->authorize('view-procurement', $procurement);
+        $this->authorize('correct-procurement', $procurement);
 
         try {
             // Fetch corrections for this procurement using repository

@@ -179,7 +179,7 @@ class ProcurementInitiationController extends BaseController
         UploadSingleDocumentRequest $request,
         string $pr_number
     ): JsonResponse {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('upload-document', $pr_number);
 
         $stage = StageEnums::PROCUREMENT_INITIATION;
         $user = $request->user();
@@ -230,7 +230,7 @@ class ProcurementInitiationController extends BaseController
      */
     public function validateUpload(Request $request, string $pr_number): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('upload-document', $pr_number);
 
         $stage = StageEnums::PROCUREMENT_INITIATION;
         $documentTypeValue = $request->input('document_type');
@@ -269,7 +269,7 @@ class ProcurementInitiationController extends BaseController
      */
     public function markStageComplete(Request $request, string $pr_number): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('initiate-procurement', $pr_number);
 
         $stage = StageEnums::PROCUREMENT_INITIATION;
 

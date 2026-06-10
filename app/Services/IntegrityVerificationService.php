@@ -1165,16 +1165,17 @@ class IntegrityVerificationService
 
     private function resolveStalePendingViolationsAfterCleanRun(): void
     {
-        $staleViolations = IntegrityAuditLog::where('recovery_status', 'pending')->get();
+        $resolved = 0;
 
-        foreach ($staleViolations as $violation) {
+        foreach (IntegrityAuditLog::where('recovery_status', 'pending')->lazy() as $violation) {
             $violation->markSkipped('Verifier completed a full clean run (run_id: '.$this->runId.') with no current blockchain/database breaches. This pending record is historical and no longer actionable.');
+            $resolved++;
         }
 
-        if ($staleViolations->isNotEmpty()) {
+        if ($resolved > 0) {
             Log::info('IntegrityVerification: resolved stale pending violations after clean run', [
                 'run_id' => $this->runId,
-                'count' => $staleViolations->count(),
+                'count' => $resolved,
             ]);
         }
     }

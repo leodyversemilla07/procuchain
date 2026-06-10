@@ -118,16 +118,16 @@ final class ProcurementListAggregatorService
     private function fetchStatusItems(): Collection
     {
         try {
-            // Get latest status for each procurement (unique PRs)
-            $latestStages = ProcurementStage::selectRaw('procurement_id, MAX(entered_at) as latest_entry')
+            $latestStageIds = ProcurementStage::selectRaw('MAX(id) as id')
                 ->groupBy('procurement_id')
-                ->orderByDesc('latest_entry')
+                ->orderByDesc('id')
                 ->take(50)
-                ->pluck('procurement_id')
-                ->map(fn ($id) => ProcurementStage::where('procurement_id', $id)
-                    ->orderByDesc('entered_at')
-                    ->first())
-                ->filter();
+                ->pluck('id');
+
+            $latestStages = ProcurementStage::with('procurement')
+                ->whereIn('id', $latestStageIds)
+                ->orderByDesc('entered_at')
+                ->get();
 
             return $latestStages->map(fn ($stage) => StatusData::fromBlockchainArray([
                 'pr_number' => $stage->procurement->pr_number ?? '',
@@ -161,7 +161,8 @@ final class ProcurementListAggregatorService
 
         try {
             // Read from normalized tables
-            $documentDtos = ProcurementDocument::orderByDesc('uploaded_at')
+            $documentDtos = ProcurementDocument::with('procurement')
+                ->orderByDesc('uploaded_at')
                 ->take($documentLimit)
                 ->get()
                 ->map(fn ($d) => DocumentData::fromBlockchainArray([
@@ -255,9 +256,11 @@ final class ProcurementListAggregatorService
     {
         try {
             // Read from normalized tables
-            $archivedPrNumbers = ProcurementArchive::where('action', 'archive')
-                ->pluck('procurement_id')
-                ->map(fn ($id) => Procurement::find($id)?->pr_number)
+            $archivedPrIds = ProcurementArchive::where('action', 'archive')
+                ->pluck('procurement_id');
+
+            $archivedPrNumbers = Procurement::whereIn('id', $archivedPrIds)
+                ->pluck('pr_number')
                 ->filter()
                 ->toArray();
         } catch (\Exception $e) {

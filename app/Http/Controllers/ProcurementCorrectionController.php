@@ -68,7 +68,7 @@ class ProcurementCorrectionController extends Controller
      */
     public function getProcurementCorrectionHistory(Request $request, string $pr_number): JsonResponse
     {
-        $this->authorize('view-procurement', $pr_number);
+        $this->authorize('correct-procurement', $pr_number);
 
         try {
             $corrections = $this->correctionService->getCorrectionHistory($pr_number, $request->user());
@@ -98,7 +98,7 @@ class ProcurementCorrectionController extends Controller
      */
     public function checkProcurementCorrection(Request $request, string $prNumber): JsonResponse
     {
-        $this->authorize('view-procurement', $prNumber);
+        $this->authorize('correct-procurement', $prNumber);
 
         $request->validate([
             'pr_number' => 'required|string',

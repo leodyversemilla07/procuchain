@@ -199,7 +199,8 @@ class DashboardService
             $limit = config('dashboard.display_limits.recent_activities_display');
             // Fetch only the required amount plus some buffer for filtering
             $fetchLimit = min($limit * 2, config('dashboard.stream_limits.recent_activities'));
-            $eventDtos = ProcurementEvent::orderByDesc('occurred_at')
+            $eventDtos = ProcurementEvent::with('procurement')
+                ->orderByDesc('occurred_at')
                 ->take($fetchLimit)
                 ->get()
                 ->map(fn ($event) => EventData::fromBlockchainArray([
@@ -267,7 +268,8 @@ class DashboardService
         try {
             // Only fetch recent documents to improve performance (from mirror)
             $documentLimit = config('dashboard.stream_limits.document_items', 500);
-            $documentDtos = ProcurementDocument::orderByDesc('uploaded_at')
+            $documentDtos = ProcurementDocument::with('procurement')
+                ->orderByDesc('uploaded_at')
                 ->take($documentLimit)
                 ->get()
                 ->map(fn ($d) => DocumentData::fromBlockchainArray([
