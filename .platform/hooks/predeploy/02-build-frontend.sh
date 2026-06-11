@@ -10,7 +10,7 @@ echo "PREDEPLOY: npm version: $(npm -v)"
 cd "$STAGING_DIR"
 
 echo "PREDEPLOY: Running npm install..."
-npm install --production=false
+npm install --production=false --legacy-peer-deps
 
 echo "PREDEPLOY: Running npm run build..."
 npm run build
