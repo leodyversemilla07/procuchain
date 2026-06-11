@@ -6,6 +6,8 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
+use App\Services\NormalizedTableSyncService;
+use Illuminate\Support\Facades\Log;
 
 class ProcurementStagePageService
 {
@@ -13,6 +15,7 @@ class ProcurementStagePageService
         private readonly ProcurementSupportService $procurementSupport,
         private readonly ProcurementRepository $procurementRepository,
         private readonly ModeAwareDocumentValidationService $modeAwareDocumentValidationService,
+        private readonly NormalizedTableSyncService $normalizedTableSyncService,
     ) {}
 
     /**
@@ -23,6 +26,8 @@ class ProcurementStagePageService
         if (! $this->procurementSupport->stageExistsInWorkflow($prNumber, $stage)) {
             abort(403, 'This stage is not applicable for this procurement mode');
         }
+
+        $this->syncFromBlockchain($prNumber);
 
         $procurement = $this->procurementSupport->findProcurementById($prNumber);
 
@@ -108,5 +113,17 @@ class ProcurementStagePageService
             $uploadedDocumentEnums,
             $this->procurementSupport->getProcurementMode($prNumber),
         );
+    }
+
+    private function syncFromBlockchain(string $prNumber): void
+    {
+        try {
+            $this->normalizedTableSyncService->syncPr($prNumber);
+        } catch (\Throwable $e) {
+            Log::warning('Stage page blockchain sync failed; using current DB mirror', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

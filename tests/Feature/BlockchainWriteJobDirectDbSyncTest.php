@@ -7,6 +7,7 @@ use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Jobs\Handlers\ProcurementInitiationHandler;
 use App\Jobs\Handlers\ProcurementUpdateHandler;
+use App\Jobs\Handlers\StageCompletionHandler;
 use App\Jobs\Handlers\StageTransitionHandler;
 use App\Models\Procurement;
 use App\Models\ProcurementStage;
@@ -275,5 +276,111 @@ describe('BlockchainWriteJob direct DB sync', function () {
 
         $cached = Cache::get('blockchain_job:job-skip-stage');
         expect($cached['status'])->toBe('done');
+    });
+
+    it('updates DB mirror after procurement initiation is marked complete', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2025-DDB-006',
+            'title' => 'Initiation Completion DB Sync Test',
+            'current_stage' => StageEnums::PROCUREMENT_INITIATION->value,
+            'current_status' => StatusEnums::PROCUREMENT_INITIATED->value,
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+        ]);
+
+        $mockHandler = Mockery::mock(StageCompletionHandler::class);
+        $mockHandler->shouldReceive('execute')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'status_txid' => 'tx-init-complete-001',
+                'event_txid' => 'tx-init-complete-ev-001',
+                'next_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+                'next_stage_name' => 'Pre-Procurement Conference',
+                'next_stage_url' => '/bac-secretariat/pre-procurement/PR-2025-DDB-006/pre_procurement_conference',
+            ]);
+
+        app()->instance(StageCompletionHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'mark_stage_complete',
+            [
+                'operation_variant' => 'initiation_complete',
+                'pr_number' => 'PR-2025-DDB-006',
+                'procurement_title' => 'Initiation Completion DB Sync Test',
+                'user_address' => '0xTEST',
+                'current_stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                'next_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+                'next_stage_status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value,
+                'document_count' => 3,
+            ],
+            'job-init-complete-sync',
+            1,
+        );
+        $job->handle();
+
+        $procurement->refresh();
+        expect($procurement->current_stage)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE->value)
+            ->and($procurement->current_status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value);
+
+        $stageRecord = ProcurementStage::where('txid', 'tx-init-complete-001')->first();
+        expect($stageRecord)->not->toBeNull()
+            ->and($stageRecord->stage)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE->value)
+            ->and($stageRecord->status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value);
+    });
+
+    it('updates DB mirror to next stage status after stage completion transition', function () {
+        $procurement = Procurement::create([
+            'pr_number' => 'PR-2025-DDB-007',
+            'title' => 'Stage Completion Transition DB Sync Test',
+            'current_stage' => StageEnums::BID_OPENING->value,
+            'current_status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'category' => 'goods',
+            'procurement_mode' => 'competitive_bidding',
+        ]);
+
+        $mockHandler = Mockery::mock(StageCompletionHandler::class);
+        $mockHandler->shouldReceive('execute')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'status_txid' => 'tx-bid-opened-001',
+                'event_txid' => 'tx-bid-opened-ev-001',
+                'next_stage' => StageEnums::BID_EVALUATION->value,
+                'transition_txid' => 'tx-bid-evaluation-001',
+            ]);
+
+        app()->instance(StageCompletionHandler::class, $mockHandler);
+
+        $job = new BlockchainWriteJob(
+            'mark_stage_complete',
+            [
+                'pr_number' => 'PR-2025-DDB-007',
+                'procurement_title' => 'Stage Completion Transition DB Sync Test',
+                'user_address' => '0xTEST',
+                'current_stage' => StageEnums::BID_OPENING->value,
+                'completion_status' => StatusEnums::BIDS_OPENED->value,
+                'next_stage' => StageEnums::BID_EVALUATION->value,
+                'next_stage_status' => StatusEnums::BIDS_EVALUATED->value,
+                'document_count' => 2,
+            ],
+            'job-stage-complete-sync',
+            1,
+        );
+        $job->handle();
+
+        $procurement->refresh();
+        expect($procurement->current_stage)->toBe(StageEnums::BID_EVALUATION->value)
+            ->and($procurement->current_status)->toBe(StatusEnums::BIDS_EVALUATED->value);
+
+        $completionRecord = ProcurementStage::where('txid', 'tx-bid-opened-001')->first();
+        expect($completionRecord)->not->toBeNull()
+            ->and($completionRecord->stage)->toBe(StageEnums::BID_OPENING->value)
+            ->and($completionRecord->status)->toBe(StatusEnums::BIDS_OPENED->value);
+
+        $transitionRecord = ProcurementStage::where('txid', 'tx-bid-evaluation-001')->first();
+        expect($transitionRecord)->not->toBeNull()
+            ->and($transitionRecord->stage)->toBe(StageEnums::BID_EVALUATION->value)
+            ->and($transitionRecord->status)->toBe(StatusEnums::BIDS_EVALUATED->value);
     });
 });

@@ -410,16 +410,19 @@ class BlockchainWriteJob implements ShouldQueue
      */
     private function directDbSyncStageStatus(array $result, array $data, string $operation, string $prNumber, string $userAddress): int
     {
-        // Stage and status come from either the result OR the original data (for mark_stage_complete)
-        $stage = $data['stage'] ?? $result['stage'] ?? null;
-        $status = $data['current_status'] ?? $result['status'] ?? $result['current_status'] ?? null;
+        // Stage completion jobs use current_stage / next_stage_status, while
+        // decision/skip jobs return stage/status directly from their handlers.
+        $stage = $data['stage'] ?? $data['current_stage'] ?? $result['stage'] ?? null;
+        $status = $data['current_status'] ?? $data['completion_status'] ?? $result['status'] ?? $result['current_status'] ?? null;
         $nextStage = $data['next_stage'] ?? $result['next_stage'] ?? null;
+        $nextStageStatus = $data['next_stage_status'] ?? $result['next_stage_status'] ?? null;
         $statusTxid = $result['status_txid'] ?? null;
 
-        // For mark_stage_complete, derive status from next_stage_status if available
         if ($operation === 'mark_stage_complete') {
-            $status = $data['completion_status'] ?? $result['next_stage_status'] ?? $status;
-            $nextStage = $data['next_stage'] ?? $result['next_stage'] ?? null;
+            if (($data['operation_variant'] ?? null) === 'initiation_complete') {
+                $stage = $nextStage ?? $stage;
+                $status = $nextStageStatus ?? $status;
+            }
         }
 
         if (empty($stage) || empty($status)) {
@@ -444,11 +447,16 @@ class BlockchainWriteJob implements ShouldQueue
 
                 $previousStatus = $procurement->current_status;
 
-                // For skipped decisions, the stage transitions to next_stage
+                // For completed stages with a transition, the procurement should
+                // reflect the stage/status it just entered, not the old stage.
                 $effectiveStage = $nextStage ?? $stage;
+                $effectiveStatus = $nextStage && $operation === 'mark_stage_complete'
+                    ? ($nextStageStatus ?? $status)
+                    : $status;
+
                 $procurement->update([
                     'current_stage' => $effectiveStage,
-                    'current_status' => $status,
+                    'current_status' => $effectiveStatus,
                     'previous_status' => $previousStatus,
                     'last_updated_at' => now(),
                 ]);
@@ -484,7 +492,7 @@ class BlockchainWriteJob implements ShouldQueue
                             [
                                 'procurement_id' => $procurement->id,
                                 'stage' => $nextStage,
-                                'status' => $status,
+                                'status' => $effectiveStatus,
                                 'previous_status' => $previousStatus,
                                 'entered_at' => now(),
                                 'user_address' => $userAddress,
@@ -501,7 +509,7 @@ class BlockchainWriteJob implements ShouldQueue
                     'job_id' => $this->jobId,
                     'pr_number' => $prNumber,
                     'stage' => $effectiveStage,
-                    'status' => $status,
+                    'status' => $effectiveStatus,
                     'next_stage' => $nextStage,
                     'records_updated' => $syncedCount,
                 ]);
@@ -530,7 +538,7 @@ class BlockchainWriteJob implements ShouldQueue
                 $statusTxid ?? 'pending-verification',
                 $userAddress,
                 null,
-                ['pr_number' => $prNumber, 'stage' => $stage, 'current_status' => $status],
+                ['pr_number' => $prNumber, 'stage' => $effectiveStage ?? $stage, 'current_status' => $effectiveStatus ?? $status],
                 true,
             );
         } catch (Exception $e) {
