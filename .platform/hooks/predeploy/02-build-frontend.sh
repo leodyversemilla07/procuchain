@@ -3,22 +3,7 @@ set -e
 
 STAGING_DIR="/var/app/staging"
 
-echo "PREDEPLOY: Installing Node.js and building frontend assets..."
-
-# Ensure Node.js 24.x is installed (AL2023 has nodejs24 in its repos)
-CURRENT_NODE=$(node -v 2>/dev/null || echo "none")
-echo "PREDEPLOY: Current Node version: $CURRENT_NODE"
-
-case "$CURRENT_NODE" in
-  v24*) echo "PREDEPLOY: Node.js 24 already installed" ;;
-  *)
-    echo "PREDEPLOY: Installing Node.js 24.x..."
-    dnf install -y nodejs24 nodejs24-npm >/dev/null 2>&1
-    if [ -f /usr/bin/node-24 ]; then
-      alternatives --set node /usr/bin/node-24 2>/dev/null || true
-    fi
-    ;;
-esac
+echo "PREDEPLOY: Building frontend assets..."
 
 echo "PREDEPLOY: Node version: $(node -v)"
 echo "PREDEPLOY: npm version: $(npm -v)"
