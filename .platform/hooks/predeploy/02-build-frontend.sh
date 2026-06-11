@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 STAGING_DIR="/var/app/staging"
 
 echo "PREDEPLOY: Building frontend assets..."
 echo "PREDEPLOY: Node version: $(node -v)"
 echo "PREDEPLOY: npm version: $(npm -v)"
-echo "PREDEPLOY: PATH: $PATH"
-echo "PREDEPLOY: which node: $(which node 2>&1)"
-echo "PREDEPLOY: which npm: $(which npm 2>&1)"
 
 cd "$STAGING_DIR"
 
