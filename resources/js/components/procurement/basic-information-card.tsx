@@ -36,7 +36,7 @@ export function BasicInformationCard({
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                    <FileText />
+                    <FileText className="h-5 w-5" />
                     Basic Information
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">Required procurement details per RA 12009 (NGPA)</CardDescription>

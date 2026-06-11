@@ -75,7 +75,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Database />
+                                            <Database className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Information We Collect</h2>
                                     </div>
@@ -91,7 +91,7 @@ export default function Privacy() {
                                                     'Authentication credentials',
                                                 ].map((item, index) => (
                                                     <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                        <UserCheck className="text-primary mt-0.5 mr-2 shrink-0" />
+                                                        <UserCheck className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                         <span>{item}</span>
                                                     </li>
                                                 ))}
@@ -108,7 +108,7 @@ export default function Privacy() {
                                                     'Activity logs and audit trails',
                                                 ].map((item, index) => (
                                                     <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                        <Eye className="text-primary mt-0.5 mr-2 shrink-0" />
+                                                        <Eye className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                         <span>{item}</span>
                                                     </li>
                                                 ))}
@@ -125,7 +125,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Lock className="text-primary" />
+                                            <Lock className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-xl font-semibold">How We Use Your Data</h2>
                                     </div>
@@ -139,7 +139,7 @@ export default function Privacy() {
                                             'Improve system performance and security',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Shield className="text-primary mt-0.5 mr-2 shrink-0" />
+                                                <Shield className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -151,7 +151,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Globe className="text-primary" />
+                                            <Globe className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Data Sharing</h2>
                                     </div>
@@ -165,7 +165,7 @@ export default function Privacy() {
                                             'Protected by role-based access controls',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Shield />
+                                                <Shield className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -180,7 +180,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Database />
+                                            <Database className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Blockchain & Data Security</h2>
                                     </div>
@@ -199,7 +199,7 @@ export default function Privacy() {
                                             'Multi-factor authentication support',
                                         ].map((item, index) => (
                                             <div key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Lock />
+                                                <Lock className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                 <span>{item}</span>
                                             </div>
                                         ))}
@@ -214,7 +214,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <UserCheck />
+                                            <UserCheck className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Your Rights</h2>
                                     </div>
@@ -227,7 +227,7 @@ export default function Privacy() {
                                             'Request account deactivation (subject to retention policies)',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Shield />
+                                                <Shield className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -239,7 +239,7 @@ export default function Privacy() {
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
                                         <div className="bg-primary/10 rounded-lg p-2">
-                                            <Bell />
+                                            <Bell className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-xl font-semibold">Cookies & Tracking</h2>
                                     </div>
@@ -254,7 +254,7 @@ export default function Privacy() {
                                             'Analyze system usage for improvements',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm">
-                                                <Eye className="text-primary mt-0.5 mr-2 shrink-0" />
+                                                <Eye className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}

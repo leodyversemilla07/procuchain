@@ -164,7 +164,7 @@ export default function LoginLogTable({
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuGroup>
                                                     <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
-                                                        <Eye />
+                                                        <Eye className="h-4 w-4" />
                                                         View Details
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
@@ -173,7 +173,7 @@ export default function LoginLogTable({
                                                             toast.success('IP copied');
                                                         }}
                                                     >
-                                                        <Globe />
+                                                        <Globe className="h-4 w-4" />
                                                         Copy IP
                                                     </DropdownMenuItem>
                                                 </DropdownMenuGroup>
@@ -346,7 +346,7 @@ export default function LoginLogTable({
                                                     <DropdownMenuGroup>
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => onViewDetails(log, log.category)}>
-                                                            <Eye />
+                                                            <Eye className="h-4 w-4" />
                                                             View Details
                                                         </DropdownMenuItem>
                                                     </DropdownMenuGroup>
@@ -358,7 +358,7 @@ export default function LoginLogTable({
                                                                 toast.success('IP Address copied', { description: log.ip_address });
                                                             }}
                                                         >
-                                                            <Globe />
+                                                            <Globe className="h-4 w-4" />
                                                             Copy IP Address
                                                         </DropdownMenuItem>
                                                     </DropdownMenuGroup>

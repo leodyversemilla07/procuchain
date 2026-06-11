@@ -100,7 +100,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
             </CardContent>
             <CardFooter className="flex flex-wrap items-center gap-2 border-t">
                 <Button variant="outline" size="sm" nativeButton={false} render={<Link href={workflowConfigPreview(config.mode).url} />}>
-                    <Eye data-icon="inline-start" />
+                    <Eye className="h-4 w-4" data-icon="inline-start" />
                     Preview
                 </Button>
                 <Button

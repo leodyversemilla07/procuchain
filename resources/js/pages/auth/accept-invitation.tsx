@@ -53,7 +53,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                     <CardContent>
                         <div className="grid gap-4">
                             <div className="flex items-center gap-3 rounded-lg border p-3">
-                                <Mail />
+                                <Mail className="h-5 w-5 shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">Email</p>
                                     <p className="text-muted-foreground text-sm">{invitation.email}</p>
@@ -61,7 +61,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                             </div>
 
                             <div className="flex items-center gap-3 rounded-lg border p-3">
-                                <Shield />
+                                <Shield className="h-5 w-5 shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">Role</p>
                                     <Badge variant="outline" className="mt-1">
@@ -71,7 +71,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                             </div>
 
                             <div className="flex items-center gap-3 rounded-lg border p-3">
-                                <User />
+                                <User className="h-5 w-5 shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">Invited By</p>
                                     <p className="text-muted-foreground text-sm">{invitation.invited_by}</p>
@@ -79,7 +79,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                             </div>
 
                             <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-muted/50 p-3 dark:border-amber-900 dark:bg-muted/50/20">
-                                <Clock />
+                                <Clock className="h-5 w-5 shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Expires {invitation.expires_at_human}</p>
                                     <p className="text-xs text-muted-foreground dark:text-muted-foreground">{invitation.expires_at}</p>
@@ -143,7 +143,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                                 </Field>
 
                                 <Alert>
-                                    <CheckCircle2 />
+                                    <CheckCircle2 className="h-4 w-4" />
                                     <AlertTitle>What happens next?</AlertTitle>
                                     <AlertDescription>
                                         <ul className="flex flex-col gap-1">

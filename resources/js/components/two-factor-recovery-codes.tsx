@@ -47,7 +47,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
         <Card>
             <CardHeader>
                 <CardTitle className="flex gap-3">
-                    <LockKeyhole aria-hidden="true" />
+                    <LockKeyhole className="h-5 w-5 shrink-0" aria-hidden="true" />
                     2FA Recovery Codes
                 </CardTitle>
                 <CardDescription>
@@ -57,7 +57,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
             <CardContent>
                 <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
                     <Button onClick={toggleCodesVisibility} className="w-fit" aria-expanded={codesAreVisible} aria-controls="recovery-codes-section">
-                        <RecoveryCodeIconComponent aria-hidden="true" />
+                        <RecoveryCodeIconComponent className="h-4 w-4" aria-hidden="true" />
                         {codesAreVisible ? 'Hide' : 'View'} Recovery Codes
                     </Button>
 
@@ -71,7 +71,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
                                     aria-describedby="regenerate-warning"
                                     className="gap-2"
                                 >
-                                    {processing ? <Spinner /> : <RefreshCw />}
+                                    {processing ? <Spinner /> : <RefreshCw className="h-4 w-4" />}
                                     Regenerate Codes
                                 </Button>
                             )}

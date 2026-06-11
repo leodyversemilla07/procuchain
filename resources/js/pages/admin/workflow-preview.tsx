@@ -70,13 +70,13 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
     const PhaseIcon = ({ phase }: { phase: string }) => {
         switch (phase) {
             case 'pre_procurement':
-                return <ClipboardList />;
+                return <ClipboardList className="h-5 w-5" />;
             case 'procurement':
-                return <FileText />;
+                return <FileText className="h-5 w-5" />;
             case 'post_procurement':
-                return <FileCheck />;
+                return <FileCheck className="h-5 w-5" />;
             default:
-                return <GitBranch />;
+                return <GitBranch className="h-5 w-5" />;
         }
     };
 
@@ -120,7 +120,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                     <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
-                                <GitBranch />
+                                <GitBranch className="h-5 w-5 shrink-0" />
                                 <div className="min-w-0">
                                     <CardTitle className="text-base sm:text-lg">{mode.display_name}</CardTitle>
                                     <CardDescription className="line-clamp-2 text-xs sm:text-sm">{mode.description}</CardDescription>
@@ -201,7 +201,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                             </Badge>
                                                         )}
                                                         <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                                            <FileText data-icon="inline-start" />
+                                                            <FileText className="h-3 w-3" data-icon="inline-start" />
                                                             {stage.document_counts.total_count} docs
                                                         </Badge>
                                                     </div>
@@ -213,7 +213,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                     {stage.required_documents.length > 0 && (
                                                         <div className="flex flex-col gap-2">
                                                             <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                                                <Layers className="text-primary" />
+                                                                <Layers className="text-primary h-4 w-4" />
                                                                 <span className="text-xs font-medium sm:text-sm">Required Documents</span>
                                                                 <Badge variant="default" className="text-[10px] sm:text-xs">
                                                                     {stage.document_counts.required_count}
@@ -238,7 +238,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                     {stage.optional_documents.length > 0 && (
                                                         <div className="flex flex-col gap-2">
                                                             <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                                                <CheckCircle2 className="text-muted-foreground" />
+                                                                <CheckCircle2 className="text-muted-foreground h-4 w-4" />
                                                                 <span className="text-xs font-medium sm:text-sm">Optional Documents</span>
                                                                 <Badge variant="outline" className="text-[10px] sm:text-xs">
                                                                     {stage.document_counts.optional_count}

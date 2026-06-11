@@ -75,14 +75,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute top-1/2 right-3 -translate-y-1/2"
+                                    className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2"
                                     tabIndex={3}
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? (
-                                        <EyeOff />
+                                        <EyeOff className="h-4 w-4" />
                                     ) : (
-                                        <Eye />
+                                        <Eye className="h-4 w-4" />
                                     )}
                                 </button>
                             </div>

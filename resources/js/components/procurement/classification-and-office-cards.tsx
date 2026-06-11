@@ -42,7 +42,7 @@ export function ClassificationAndOfficeCards({
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                 <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                        <DollarSign />
+                        <DollarSign className="h-5 w-5" />
                         Classification & Budget
                     </CardTitle>
                     <CardDescription className="text-muted-foreground text-sm">Procurement type and approved contract budget</CardDescription>
@@ -261,7 +261,7 @@ export function ClassificationAndOfficeCards({
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                 <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                        <Building2 />
+                        <Building2 className="h-5 w-5" />
                         Office & Purpose
                     </CardTitle>
                     <CardDescription className="text-muted-foreground text-sm">Requesting office and procurement justification</CardDescription>
@@ -362,7 +362,7 @@ export function ClassificationAndOfficeCards({
             <Card className="border-sidebar-border/70 dark:border-sidebar-border bg-muted/30 shadow-md">
                 <CardHeader className="flex flex-col gap-1 pb-2 sm:pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                        <Upload />
+                        <Upload className="h-5 w-5" />
                         Next: Progressive Document Upload
                     </CardTitle>
                     <CardDescription className="text-muted-foreground text-sm">

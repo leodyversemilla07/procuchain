@@ -64,18 +64,18 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                            <Eye />
+                            <Eye className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">{viewStats.total_views} views</span>
                             <span className="sm:hidden">{viewStats.total_views}</span>
                         </Badge>
                         <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                            <Users />
+                            <Users className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">{viewStats.unique_viewers} unique</span>
                             <span className="sm:hidden">{viewStats.unique_viewers}</span>
                         </Badge>
                         {pdfError && (
                             <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                                <FileText />
+                                <FileText className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">PDF Blocked</span>
                                 <span className="sm:hidden">Blocked</span>
                             </Badge>
