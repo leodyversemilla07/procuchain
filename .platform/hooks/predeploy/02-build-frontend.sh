@@ -1,36 +1,36 @@
 #!/usr/bin/env bash
-# Build frontend assets on the EB instance during deployment.
-# This runs as a predeploy hook in /var/app/staging/.
-# After all predeploy hooks succeed, EB promotes staging → current.
 set -e
 
 STAGING_DIR="/var/app/staging"
 
 echo "PREDEPLOY: Installing Node.js and building frontend assets..."
 
-# Ensure Node.js 24.x is installed (upgrade if older version exists)
+# Ensure Node.js 24.x is installed (AL2023 has nodejs24 in its repos)
 CURRENT_NODE=$(node -v 2>/dev/null || echo "none")
-if [[ "$CURRENT_NODE" != v24* ]]; then
-  echo "PREDEPLOY: Installing Node.js 24.x (current: $CURRENT_NODE)..."
-  curl -fsSL https://rpm.nodesource.com/setup_24.x | bash - &>/dev/null
-  PKG_MGR=$(command -v dnf && echo "dnf" || echo "yum")
-  $PKG_MGR install -y nodejs &>/dev/null
-fi
+echo "PREDEPLOY: Current Node version: $CURRENT_NODE"
+
+case "$CURRENT_NODE" in
+  v24*) echo "PREDEPLOY: Node.js 24 already installed" ;;
+  *)
+    echo "PREDEPLOY: Installing Node.js 24.x..."
+    dnf install -y nodejs24 nodejs24-npm >/dev/null 2>&1
+    if [ -f /usr/bin/node-24 ]; then
+      alternatives --set node /usr/bin/node-24 2>/dev/null || true
+    fi
+    ;;
+esac
 
 echo "PREDEPLOY: Node version: $(node -v)"
 echo "PREDEPLOY: npm version: $(npm -v)"
 
 cd "$STAGING_DIR"
 
-# Install dependencies
 echo "PREDEPLOY: Running npm install..."
-npm install --production=false --legacy-peer-deps 2>&1 | tail -10
+npm install --production=false 2>&1 | tail -10
 
-# Build assets
 echo "PREDEPLOY: Running npm run build..."
-npm run build 2>&1 | tail -5
+npm run build 2>&1 | tail -10
 
-# Verify the build output exists
 if [ ! -f "$STAGING_DIR/public/build/manifest.json" ]; then
   echo "PREDEPLOY: ERROR — Vite manifest not found after build!"
   ls -la "$STAGING_DIR/public/build/" 2>/dev/null || echo "PREDEPLOY: public/build/ directory missing"
@@ -39,7 +39,6 @@ fi
 
 echo "PREDEPLOY: Vite manifest verified — $(ls -1 "$STAGING_DIR/public/build/assets/" | wc -l) asset files"
 
-# Copy pdf.js worker to public/ (react-pdf "Option 2: Copy worker to public directory")
 echo "PREDEPLOY: Copying pdf.js worker to public/..."
 cp "$STAGING_DIR/node_modules/pdfjs-dist/build/pdf.worker.min.mjs" "$STAGING_DIR/public/pdf.worker.min.mjs"
 echo "PREDEPLOY: pdf.js worker copied ($(wc -c < "$STAGING_DIR/public/pdf.worker.min.mjs") bytes)"
