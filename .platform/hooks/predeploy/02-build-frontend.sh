@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 STAGING_DIR="/var/app/staging"
 
 echo "PREDEPLOY: Building frontend assets..."
-
 echo "PREDEPLOY: Node version: $(node -v)"
 echo "PREDEPLOY: npm version: $(npm -v)"
+echo "PREDEPLOY: PATH: $PATH"
+echo "PREDEPLOY: which node: $(which node 2>&1)"
+echo "PREDEPLOY: which npm: $(which npm 2>&1)"
 
 cd "$STAGING_DIR"
 
 echo "PREDEPLOY: Running npm install..."
-npm install --production=false 2>&1 | tail -10
+npm install --production=false
 
 echo "PREDEPLOY: Running npm run build..."
-npm run build 2>&1 | tail -10
+npm run build
 
 if [ ! -f "$STAGING_DIR/public/build/manifest.json" ]; then
   echo "PREDEPLOY: ERROR — Vite manifest not found after build!"
