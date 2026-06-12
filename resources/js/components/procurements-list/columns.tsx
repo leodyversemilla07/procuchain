@@ -159,10 +159,11 @@ interface ActionsCellProps extends ColumnsProps {
 }
 
 // Global state for tracking which dialog is loading
-const _loadingDialog: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null = null;
+let _loadingDialog: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null = null;
 let _setLoadingDialog: ((value: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null) => void) | null = null;
 
 export function setLoadingDialogState(value: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin' | null) {
+    _loadingDialog = value;
     if (_setLoadingDialog) {
         _setLoadingDialog(value);
     }

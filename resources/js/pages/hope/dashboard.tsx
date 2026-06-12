@@ -10,46 +10,12 @@ import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { index as procurementsListIndex, show as procurementsShow } from '@/routes/hope/procurements';
 import type { SharedData } from '@/types';
-import { Stage, Status, UserRole } from '@/types';
+import { UserRole } from '@/types';
+import { buildErrorState, deduplicateProcurements, formatStageName, formatUserName, type DashboardStats, type RecentActivity, type RecentProcurement } from '@/utils/dashboard';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
-import { Deferred, Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
-
-const formatStageName = (stage: string | undefined): string => {
-    if (!stage) return '';
-    return stage
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-};
-
-const formatUserName = (user: string | undefined): string => {
-    if (!user || user === 'Unknown' || user === 'System') return 'System Process';
-    return user;
-};
-
-interface DashboardStats {
-    ongoingProjects: number;
-    completedBiddings: number;
-    totalDocuments: number;
-}
-
-interface RecentActivity {
-    id: string;
-    title: string;
-    action: string;
-    date: string;
-    user: string;
-    stage?: string;
-}
-
-interface RecentProcurement {
-    id: string;
-    title: string;
-    stage: Stage;
-    status: Status;
-}
 
 interface DashboardProps extends SharedData {
     recentProcurements: RecentProcurement[];
@@ -128,50 +94,7 @@ export default function HOPEDashboard() {
         [recentActivities],
     );
 
-    const recentProcurementItems = useMemo(() => {
-        if (!Array.isArray(recentProcurements)) {
-            return [];
-        }
-
-        const seen = new Set<string>();
-        return recentProcurements
-            .filter((procurement) => {
-                // Filter out null/undefined items
-                if (!procurement) {
-                    return false;
-                }
-                // Filter out procurements without IDs first
-                if (!procurement.id) {
-                    return false;
-                }
-                if (seen.has(procurement.id)) {
-                    return false;
-                }
-                seen.add(procurement.id);
-                return true;
-            })
-            .map((procurement) => ({
-                id: procurement.id!,
-                title: procurement.title,
-                stage: procurement.stage,
-                status: procurement.status,
-            }))
-            .filter(Boolean); // Remove any falsy values
-    }, [recentProcurements]);
-
-    const buildErrorState = (title: string) => {
-        if (!error) {
-            return undefined;
-        }
-
-        return {
-            title,
-            description: error,
-            tone: 'destructive' as const,
-            retryLabel: 'Retry',
-            onRetry: () => router.reload(),
-        };
-    };
+    const recentProcurementItems = useMemo(() => deduplicateProcurements(recentProcurements), [recentProcurements]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -198,7 +121,7 @@ export default function HOPEDashboard() {
                             data={procurementDistribution}
                             title="Procurement Distribution"
                             description="Distribution of procurements across stages and statuses"
-                            errorState={buildErrorState('Unable to load procurement distribution')}
+                            errorState={buildErrorState(error, 'Unable to load procurement distribution')}
                         />
                     </Deferred>
                     <Deferred
@@ -214,7 +137,7 @@ export default function HOPEDashboard() {
                         <StageDistributionCard
                             className="xl:col-span-2"
                             stageDistribution={stageDistribution}
-                            errorState={buildErrorState('Unable to load stage distribution')}
+                            errorState={buildErrorState(error, 'Unable to load stage distribution')}
                         />
                     </Deferred>
                 </div>
@@ -236,7 +159,7 @@ export default function HOPEDashboard() {
                             title="Procurement Mode Distribution"
                             description="NGPA-compliant mode usage statistics"
                             variant="chart"
-                            errorState={buildErrorState('Unable to load mode distribution')}
+                            errorState={buildErrorState(error, 'Unable to load mode distribution')}
                         />
                     </Deferred>
                     <Deferred
@@ -254,7 +177,7 @@ export default function HOPEDashboard() {
                             title="Competitive vs Alternative"
                             description="Mode type breakdown per NGPA IRR"
                             variant="breakdown"
-                            errorState={buildErrorState('Unable to load mode breakdown')}
+                            errorState={buildErrorState(error, 'Unable to load mode breakdown')}
                         />
                     </Deferred>
                 </div>
@@ -276,7 +199,7 @@ export default function HOPEDashboard() {
                             activities={recentActivityItems}
                             getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
                             viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
-                            errorState={buildErrorState('Unable to load recent activities')}
+                            errorState={buildErrorState(error, 'Unable to load recent activities')}
                         />
                     </Deferred>
 
@@ -298,7 +221,7 @@ export default function HOPEDashboard() {
                                 return procurementsShow.url({ pr_number: procurement.id });
                             }}
                             viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
-                            errorState={buildErrorState('Unable to load recent procurements')}
+                            errorState={buildErrorState(error, 'Unable to load recent procurements')}
                         />
                     </Deferred>
                 </div>

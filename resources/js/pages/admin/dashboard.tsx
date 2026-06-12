@@ -5,9 +5,10 @@ import { StageDistributionCard } from '@/components/dashboard/stage-distribution
 import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
-import { Stage, Status, type BreadcrumbItem, type SharedData } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { buildErrorState, deduplicateProcurements, formatStageName, formatUserName, type DashboardStats, type RecentActivity, type RecentProcurement } from '@/utils/dashboard';
 import { PageProps } from '@inertiajs/core';
-import { Deferred, Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText, Shield, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -20,27 +21,7 @@ import { UserRole } from '@/types/enums';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
-/**
- * Format stage name from snake_case to Title Case
- */
-const formatStageName = (stage: string): string => {
-    if (!stage) return stage;
 
-    return stage
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-};
-
-/**
- * Format user name, handling unknown users
- */
-const formatUserName = (user: string): string => {
-    if (!user || user === 'Unknown' || user === 'System' || user.trim() === '') {
-        return 'System Process';
-    }
-    return user;
-};
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 
@@ -99,29 +80,6 @@ export interface AnalyticsProps {
 }
 
 // Dashboard Props Interface
-export interface DashboardStats {
-    ongoingProjects: number;
-    pendingActions: number;
-    completedBiddings: number;
-    totalDocuments: number;
-}
-
-export interface RecentActivity {
-    id: string;
-    title: string;
-    action: string;
-    date: string;
-    user: string;
-    stage?: string;
-}
-
-export interface RecentProcurement {
-    id: string;
-    title: string;
-    stage: Stage;
-    status: Status;
-}
-
 export interface DashboardProps extends PageProps, AnalyticsProps, SharedData {
     recentProcurements: RecentProcurement[];
     procurementDistribution: RecentProcurement[];
@@ -151,20 +109,6 @@ export default function AdminDashboard() {
     const { analytics, recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
 
     const userActivityAnalytics = analytics?.user_activity;
-
-    const buildErrorState = (title: string) => {
-        if (!error) {
-            return undefined;
-        }
-
-        return {
-            title,
-            description: error,
-            tone: 'destructive' as const,
-            retryLabel: 'Retry',
-            onRetry: () => router.reload(),
-        };
-    };
 
     const stageDistribution = useMemo(() => {
         return procurementDistribution.reduce<Record<string, number>>((distribution, procurement) => {
@@ -222,31 +166,7 @@ export default function AdminDashboard() {
         [recentActivities],
     );
 
-    const recentProcurementItems = useMemo(() => {
-        if (!Array.isArray(recentProcurements)) {
-            return [];
-        }
-
-        const seen = new Set<string>();
-        return recentProcurements
-            .filter((procurement) => {
-                if (!procurement || !procurement.id) {
-                    return false;
-                }
-                if (seen.has(procurement.id)) {
-                    return false;
-                }
-                seen.add(procurement.id);
-                return true;
-            })
-            .map((procurement) => ({
-                id: procurement.id!,
-                title: procurement.title,
-                stage: procurement.stage,
-                status: procurement.status,
-            }))
-            .filter(Boolean); // Remove any falsy values from the final array
-    }, [recentProcurements]);
+    const recentProcurementItems = useMemo(() => deduplicateProcurements(recentProcurements), [recentProcurements]);
 
     // State for interactive login chart
     const [activeLoginChart, setActiveLoginChart] = useState<'logins' | 'success'>('logins');
@@ -311,7 +231,7 @@ export default function AdminDashboard() {
                             data={procurementDistribution}
                             title="Procurement Distribution"
                             description="Distribution of procurements across stages and statuses"
-                            errorState={buildErrorState('Unable to load procurement distribution')}
+                            errorState={buildErrorState(error, 'Unable to load procurement distribution')}
                         />
                     </Deferred>
                     <Deferred
@@ -327,7 +247,7 @@ export default function AdminDashboard() {
                         <StageDistributionCard
                             className="lg:col-span-2"
                             stageDistribution={stageDistribution}
-                            errorState={buildErrorState('Unable to load stage distribution')}
+                            errorState={buildErrorState(error, 'Unable to load stage distribution')}
                         />
                     </Deferred>
                 </div>
@@ -349,7 +269,7 @@ export default function AdminDashboard() {
                             activities={recentActivityItems}
                             getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
                             viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
-                            errorState={buildErrorState('Unable to load system activities')}
+                            errorState={buildErrorState(error, 'Unable to load system activities')}
                         />
                     </Deferred>
 
@@ -377,7 +297,7 @@ export default function AdminDashboard() {
                                 return procurementsShow.url({ pr_number: procurement.id });
                             }}
                             viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
-                            errorState={buildErrorState('Unable to load recent procurements')}
+                            errorState={buildErrorState(error, 'Unable to load recent procurements')}
                         />
                     </Deferred>
                 </div>

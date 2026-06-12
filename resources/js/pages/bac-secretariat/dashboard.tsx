@@ -10,41 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { SharedData, User } from '@/types';
-import { Stage, Status } from '@/types';
 import { UserRole } from '@/types/enums';
+import { buildErrorState, deduplicateProcurements, formatStageName, formatUserName, type DashboardStats, type RecentProcurement } from '@/utils/dashboard';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
-import { Deferred, Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, usePage } from '@inertiajs/react';
 import { ActivityIcon, Bell, CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
-
-/**
- * Format stage name from snake_case to Title Case
- */
-const formatStageName = (stage: string): string => {
-    if (!stage) return stage;
-
-    return stage
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-};
-
-/**
- * Format user name, handling unknown users
- */
-const formatUserName = (user: string): string => {
-    if (!user || user === 'Unknown' || user === 'System' || user.trim() === '') {
-        return 'System Process';
-    }
-    return user;
-};
-
-interface DashboardStats {
-    ongoingProjects: number;
-    pendingActions: number;
-    completedBiddings: number;
-    totalDocuments: number;
-}
 
 interface PriorityAction {
     id: string;
@@ -61,13 +32,6 @@ interface RecentActivity {
     user: string;
     user_role?: string;
     stage?: string;
-}
-
-interface RecentProcurement {
-    id: string;
-    title: string;
-    stage: Stage;
-    status: Status;
 }
 
 interface DashboardProps extends SharedData {
@@ -95,20 +59,6 @@ export default function BACSecretariatDashboard() {
     } = pageProps as DashboardProps;
     const { auth } = pageProps as unknown as { auth: { user: User } };
     const userRole = auth.user?.role;
-
-    const buildErrorState = (title: string) => {
-        if (!error) {
-            return undefined;
-        }
-
-        return {
-            title,
-            description: error,
-            tone: 'destructive' as const,
-            retryLabel: 'Retry',
-            onRetry: () => router.reload(),
-        };
-    };
 
     const statsItems = [
         {
@@ -166,36 +116,7 @@ export default function BACSecretariatDashboard() {
         [recentActivities],
     );
 
-    const recentProcurementItems = useMemo(() => {
-        if (!Array.isArray(recentProcurements)) {
-            return [];
-        }
-
-        const seen = new Set<string>();
-        return recentProcurements
-            .filter((procurement) => {
-                // Filter out null/undefined items
-                if (!procurement) {
-                    return false;
-                }
-                // Filter out procurements without IDs first
-                if (!procurement.id) {
-                    return false;
-                }
-                if (seen.has(procurement.id)) {
-                    return false;
-                }
-                seen.add(procurement.id);
-                return true;
-            })
-            .map((procurement) => ({
-                id: procurement.id!,
-                title: procurement.title,
-                stage: procurement.stage,
-                status: procurement.status,
-            }))
-            .filter(Boolean); // Remove any falsy values
-    }, [recentProcurements]);
+    const recentProcurementItems = useMemo(() => deduplicateProcurements(recentProcurements), [recentProcurements]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -222,7 +143,7 @@ export default function BACSecretariatDashboard() {
                             data={procurementDistribution}
                             title="Procurement Distribution"
                             description="Distribution of procurements across stages and statuses"
-                            errorState={buildErrorState('Unable to load procurement distribution')}
+                            errorState={buildErrorState(error, 'Unable to load procurement distribution')}
                         />
                     </Deferred>
                     <Deferred
@@ -238,7 +159,7 @@ export default function BACSecretariatDashboard() {
                         <StageDistributionCard
                             className="lg:col-span-2"
                             stageDistribution={stageDistribution}
-                            errorState={buildErrorState('Unable to load stage distribution')}
+                            errorState={buildErrorState(error, 'Unable to load stage distribution')}
                         />
                     </Deferred>
                 </div>
@@ -260,7 +181,7 @@ export default function BACSecretariatDashboard() {
                             title="Procurement Mode Distribution"
                             description="NGPA-compliant mode usage statistics"
                             variant="chart"
-                            errorState={buildErrorState('Unable to load mode distribution')}
+                            errorState={buildErrorState(error, 'Unable to load mode distribution')}
                         />
                     </Deferred>
                     <Deferred
@@ -278,7 +199,7 @@ export default function BACSecretariatDashboard() {
                             title="Competitive vs Alternative"
                             description="Mode type breakdown per NGPA IRR"
                             variant="breakdown"
-                            errorState={buildErrorState('Unable to load mode breakdown')}
+                            errorState={buildErrorState(error, 'Unable to load mode breakdown')}
                         />
                     </Deferred>
                 </div>
@@ -308,7 +229,7 @@ export default function BACSecretariatDashboard() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-3 sm:p-4 md:p-6">
-                                <PriorityActionsStack actions={priorityActionItems} errorState={buildErrorState('Unable to load priority actions')} />
+                                <PriorityActionsStack actions={priorityActionItems} errorState={buildErrorState(error, 'Unable to load priority actions')} />
                             </CardContent>
                         </Card>
                     </Deferred>
@@ -330,7 +251,7 @@ export default function BACSecretariatDashboard() {
                             getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
                             viewAllHref={recentActivityItems.length > 0 ? '/bac-secretariat/procurements-list' : undefined}
                             showUserRole
-                            errorState={buildErrorState('Unable to load recent activities')}
+                            errorState={buildErrorState(error, 'Unable to load recent activities')}
                         />
                     </Deferred>
 
@@ -352,7 +273,7 @@ export default function BACSecretariatDashboard() {
                                 return `/bac-secretariat/procurements-list/${procurement.id}`;
                             }}
                             viewAllHref={recentProcurementItems.length > 0 ? '/bac-secretariat/procurements-list' : undefined}
-                            errorState={buildErrorState('Unable to load recent procurements')}
+                            errorState={buildErrorState(error, 'Unable to load recent procurements')}
                         />
                     </Deferred>
                 </div>
