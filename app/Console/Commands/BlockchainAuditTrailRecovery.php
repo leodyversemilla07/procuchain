@@ -8,20 +8,7 @@ use App\Services\BlockchainAuditTrailService;
 use Illuminate\Console\Command;
 
 /**
- * Blockchain Audit Trail Recovery Command
- *
- * Recovers the permanent audit trail from the blockchain and optionally
- * restores it to MySQL. This is the proof that Requirement #6 is satisfied:
- * "Maintain a permanent audit trail of all recovery operations."
- *
- * Even if MySQL is completely destroyed, the blockchain retains the
- * complete forensic history of every violation detected and every
- * recovery operation performed.
- *
- * Usage:
- *   php artisan blockchain:audit-trail              # Show audit trail from chain
- *   php artisan blockchain:audit-trail --restore     # Restore to MySQL
- *   php artisan blockchain:audit-trail --pr=PR-001   # Filter by PR number
+ * Recovers the permanent audit trail from blockchain when MySQL data is lost or corrupted.
  */
 class BlockchainAuditTrailRecovery extends Command
 {

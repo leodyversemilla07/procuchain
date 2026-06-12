@@ -29,14 +29,6 @@ use Throwable;
 
 /**
  * Handles all asynchronous blockchain write operations via the Redis queue.
- *
- * Controllers dispatch this job instead of performing RPC writes synchronously
- * in the HTTP request cycle. The job stores its result (done/failed) in Redis
- * under the key "blockchain_job:{jobId}", which the status endpoint polls.
- *
- * Supported operations: upload_document | mark_stage_complete | initiate_procurement
- *                        correct_document | correct_procurement | skip_stage
- *                        repeat_stage | update_delivery_details | publish_decision
  */
 class BlockchainWriteJob implements ShouldQueue
 {
@@ -117,21 +109,8 @@ class BlockchainWriteJob implements ShouldQueue
     /**
      * Sync blockchain write results to the normalized tables.
      *
-     * Two sync strategies are used:
-     * 1. Transaction-based sync: when the handler returns a `transactions` array,
-     *    each entry is synced via BlockchainRecordSyncService::upstream().
-     * 2. Direct DB sync: when no `transactions` key is present (e.g., publish_decision,
-     *    mark_stage_complete), the result's stage/status fields are written directly
-     *    to the procurements and procurement_stages tables. This avoids the race
-     *    condition where reading from blockchain immediately after publish returns
-     *    stale data because MultiChain needs time to make new items queryable.
-     *
-     * After the direct DB write, a blockchain re-sync is also triggered as a
-     * verification step to ensure the normalized tables eventually match the
-     * blockchain's source of truth.
-     *
-     * Mirror sync failure MUST never fail the job — all errors are caught,
-     * logged, and silently continued.
+     * Uses either transaction-based or direct DB sync to avoid race conditions
+     * with MultiChain indexing. Failures are logged but never fail the job.
      *
      * @param  array  $result  The handler result containing transactions or stage/status info
      * @param  array  $data  The original job data payload
@@ -270,15 +249,8 @@ class BlockchainWriteJob implements ShouldQueue
     /**
      * Directly update the normalized DB tables from the handler result.
      *
-     * This avoids the race condition where reading from blockchain immediately
-     * after publishing returns stale data (MultiChain needs time to index new
-     * stream items). The handler result already contains the authoritative
-     * stage/status that was just written to the blockchain, so we can use
-     * that to update the DB immediately.
-     *
-     * After this direct write, the periodic blockchain sync (syncPr/syncAll)
-     * will eventually verify and reconcile these records against the
-     * blockchain's source of truth.
+     * Avoids race condition where blockchain reads return stale data before
+     * MultiChain indexes new stream items. Reconciled later by syncPr/syncAll.
      *
      * @return int Number of records directly updated
      */
@@ -301,13 +273,6 @@ class BlockchainWriteJob implements ShouldQueue
 
     /**
      * Directly create the procurement and stage records in the DB after initiation.
-     *
-     * The ProcurementRepository::create() only writes to the blockchain — it does
-     * NOT write to the DB. The DB is normally updated by syncPr() reading from
-     * the blockchain, but that has a race condition (MultiChain needs time to
-     * index new stream items). This method creates the records directly from the
-     * data that was just published, ensuring the procurement is visible in the
-     * list page immediately after the job completes.
      *
      * @return int Number of records directly created
      */
@@ -410,12 +375,6 @@ class BlockchainWriteJob implements ShouldQueue
 
     /**
      * Directly update the procurement's stage/status in the DB from the handler result.
-     *
-     * This avoids the race condition where reading from blockchain immediately
-     * after publishing returns stale data (MultiChain needs time to index new
-     * stream items). The handler result already contains the authoritative
-     * stage/status that was just written to the blockchain, so we can use
-     * that to update the DB immediately.
      *
      * @return int Number of records directly updated
      */

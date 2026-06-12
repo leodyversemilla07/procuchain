@@ -7,18 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Blockchain Monitoring Service
- *
- * Provides health checks and status monitoring for the blockchain connection.
- * Implements circuit breaker pattern with half-open state to prevent hammering
- * a dead blockchain node while allowing recovery detection.
- *
- * Used by BlockchainExplorerController to display health metrics.
- *
- * Circuit Breaker States:
- * - CLOSED: Normal operation, requests pass through
- * - OPEN: Blocking requests after failure threshold reached
- * - HALF-OPEN: Testing if service recovered before fully closing
+ * Health checks and status monitoring with circuit breaker pattern.
  */
 class BlockchainMonitoringService
 {

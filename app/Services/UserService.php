@@ -8,10 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**
- * User Service
- *
- * Centralized service for user-related operations including
- * blockchain address to user name resolution with caching.
+ * Centralized service for user-related operations including blockchain address to user name resolution.
  */
 class UserService
 {

@@ -10,17 +10,7 @@ use App\Enums\StatusEnums;
 use Carbon\Carbon;
 
 /**
- * Service for formatting procurement-related data for display
- *
- * Handles formatting of:
- * - Stage names and descriptions
- * - Status labels and variants
- * - Dates and times
- * - Currency values
- * - File sizes
- * - Hashes
- * - Event types and categories
- * - Stage metadata
+ * Formats procurement data for display including stages, statuses, dates, and currency.
  */
 final class ProcurementFormatterService
 {

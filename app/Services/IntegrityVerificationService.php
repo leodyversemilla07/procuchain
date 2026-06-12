@@ -26,20 +26,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Integrity Verification Service
- *
- * Verifies normalized DB tables against blockchain (source of truth).
- *
- * Architecture:
- *   Blockchain -> Source of truth (immutable)
- *   Normalized DB -> Query cache (mutable, verifiable)
- *   integrity_audit_logs -> Permanent forensic record (append-only)
- *
- * Verification layers:
- *   Layer 1: data_hash check (was record modified since sync?)
- *   Layer 2: Field-level diff (what specifically changed)
- *   Layer 3: Content comparison against chain (authoritative)
- *   Layer 4: Row existence check (detects deletions)
+ * Verifies normalized DB tables against blockchain source of truth with multi-layer verification.
  */
 class IntegrityVerificationService
 {

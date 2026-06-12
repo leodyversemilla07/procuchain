@@ -11,15 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * Integrity Audit Log — Permanent Record
- *
- * Append-only audit trail for all integrity verification results,
- * detected violations, and recovery operations.
- *
- * This table is separated from normalized read models so that:
- * - Audit records survive normalized row deletion
- * - Forensic analysis is possible even after recovery
- * - Compliance with RA 12009 Sec. 3 (accountability) and Sec. 20 (electronic records)
+ * Append-only audit trail for integrity verification results that survives normalized row deletion.
  *
  * @property int $id
  * @property string $stream
@@ -190,11 +182,7 @@ class IntegrityAuditLog extends Model
     /**
      * Record a violation with field-level differences and revision context.
      *
-     * Records the violation in BOTH MySQL (integrity_audit_logs) AND blockchain
-     * (integrity.violations stream) for permanent, immutable audit trail.
-     *
-     * Implements cross-run deduplication with configurable cooldown to prevent
-     * notification spam from repeated scheduled audits.
+     * Implements cross-run deduplication with configurable cooldown.
      *
      * @param  array  $fieldDifferences  [{field, old_value, new_value}]
      * @param  array|null  $mirrorSnapshot  DB state at detection time

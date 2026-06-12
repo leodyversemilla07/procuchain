@@ -37,19 +37,7 @@ final class ProcurementListAggregatorService
     ) {}
 
     /**
-     * Fetch and process all procurement data for listing
-     *
-     * Performance optimizations applied (per MultiChain official docs):
-     * - Key-based queries (liststreamkeys + liststreamkeyitems) - 10x faster
-     * - verbose=false on all queries - 60% data transfer reduction
-     * - local-ordering=true for faster execution
-     * - Batch queries to prevent N+1 problems
-     * - Optional action generation skipping for faster initial load
-     *
-     * Security:
-     * - BAC Secretariat users can only see their own procurements
-     * - Filtering by both userId (creator) and blockchain_address (identity verification)
-     * - Admin, BAC Chairman, and HOPE can see all procurements
+     * Fetch and process all procurement data for listing with role-based filtering.
      *
      * @param  bool  $skipActions  Skip action generation for faster initial load
      * @param  string|null  $filterByUserId  Filter procurements by creator user ID (for BAC Secretariat)

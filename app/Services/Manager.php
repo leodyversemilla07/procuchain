@@ -7,22 +7,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
- * MultiChain Manager with Automatic Failover
- *
- * Laravel wrapper providing connection management, retry logic, error handling,
- * and automatic failover to peer nodes when the primary node is unavailable.
- *
- * Failover behavior:
- * - When the primary RPC node fails (connection error or RPC -703 not subscribed),
- *   the Manager automatically tries the next configured peer node.
- * - Once a working node is found, it becomes the active node for subsequent calls.
- * - A background health check can promote the original primary back when it recovers.
- * - This ensures the app stays operational even if any single node is purged.
- *
- * All MultiChain RPC methods are available via magic __call():
- * - $manager->getinfo()
- * - $manager->liststreamitems('stream1', true, 100)
- * - $manager->publish('stream1', 'key1', ['json' => $data])
+ * MultiChain RPC wrapper with automatic failover and retry logic.
  */
 class Manager
 {

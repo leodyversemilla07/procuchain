@@ -11,11 +11,6 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Handles temp file reconstitution and cleanup for blockchain upload jobs.
- *
- * Temp files are written by the HTTP request (ProcurementStageUploadService)
- * to storage/app/temp/blockchain-uploads/ and consumed by the queue worker
- * within seconds. The scheduled temp:cleanup command removes orphans older
- * than 1 hour.
  */
 trait HandlesTempFiles
 {

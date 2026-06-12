@@ -15,15 +15,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Command to correct incorrect status records in blockchain
- *
- * This command identifies procurements with mismatched stage-status pairs
- * and publishes corrected status records to the blockchain.
- *
- * Usage:
- *   php artisan status:correct --dry-run                    # Preview changes
- *   php artisan status:correct                              # Apply corrections
- *   php artisan status:correct PR-2025-0011-1496           # Correct specific PR
+ * Corrects incorrect status records in blockchain for specified procurements.
  */
 class CorrectProcurementStatuses extends Command
 {

@@ -7,10 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Centralized cache key management for dashboard controllers
- *
- * This class provides consistent cache key naming and makes it easier
- * to invalidate caches programmatically across different dashboard views.
+ * Centralized cache key management for dashboard controllers.
  */
 class DashboardCacheKeys
 {
@@ -87,11 +84,7 @@ class DashboardCacheKeys
     }
 
     /**
-     * Clear all dashboard caches for a specific role
-     *
-     * Important: Dashboard uses two cache stores:
-     * - 'database' store for large data (procurements, activities, distribution)
-     * - 'default' store for small data (stats)
+     * Clear all dashboard caches for a specific role.
      */
     public static function clearAll(string $role): void
     {

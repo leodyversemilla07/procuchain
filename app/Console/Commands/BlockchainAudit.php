@@ -11,18 +11,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Blockchain Audit Command
- *
  * Audits procurement mirror data integrity against the blockchain.
- * Delegates to IntegrityVerificationService which provides:
- *   1. Detects unauthorized DB modifications (field-level diff)
- *   2. Detects deleted records (chain-vs-mirror existence check)
- *   3. Compares current DB records with blockchain records (content-level)
- *   4. Generates integrity violation reports (permanent audit trail)
- *   5. Restores original records from trusted blockchain data
- *   6. Maintains a permanent audit trail of all recovery operations
- *
- * All violations are recorded in integrity_audit_logs (append-only).
  */
 class BlockchainAudit extends Command
 {

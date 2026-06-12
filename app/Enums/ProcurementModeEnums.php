@@ -170,16 +170,7 @@ enum ProcurementModeEnums: string
     }
 
     /**
-     * Check if this is an alternative (non-competitive) procurement mode.
-     *
-     * Per NGPA IRR Sections 31-37, alternative modes have simplified requirements:
-     * - Direct Contracting (Sec. 31)
-     * - Direct Acquisition (Sec. 32) - ≤₱200,000
-     * - Repeat Order (Sec. 33)
-     * - Small Value Procurement (Sec. 34) - ₱400,000 for 4th class municipality (Gloria)
-     * - Negotiated Procurement (Sec. 35)
-     * - Direct Sales (Sec. 36)
-     * - Direct Procurement for STI (Sec. 37)
+     * Check if this is an alternative (non-competitive) procurement mode per NGPA IRR Sections 31-37.
      */
     public function isAlternativeMode(): bool
     {

@@ -7,18 +7,7 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Cache Strategy Service - Ensures efficient use of 30MB Redis free tier
- *
- * This service enforces cache storage to database for large/persistent data
- * while keeping small, frequently-accessed data in Redis (when configured).
- *
- * RECOMMENDED USAGE (Issue #14 fix - automatic strategy enforcement):
- * - Use remember() for automatic cache strategy (recommended for most cases)
- * - Use put() for automatic cache strategy on writes
- *
- * MANUAL CONTROL (only when you know the data size):
- * - Use rememberLarge() to force database cache
- * - Use rememberSmall() to force default cache
+ * Ensures efficient use of Redis free tier with enforced cache-to-database strategy.
  */
 class CacheStrategyService implements CacheStrategyInterface
 {

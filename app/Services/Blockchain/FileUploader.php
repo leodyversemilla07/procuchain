@@ -88,11 +88,7 @@ class FileUploader
     }
 
     /**
-     * Upload files and prepare metadata for procurement documents.
-     *
-     * Orchestrates the complete upload process:
-     * 1. Uploads each file to blockchain with phase-based naming
-     * 2. Returns complete results with blockchain transaction IDs
+     * Upload files and prepare metadata for procurement documents with blockchain transaction IDs.
      *
      * @param  UploadedFile[]  $files
      * @param  array  $metadata  Metadata for each file
@@ -406,37 +402,9 @@ class FileUploader
     }
 
     /**
-     * Get phase name based on stage ID
+     * Get phase name based on stage ID.
      *
-     * Per RA 12009 (NGPA) IRR:
-     *   Rule II (Sec 7-12): Strategic Procurement Planning & Preparation
-     *   Rule V-IX (Sec 41-62): Bidding & Evaluation
-     *   Rule X-XI (Sec 63-71): Post-Qualification, Award & Implementation
-     *
-     * Stage 1-3:  Pre-Procurement (Planning & Preparation)
-     *   1 = Procurement Initiation (APP/PPMP per Sec 7)
-     *   2 = Pre-Procurement Conference (optional, per Sec 49)
-     *   3 = Bidding Documents / RFQ (Sec 47-48 for CB, or alternative modes per Rule IV)
-     *
-     * Stage 4-11: Procurement (Bidding & Evaluation)
-     *   4  = Pre-Bid Conference (Sec 49-51)
-     *   5  = Supplemental Bid Bulletin
-     *   6  = Bid Opening (Sec 52-58)
-     *   7  = Abstract of Quotations (alternative modes)
-     *   8  = Bid Evaluation (Sec 59-62)
-     *   9  = Post-Qualification (Sec 63-65)
-     *   10 = BAC Resolution (Sec 66 — BAC recommends award)
-     *   11 = Notice of Award (Sec 66 — HoPE issues NOA)
-     *
-     * Stage 12-17: Post-Procurement (Award & Implementation)
-     *   12 = Performance Bond, Contract & PO (Sec 66.5, 68)
-     *   13 = Notice to Proceed
-     *   14 = Monitoring (Sec 71 — contract implementation)
-     *   15 = Completion (Sec 71 — final acceptance)
-     *   16 = Completion (certificate of final acceptance)
-     *   17 = Completed
-     *
-     * Aligned with StageEnums::getPhase() per RA 12009 (NGPA).
+     * @see StageEnums::getPhase()
      */
     private function getPhaseFromStage(int $stageId): string
     {
