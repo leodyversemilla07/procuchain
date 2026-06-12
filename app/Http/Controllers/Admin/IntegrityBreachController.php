@@ -41,9 +41,6 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        // Automatically run verification when the breaches page is presented
-        $this->runAutomaticVerification();
-
         $query = IntegrityAuditLog::query();
 
         if ($type = $request->input('violation_type')) {
@@ -357,35 +354,6 @@ class IntegrityBreachController extends Controller
                 'events' => ProcurementEvent::count(),
             ],
         ]);
-    }
-
-    /**
-     * Run integrity verification automatically in the background.
-     * This ensures breaches are detected without manual intervention.
-     */
-    private function runAutomaticVerification(): void
-    {
-        $lockKey = 'integrity:auto:verification:lock';
-
-        // Skip if verification is already running or was run recently (within 60 seconds)
-        if (Cache::get($lockKey)) {
-            return;
-        }
-
-        try {
-            // Set lock to prevent concurrent runs
-            Cache::put($lockKey, true, 60);
-
-            $service = app(IntegrityVerificationService::class);
-            $service->verifyAndRepair(false, 'auto');
-        } catch (\Exception $e) {
-            Log::warning('Automatic integrity verification failed', [
-                'error' => $e->getMessage(),
-            ]);
-            // Silently fail - don't block the page from loading
-        } finally {
-            Cache::forget($lockKey);
-        }
     }
 
     // ─── Audit Logs Page ─────────────────────────────────────────────

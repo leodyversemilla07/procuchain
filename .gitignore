@@ -11,6 +11,9 @@
 /resources/js/wayfinder
 .env
 .env.backup
+.env.bak
+.env.*.bak
+.env.local
 .env.production
 .phpactor.json
 .phpunit.result.cache
@@ -31,6 +34,8 @@ yarn-error.log
 /terraform/.terraform/
 /terraform/*.tfstate
 /terraform/*.tfstate.backup
+/terraform/*.tfvars
+!/terraform/*.tfvars.example
 /terraform/*.tfvars.backup
 /terraform/secrets.tfvars
 /terraform/main2.bak
@@ -46,3 +51,4 @@ yarn-error.log
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 /public/build
+/public/pdf.worker.min.mjs

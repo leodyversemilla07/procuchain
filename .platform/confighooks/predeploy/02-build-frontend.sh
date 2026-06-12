@@ -23,8 +23,4 @@ fi
 
 echo "PREDEPLOY: Vite manifest verified — $(ls -1 "$STAGING_DIR/public/build/assets/" | wc -l) asset files"
 
-echo "PREDEPLOY: Copying pdf.js worker to public/..."
-cp "$STAGING_DIR/node_modules/pdfjs-dist/build/pdf.worker.min.mjs" "$STAGING_DIR/public/pdf.worker.min.mjs"
-echo "PREDEPLOY: pdf.js worker copied ($(wc -c < "$STAGING_DIR/public/pdf.worker.min.mjs") bytes)"
-
 echo "PREDEPLOY: Frontend assets built successfully"

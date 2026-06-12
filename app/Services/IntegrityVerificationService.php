@@ -22,6 +22,7 @@ use App\Services\Integrity\BlockchainVerificationIndex;
 use App\Services\Integrity\IntegrityComparator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -54,18 +55,6 @@ class IntegrityVerificationService
 
     private int $failedCount = 0;
 
-    private Manager $manager;
-
-    private NormalizedTableSyncService $syncService;
-
-    private BlockchainPayloadProjector $payloadProjector;
-
-    private IntegrityComparator $comparator;
-
-    private BlockchainVerificationIndex $blockchainIndex;
-
-    private BlockchainAuditTrailService $auditTrail;
-
     private bool $verifyPublishers = false;
 
     /** Tables to verify and their stream mappings */
@@ -80,15 +69,14 @@ class IntegrityVerificationService
         'files' => StreamEnums::FILE_METADATA,
     ];
 
-    public function __construct()
-    {
-        $this->manager = app(Manager::class);
-        $this->syncService = app(NormalizedTableSyncService::class);
-        $this->payloadProjector = app(BlockchainPayloadProjector::class);
-        $this->comparator = app(IntegrityComparator::class);
-        $this->blockchainIndex = app(BlockchainVerificationIndex::class);
-        $this->auditTrail = app(BlockchainAuditTrailService::class);
-    }
+    public function __construct(
+        private readonly Manager $manager,
+        private readonly NormalizedTableSyncService $syncService,
+        private readonly BlockchainPayloadProjector $payloadProjector,
+        private readonly IntegrityComparator $comparator,
+        private BlockchainVerificationIndex $blockchainIndex,
+        private readonly BlockchainAuditTrailService $auditTrail,
+    ) {}
 
     // ═══════════════════════════════════════════════════════════════════
     // PUBLIC API
@@ -102,8 +90,9 @@ class IntegrityVerificationService
     public function verifyAndRepair(bool $autoRepair = false, string $source = 'scheduled', bool $deepPublisherCheck = false): array
     {
         // Prevent concurrent verification runs (race condition protection)
-        $lockKey = 'integrity:verification:lock';
-        if (! cache()->lock($lockKey, 300)->get()) {
+        $lock = Cache::lock('integrity:verification:lock', 300);
+
+        if (! $lock->get()) {
             Log::warning('IntegrityVerification: skipped - another run is in progress', ['source' => $source]);
 
             return [
@@ -156,8 +145,7 @@ class IntegrityVerificationService
             return $result;
 
         } finally {
-            // Always release the lock
-            cache()->lock($lockKey)->forceRelease();
+            $lock->release();
         }
     }
 

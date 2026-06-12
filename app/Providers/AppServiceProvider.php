@@ -80,11 +80,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CorrectionRepositoryInterface::class, CorrectionRepository::class);
         $this->app->bind(ProcurementCorrectionRepositoryInterface::class, ProcurementCorrectionRepository::class);
 
-        // Mirror repository (reads from MySQL mirror with blockchain fallback)
-        // ProcurementRecordRepository removed - using normalized tables now
+        // Legacy procurement_records repository removed - using normalized tables now
 
-        // Integrity verification (mirror ↔ blockchain comparison + auto-repair)
-        $this->app->singleton(IntegrityVerificationService::class);
+        // Integrity verification stores per-run counters, so each resolution must be fresh.
+        $this->app->bind(IntegrityVerificationService::class);
 
         // Blockchain mirror sync (repair from chain, full rebuild)
         $this->app->singleton(BlockchainRecordSyncService::class);

@@ -1,21 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ChevronLeft, ChevronRight, Download, Eye, FileText, ZoomIn, ZoomOut } from 'lucide-react';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { useCallback, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure pdf.js worker — serve from public/ as a static asset.
-// Vite's `new URL(..., import.meta.url)` pattern doesn't emit the worker file
-// when it's inside a bundled dependency (Vite #7025, #20631).
-// Per react-pdf v10 docs "Option 2: Copy worker to public directory":
-// Copy pdfjs-dist/build/pdf.worker.min.mjs → public/pdf.worker.min.mjs
-// Then set workerSrc to the static path.
-//
-// CSP: worker-src 'self' blob: — 'self' covers /pdf.worker.min.mjs.
-// The predeploy hook must also copy this file (see .platform/hooks/predeploy/).
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface Props {
     pdfUrl: string;
@@ -96,7 +88,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
                         <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={pageNumber <= 1}>
                             <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
-                        <span className="text-muted-foreground min-w-[60px] text-center text-xs sm:text-sm">
+                        <span className="text-muted-foreground min-w-15 text-center text-xs sm:text-sm">
                             {pageNumber} / {numPages}
                         </span>
                         <Button
@@ -114,7 +106,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
                         <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomOut} disabled={scale <= 0.4}>
                             <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
-                        <span className="text-muted-foreground min-w-[40px] text-center text-xs sm:text-sm">{Math.round(scale * 100)}%</span>
+                        <span className="text-muted-foreground min-w-10 text-center text-xs sm:text-sm">{Math.round(scale * 100)}%</span>
                         <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={zoomIn} disabled={scale >= 3.0}>
                             <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
@@ -148,7 +140,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, onLoadingChange, onEr
                             <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
                                 Unable to display the PDF in the browser. You can view the document using the options below.
                             </p>
-                            <div className="flex flex-col gap-2 sm:flex flex-col gap-3">
+                            <div className="flex flex-col gap-2 sm:flex">
                                 <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
                                     <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                     Open PDF in New Tab

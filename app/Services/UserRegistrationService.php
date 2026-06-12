@@ -23,7 +23,7 @@ class UserRegistrationService
      * Publish a user registration receipt to the blockchain.
      *
      * Called after a new user is created and assigned a role.
-     * Publishes to user.registrations stream and mirrors to procurement_records.
+     * Publishes to user.registrations stream and attempts a best-effort sync.
      *
      * @param  User  $user  The newly registered user
      * @param  string  $registeredBy  Who initiated the registration
@@ -58,7 +58,7 @@ class UserRegistrationService
                 'txid' => $txid,
             ]);
 
-            // Mirror to procurement_records
+            // Best-effort sync; registration must not fail if read models lag.
             try {
                 $syncService = app(BlockchainRecordSyncService::class);
                 $syncService->upstream(
@@ -87,8 +87,7 @@ class UserRegistrationService
      * Publish a blockchain address change event to the blockchain.
      *
      * Called when a user's blockchain_address is updated.
-     * Publishes to user.registrations stream with change metadata
-     * and mirrors to procurement_records.
+     * Publishes to user.registrations stream with change metadata.
      *
      * @param  User  $user  The user whose address changed
      * @param  string  $oldAddress  The previous blockchain address
@@ -126,7 +125,7 @@ class UserRegistrationService
                 'txid' => $txid,
             ]);
 
-            // Mirror to procurement_records
+            // Best-effort sync; address changes must not fail if read models lag.
             try {
                 $syncService = app(BlockchainRecordSyncService::class);
                 $syncService->upstream(
