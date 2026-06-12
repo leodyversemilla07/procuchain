@@ -16,8 +16,8 @@ use Illuminate\Support\Str;
  * Append-only audit trail for all integrity verification results,
  * detected violations, and recovery operations.
  *
- * This table is separated from procurement_records so that:
- * - Audit records survive mirror row deletion
+ * This table is separated from normalized read models so that:
+ * - Audit records survive normalized row deletion
  * - Forensic analysis is possible even after recovery
  * - Compliance with RA 12009 Sec. 3 (accountability) and Sec. 20 (electronic records)
  *

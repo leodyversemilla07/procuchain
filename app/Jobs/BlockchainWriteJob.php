@@ -24,6 +24,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -333,7 +334,8 @@ class BlockchainWriteJob implements ShouldQueue
                     $userId = $userId['id'] ?? null;
                 }
 
-                Procurement::create([
+                $initiatedAt = now();
+                $procurementAttributes = [
                     'pr_number' => $prNumber,
                     'app_reference' => $procurementData['app_reference'] ?? null,
                     'title' => $procurementData['title'] ?? '',
@@ -349,13 +351,18 @@ class BlockchainWriteJob implements ShouldQueue
                     'current_status' => 'procurement_initiated',
                     'user_address' => $userAddress,
                     'user_id' => $userId !== null ? (string) $userId : null,
-                    'initiated_at' => now(),
-                    'last_updated_at' => now(),
+                    'initiated_at' => $initiatedAt,
+                    'last_updated_at' => $initiatedAt,
                     'is_blockchain_verified' => true,
-                    'last_verified_at' => now(),
+                    'last_verified_at' => $initiatedAt,
                     'has_breach' => false,
-                    'data_hash' => '',
-                    'blockchain_hash' => '',
+                ];
+                $procurementHash = $this->computeHash($this->extractHashableFields($procurementAttributes, Procurement::getHashableFields()));
+
+                Procurement::create([
+                    ...$procurementAttributes,
+                    'data_hash' => $procurementHash,
+                    'blockchain_hash' => $procurementHash,
                 ]);
                 $syncedCount++;
             }
@@ -365,18 +372,22 @@ class BlockchainWriteJob implements ShouldQueue
             $procurement = Procurement::where('pr_number', $prNumber)->first();
 
             if ($procurement && $statusTxid) {
+                $enteredAt = now();
+                $stageAttributes = [
+                    'procurement_id' => $procurement->id,
+                    'stage' => 'procurement_initiation',
+                    'status' => 'procurement_initiated',
+                    'entered_at' => $enteredAt,
+                    'user_address' => $userAddress,
+                    'is_blockchain_verified' => true,
+                    'last_verified_at' => $enteredAt,
+                    'has_breach' => false,
+                ];
+                $stageHash = $this->computeHash($this->extractHashableFields($stageAttributes, ProcurementStage::getHashableFields()));
+
                 ProcurementStage::updateOrCreate(
                     ['txid' => $statusTxid],
-                    [
-                        'procurement_id' => $procurement->id,
-                        'stage' => 'procurement_initiation',
-                        'status' => 'procurement_initiated',
-                        'entered_at' => now(),
-                        'user_address' => $userAddress,
-                        'is_blockchain_verified' => true,
-                        'last_verified_at' => now(),
-                        'has_breach' => false,
-                    ]
+                    [...$stageAttributes, 'data_hash' => $stageHash, 'blockchain_hash' => $stageHash]
                 );
                 $syncedCount++;
             }
@@ -465,19 +476,23 @@ class BlockchainWriteJob implements ShouldQueue
 
                 // Create or update the procurement_stage record for the current stage/status
                 if ($statusTxid) {
+                    $enteredAt = now();
+                    $stageAttributes = [
+                        'procurement_id' => $procurement->id,
+                        'stage' => $stage,
+                        'status' => $status,
+                        'previous_status' => $previousStatus,
+                        'entered_at' => $enteredAt,
+                        'user_address' => $userAddress,
+                        'is_blockchain_verified' => true,
+                        'last_verified_at' => $enteredAt,
+                        'has_breach' => false,
+                    ];
+                    $stageHash = $this->computeHash($this->extractHashableFields($stageAttributes, ProcurementStage::getHashableFields()));
+
                     ProcurementStage::updateOrCreate(
                         ['txid' => $statusTxid],
-                        [
-                            'procurement_id' => $procurement->id,
-                            'stage' => $stage,
-                            'status' => $status,
-                            'previous_status' => $previousStatus,
-                            'entered_at' => now(),
-                            'user_address' => $userAddress,
-                            'is_blockchain_verified' => true,
-                            'last_verified_at' => now(),
-                            'has_breach' => false,
-                        ]
+                        [...$stageAttributes, 'data_hash' => $stageHash, 'blockchain_hash' => $stageHash]
                     );
                     $syncedCount++;
                 }
@@ -487,19 +502,23 @@ class BlockchainWriteJob implements ShouldQueue
                     $nextStatusTxid = $result['transition_txid'] ?? null;
 
                     if ($nextStatusTxid) {
+                        $enteredAt = now();
+                        $stageAttributes = [
+                            'procurement_id' => $procurement->id,
+                            'stage' => $nextStage,
+                            'status' => $effectiveStatus,
+                            'previous_status' => $previousStatus,
+                            'entered_at' => $enteredAt,
+                            'user_address' => $userAddress,
+                            'is_blockchain_verified' => true,
+                            'last_verified_at' => $enteredAt,
+                            'has_breach' => false,
+                        ];
+                        $stageHash = $this->computeHash($this->extractHashableFields($stageAttributes, ProcurementStage::getHashableFields()));
+
                         ProcurementStage::updateOrCreate(
                             ['txid' => $nextStatusTxid],
-                            [
-                                'procurement_id' => $procurement->id,
-                                'stage' => $nextStage,
-                                'status' => $effectiveStatus,
-                                'previous_status' => $previousStatus,
-                                'entered_at' => now(),
-                                'user_address' => $userAddress,
-                                'is_blockchain_verified' => true,
-                                'last_verified_at' => now(),
-                                'has_breach' => false,
-                            ]
+                            [...$stageAttributes, 'data_hash' => $stageHash, 'blockchain_hash' => $stageHash]
                         );
                         $syncedCount++;
                     }
@@ -575,6 +594,8 @@ class BlockchainWriteJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
+        $this->cleanupFailedUploadTempFile();
+
         if (! $this->userId) {
             return;
         }
@@ -622,5 +643,53 @@ class BlockchainWriteJob implements ShouldQueue
         $sanitized = trim($sanitized);
 
         return $sanitized !== '' ? $sanitized : 'Blockchain write failed. Please try again or contact support.';
+    }
+
+    private function cleanupFailedUploadTempFile(): void
+    {
+        if ($this->operation !== 'upload_document') {
+            return;
+        }
+
+        $tempPath = $this->data['temp_file_path'] ?? null;
+
+        if (! is_string($tempPath) || $tempPath === '') {
+            return;
+        }
+
+        try {
+            if (Storage::exists($tempPath)) {
+                Storage::delete($tempPath);
+            }
+        } catch (Throwable $e) {
+            Log::warning('BlockchainWriteJob: failed to cleanup temp upload after permanent failure', [
+                'job_id' => $this->jobId,
+                'temp_path' => $tempPath,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @param  list<string>  $fields
+     * @return array<string, mixed>
+     */
+    private function extractHashableFields(array $data, array $fields): array
+    {
+        $result = [];
+
+        foreach ($fields as $field) {
+            $result[$field] = $data[$field] ?? null;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function computeHash(array $data): string
+    {
+        return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }

@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\StreamEnums;
-use App\Services\BlockchainRecordSyncService;
+use App\Services\NormalizedTableSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Blockchain Sync Command
  *
- * Syncs blockchain stream data to the procurement_records database table.
- * Supports syncing individual streams, all procurement streams, or all
- * streams including user registration streams.
+ * Syncs procurement blockchain streams to normalized read-model tables.
  */
 class BlockchainSync extends Command
 {
@@ -22,7 +19,7 @@ class BlockchainSync extends Command
         {--stream= : Sync only a specific stream by name}
         {--all : Sync all streams including user streams}';
 
-    protected $description = 'Sync blockchain data to the procurement mirror database table';
+    protected $description = 'Sync blockchain procurement streams to normalized read-model tables';
 
     public function handle(): int
     {
@@ -30,17 +27,17 @@ class BlockchainSync extends Command
         $this->newLine();
 
         try {
-            $syncService = app(BlockchainRecordSyncService::class);
-
             if ($stream = $this->option('stream')) {
-                return $this->syncSingleStream($syncService, $stream);
+                $this->error("Single-stream sync is no longer supported by blockchain:sync ({$stream}). Use blockchain:sync-normalized for normalized read models.");
+
+                return self::FAILURE;
             }
 
             if ($this->option('all')) {
-                return $this->syncAllStreams($syncService);
+                $this->warn('The --all option is deprecated; syncing normalized procurement streams only.');
             }
 
-            return $this->syncProcurementStreams($syncService);
+            return $this->syncProcurementStreams(app(NormalizedTableSyncService::class));
         } catch (\Exception $e) {
             $this->error("Sync failed: {$e->getMessage()}");
             Log::error('BlockchainSync: fatal error', ['error' => $e->getMessage()]);
@@ -49,48 +46,9 @@ class BlockchainSync extends Command
         }
     }
 
-    private function syncSingleStream(BlockchainRecordSyncService $syncService, string $stream): int
+    private function syncProcurementStreams(NormalizedTableSyncService $syncService): int
     {
-        $this->info("Syncing stream: {$stream}");
-
-        $count = $syncService->downstream($stream, function (int $current, int $total): void {
-            if ($total > 0 && $current % max(1, intdiv($total, 10)) === 0) {
-                $this->info("  Progress: {$current}/{$total}");
-            }
-        });
-
-        $this->newLine();
-        $this->info("✓ Synced {$count} items from {$stream}");
-
-        return self::SUCCESS;
-    }
-
-    private function syncProcurementStreams(BlockchainRecordSyncService $syncService): int
-    {
-        $results = $syncService->syncAll(function (string $stream, int $count, int $completed): void {
-            $this->info("  ✓ {$stream}: {$count} items");
-        });
-
-        $this->newLine();
-        $this->displaySummary($results);
-
-        return self::SUCCESS;
-    }
-
-    private function syncAllStreams(BlockchainRecordSyncService $syncService): int
-    {
-        $results = $syncService->syncAll(function (string $stream, int $count, int $completed): void {
-            $this->info("  ✓ {$stream}: {$count} items");
-        });
-
-        // Also sync user.registrations stream
-        $this->info('Syncing user.registrations stream...');
-        $userCount = $syncService->downstream(
-            StreamEnums::USER_REGISTRATIONS->value,
-            fn (int $current, int $total) => true,
-        );
-        $results[StreamEnums::USER_REGISTRATIONS->value] = $userCount;
-        $this->info("  ✓ user.registrations: {$userCount} items");
+        $results = $syncService->syncAll();
 
         $this->newLine();
         $this->displaySummary($results);

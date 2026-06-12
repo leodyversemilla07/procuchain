@@ -58,16 +58,15 @@ class BlockchainRecordSyncService
     /**
      * Repair records from blockchain.
      *
-     * This is intentionally destructive for DB-only records. Blockchain is the
-     * source of truth; any normalized DB row whose PR/txid does not exist on
-     * chain is an unauthorized injection and must be removed.
+     * Repair is scoped to the requested PR. Full-table destructive cleanup is
+     * handled by dedicated integrity jobs, not by a single-PR repair action.
      */
     public function repairFromChain(string $prNumber, ?string $stream = null): int
     {
         Log::info('BlockchainRecordSync: repairFromChain', ['pr_number' => $prNumber, 'stream' => $stream]);
 
-        $deleted = $this->removeUnauthorizedDbRecords();
-        $counts = $this->normalizedSync->syncAll();
+        $deleted = $this->removeUnauthorizedDbRecordsForPr($prNumber, $stream);
+        $counts = $this->normalizedSync->syncPr($prNumber);
 
         Log::info('BlockchainRecordSync: repairFromChain completed', [
             'pr_number' => $prNumber,
@@ -79,17 +78,12 @@ class BlockchainRecordSyncService
     }
 
     /**
-     * Remove normalized DB records that are absent from blockchain.
+     * Remove normalized DB records for one PR when their txids are absent from blockchain.
      *
      * @return array{procurements: int, stages: int, documents: int, events: int}
      */
-    private function removeUnauthorizedDbRecords(): array
+    private function removeUnauthorizedDbRecordsForPr(string $prNumber, ?string $stream = null): array
     {
-        $blockchainPrNumbers = $this->getBlockchainPrNumbers();
-        $stageTxids = $this->getBlockchainTxids(StreamEnums::STATUS);
-        $documentTxids = $this->getBlockchainTxids(StreamEnums::DOCUMENTS);
-        $eventTxids = $this->getBlockchainTxids(StreamEnums::EVENTS);
-
         $deleted = [
             'procurements' => 0,
             'stages' => 0,
@@ -97,66 +91,90 @@ class BlockchainRecordSyncService
             'events' => 0,
         ];
 
-        if (! empty($blockchainPrNumbers)) {
+        $procurementIds = Procurement::withTrashed()
+            ->where('pr_number', $prNumber)
+            ->pluck('id');
+
+        if ($procurementIds->isEmpty()) {
+            return $deleted;
+        }
+
+        $hasMetadataOnChain = $this->hasBlockchainMetadataForPr($prNumber);
+        if ($hasMetadataOnChain === null) {
+            return $deleted;
+        }
+
+        if (! $hasMetadataOnChain && $this->shouldRepairStream($stream, StreamEnums::METADATA)) {
+            $deleted['documents'] += ProcurementDocument::withTrashed()
+                ->whereIn('procurement_id', $procurementIds)
+                ->forceDelete();
+            $deleted['stages'] += ProcurementStage::whereIn('procurement_id', $procurementIds)->delete();
+            $deleted['events'] += ProcurementEvent::whereIn('procurement_id', $procurementIds)->delete();
             $deleted['procurements'] = Procurement::withTrashed()
-                ->whereNotIn('pr_number', $blockchainPrNumbers)
+                ->where('pr_number', $prNumber)
                 ->forceDelete();
+
+            return $deleted;
         }
 
-        if (! empty($stageTxids)) {
-            $deleted['stages'] = ProcurementStage::whereNotNull('txid')
-                ->whereNotIn('txid', $stageTxids)
-                ->delete();
+        if ($this->shouldRepairStream($stream, StreamEnums::STATUS)) {
+            $stageTxids = $this->getBlockchainTxidsForPr(StreamEnums::STATUS, $prNumber);
+            if ($stageTxids !== null) {
+                $deleted['stages'] = ProcurementStage::whereNotNull('txid')
+                    ->whereIn('procurement_id', $procurementIds)
+                    ->whereNotIn('txid', $stageTxids)
+                    ->delete();
+            }
         }
 
-        if (! empty($documentTxids)) {
-            $deleted['documents'] = ProcurementDocument::withTrashed()
-                ->whereNotNull('txid')
-                ->whereNotIn('txid', $documentTxids)
-                ->forceDelete();
+        if ($this->shouldRepairStream($stream, StreamEnums::DOCUMENTS)) {
+            $documentTxids = $this->getBlockchainTxidsForPr(StreamEnums::DOCUMENTS, $prNumber);
+            if ($documentTxids !== null) {
+                $deleted['documents'] = ProcurementDocument::withTrashed()
+                    ->whereNotNull('txid')
+                    ->whereIn('procurement_id', $procurementIds)
+                    ->whereNotIn('txid', $documentTxids)
+                    ->forceDelete();
+            }
         }
 
-        if (! empty($eventTxids)) {
-            $deleted['events'] = ProcurementEvent::whereNotNull('txid')
-                ->whereNotIn('txid', $eventTxids)
-                ->delete();
+        if ($this->shouldRepairStream($stream, StreamEnums::EVENTS)) {
+            $eventTxids = $this->getBlockchainTxidsForPr(StreamEnums::EVENTS, $prNumber);
+            if ($eventTxids !== null) {
+                $deleted['events'] = ProcurementEvent::whereNotNull('txid')
+                    ->whereIn('procurement_id', $procurementIds)
+                    ->whereNotIn('txid', $eventTxids)
+                    ->delete();
+            }
         }
-
-        ProcurementStage::whereDoesntHave('procurement')->delete();
-        ProcurementDocument::withTrashed()->whereDoesntHave('procurement')->forceDelete();
-        ProcurementEvent::whereDoesntHave('procurement')->delete();
 
         return $deleted;
     }
 
-    /**
-     * @return list<string>
-     */
-    private function getBlockchainPrNumbers(): array
+    private function hasBlockchainMetadataForPr(string $prNumber): ?bool
     {
         try {
-            $items = app(Manager::class)->liststreamitems(StreamEnums::METADATA->value, false, 10000);
+            $items = app(Manager::class)->liststreamkeyitems(StreamEnums::METADATA->value, $prNumber, false, 10000);
 
             return collect(is_array($items) ? $items : [])
-                ->map(fn ($item) => $item['data']['json']['pr_number'] ?? null)
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
+                ->contains(fn ($item) => ($item['data']['json']['pr_number'] ?? null) === $prNumber);
         } catch (\Throwable $e) {
-            Log::warning('BlockchainRecordSync: failed to read blockchain PR numbers', ['error' => $e->getMessage()]);
+            Log::warning('BlockchainRecordSync: failed to read blockchain PR metadata', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
 
-            return [];
+            return null;
         }
     }
 
     /**
-     * @return list<string>
+     * @return list<string>|null
      */
-    private function getBlockchainTxids(StreamEnums $stream): array
+    private function getBlockchainTxidsForPr(StreamEnums $stream, string $prNumber): ?array
     {
         try {
-            $items = app(Manager::class)->liststreamitems($stream->value, false, 10000);
+            $items = app(Manager::class)->liststreamkeyitems($stream->value, $prNumber, false, 10000);
 
             return collect(is_array($items) ? $items : [])
                 ->map(fn ($item) => $item['txid'] ?? null)
@@ -167,10 +185,16 @@ class BlockchainRecordSyncService
         } catch (\Throwable $e) {
             Log::warning('BlockchainRecordSync: failed to read blockchain txids', [
                 'stream' => $stream->value,
+                'pr_number' => $prNumber,
                 'error' => $e->getMessage(),
             ]);
 
-            return [];
+            return null;
         }
+    }
+
+    private function shouldRepairStream(?string $stream, StreamEnums $target): bool
+    {
+        return $stream === null || $stream === $target->value;
     }
 }
