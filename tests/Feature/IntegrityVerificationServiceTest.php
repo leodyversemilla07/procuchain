@@ -11,6 +11,7 @@ use App\Services\IntegrityVerificationService;
 use App\Services\Manager;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
@@ -165,6 +166,21 @@ describe('IntegrityAuditLog Model', function () {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe('IntegrityVerificationService', function () {
+    it('resolves a fresh service instance for each verification run', function () {
+        expect(app(IntegrityVerificationService::class))
+            ->not->toBe(app(IntegrityVerificationService::class));
+    });
+
+    it('releases the verification lock after a full audit finishes', function () {
+        app(IntegrityVerificationService::class)->verifyAndRepair(false, 'test');
+
+        $lock = Cache::lock('integrity:verification:lock', 300);
+
+        expect($lock->get())->toBeTrue();
+
+        $lock->release();
+    });
+
     it('verifies clean record', function () {
         $procurement = Procurement::create([
             'pr_number' => 'PR-TEST-001',

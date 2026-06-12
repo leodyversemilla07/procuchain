@@ -357,7 +357,7 @@ describe('DocumentUploadHandler', function () {
         Storage::assertMissing('temp/cleanup-test.pdf');
     });
 
-    it('cleans up temp file even when orchestrator fails', function () {
+    it('keeps temp file when orchestrator fails so the job can retry', function () {
         Storage::put('temp/fail-cleanup.pdf', 'content');
 
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
@@ -385,7 +385,7 @@ describe('DocumentUploadHandler', function () {
             // expected
         }
 
-        Storage::assertMissing('temp/fail-cleanup.pdf');
+        Storage::assertExists('temp/fail-cleanup.pdf');
     });
 
     it('throws when temp file is missing', function () {

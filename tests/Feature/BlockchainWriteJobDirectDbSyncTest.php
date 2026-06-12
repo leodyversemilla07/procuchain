@@ -75,7 +75,10 @@ describe('BlockchainWriteJob direct DB sync', function () {
             ->first();
         expect($stageRecord)->not->toBeNull()
             ->and($stageRecord->stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
-            ->and($stageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value);
+            ->and($stageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value)
+            ->and($stageRecord->data_hash)->toBeString()
+            ->and(strlen($stageRecord->data_hash))->toBe(64)
+            ->and($stageRecord->blockchain_hash)->toBe($stageRecord->data_hash);
 
         $cached = Cache::get('blockchain_job:job-direct-sync-1');
         expect($cached['status'])->toBe('done');
@@ -128,11 +131,13 @@ describe('BlockchainWriteJob direct DB sync', function () {
         $statusStageRecord = ProcurementStage::where('txid', 'tx-status-skip-001')->first();
         expect($statusStageRecord)->not->toBeNull()
             ->and($statusStageRecord->stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
-            ->and($statusStageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value);
+            ->and($statusStageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value)
+            ->and($statusStageRecord->blockchain_hash)->toBe($statusStageRecord->data_hash);
 
         $transitionStageRecord = ProcurementStage::where('txid', 'tx-trans-skip-001')->first();
         expect($transitionStageRecord)->not->toBeNull()
-            ->and($transitionStageRecord->stage)->toBe(StageEnums::BID_OPENING->value);
+            ->and($transitionStageRecord->stage)->toBe(StageEnums::BID_OPENING->value)
+            ->and($transitionStageRecord->blockchain_hash)->toBe($transitionStageRecord->data_hash);
 
         $cached = Cache::get('blockchain_job:job-direct-sync-2');
         expect($cached['status'])->toBe('done');
@@ -188,13 +193,19 @@ describe('BlockchainWriteJob direct DB sync', function () {
         expect($procurement)->not->toBeNull()
             ->and($procurement->title)->toBe('Initiation DB Sync Test')
             ->and($procurement->current_stage)->toBe('procurement_initiation')
-            ->and($procurement->current_status)->toBe('procurement_initiated');
+            ->and($procurement->current_status)->toBe('procurement_initiated')
+            ->and($procurement->data_hash)->toBeString()
+            ->and(strlen($procurement->data_hash))->toBe(64)
+            ->and($procurement->blockchain_hash)->toBe($procurement->data_hash);
 
         // Verify procurement_stage record
         $stageRecord = ProcurementStage::where('txid', 'tx-status-init-001')->first();
         expect($stageRecord)->not->toBeNull()
             ->and($stageRecord->stage)->toBe('procurement_initiation')
-            ->and($stageRecord->status)->toBe('procurement_initiated');
+            ->and($stageRecord->status)->toBe('procurement_initiated')
+            ->and($stageRecord->data_hash)->toBeString()
+            ->and(strlen($stageRecord->data_hash))->toBe(64)
+            ->and($stageRecord->blockchain_hash)->toBe($stageRecord->data_hash);
 
         $cached = Cache::get('blockchain_job:job-init-sync');
         expect($cached['status'])->toBe('done');
@@ -326,7 +337,8 @@ describe('BlockchainWriteJob direct DB sync', function () {
         $stageRecord = ProcurementStage::where('txid', 'tx-init-complete-001')->first();
         expect($stageRecord)->not->toBeNull()
             ->and($stageRecord->stage)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE->value)
-            ->and($stageRecord->status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value);
+            ->and($stageRecord->status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value)
+            ->and($stageRecord->blockchain_hash)->toBe($stageRecord->data_hash);
     });
 
     it('updates DB mirror to next stage status after stage completion transition', function () {
