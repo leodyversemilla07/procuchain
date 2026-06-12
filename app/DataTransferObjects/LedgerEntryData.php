@@ -67,7 +67,7 @@ final readonly class LedgerEntryData
                 ! empty($data['reason']) ? ': '.$data['reason'] : ''
             );
         } elseif ($isFileNodePurgeEvent) {
-            // Extract PR number from file_key (e.g. "PR-2024-001-001/document.pdf" → "PR-2024-001-001")
+            // Extract PR number from file_key (e.g. "PR-2024-001-001/document.pdf" -> "PR-2024-001-001")
             $fileKey = $data['file_key'] ?? $key;
             $prNumber = str_contains($fileKey, '/') ? explode('/', $fileKey)[0] : 'system';
             $procurementTitle = null;
@@ -139,7 +139,7 @@ final readonly class LedgerEntryData
                 default => 'Event recorded',
             },
             'procurement.status' => sprintf(
-                'Status: %s → %s',
+                'Status: %s -> %s',
                 $data['previous_status'] ?? 'none',
                 $data['current_status'] ?? 'unknown'
             ),

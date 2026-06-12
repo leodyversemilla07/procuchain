@@ -54,10 +54,10 @@ class IntegrityBreachNotification extends Notification
 
     /** @var array<string, string> Severity icons */
     private const SEVERITY_ICONS = [
-        'critical' => '🔴',
-        'high' => '🟠',
-        'medium' => '🟡',
-        'low' => '🔵',
+        'critical' => '[CRITICAL]',
+        'high' => '[HIGH]',
+        'medium' => '[MEDIUM]',
+        'low' => '[LOW]',
     ];
 
     /**
@@ -140,7 +140,7 @@ class IntegrityBreachNotification extends Notification
                 'subject' => "[ProcuChain Security] {$displayName} — {$this->streamKey}",
                 'severity' => $severity,
                 'severityClass' => self::SEVERITY_ALERT_CLASS[$severity] ?? 'info',
-                'severityIcon' => self::SEVERITY_ICONS[$severity] ?? 'ℹ️',
+                'severityIcon' => self::SEVERITY_ICONS[$severity] ?? '[INFO]',
                 'displayName' => $displayName,
                 'stream' => $this->stream,
                 'streamKey' => $this->streamKey,

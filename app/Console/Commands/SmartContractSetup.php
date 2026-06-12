@@ -83,7 +83,7 @@ class SmartContractSetup extends Command
                 $this->warn('  No stream filters deployed');
             } else {
                 foreach ($filters as $f) {
-                    $status = ($f['compiled'] ?? false) ? '✓' : '○';
+                    $status = ($f['compiled'] ?? false) ? '[OK]' : '';
                     $this->line("  {$status} {$f['name']}");
                 }
             }
@@ -100,7 +100,7 @@ class SmartContractSetup extends Command
                 $this->warn('  No transaction filters deployed');
             } else {
                 foreach ($txFilters as $f) {
-                    $status = ($f['compiled'] ?? false) ? '✓' : '○';
+                    $status = ($f['compiled'] ?? false) ? '[OK]' : '';
                     $this->line("  {$status} {$f['name']}");
                 }
             }
@@ -123,19 +123,19 @@ class SmartContractSetup extends Command
             $path = "{$filtersPath}/{$filter['file']}";
 
             if (! File::exists($path)) {
-                $this->warn("  ✗ {$filter['name']}: file not found");
+                $this->warn("  [FAIL] {$filter['name']}: file not found");
 
                 continue;
             }
 
             try {
                 $this->multichain->create('streamfilter', $filter['name'], false, File::get($path));
-                $this->info("  ✓ {$filter['name']}: deployed");
+                $this->info("  [OK] {$filter['name']}: deployed");
             } catch (Exception $e) {
                 if (str_contains($e->getMessage(), 'already exists')) {
-                    $this->warn("  ⚠ {$filter['name']}: already exists");
+                    $this->warn("  [WARN] {$filter['name']}: already exists");
                 } else {
-                    $this->error("  ✗ {$filter['name']}: {$e->getMessage()}");
+                    $this->error("  [FAIL] {$filter['name']}: {$e->getMessage()}");
                 }
             }
         }
@@ -147,19 +147,19 @@ class SmartContractSetup extends Command
             $path = "{$filtersPath}/{$filter['file']}";
 
             if (! File::exists($path)) {
-                $this->warn("  ✗ {$filter['name']}: file not found");
+                $this->warn("  [FAIL] {$filter['name']}: file not found");
 
                 continue;
             }
 
             try {
                 $this->multichain->create('txfilter', $filter['name'], false, File::get($path));
-                $this->info("  ✓ {$filter['name']}: deployed");
+                $this->info("  [OK] {$filter['name']}: deployed");
             } catch (Exception $e) {
                 if (str_contains($e->getMessage(), 'already exists')) {
-                    $this->warn("  ⚠ {$filter['name']}: already exists");
+                    $this->warn("  [WARN] {$filter['name']}: already exists");
                 } else {
-                    $this->error("  ✗ {$filter['name']}: {$e->getMessage()}");
+                    $this->error("  [FAIL] {$filter['name']}: {$e->getMessage()}");
                 }
             }
         }
@@ -203,10 +203,10 @@ class SmartContractSetup extends Command
                             'for' => $streamMap[$name],
                             'approve' => $activate,
                         ]);
-                        $symbol = $activate ? '✓' : '○';
+                        $symbol = $activate ? '[OK]' : '';
                         $this->info("  {$symbol} {$name}");
                     } catch (Exception $e) {
-                        $this->warn("  ⚠ {$name}: {$e->getMessage()}");
+                        $this->warn("  [WARN] {$name}: {$e->getMessage()}");
                     }
                 }
             }
@@ -219,10 +219,10 @@ class SmartContractSetup extends Command
                 if ($name) {
                     try {
                         $this->multichain->approvefrom($admin, $name, $activate);
-                        $symbol = $activate ? '✓' : '○';
+                        $symbol = $activate ? '[OK]' : '';
                         $this->info("  {$symbol} {$name}");
                     } catch (Exception $e) {
-                        $this->warn("  ⚠ {$name}: {$e->getMessage()}");
+                        $this->warn("  [WARN] {$name}: {$e->getMessage()}");
                     }
                 }
             }

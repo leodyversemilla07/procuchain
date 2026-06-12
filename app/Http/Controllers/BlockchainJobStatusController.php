@@ -13,7 +13,7 @@ class BlockchainJobStatusController extends Controller
     /**
      * Return the current status of a queued blockchain write job.
      *
-     * Statuses: pending → done | failed
+     * Statuses: pending -> done | failed
      */
     public function status(Request $request, string $jobId): JsonResponse
     {

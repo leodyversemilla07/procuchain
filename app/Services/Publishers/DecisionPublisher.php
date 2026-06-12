@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Log;
  * - publishSupplementalBidBulletinDecision() - Supplemental Bid Bulletin
  *
  * All three methods follow the same pattern:
- * 1. If held/needed → publish held/ongoing status + event, redirect to upload page
- * 2. If skipped → publish skipped/completed status + event + stage transition, redirect to list
+ * 1. If held/needed -> publish held/ongoing status + event, redirect to upload page
+ * 2. If skipped -> publish skipped/completed status + event + stage transition, redirect to list
  */
 class DecisionPublisher
 {

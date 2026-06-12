@@ -13,14 +13,14 @@ class AuditLogger
     /**
      * Action labels for human-readable descriptions.
      * Organized by NGPA (RA 12009) domain:
-     *   - procurement.*  → Procurement lifecycle (Sec. 2 transparency)
-     *   - document.*     → Document management (Sec. 20 electronic records)
-     *   - auth.*         → Authentication & access (Sec. 3 accountability)
-     *   - admin.*        → Administrative configuration
-     *   - user.*         → User management (existing)
-     *   - account.*      → Account security (existing)
-     *   - settings.*     → User settings
-     *   - security.*     → Security operations
+     *   - procurement.*  -> Procurement lifecycle (Sec. 2 transparency)
+     *   - document.*     -> Document management (Sec. 20 electronic records)
+     *   - auth.*         -> Authentication & access (Sec. 3 accountability)
+     *   - admin.*        -> Administrative configuration
+     *   - user.*         -> User management (existing)
+     *   - account.*      -> Account security (existing)
+     *   - settings.*     -> User settings
+     *   - security.*     -> Security operations
      */
     private const ACTION_LABELS = [
         // User management (existing)
@@ -334,7 +334,7 @@ class AuditLogger
                 if ($oldVal !== $newVal) {
                     $oldDisplay = is_scalar($oldVal) ? (string) $oldVal : json_encode($oldVal);
                     $newDisplay = is_scalar($newVal) ? (string) $newVal : json_encode($newVal);
-                    $changes[] = "{$key}: '{$oldDisplay}' → '{$newDisplay}'";
+                    $changes[] = "{$key}: '{$oldDisplay}' -> '{$newDisplay}'";
                 }
             }
 

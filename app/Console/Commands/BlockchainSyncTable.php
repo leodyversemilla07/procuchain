@@ -73,9 +73,9 @@ class BlockchainSyncTable extends Command
             $this->newLine();
             $this->info('Available tables:');
             foreach (array_keys(self::TABLE_MAP) as $name) {
-                $this->line("  • {$name}");
+                $this->line("  - {$name}");
             }
-            $this->line('  • all (sync all tables)');
+            $this->line('  - all (sync all tables)');
 
             return self::FAILURE;
         }
@@ -99,7 +99,7 @@ class BlockchainSyncTable extends Command
         $config = self::TABLE_MAP[$tableName];
         $stream = $config['stream'];
 
-        $this->info("Syncing: {$tableName} ← {$stream->value}");
+        $this->info("Syncing: {$tableName} <- {$stream->value}");
         $this->newLine();
 
         if ($dryRun || ! $restore) {
@@ -148,9 +148,9 @@ class BlockchainSyncTable extends Command
         );
 
         $this->newLine();
-        $this->info("  ✓ Imported: {$result['imported']}");
-        $this->info("  ⊘ Skipped: {$result['skipped']}");
-        $this->info("  ✗ Errors:  {$result['errors']}");
+        $this->info("  [OK] Imported: {$result['imported']}");
+        $this->info("  Skipped: {$result['skipped']}");
+        $this->info("  [FAIL] Errors:  {$result['errors']}");
         $this->newLine();
 
         // Verify

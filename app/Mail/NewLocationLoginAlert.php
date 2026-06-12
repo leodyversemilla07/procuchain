@@ -54,7 +54,7 @@ class NewLocationLoginAlert extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '🔔 Security Alert: New Login Location Detected - ProcuChain',
+            subject: 'Security Alert: New Login Location Detected - ProcuChain',
         );
     }
 

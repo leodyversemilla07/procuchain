@@ -31,9 +31,9 @@ use Illuminate\Support\Facades\Log;
  * Verifies normalized DB tables against blockchain (source of truth).
  *
  * Architecture:
- *   Blockchain → Source of truth (immutable)
- *   Normalized DB → Query cache (mutable, verifiable)
- *   integrity_audit_logs → Permanent forensic record (append-only)
+ *   Blockchain -> Source of truth (immutable)
+ *   Normalized DB -> Query cache (mutable, verifiable)
+ *   integrity_audit_logs -> Permanent forensic record (append-only)
  *
  * Verification layers:
  *   Layer 1: data_hash check (was record modified since sync?)
@@ -78,9 +78,9 @@ class IntegrityVerificationService
         private readonly BlockchainAuditTrailService $auditTrail,
     ) {}
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // PUBLIC API
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Run full integrity verification against all normalized tables.
@@ -317,9 +317,9 @@ class IntegrityVerificationService
         ];
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // PHASE 1: VERIFY ALL TABLES
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     private function verifyAllTables(): void
     {
@@ -786,16 +786,16 @@ class IntegrityVerificationService
             ->exists();
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // PHASE 2: DETECT ALL INCONSISTENCIES
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Detect all inconsistencies between DB and blockchain.
      *
      * Two-way check:
-     *   A. Items on chain but not in DB → ROW_DELETED (unauthorized deletion)
-     *   B. Items in DB but not on chain → UNAUTHORIZED_RECORD (injected fake data)
+     *   A. Items on chain but not in DB -> ROW_DELETED (unauthorized deletion)
+     *   B. Items in DB but not on chain -> UNAUTHORIZED_RECORD (injected fake data)
      */
     private function detectDeletedRecords(): void
     {
@@ -1313,9 +1313,9 @@ class IntegrityVerificationService
         };
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // PHASE 3: AUTO-REPAIR
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Auto-repair all pending violations from this verification run.
@@ -1357,7 +1357,7 @@ class IntegrityVerificationService
 
             // Step 2: Delete DB records that don't exist on blockchain
             // Requirement 5: "Restore original records from trusted blockchain data."
-            // Records in DB not on chain = unauthorized injection → must be removed
+            // Records in DB not on chain = unauthorized injection -> must be removed
             if (! empty($blockchainPrNumbers)) {
                 $dbCount = Procurement::withTrashed()->count();
                 $chainCount = count($blockchainPrNumbers);
@@ -1465,9 +1465,9 @@ class IntegrityVerificationService
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // HELPERS
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * After auto-repair sync, refresh data_hash on all synced records so

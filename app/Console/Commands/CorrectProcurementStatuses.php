@@ -81,7 +81,7 @@ class CorrectProcurementStatuses extends Command
      */
     public function handle(): int
     {
-        $this->info('🔍 Procurement Status Correction Tool');
+        $this->info('Procurement Status Correction Tool');
         $this->newLine();
 
         try {
@@ -99,7 +99,7 @@ class CorrectProcurementStatuses extends Command
             $correctionsToApply = array_filter($correctionsToApply);
 
             if (empty($correctionsToApply)) {
-                $this->error('❌ No corrections found for the specified PR number.');
+                $this->error('[FAIL] No corrections found for the specified PR number.');
 
                 return self::FAILURE;
             }
@@ -110,7 +110,7 @@ class CorrectProcurementStatuses extends Command
             // Confirm if not dry-run and not forced
             if (! $isDryRun && ! $isForce) {
                 if (! $this->confirm('Do you want to proceed with these corrections?', false)) {
-                    $this->warn('⚠️  Operation cancelled.');
+                    $this->warn('[WARN]  Operation cancelled.');
 
                     return self::SUCCESS;
                 }
@@ -118,14 +118,14 @@ class CorrectProcurementStatuses extends Command
 
             // Apply corrections
             if ($isDryRun) {
-                $this->info('✅ Dry run complete. No changes were made to the blockchain.');
+                $this->info('[OK] Dry run complete. No changes were made to the blockchain.');
 
                 return self::SUCCESS;
             }
 
             return $this->applyCorrections($correctionsToApply);
         } catch (Exception $e) {
-            $this->error('❌ Error: '.$e->getMessage());
+            $this->error('[FAIL] Error: '.$e->getMessage());
             Log::error('Status correction command failed', [
                 'error' => $e->getMessage(),
                 'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
@@ -140,7 +140,7 @@ class CorrectProcurementStatuses extends Command
      */
     private function displayCorrections(array $corrections, bool $isDryRun): void
     {
-        $this->info($isDryRun ? '📋 Preview Mode - No changes will be made' : '🔧 Corrections to Apply:');
+        $this->info($isDryRun ? 'Preview Mode - No changes will be made' : 'Corrections to Apply:');
         $this->newLine();
 
         $tableData = [];
@@ -169,7 +169,7 @@ class CorrectProcurementStatuses extends Command
         $successCount = 0;
         $failureCount = 0;
 
-        $this->info('📝 Publishing corrected statuses to blockchain...');
+        $this->info('Publishing corrected statuses to blockchain...');
         $this->newLine();
 
         foreach ($corrections as $prNumber => $correction) {
@@ -180,7 +180,7 @@ class CorrectProcurementStatuses extends Command
                 $procurement = $this->procurementRepository->findByProcurement($prNumber);
 
                 if (! $procurement) {
-                    $this->error("  ❌ Procurement not found: {$prNumber}");
+                    $this->error("  [FAIL] Procurement not found: {$prNumber}");
                     $failureCount++;
 
                     continue;
@@ -190,14 +190,14 @@ class CorrectProcurementStatuses extends Command
                 $currentStatus = $this->statusRepository->getLatest($prNumber);
 
                 if (! $currentStatus) {
-                    $this->error("  ❌ No status found for: {$prNumber}");
+                    $this->error("  [FAIL] No status found for: {$prNumber}");
                     $failureCount++;
 
                     continue;
                 }
 
                 if ($currentStatus->currentStatus !== $correction['incorrect_status']) {
-                    $this->warn("  ⚠️  Current status ({$currentStatus->currentStatus}) doesn't match expected incorrect status ({$correction['incorrect_status']}). Skipping.");
+                    $this->warn("  [WARN]  Current status ({$currentStatus->currentStatus}) doesn't match expected incorrect status ({$correction['incorrect_status']}). Skipping.");
 
                     continue;
                 }
@@ -210,7 +210,7 @@ class CorrectProcurementStatuses extends Command
                 // Get the original user's blockchain address from the procurement's userId
                 $user = User::find($procurement->userId);
                 if (! $user || ! $user->blockchain_address) {
-                    $this->error("  ❌ User not found or missing blockchain address for: {$prNumber}");
+                    $this->error("  [FAIL] User not found or missing blockchain address for: {$prNumber}");
                     $failureCount++;
 
                     continue;
@@ -235,19 +235,19 @@ class CorrectProcurementStatuses extends Command
                 );
 
                 if ($result['success']) {
-                    $this->info("  ✅ Corrected: {$prNumber}");
+                    $this->info("  [OK] Corrected: {$prNumber}");
                     $this->line("     TXID: {$result['status_txid']}");
                     $this->line("     Stage: {$correction['stage']}");
-                    $this->line("     Status: {$correction['incorrect_status']} → {$correction['correct_status']}");
+                    $this->line("     Status: {$correction['incorrect_status']} -> {$correction['correct_status']}");
                     $successCount++;
                 } else {
-                    $this->error("  ❌ Failed to publish correction for: {$prNumber}");
+                    $this->error("  [FAIL] Failed to publish correction for: {$prNumber}");
                     $failureCount++;
                 }
 
                 $this->newLine();
             } catch (Exception $e) {
-                $this->error("  ❌ Error processing {$prNumber}: ".$e->getMessage());
+                $this->error("  [FAIL] Error processing {$prNumber}: ".$e->getMessage());
                 Log::error('Failed to correct status', [
                     'pr_number' => $prNumber,
                     'error' => $e->getMessage(),
@@ -260,16 +260,16 @@ class CorrectProcurementStatuses extends Command
 
         // Summary
         $this->newLine();
-        $this->info('📊 Summary:');
-        $this->line("  ✅ Successful: {$successCount}");
+        $this->info('Summary:');
+        $this->line("  [OK] Successful: {$successCount}");
 
         if ($failureCount > 0) {
-            $this->line("  ❌ Failed: {$failureCount}");
+            $this->line("  [FAIL] Failed: {$failureCount}");
         }
 
         if ($successCount === count($corrections)) {
             $this->newLine();
-            $this->info('🎉 All corrections applied successfully!');
+            $this->info('All corrections applied successfully!');
             $this->line('The procurement list should now display correct statuses.');
 
             return self::SUCCESS;

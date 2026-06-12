@@ -67,7 +67,7 @@ class BlockchainSync extends Command
         $total = 0;
 
         foreach ($results as $stream => $count) {
-            $this->line("  • {$stream}: {$count} items");
+            $this->line("  - {$stream}: {$count} items");
             $total += $count;
         }
 

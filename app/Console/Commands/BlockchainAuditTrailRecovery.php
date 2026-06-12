@@ -35,18 +35,18 @@ class BlockchainAuditTrailRecovery extends Command
     public function handle(): int
     {
         $this->newLine();
-        $this->info('╔══════════════════════════════════════════════════════════════╗');
+        $this->info('================================================================');
         $this->info('|       BLOCKCHAIN AUDIT TRAIL RECOVERY                      |');
         $this->info('|  Permanent forensic record - survives MySQL destruction     |');
-        $this->info('╚══════════════════════════════════════════════════════════════╝');
+        $this->info('================================================================');
         $this->newLine();
 
         $service = app(BlockchainAuditTrailService::class);
 
         // Step 1: Read from blockchain
-        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('----------------------------------------------------------------');
         $this->info('  Step 1: Reading audit trail from blockchain');
-        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('----------------------------------------------------------------');
         $this->newLine();
 
         $prFilter = $this->option('pr');
@@ -78,9 +78,9 @@ class BlockchainAuditTrailRecovery extends Command
 
         // Step 2: Display violation entries
         if (! empty($violations)) {
-            $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            $this->info('----------------------------------------------------------------');
             $this->info('  Step 2: Violations Detected (Immutable Chain Record)');
-            $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            $this->info('----------------------------------------------------------------');
             $this->newLine();
 
             $rows = [];
@@ -113,9 +113,9 @@ class BlockchainAuditTrailRecovery extends Command
 
         // Step 3: Display recovery entries
         if (! empty($recoveries)) {
-            $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            $this->info('----------------------------------------------------------------');
             $this->info('  Step 3: Recoveries Performed (Immutable Chain Record)');
-            $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            $this->info('----------------------------------------------------------------');
             $this->newLine();
 
             $rows = [];
@@ -144,13 +144,13 @@ class BlockchainAuditTrailRecovery extends Command
         // Step 4: Restore to MySQL if requested
         if ($this->option('restore')) {
             $this->newLine();
-            $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            $this->info('----------------------------------------------------------------');
             $this->info('  Step 4: Restoring Audit Trail to MySQL');
-            $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            $this->info('----------------------------------------------------------------');
             $this->newLine();
 
-            $this->warn('  ⚠ This will import blockchain audit records into integrity_audit_logs.');
-            $this->warn('  ⚠ Existing records will be skipped (deduplication by ID).');
+            $this->warn('  [WARN] This will import blockchain audit records into integrity_audit_logs.');
+            $this->warn('  [WARN] Existing records will be skipped (deduplication by ID).');
             $this->newLine();
 
             if ($this->confirm('Proceed with restoration?', false)) {
@@ -167,9 +167,9 @@ class BlockchainAuditTrailRecovery extends Command
 
         // Summary
         $this->newLine();
-        $this->info('╔══════════════════════════════════════════════════════════════╗');
+        $this->info('================================================================');
         $this->info('|                    SUMMARY                                 |');
-        $this->info('╚══════════════════════════════════════════════════════════════╝');
+        $this->info('================================================================');
         $this->newLine();
 
         $this->info('  The blockchain audit trail (integrity.violations) contains:');

@@ -96,13 +96,13 @@ class MultichainNodeHealthCheck extends Command
                 // on-chain (and no newer resync event), skip this node entirely.
                 if ($this->isNodePurged($manager, $nodeId)) {
                     $skippedPurgedNodes++;
-                    $this->line(" {$nodeName} — intentionally purged, skipping auto-repair");
+                    $this->line(" {$nodeName} -- intentionally purged, skipping auto-repair");
 
                     if ($notify) {
                         Log::info("MultichainNodeHealth: {$nodeName} is intentionally purged — skipping auto-subscribe", [
                             'node_id' => $nodeId,
                             'missing_streams' => count($unsubscribedStreams),
-                            'tip' => 'Use Recoverable Data → Resync in the UI to restore when ready',
+                            'tip' => 'Use Recoverable Data -> Resync in the UI to restore when ready',
                         ]);
                     }
 
@@ -133,7 +133,7 @@ class MultichainNodeHealthCheck extends Command
                     if ($notify) {
                         Log::warning("MultichainNodeHealth: {$nodeName} missing ".count($unsubscribedStreams).' stream subscriptions', [
                             'missing_streams' => $unsubscribedStreams,
-                            'tip' => 'Run with --fix to auto-subscribe, or use Recoverable Data → Resync in the UI',
+                            'tip' => 'Run with --fix to auto-subscribe, or use Recoverable Data -> Resync in the UI',
                         ]);
                     }
                 }

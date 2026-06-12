@@ -57,7 +57,7 @@ class CleanupDatabaseCache extends Command
             $this->warn('Skipping jobs table - only remove if you have custom cleanup logic');
         }
 
-        $this->info('✅ Database cleanup completed!');
+        $this->info('[OK] Database cleanup completed!');
 
         return Command::SUCCESS;
     }

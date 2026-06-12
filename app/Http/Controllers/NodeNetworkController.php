@@ -34,7 +34,7 @@ class NodeNetworkController extends Controller
     }
 
     /**
-     * Build a reverse-lookup map: IP address → node ID.
+     * Build a reverse-lookup map: IP address -> node ID.
      * Covers both public and private IPs for peer matching.
      *
      * @return array<string, string>

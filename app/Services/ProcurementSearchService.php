@@ -190,7 +190,7 @@ class ProcurementSearchService
      * First tries exact substring match (fast path). If that fails,
      * falls back to fuzzy matching using similar_text on each word
      * in the procurement's text fields. This catches typos like
-     * "infrastucture" → "infrastructure" or "procurement" → "procuement".
+     * "infrastucture" -> "infrastructure" or "procurement" -> "procuement".
      */
     private function matchesQuery(string $query, array $procurement): bool
     {

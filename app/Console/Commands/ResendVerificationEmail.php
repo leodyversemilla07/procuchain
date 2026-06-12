@@ -62,7 +62,7 @@ class ResendVerificationEmail extends Command
 
         $user->sendEmailVerificationNotification();
 
-        $this->info("✅ Verification email sent to {$email}");
+        $this->info("[OK] Verification email sent to {$email}");
         $this->line('Current APP_URL: '.config('app.url'));
 
         return self::SUCCESS;
@@ -107,7 +107,7 @@ class ResendVerificationEmail extends Command
 
         $bar->finish();
         $this->newLine(2);
-        $this->info("✅ Sent verification emails to {$sent} users");
+        $this->info("[OK] Sent verification emails to {$sent} users");
 
         return self::SUCCESS;
     }

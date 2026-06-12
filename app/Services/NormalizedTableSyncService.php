@@ -37,9 +37,9 @@ class NormalizedTableSyncService
         $this->manager = app(Manager::class);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // PUBLIC API
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Sync all procurement streams from blockchain to normalized tables.
@@ -60,28 +60,28 @@ class NormalizedTableSyncService
 
             Log::info('NormalizedTableSync: starting full sync from blockchain');
 
-            // 1. Sync procurement metadata → procurements table
+            // 1. Sync procurement metadata -> procurements table
             $counts['procurements'] = $this->syncProcurementMetadata();
 
-            // 2. Sync status updates → procurement_stages table
+            // 2. Sync status updates -> procurement_stages table
             $counts['stages'] = $this->syncStatusUpdates();
 
-            // 3. Sync documents → procurement_documents table
+            // 3. Sync documents -> procurement_documents table
             $counts['documents'] = $this->syncDocuments();
 
-            // 4. Sync events → procurement_events table
+            // 4. Sync events -> procurement_events table
             $counts['events'] = $this->syncEvents();
 
-            // 5. Sync corrections → procurement_corrections table
+            // 5. Sync corrections -> procurement_corrections table
             $counts['corrections'] = $this->syncCorrections();
 
-            // 6. Sync archive flags → procurement_archives table
+            // 6. Sync archive flags -> procurement_archives table
             $counts['archives'] = $this->syncArchives();
 
-            // 7. Sync procurement metadata corrections → procurement_metadata_corrections table
+            // 7. Sync procurement metadata corrections -> procurement_metadata_corrections table
             $counts['metadata_corrections'] = $this->syncMetadataCorrections();
 
-            // 8. Sync file metadata → files table
+            // 8. Sync file metadata -> files table
             $counts['files'] = $this->syncFileMetadata();
 
             Log::info('NormalizedTableSync: sync completed', $counts);
@@ -499,9 +499,9 @@ class NormalizedTableSyncService
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // HELPERS
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Find or create a Procurement, handling soft-deleted records.
@@ -525,12 +525,12 @@ class NormalizedTableSyncService
         return Procurement::create(['pr_number' => $prNumber, ...$defaults]);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // STREAM SYNC METHODS
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
-     * Sync procurement.metadata stream → procurements table
+     * Sync procurement.metadata stream -> procurements table
      */
     private function syncProcurementMetadata(): int
     {
@@ -620,7 +620,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync procurement.status stream → procurement_stages table
+     * Sync procurement.status stream -> procurement_stages table
      */
     private function syncStatusUpdates(): int
     {
@@ -698,7 +698,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync procurement.documents stream → procurement_documents table
+     * Sync procurement.documents stream -> procurement_documents table
      */
     private function syncDocuments(): int
     {
@@ -774,7 +774,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync procurement.events stream → procurement_events table
+     * Sync procurement.events stream -> procurement_events table
      */
     private function syncEvents(): int
     {
@@ -841,7 +841,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync procurement.corrections stream → procurement_corrections table
+     * Sync procurement.corrections stream -> procurement_corrections table
      */
     private function syncCorrections(): int
     {
@@ -908,7 +908,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync procurement.archive stream → procurement_archives table.
+     * Sync procurement.archive stream -> procurement_archives table.
      */
     private function syncArchives(): int
     {
@@ -970,7 +970,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync procurement.metadata.corrections stream → procurement_metadata_corrections table.
+     * Sync procurement.metadata.corrections stream -> procurement_metadata_corrections table.
      */
     private function syncMetadataCorrections(): int
     {
@@ -1058,7 +1058,7 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync file.metadata stream → files table
+     * Sync file.metadata stream -> files table
      */
     private function syncFileMetadata(): int
     {
@@ -1119,9 +1119,9 @@ class NormalizedTableSyncService
         return $count;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // PR-SPECIFIC SYNC METHODS (for instant updates after blockchain write)
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Sync archives for a specific PR only.
@@ -1357,9 +1357,9 @@ class NormalizedTableSyncService
         return $count;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
     // HELPERS
-    // ═══════════════════════════════════════════════════════════════════
+    // ----------------------------------------------------------------
 
     /**
      * Get all items from a blockchain stream.

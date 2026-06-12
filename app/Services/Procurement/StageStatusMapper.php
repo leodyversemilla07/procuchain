@@ -7,7 +7,7 @@ use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 
 /**
- * Single source of truth for Stage → Status mappings.
+ * Single source of truth for Stage -> Status mappings.
  *
  * Consolidates the duplicate status mapping methods that were spread across
  * HasProcurementSupport trait and ProcurementStageController.

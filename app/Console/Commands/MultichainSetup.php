@@ -576,7 +576,7 @@ class MultichainSetup extends Command
                 }
 
                 if ($subscribed > 0) {
-                    $this->info("  ✓ {$nodeName} — subscribed to {$subscribed} new stream(s), {$alreadySubscribed} already active");
+                    $this->info("  [OK] {$nodeName} -- subscribed to {$subscribed} new stream(s), {$alreadySubscribed} already active");
                 } else {
                     $this->line("  {$nodeName} — all {$alreadySubscribed} streams already subscribed");
                 }

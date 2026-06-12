@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Log;
  * (integrity.violations) so that audit evidence survives total MySQL destruction.
  *
  * Architecture:
- *   integrity_audit_logs (MySQL)  ← fast queries, mutable, can be wiped
- *   integrity.violations (Chain)  ← immutable, permanent, append-only
+ *   integrity_audit_logs (MySQL)  - fast queries, mutable, can be wiped
+ *   integrity.violations (Chain)  - immutable, permanent, append-only
  *
  * Every violation detected by IntegrityVerificationService is written to
  * BOTH tables simultaneously. If MySQL is destroyed, the blockchain
@@ -93,7 +93,7 @@ class BlockchainAuditTrailService
      *
      * Called when a violation is restored from blockchain data.
      * Records that the recovery happened, creating a permanent
-     * chain of: violation detected → recovery performed.
+     * chain of: violation detected -> recovery performed.
      *
      * @param  IntegrityAuditLog  $auditLog  The restored audit log entry
      * @param  array  $recoveryResult  What was restored
