@@ -1,13 +1,10 @@
 import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
+import { LedgerEntryRow, LedgerFilterBar, PurgeWarnings, STREAM_CONFIG } from '@/components/shared-ledger';
+import { getPaginationPages } from '@/components/shared-ledger/utils';
 import { HeroCard } from '@/components/hero-card';
-import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
 import {
     Pagination,
     PaginationContent,
@@ -17,40 +14,15 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import type { LedgerEntry, LedgerFilters, LedgerPagination, NodeOption, StreamOption } from '@/types/blockchain';
 import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
-import {
-    AlertTriangle,
-    Archive,
-    ArrowDownUp,
-    BookOpen,
-    BookOpenText,
-    CalendarIcon,
-    ChevronDown,
-    ClipboardCopy,
-    Download,
-    ExternalLink,
-    FileText,
-    FilterX,
-    GitBranch,
-    Pencil,
-    RotateCcw,
-    ScrollText,
-    Server,
-    ServerCrash,
-    Shield,
-    Trash2,
-} from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { BookOpen, Shield } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type DateRange } from 'react-day-picker';
-import { toast } from 'sonner';
 
 interface NodePurgeState {
     is_purged: boolean;
@@ -75,11 +47,6 @@ interface SharedLedgerPageProps {
     error?: string;
 }
 
-/**
- * Resolve the correct Wayfinder route function for the shared-ledger page
- * based on the current URL pathname. This avoids hardcoded basePath strings
- * that can go stale during Inertia client-side navigations.
- */
 const resolveSharedLedgerRoute = (pathname: string) => {
     const routeKey = Object.keys(sharedLedgerRoutes).find((key) => pathname === key || pathname.startsWith(key + '/')) as
         | keyof typeof sharedLedgerRoutes
@@ -87,60 +54,6 @@ const resolveSharedLedgerRoute = (pathname: string) => {
 
     return routeKey ? sharedLedgerRoutes[routeKey] : sharedLedgerRoutes['/admin/shared-ledger'];
 };
-
-/** Stream badge configuration */
-const STREAM_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ComponentType<{ className?: string }> }> = {
-    'procurement.metadata': {
-        label: 'Created / Updated',
-        variant: 'secondary',
-        icon: BookOpenText,
-    },
-    'procurement.status': {
-        label: 'Status Change',
-        variant: 'default',
-        icon: GitBranch,
-    },
-    'procurement.documents': { label: 'Document', variant: 'outline', icon: FileText },
-    'procurement.corrections': {
-        label: 'Document Correction',
-        variant: 'destructive',
-        icon: AlertTriangle,
-    },
-    'procurement.metadata.corrections': {
-        label: 'Metadata Correction',
-        variant: 'secondary',
-        icon: Pencil,
-    },
-    'procurement.archive': { label: 'Archive', variant: 'outline', icon: Archive },
-    'procurement.events': { label: 'Event', variant: 'secondary', icon: ScrollText },
-    'file.data': { label: 'File Data', variant: 'outline', icon: FileText },
-    'file.metadata': { label: 'File Meta', variant: 'outline', icon: FileText },
-    'file.chunks': { label: 'File Chunk', variant: 'outline', icon: FileText },
-};
-
-const getStreamConfig = (stream: string) =>
-    STREAM_CONFIG[stream] ?? { label: stream, variant: 'outline' as const, icon: ScrollText };
-
-/**
- * Compute the diff fields between old and new values.
- */
-function computeDiff(oldValues: Record<string, unknown>, newValues: Record<string, unknown>): Array<{ key: string; old: string; new: string }> {
-    const diff: Array<{ key: string; old: string; new: string }> = [];
-    const allKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
-
-    for (const key of allKeys) {
-        const oldVal = oldValues[key];
-        const newVal = newValues[key];
-        const oldStr = oldVal !== undefined ? String(oldVal) : '';
-        const newStr = newVal !== undefined ? String(newVal) : '';
-
-        if (oldStr !== newStr) {
-            diff.push({ key, old: oldStr, new: newStr });
-        }
-    }
-
-    return diff;
-}
 
 export default function SharedLedger({
     entries,
@@ -168,7 +81,6 @@ export default function SharedLedger({
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [isFiltering, setIsFiltering] = useState(false);
 
-    // Clear filtering state when Inertia re-renders with new data
     useEffect(() => {
         setIsFiltering(false);
     }, [entries, pagination]);
@@ -193,18 +105,6 @@ export default function SharedLedger({
         });
     };
 
-    const copyTxid = (txid: string) => {
-        navigator.clipboard
-            .writeText(txid)
-            .then(() => {
-                toast.success('TX ID copied to clipboard');
-            })
-            .catch(() => {
-                toast.error('Failed to copy TX ID');
-            });
-    };
-
-    /** Build query params object for the current filter state */
     const buildQuery = useCallback(
         (overrides: Record<string, string | undefined> = {}) => {
             const query: Record<string, string> = {};
@@ -225,15 +125,6 @@ export default function SharedLedger({
         [prNumber, stream, node, dateRange],
     );
 
-    const applyFilters = () => {
-        setIsFiltering(true);
-        router.visit(ledgerRoute({ query: buildQuery() }), {
-            preserveState: true,
-            replace: true,
-            onFinish: () => setIsFiltering(false),
-        });
-    };
-
     const clearFilters = () => {
         setPrNumber('');
         setStream('');
@@ -243,34 +134,22 @@ export default function SharedLedger({
         router.visit(ledgerRoute(), { preserveState: false, replace: true });
     };
 
-    const selectedStreamLabel = stream && stream !== 'all' ? (STREAM_CONFIG[stream]?.label ?? stream) : 'All streams';
-
-    /** Export ledger to CSV */
-    const handleExport = () => {
-        const headers = ['Timestamp', 'Stream', 'PR Number', 'Action', 'Summary', 'Actor', 'TX ID', 'Procurement Title'];
-        const rows = entries.map((e) => [
-            e.formatted_timestamp,
-            e.stream_display,
-            e.pr_number,
-            e.action,
-            e.summary,
-            e.actor_address,
-            e.txid,
-            e.procurement_title ?? '',
-        ]);
-
-        const csv = [headers.join(','), ...rows.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(','))].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `shared-ledger-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success('Ledger exported as CSV');
+    const navigateFilter = (query: Record<string, string>) => {
+        setIsFiltering(true);
+        router.visit(ledgerRoute({ query }), {
+            preserveState: true,
+            replace: true,
+            onFinish: () => setIsFiltering(false),
+        });
     };
 
-    const totalTransactions = pagination.total;
+    const navigateToPage = (targetPage: number) => {
+        setIsFiltering(true);
+        router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(targetPage) } }), {
+            preserveState: true,
+            onFinish: () => setIsFiltering(false),
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -286,7 +165,7 @@ export default function SharedLedger({
                         <div className="flex items-center gap-2 text-sm">
                             <Shield />
                             <span className="text-muted-foreground">
-                                <strong className="text-foreground">{totalTransactions.toLocaleString()}</strong> total transactions
+                                <strong className="text-foreground">{pagination.total.toLocaleString()}</strong> total transactions
                             </span>
                         </div>
                         {Object.entries(stream_totals).map(([s, count]) => {
@@ -307,211 +186,27 @@ export default function SharedLedger({
 
                 {error && <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">{error}</div>}
 
-                {/* Purge State Warning */}
-                {node_purge_state?.is_purged && node_purge_state.was_explicitly_purged && (
-                    <div className="rounded-lg border border-amber-200 bg-muted/50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-muted/20">
-                        <p className="flex items-center gap-2 font-medium text-muted-foreground dark:text-muted-foreground">
-                            <AlertTriangle />
-                            This node has been purged — all stream subscriptions removed
-                        </p>
-                        <p className="mt-1 text-muted-foreground dark:text-muted-foreground">
-                            Data on this node was wiped via <strong>unsubscribe(purge=true)</strong>. The blockchain data still exists on other nodes
-                            — use <strong>Recoverable Data → Resync</strong> to restore this node's local copy.
-                        </p>
-                        {node_purge_state.purge_reason && (
-                            <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">Reason: {node_purge_state.purge_reason}</p>
-                        )}
-                    </div>
-                )}
-                {node_purge_state?.is_purged && !node_purge_state.was_explicitly_purged && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/20">
-                        <p className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
-                            <Server />
-                            This node has no local blockchain data
-                        </p>
-                        <p className="mt-1 text-slate-600 dark:text-slate-400">
-                            This node is not subscribed to any procurement streams. It may have never been populated, or its subscriptions were
-                            removed without an on-chain record. Use <strong>Recoverable Data → Resync</strong> to subscribe and download the
-                            blockchain data.
-                        </p>
-                    </div>
-                )}
-                {node_purge_state?.partially_purged && (
-                    <div className="rounded-lg border border-amber-200 bg-muted/50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-muted/20">
-                        <p className="flex items-center gap-2 font-medium text-muted-foreground dark:text-muted-foreground">
-                            <AlertTriangle />
-                            Partially purged — {node_purge_state.unsubscribed_streams.length} stream(s) unsubscribed
-                        </p>
-                        <p className="mt-1 text-muted-foreground dark:text-muted-foreground">Missing streams: {node_purge_state.unsubscribed_streams.join(', ')}</p>
-                    </div>
-                )}
-                {node_purge_state?.connection_error && (
-                    <Alert variant="destructive" className="px-4 py-3 text-sm">
-                        <p className="flex items-center gap-2 font-medium">
-                            <ServerCrash />
-                            Unable to connect to this node
-                        </p>
-                        <p className="mt-1 text-destructive">
-                            The blockchain node could not be reached. It may be temporarily offline or have a network configuration issue.
-                        </p>
-                        {node_purge_state.connection_error_message && (
-                            <p className="text-muted-foreground mt-1 text-xs">{node_purge_state.connection_error_message}</p>
-                        )}
-                    </Alert>
-                )}
+                <PurgeWarnings purgeState={node_purge_state} />
 
-                {/* Filters */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                            <ArrowDownUp />
-                            Filters
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                            <Input
-                                type="text"
-                                placeholder="PR Number (e.g. PR-2026-001)"
-                                value={prNumber}
-                                onChange={(e) => setPrNumber(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') applyFilters();
-                                }}
-                            />
+                <LedgerFilterBar
+                    prNumber={prNumber}
+                    setPrNumber={setPrNumber}
+                    stream={stream}
+                    setStream={setStream}
+                    node={node}
+                    setNode={setNode}
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    available_streams={available_streams}
+                    available_nodes={available_nodes}
+                    entriesCount={entries.length}
+                    buildQuery={buildQuery}
+                    navigate={navigateFilter}
+                    setIsFiltering={setIsFiltering}
+                    hasActiveFilters={hasActiveFilters}
+                    clearFilters={clearFilters}
+                />
 
-                            <Select
-                                value={node || 'all'}
-                                onValueChange={(value) => {
-                                    if (!value) return;
-                                    setNode(value);
-                                    // Auto-apply: immediately navigate with the new node
-                                    setIsFiltering(true);
-                                    router.visit(ledgerRoute({ query: buildQuery({ node: value !== 'all' ? value : undefined }) }), {
-                                        preserveState: true,
-                                        replace: true,
-                                        onFinish: () => setIsFiltering(false),
-                                    });
-                                }}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="All nodes">
-                                        {() => (node && node !== 'all' ? (available_nodes.find((n) => n.id === node)?.name ?? node) : 'All nodes')}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="all">
-                                            <div className="flex items-center gap-2">
-                                                <Server className="h-3.5 w-3.5" />
-                                                All nodes (shared)
-                                            </div>
-                                        </SelectItem>
-                                        {available_nodes.map((n) => (
-                                            <SelectItem key={n.id} value={n.id}>
-                                                <div className="flex items-center gap-2">
-                                                    {n.is_purged ? (
-                                                        <ServerCrash className="text-destructive" />
-                                                    ) : (
-                                                        <Server className="h-3.5 w-3.5" />
-                                                    )}
-                                                    {n.name}
-                                                    {n.is_purged && (
-                                                        <Badge variant="destructive" className="ml-1 gap-0.5 px-1 py-0 text-[9px]">
-                                                            Purged
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-
-                            <Select
-                                value={stream || 'all'}
-                                onValueChange={(value) => {
-                                    if (!value) return;
-                                    setStream(value);
-                                    // Auto-apply: immediately navigate with the new stream
-                                    setIsFiltering(true);
-                                    router.visit(ledgerRoute({ query: buildQuery({ stream: value !== 'all' ? value : undefined }) }), {
-                                        preserveState: true,
-                                        replace: true,
-                                        onFinish: () => setIsFiltering(false),
-                                    });
-                                }}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="all">All transactions</SelectItem>
-                                        {available_streams.map((s) => (
-                                            <SelectItem key={s.value} value={s.value}>
-                                                <div className="flex items-center gap-2">
-                                                    {React.createElement(STREAM_CONFIG[s.value]?.icon ?? ScrollText, { className: 'h-3.5 w-3.5' })}
-                                                    {s.label}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-
-                            <Popover>
-                                <PopoverTrigger
-                                    render={
-                                        <Button
-                                            variant="outline"
-                                            className={cn('w-full justify-start text-left font-normal', !dateRange?.from && 'text-muted-foreground')}
-                                        />
-                                    }
-                                >
-                                    <CalendarIcon />
-                                    {dateRange?.from ? (
-                                        dateRange.to ? (
-                                            <>
-                                                {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
-                                            </>
-                                        ) : (
-                                            format(dateRange.from, 'MMM d, yyyy')
-                                        )
-                                    ) : (
-                                        <span>Date range</span>
-                                    )}
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        autoFocus
-                                        mode="range"
-                                        defaultMonth={dateRange?.from}
-                                        selected={dateRange}
-                                        onSelect={setDateRange}
-                                        numberOfMonths={2}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </CardContent>
-                    <CardFooter className="flex gap-2">
-                        {hasActiveFilters && (
-                            <Button variant="outline" onClick={clearFilters}>
-                                <FilterX />
-                                Clear
-                            </Button>
-                        )}
-                        <div className="ml-auto">
-                            <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
-                                <Download />
-                                Export CSV
-                            </Button>
-                        </div>
-                    </CardFooter>
-                </Card>
-
-                {/* Immutability Notice */}
                 <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
                     <p className="text-primary flex items-center gap-2 font-medium">
                         <Shield />
@@ -527,7 +222,6 @@ export default function SharedLedger({
                     </p>
                 </div>
 
-                {/* Ledger Entries Table */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between text-base">
@@ -570,194 +264,14 @@ export default function SharedLedger({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {entries.map((entry) => {
-                                        const streamCfg = getStreamConfig(entry.stream);
-                                        const isExpanded = expandedRows.has(entry.txid);
-                                        const StreamIcon = streamCfg.icon;
-                                        const isSystem = entry.pr_number === 'system';
-                                        const hasChanges = Object.keys(entry.old_values).length > 0 || Object.keys(entry.new_values).length > 0;
-                                        const diff = hasChanges ? computeDiff(entry.old_values, entry.new_values) : [];
-
-                                        return (
-                                            <React.Fragment key={entry.txid}>
-                                                <TableRow className="hover:bg-muted/50 cursor-pointer" onClick={() => toggleRow(entry.txid)}>
-                                                    <TableCell>
-                                                        <ChevronDown
-                                                            className={cn(
-                                                                'text-muted-foreground h-4 w-4 transition-transform',
-                                                                isExpanded && 'rotate-180',
-                                                            )}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                                                        {entry.formatted_timestamp}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={streamCfg.variant} className="gap-1 font-normal whitespace-nowrap">
-                                                            <StreamIcon />
-                                                            {entry.stream_display}
-                                                        </Badge>
-                                                        {entry.action === 'deleted' && (
-                                                            <Badge variant="destructive" className="gap-1 text-xs whitespace-nowrap">
-                                                                <Trash2 />
-                                                                Deleted
-                                                            </Badge>
-                                                        )}
-                                                        {entry.action === 'restored' && (
-                                                            <Badge variant="default" className="gap-1 whitespace-nowrap">
-                                                                <RotateCcw />
-                                                                Restored
-                                                            </Badge>
-                                                        )}
-                                                        {entry.action === 'node_purged' && (
-                                                            <Badge variant="destructive" className="gap-1 text-xs whitespace-nowrap">
-                                                                <ServerCrash />
-                                                                Node Purged
-                                                            </Badge>
-                                                        )}
-                                                        {entry.action === 'node_resynced' && (
-                                                            <Badge variant="default" className="gap-1 whitespace-nowrap">
-                                                                <RotateCcw />
-                                                                Node Resynced
-                                                            </Badge>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {isSystem ? (
-                                                            <Badge variant="secondary" className="font-mono text-xs">
-                                                                System
-                                                            </Badge>
-                                                        ) : (
-                                                            <span className="font-mono text-xs font-medium">{entry.pr_number}</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-xs">
-                                                        <div className="truncate text-sm" title={entry.summary}>
-                                                            {entry.summary}
-                                                        </div>
-                                                        {entry.procurement_title && (
-                                                            <div className="text-muted-foreground truncate text-xs">{entry.procurement_title}</div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-xs">
-                                                        {entry.actor_address ? (
-                                                            `${entry.actor_address.substring(0, 10)}...`
-                                                        ) : (
-                                                            <span className="text-muted-foreground italic">—</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="font-mono text-xs">{entry.txid.substring(0, 8)}...</span>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-6 w-6"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    copyTxid(entry.txid);
-                                                                }}
-                                                                title="Copy TX ID"
-                                                            >
-                                                                <ClipboardCopy />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
- </TableRow>
-                                                {isExpanded && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={7} className="bg-muted/20 p-0">
-                                                            <Collapsible open={isExpanded}>
-                                                                <CollapsibleContent className="px-6 py-4">
-                                                                    <div className="flex flex-col gap-4">
-                                                                        {/* Diff View */}
-                                                                        {diff.length > 0 && (
-                                                                            <div>
-                                                                                <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
-                                                                                    <ArrowDownUp />
-                                                                                    Changes
-                                                                                </h4>
-                                                                                <div className="overflow-x-auto rounded-lg border">
-                                                                                    <Table>
-                                                                                        <TableHeader>
-                                                                                            <TableRow>
-                                                                                                <TableHead className="w-1/4">Field</TableHead>
-                                                                                                <TableHead className="w-1/3">Old Value</TableHead>
-                                                                                                <TableHead className="w-1/3">New Value</TableHead>
-                                                                                            </TableRow>
-                                                                                        </TableHeader>
-                                                                                        <TableBody>
-                                                                                            {diff.map((d) => (
-                                                                                                <TableRow key={d.key}>
-                                                                                                    <TableCell className="font-mono text-xs font-medium">
-                                                                                                        {d.key}
-                                                                                                    </TableCell>
-                                                                                                    <TableCell className="bg-destructive/5 font-mono text-xs break-all">
-                                                                                                        {d.old || (
-                                                                                                            <span className="text-muted-foreground italic">
-                                                                                                                empty
-                                                                                                            </span>
-                                                                                                        )}
-                                                                                                    </TableCell>
-                                                                                                    <TableCell className="bg-primary/5 font-mono text-xs break-all">
-                                                                                                        {d.new || (
-                                                                                                            <span className="text-muted-foreground italic">
-                                                                                                                empty
-                                                                                                            </span>
-                                                                                                        )}
-                                                                                                    </TableCell>
-                                                                                                </TableRow>
-                                                                                            ))}
-                                                                                        </TableBody>
-                                                                                    </Table>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Original TX ID link */}
-                                                                        {entry.original_txid && (
-                                                                            <div className="flex items-center gap-2 text-sm">
-                                                                                <ExternalLink />
-                                                                                <span className="text-muted-foreground">References original TX:</span>
-                                                                                <code className="bg-muted rounded px-2 py-0.5 font-mono text-xs">
-                                                                                    {entry.original_txid.substring(0, 16)}...
-                                                                                </code>
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    className="h-6 w-6"
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        copyTxid(entry.original_txid!);
-                                                                                    }}
-                                                                                    title="Copy original TX ID"
-                                                                                >
-                                                                                    <ClipboardCopy />
-                                                                                </Button>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Raw Blockchain Data */}
-                                                                        <div>
-                                                                            <div className="mb-2 flex items-center justify-between">
-                                                                                <h4 className="text-sm font-medium">Raw Blockchain Data</h4>
-                                                                                <Badge variant="outline" className="font-mono text-xs">
-                                                                                    TX: {entry.txid}
-                                                                                </Badge>
-                                                                            </div>
-                                                                            <pre className="bg-muted max-h-64 overflow-x-auto rounded-lg p-4 text-xs leading-relaxed">
-                                                                                {JSON.stringify(entry.raw_json, null, 2)}
-                                                                            </pre>
-                                                                        </div>
-                                                                    </div>
-                                                                </CollapsibleContent>
-                                                            </Collapsible>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    })}
+                                    {entries.map((entry) => (
+                                        <LedgerEntryRow
+                                            key={entry.txid}
+                                            entry={entry}
+                                            isExpanded={expandedRows.has(entry.txid)}
+                                            onToggle={toggleRow}
+                                        />
+                                    ))}
                                 </TableBody>
                             </Table>
                         )}
@@ -778,35 +292,27 @@ export default function SharedLedger({
                                                     return;
                                                 }
                                                 e.preventDefault();
-                                                setIsFiltering(true);
-                                                router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page - 1) } }), {
-                                                    preserveState: true,
-                                                    onFinish: () => setIsFiltering(false),
-                                                });
+                                                navigateToPage(pagination.current_page - 1);
                                             }}
                                             className={pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
                                         />
                                     </PaginationItem>
-                                    {getPaginationPages(pagination.current_page, pagination.last_page).map((page, i) =>
-                                        page === '...' ? (
+                                    {getPaginationPages(pagination.current_page, pagination.last_page).map((pg, i) =>
+                                        pg === '...' ? (
                                             <PaginationItem key={`ellipsis-${i}`}>
                                                 <PaginationEllipsis />
                                             </PaginationItem>
                                         ) : (
-                                            <PaginationItem key={page}>
+                                            <PaginationItem key={pg}>
                                                 <PaginationLink
-                                                    isActive={pagination.current_page === page}
-                                                    href={`?page=${page}`}
+                                                    isActive={pagination.current_page === pg}
+                                                    href={`?page=${pg}`}
                                                     onClick={(e) => {
                                                         e.preventDefault();
-                                                        setIsFiltering(true);
-                                                        router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(page) } }), {
-                                                            preserveState: true,
-                                                            onFinish: () => setIsFiltering(false),
-                                                        });
+                                                        navigateToPage(pg as number);
                                                     }}
                                                 >
-                                                    {page}
+                                                    {pg}
                                                 </PaginationLink>
                                             </PaginationItem>
                                         ),
@@ -820,11 +326,7 @@ export default function SharedLedger({
                                                     return;
                                                 }
                                                 e.preventDefault();
-                                                setIsFiltering(true);
-                                                router.visit(ledgerRoute({ query: { ...buildQuery(), page: String(pagination.current_page + 1) } }), {
-                                                    preserveState: true,
-                                                    onFinish: () => setIsFiltering(false),
-                                                });
+                                                navigateToPage(pagination.current_page + 1);
                                             }}
                                             className={pagination.current_page >= pagination.last_page ? 'pointer-events-none opacity-50' : ''}
                                         />
@@ -837,28 +339,4 @@ export default function SharedLedger({
             </div>
         </AppLayout>
     );
-}
-
-function getPaginationPages(current: number, last: number): (number | string)[] {
-    const pages: (number | string)[] = [];
-
-    if (last <= 7) {
-        for (let i = 1; i <= last; i++) pages.push(i);
-        return pages;
-    }
-
-    pages.push(1);
-
-    if (current > 3) pages.push('...');
-
-    const start = Math.max(2, current - 1);
-    const end = Math.min(last - 1, current + 1);
-
-    for (let i = start; i <= end; i++) pages.push(i);
-
-    if (current < last - 2) pages.push('...');
-
-    pages.push(last);
-
-    return pages;
 }

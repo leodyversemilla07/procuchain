@@ -16,8 +16,8 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
-import type { User } from '@/hooks/use-user-management';
-import { getRoleBadgeColor, getRoleDisplayName } from '@/hooks/use-user-management';
+import type { User } from '@/types/user';
+import { getRoleBadgeColor, getRoleDisplayName } from '@/types/user';
 import type { Table as ReactTable } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
 import { Edit, History, KeyRound, MoreHorizontal, QrCode, Trash2, Users } from 'lucide-react';
