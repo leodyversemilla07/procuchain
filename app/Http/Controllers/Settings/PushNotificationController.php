@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class PushNotificationController extends Controller
 {
     /**
      * List the current user's push subscriptions (JSON API).
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         abort_if($user === null, 401);
@@ -28,7 +30,7 @@ class PushNotificationController extends Controller
     /**
      * Show the push notification settings page.
      */
-    public function edit(Request $request)
+    public function edit(Request $request): Response
     {
         $user = $request->user();
         abort_if($user === null, 401);

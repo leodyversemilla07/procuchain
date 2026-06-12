@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Collection;
+
 class HopeController extends BaseDashboardController
 {
     protected function getRoleName(): string
@@ -19,7 +21,7 @@ class HopeController extends BaseDashboardController
         return 'hope/dashboard';
     }
 
-    protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
+    protected function getAdditionalDashboardData(Collection $procurementsByKey, string $roleName): array
     {
         return [];
     }

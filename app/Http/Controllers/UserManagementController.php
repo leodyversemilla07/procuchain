@@ -11,6 +11,7 @@ use App\Services\AuditLogger;
 use App\Services\Manager;
 use App\Services\UserRegistrationService;
 use App\Traits\AuditContext;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -73,7 +74,7 @@ class UserManagementController extends Controller
     /**
      * Store a new user
      */
-    public function store(StoreUserRequest $request, Manager $multichain)
+    public function store(StoreUserRequest $request, Manager $multichain): RedirectResponse
     {
         $this->authorize('create-user');
 
@@ -143,7 +144,7 @@ class UserManagementController extends Controller
     /**
      * Update an existing user
      */
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         $this->authorize('update-user', $user);
 
@@ -212,7 +213,7 @@ class UserManagementController extends Controller
     /**
      * Delete a user
      */
-    public function destroy(Request $request, User $user)
+    public function destroy(Request $request, User $user): RedirectResponse
     {
         $this->authorize('delete-user', $user);
 
@@ -253,7 +254,7 @@ class UserManagementController extends Controller
     /**
      * Bulk delete users
      */
-    public function bulkDelete(BulkDeleteUsersRequest $request)
+    public function bulkDelete(BulkDeleteUsersRequest $request): RedirectResponse
     {
         $this->authorize('delete-any-user');
 
@@ -336,7 +337,7 @@ class UserManagementController extends Controller
     /**
      * Send password reset link to a user
      */
-    public function resetPassword(ResetUserPasswordRequest $request, User $user)
+    public function resetPassword(ResetUserPasswordRequest $request, User $user): RedirectResponse
     {
         $this->authorize('reset-user-password', $user);
 

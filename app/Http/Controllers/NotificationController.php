@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRoleEnums;
 use App\Services\AuditLogger;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Inertia\Response;
 
 class NotificationController extends Controller
 {
@@ -17,7 +19,7 @@ class NotificationController extends Controller
     /**
      * Mark a notification as read.
      */
-    public function markAsRead(Request $request, $id)
+    public function markAsRead(Request $request, string|int $id): RedirectResponse
     {
         $this->authorize('view-notifications');
 
@@ -49,7 +51,7 @@ class NotificationController extends Controller
     /**
      * Mark all notifications as read.
      */
-    public function markAllAsRead(Request $request)
+    public function markAllAsRead(Request $request): RedirectResponse
     {
         $this->authorize('view-notifications');
 
@@ -73,7 +75,7 @@ class NotificationController extends Controller
     /**
      * Show the notifications page with infinite scroll pagination.
      */
-    public function page(Request $request)
+    public function page(Request $request): Response
     {
         $this->authorize('view-notifications');
 

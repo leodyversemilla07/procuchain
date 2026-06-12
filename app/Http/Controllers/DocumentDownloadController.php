@@ -9,6 +9,7 @@ use App\Services\BlockchainStorageService;
 use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
 class DocumentDownloadController extends BaseController
@@ -22,7 +23,7 @@ class DocumentDownloadController extends BaseController
     /**
      * Securely download a file with authentication validation
      */
-    public function downloadFile(Request $request, string $fileKey)
+    public function downloadFile(Request $request, string $fileKey): Response
     {
         $this->authorize('download-document', $fileKey);
         abort_if($request->user() === null, 401);

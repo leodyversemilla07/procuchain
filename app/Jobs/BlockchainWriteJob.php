@@ -16,6 +16,7 @@ use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Notifications\BlockchainJobFailedNotification;
 use App\Services\BlockchainRecordSyncService;
+use App\Services\Concerns\HashesData;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,7 +33,7 @@ use Throwable;
  */
 class BlockchainWriteJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, HashesData, InteractsWithQueue, Queueable, SerializesModels;
 
     /** @var int Maximum attempts before the job is marked failed */
     public int $tries = 3;
@@ -642,13 +643,5 @@ class BlockchainWriteJob implements ShouldQueue
         }
 
         return $result;
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function computeHash(array $data): string
-    {
-        return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }

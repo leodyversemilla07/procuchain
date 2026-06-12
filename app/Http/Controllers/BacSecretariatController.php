@@ -10,9 +10,11 @@ use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use App\Services\ProcurementStageTransitionService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class BacSecretariatController extends BaseDashboardController
 {
@@ -41,14 +43,14 @@ class BacSecretariatController extends BaseDashboardController
         return 'bac-secretariat/dashboard';
     }
 
-    public function dashboard()
+    public function dashboard(): Response
     {
         $this->authorize('view-bac-secretariat-dashboard');
 
         return $this->index();
     }
 
-    protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
+    protected function getAdditionalDashboardData(Collection $procurementsByKey, string $roleName): array
     {
         $cacheUserId = $this->getDashboardCacheUserId($roleName);
 
@@ -76,7 +78,7 @@ class BacSecretariatController extends BaseDashboardController
         ];
     }
 
-    protected function getDashboardStats($procurementsByKey, int $pendingActions): array
+    protected function getDashboardStats(Collection $procurementsByKey, int $pendingActions): array
     {
         $cacheUserId = $this->getDashboardCacheUserId($this->getRoleName());
 

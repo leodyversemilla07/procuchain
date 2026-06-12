@@ -13,6 +13,7 @@ use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
+use App\Services\Concerns\HashesData;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -30,6 +31,8 @@ use Illuminate\Support\Facades\Log;
  */
 class NormalizedTableSyncService
 {
+    use HashesData;
+
     private Manager $manager;
 
     public function __construct()
@@ -668,7 +671,7 @@ class NormalizedTableSyncService
 
             $dataHash = $this->computeHash($this->extractFields($attributes, ProcurementStage::getHashableFields()));
 
-            $procurementStage = ProcurementStage::updateOrCreate(
+            ProcurementStage::updateOrCreate(
                 ['txid' => $txid],
                 [
                     ...$attributes,
@@ -1408,13 +1411,5 @@ class NormalizedTableSyncService
         }
 
         return $value;
-    }
-
-    /**
-     * Compute SHA-256 hash of data.
-     */
-    private function computeHash(array $data): string
-    {
-        return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }

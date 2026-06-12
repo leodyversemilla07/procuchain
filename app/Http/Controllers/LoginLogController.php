@@ -6,6 +6,8 @@ use App\Services\AuditLogger;
 use App\Services\BlockedIpService;
 use App\Services\LoginAnalyticsService;
 use App\Traits\AuditContext;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -42,7 +44,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to fetch login logs', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to load recent login logs.',
             ]);
 
             return Inertia::render('admin/login-logs', [
@@ -57,7 +59,7 @@ class LoginLogController extends Controller
     /**
      * Get recent logins (API endpoint)
      */
-    public function recent(Request $request)
+    public function recent(Request $request): JsonResponse
     {
         $this->authorize('view-login-logs');
 
@@ -73,7 +75,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to fetch recent logins', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to load recent login logs.',
             ]);
 
             return response()->json([
@@ -86,7 +88,7 @@ class LoginLogController extends Controller
     /**
      * Get login statistics (API endpoint)
      */
-    public function statistics(Request $request)
+    public function statistics(Request $request): JsonResponse
     {
         $this->authorize('view-login-logs');
         try {
@@ -100,7 +102,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to fetch login statistics', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to load login statistics.',
             ]);
 
             return response()->json([
@@ -113,7 +115,7 @@ class LoginLogController extends Controller
     /**
      * Get suspicious activities (API endpoint)
      */
-    public function suspicious(Request $request)
+    public function suspicious(Request $request): JsonResponse
     {
         $this->authorize('view-login-logs');
         try {
@@ -127,7 +129,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to fetch suspicious activities', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to load suspicious activity.',
             ]);
 
             return response()->json([
@@ -140,7 +142,7 @@ class LoginLogController extends Controller
     /**
      * Block an IP address
      */
-    public function blockIp(Request $request)
+    public function blockIp(Request $request): RedirectResponse
     {
         $this->authorize('manage-blocked-ips');
         try {
@@ -183,7 +185,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to block IP address', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to block IP address.',
             ]);
 
             return back()->with('error', 'Failed to block IP address.');
@@ -193,7 +195,7 @@ class LoginLogController extends Controller
     /**
      * Unblock an IP address
      */
-    public function unblockIp(Request $request)
+    public function unblockIp(Request $request): RedirectResponse
     {
         $this->authorize('manage-blocked-ips');
         try {
@@ -223,7 +225,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to unblock IP address', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to unblock IP address.',
             ]);
 
             return back()->with('error', 'Failed to unblock IP address.');
@@ -233,7 +235,7 @@ class LoginLogController extends Controller
     /**
      * Get list of blocked IPs
      */
-    public function blockedIps(Request $request)
+    public function blockedIps(Request $request): JsonResponse
     {
         $this->authorize('manage-blocked-ips');
         try {
@@ -247,7 +249,7 @@ class LoginLogController extends Controller
             report($e);
             Log::error('Failed to fetch blocked IPs', [
                 ...$this->auditContext($request),
-                'error' => 'An error occurred loading login logs. Please try again.',
+                'error' => 'Failed to load blocked IPs.',
             ]);
 
             return response()->json([

@@ -7,6 +7,7 @@ use App\Repositories\ProcurementRepository;
 use App\Services\AdminAnalyticsService;
 use App\Services\DashboardService;
 use App\Services\Manager;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
@@ -50,7 +51,7 @@ class AdminController extends BaseDashboardController
      * Get additional dashboard data specific to admin (analytics)
      * Now deferred for better performance
      */
-    protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
+    protected function getAdditionalDashboardData(Collection $procurementsByKey, string $roleName): array
     {
         return [
             'analytics' => Inertia::defer(fn () => [

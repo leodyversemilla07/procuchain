@@ -10,6 +10,7 @@ use App\Repositories\DocumentRepository;
 use App\Services\AuditLogger;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -24,7 +25,7 @@ class DocumentCorrectionController extends Controller
         protected AuditLogger $auditLogger,
     ) {}
 
-    public function correctDocument(CorrectDocumentRequest $request, string $txid)
+    public function correctDocument(CorrectDocumentRequest $request, string $txid): RedirectResponse
     {
         $this->authorize('correct-document', $txid);
 

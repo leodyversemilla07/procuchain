@@ -241,7 +241,7 @@ abstract class BaseDashboardController extends BaseController
      * Filter procurements collection by user ID and/or blockchain address
      * Used for BAC Secretariat isolation
      */
-    protected function filterProcurementsByUser($procurementsByKey, ?string $filterByUserId, ?string $filterByUserAddress)
+    protected function filterProcurementsByUser(Collection $procurementsByKey, ?string $filterByUserId, ?string $filterByUserAddress): Collection
     {
         if ($procurementsByKey === null || $procurementsByKey->isEmpty()) {
             return $procurementsByKey;
@@ -301,7 +301,7 @@ abstract class BaseDashboardController extends BaseController
     /**
      * Calculate dashboard statistics
      */
-    protected function getDashboardStats($procurementsByKey, int $pendingActions): array
+    protected function getDashboardStats(Collection $procurementsByKey, int $pendingActions): array
     {
         try {
             $roleName = $this->getRoleName();
@@ -401,7 +401,7 @@ abstract class BaseDashboardController extends BaseController
     /**
      * Get additional dashboard data specific to the role (e.g., analytics for admin, priority actions for secretariat)
      */
-    protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
+    protected function getAdditionalDashboardData(Collection $procurementsByKey, string $roleName): array
     {
         return [];
     }

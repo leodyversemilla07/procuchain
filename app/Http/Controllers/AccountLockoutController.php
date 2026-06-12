@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\AccountLockoutService;
 use App\Services\AuditLogger;
 use App\Traits\AuditContext;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -69,7 +70,7 @@ class AccountLockoutController extends Controller
     /**
      * Unlock a user account
      */
-    public function unlock(Request $request, User $user)
+    public function unlock(Request $request, User $user): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         try {
@@ -113,7 +114,7 @@ class AccountLockoutController extends Controller
     /**
      * Manually lock a user account
      */
-    public function lock(Request $request, User $user)
+    public function lock(Request $request, User $user): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         try {
@@ -165,7 +166,7 @@ class AccountLockoutController extends Controller
     /**
      * Reset failed login attempts for a user
      */
-    public function resetAttempts(Request $request, User $user)
+    public function resetAttempts(Request $request, User $user): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         try {
@@ -204,7 +205,7 @@ class AccountLockoutController extends Controller
     /**
      * Bulk unlock multiple user accounts
      */
-    public function bulkUnlock(Request $request)
+    public function bulkUnlock(Request $request): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         $validated = $request->validate([
@@ -272,7 +273,7 @@ class AccountLockoutController extends Controller
     /**
      * Bulk reset failed login attempts for multiple users
      */
-    public function bulkResetAttempts(Request $request)
+    public function bulkResetAttempts(Request $request): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         $validated = $request->validate([
