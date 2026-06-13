@@ -166,13 +166,13 @@ describe('DocumentPolicy', function () {
 
     describe('download route authorization (HTTP)', function () {
         it('redirects unauthenticated users to login when accessing a File', function () {
-            $this->get('/BlockchainFiles/some-File-key.pdf')
+            $this->get('/files/some-File-key.pdf')
                 ->assertRedirect('/login');
         });
 
         it('returns 403 when a user without download permission tries to download', function () {
             $this->actingAs($this->guest)
-                ->get('/BlockchainFiles/some-File-key.pdf')
+                ->get('/files/some-File-key.pdf')
                 ->assertForbidden();
         });
     });

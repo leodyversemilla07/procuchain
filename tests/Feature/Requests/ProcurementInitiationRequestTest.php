@@ -260,7 +260,7 @@ describe('InitiateProcurementRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('BlockchainFiles.0'))->toBeTrue();
+            expect($validator->errors()->has('Files.0'))->toBeTrue();
         });
 
         test('it rejects BlockchainFiles exceeding 50MB', function () {
@@ -287,7 +287,7 @@ describe('InitiateProcurementRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('BlockchainFiles.0'))->toBeTrue();
+            expect($validator->errors()->has('Files.0'))->toBeTrue();
         });
     });
 });

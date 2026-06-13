@@ -10,6 +10,7 @@ use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
+use App\Services\NormalizedTableSyncService;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -377,6 +378,7 @@ function bindPhasePageStubs(ProcurementData $procurementData): void
     bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub();
+    bindNormalizedTableSyncStub();
 }
 
 function bindUploadStubs(ProcurementData $procurementData): void
@@ -427,4 +429,14 @@ function bindValidateUploadStubs(ProcurementData $procurementData): void
     bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub(['errors' => [], 'warnings' => []]);
+}
+
+function bindNormalizedTableSyncStub(): void
+{
+    $sync = mock(NormalizedTableSyncService::class);
+    $sync->shouldReceive('syncPr')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+
+    app()->instance(NormalizedTableSyncService::class, $sync);
 }

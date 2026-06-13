@@ -8,6 +8,7 @@ use App\Models\ProcurementWorkflowConfig;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
+use App\Services\NormalizedTableSyncService;
 use App\Services\Procurement\ProcurementSupportService;
 use Tests\TestCase;
 
@@ -19,6 +20,12 @@ beforeEach(function () {
         'blockchain_address' => 'test_address_123',
     ]);
     $this->bacSecretariat->assignRole('bac_secretariat');
+
+    $sync = mock(NormalizedTableSyncService::class);
+    $sync->shouldReceive('syncPr')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    app()->instance(NormalizedTableSyncService::class, $sync);
 
     $this->competitiveProcurementData = buildWorkflowProcurementData(
         $this->bacSecretariat,
@@ -290,6 +297,12 @@ function bindWorkflowSupportStub(ProcurementData $procurementData): void
         ->andReturn([]);
 
     app()->instance(ProcurementSupportService::class, $support);
+
+    $sync = mock(NormalizedTableSyncService::class);
+    $sync->shouldReceive('syncPr')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    app()->instance(NormalizedTableSyncService::class, $sync);
 }
 
 function bindWorkflowDocumentGuideStub(): void

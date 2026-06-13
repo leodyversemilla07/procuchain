@@ -9,6 +9,7 @@ use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
+use App\Services\NormalizedTableSyncService;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\ProcurementDataService;
 
@@ -330,6 +331,12 @@ function bindSvpStageSupportStubs(ProcurementData $procurementData): void
         ->zeroOrMoreTimes()
         ->andReturn(ProcurementStatus::PROCUREMENT_SUBMITTED);
     app()->instance(ProcurementSupportService::class, $support);
+
+    $sync = mock(NormalizedTableSyncService::class);
+    $sync->shouldReceive('syncPr')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    app()->instance(NormalizedTableSyncService::class, $sync);
 }
 
 function bindSvpModeAwareValidationStub(?array $guideMap = null): void
