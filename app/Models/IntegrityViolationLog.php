@@ -272,7 +272,7 @@ class IntegrityViolationLog extends Model
      * Also publishes the recovery event to the blockchain audit trail
      * so there is an immutable record that the recovery happened.
      */
-    public function markRestored(array $result = [], bool $publishToChain = true): void
+    public function markRestored(array $result = []): void
     {
         $this->update([
             'recovery_status' => 'restored',
@@ -280,12 +280,10 @@ class IntegrityViolationLog extends Model
             'recovery_result' => $result,
         ]);
 
-        // Publish recovery to blockchain for permanent audit trail
-        if ($publishToChain && ! app()->runningUnitTests()) {
+        if (! app()->runningUnitTests()) {
             try {
                 app(BlockchainAuditTrailService::class)->publishRecovery($this, $result);
             } catch (\Exception $e) {
-                // Non-critical — violation is already on chain, recovery is supplementary
                 Log::debug('IntegrityViolationLog: failed to publish recovery to chain', [
                     'audit_log_id' => $this->id,
                     'error' => $e->getMessage(),

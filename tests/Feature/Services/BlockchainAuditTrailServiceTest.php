@@ -144,7 +144,7 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
             streamKey: 'PR-2026-010-0001',
             violationType: BreachType::HASH_MISMATCH->value,
         );
-        $auditLog->markRestored(['items_restored' => 1], publishToChain: false);
+        $auditLog->markRestored(['items_restored' => 1]);
 
         $capturedPayload = null;
 
@@ -179,7 +179,7 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
             streamKey: 'PR-2026-011-0001',
             violationType: BreachType::ROW_DELETED->value,
         );
-        $auditLog->markRestored([], publishToChain: false);
+        $auditLog->markRestored([]);
 
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
         $BlockchainRpcClientMock->shouldReceive('publish')
@@ -476,22 +476,7 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
         $BlockchainRpcClientMock->shouldNotReceive('publish');
 
-        $auditLog->markRestored(['items_restored' => 1], publishToChain: true);
-
-        expect($auditLog->recovery_status)->toBe('restored');
-    });
-
-    it('does NOT publish recovery when publishToChain=false', function () {
-        $auditLog = IntegrityViolationLog::recordViolation(
-            stream: 'procurement.metadata',
-            streamKey: 'PR-NORECOVER-001',
-            violationType: BreachType::HASH_MISMATCH->value,
-        );
-
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
-
-        $auditLog->markRestored([], publishToChain: false);
+        $auditLog->markRestored(['items_restored' => 1]);
 
         expect($auditLog->recovery_status)->toBe('restored');
     });

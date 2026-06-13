@@ -8,28 +8,22 @@ use App\Enums\Stream;
 use App\Models\AuditLog;
 use App\Services\BlockchainSyncService;
 
-/**
- * Audit Log Observer — Auto-publish to blockchain on create.
- *
- * Every audit log entry is simultaneously written to MySQL and blockchain.
- * This ensures the audit trail survives MySQL destruction.
- */
 class AuditLogObserver
 {
-    /**
-     * Handle the AuditLog "created" event.
-     */
+    public function __construct(
+        private readonly BlockchainSyncService $sync,
+    ) {}
+
     public function created(AuditLog $auditLog): void
     {
         if (app()->runningUnitTests()) {
             return;
         }
 
-        // Skip if already synced (e.g., during recovery)
         if ($auditLog->txid !== null) {
             return;
         }
 
-        app(BlockchainSyncService::class)->publish($auditLog, Stream::AUDIT_TRAIL);
+        $this->sync->publish($auditLog, Stream::AUDIT_TRAIL);
     }
 }

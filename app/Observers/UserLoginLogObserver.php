@@ -8,17 +8,12 @@ use App\Enums\Stream;
 use App\Models\UserLoginLog;
 use App\Services\BlockchainSyncService;
 
-/**
- * User Login Log Observer — Auto-publish to blockchain on create.
- *
- * Every login/logout event is simultaneously written to MySQL and blockchain.
- * This ensures the login audit trail survives MySQL destruction.
- */
 class UserLoginLogObserver
 {
-    /**
-     * Handle the UserLoginLog "created" event.
-     */
+    public function __construct(
+        private readonly BlockchainSyncService $sync,
+    ) {}
+
     public function created(UserLoginLog $loginLog): void
     {
         if (app()->runningUnitTests()) {
@@ -31,6 +26,6 @@ class UserLoginLogObserver
 
         $key = ($loginLog->user_id ?? 'unknown').'-'.($loginLog->login_at?->timestamp ?? time());
 
-        app(BlockchainSyncService::class)->publish($loginLog, Stream::USER_LOGIN_SESSIONS, $key);
+        $this->sync->publish($loginLog, Stream::USER_LOGIN_SESSIONS, $key);
     }
 }

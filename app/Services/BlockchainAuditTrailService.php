@@ -393,7 +393,10 @@ class BlockchainAuditTrailService
             $log = IntegrityViolationLog::find($violationId);
 
             if ($log && $log->recovery_status === 'pending') {
-                $log->markRestored($data['recovery_result'] ?? [], publishToChain: false);
+                $log->update([
+                    'recovery_status' => 'restored',
+                    'recovery_result' => $data['recovery_result'] ?? [],
+                ]);
             }
         } catch (Exception $e) {
             Log::debug('BlockchainAuditLog: could not update recovery status', [
