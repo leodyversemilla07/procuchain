@@ -23,7 +23,6 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             violationType: BreachType::HASH_MISMATCH->value,
             txid: 'chain-txid-001',
             fieldDifferences: [['field' => 'amount', 'old_value' => 100, 'new_value' => 999]],
-            publishToChain: false, // Don't publish yet — we'll test publishViolation directly
         );
 
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
@@ -52,7 +51,6 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-002-0001',
             violationType: BreachType::ROW_DELETED->value,
-            publishToChain: false,
         );
 
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
@@ -71,7 +69,6 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-003-0001',
             violationType: BreachType::CONTENT_MISMATCH->value,
-            publishToChain: false,
         );
 
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
@@ -98,7 +95,6 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             runId: 'test-run-id',
             source: 'manual',
             revisionNumber: 3,
-            publishToChain: false,
         );
 
         $capturedPayload = null;
@@ -147,7 +143,6 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-010-0001',
             violationType: BreachType::HASH_MISMATCH->value,
-            publishToChain: false,
         );
         $auditLog->markRestored(['items_restored' => 1], publishToChain: false);
 
@@ -183,7 +178,6 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-011-0001',
             violationType: BreachType::ROW_DELETED->value,
-            publishToChain: false,
         );
         $auditLog->markRestored([], publishToChain: false);
 
@@ -371,7 +365,6 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-DUP-001',
             violationType: 'hash_mismatch',
-            publishToChain: false,
         );
 
         $existingCount = IntegrityViolationLog::count();
@@ -455,13 +448,12 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-CHAIN-001',
             violationType: BreachType::HASH_MISMATCH->value,
-            publishToChain: true,
         );
 
         expect($log->exists)->toBeTrue();
     });
 
-    it('does NOT publish to blockchain when publishToChain=false', function () {
+    it('does NOT publish to blockchain when recordViolation is called (publish removed)', function () {
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
         $BlockchainRpcClientMock->shouldNotReceive('publish');
 
@@ -469,7 +461,6 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-NOCHAIN-001',
             violationType: BreachType::HASH_MISMATCH->value,
-            publishToChain: false,
         );
 
         expect($log->exists)->toBeTrue();
@@ -480,7 +471,6 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-RECOVER-001',
             violationType: BreachType::HASH_MISMATCH->value,
-            publishToChain: false,
         );
 
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
@@ -496,7 +486,6 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-NORECOVER-001',
             violationType: BreachType::HASH_MISMATCH->value,
-            publishToChain: false,
         );
 
         $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
@@ -512,7 +501,6 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
             stream: 'procurement.metadata',
             streamKey: 'PR-GRACEFUL-001',
             violationType: BreachType::HASH_MISMATCH->value,
-            publishToChain: false,
         );
 
         // Override the mock to throw an exception for this test

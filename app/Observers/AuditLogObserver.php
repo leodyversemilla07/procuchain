@@ -30,6 +30,6 @@ class AuditLogObserver
             return;
         }
 
-        BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
+        app(BlockchainSyncService::class)->publish($auditLog, Stream::AUDIT_TRAIL);
     }
 }

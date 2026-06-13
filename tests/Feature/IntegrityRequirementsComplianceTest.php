@@ -133,7 +133,6 @@ it('restores deleted records from trusted blockchain data and verifies repair be
         streamKey: 'PR-PANEL-003',
         violationType: BreachType::ROW_DELETED->value,
         txid: 'metadata-panel-txid-003',
-        publishToChain: false,
     );
 
     $this->mock(BlockchainRpcClient::class, function ($mock) {
@@ -179,7 +178,6 @@ it('publishes violation and recovery operations to the permanent blockchain audi
         streamKey: 'PR-PANEL-004',
         violationType: BreachType::CONTENT_MISMATCH->value,
         fieldDifferences: [['field' => 'title', 'old_value' => 'Chain', 'new_value' => 'DB']],
-        publishToChain: false,
     );
 
     $published = [];
@@ -210,7 +208,6 @@ it('deduplicates identical pending violations in audit log', function () {
         streamKey: 'PR-DEDUP-001',
         violationType: BreachType::CONTENT_MISMATCH->value,
         txid: 'dedup-txid-001',
-        publishToChain: false,
     );
 
     // Second identical violation should return the same record
@@ -219,7 +216,6 @@ it('deduplicates identical pending violations in audit log', function () {
         streamKey: 'PR-DEDUP-001',
         violationType: BreachType::CONTENT_MISMATCH->value,
         txid: 'dedup-txid-001',
-        publishToChain: false,
     );
 
     expect($first->id)->toBe($second->id)
@@ -231,7 +227,6 @@ it('deduplicates identical pending violations in audit log', function () {
         streamKey: 'PR-DEDUP-001',
         violationType: BreachType::ROW_DELETED->value,
         txid: 'dedup-txid-001',
-        publishToChain: false,
     );
 
     expect($third->id)->not->toBe($first->id)

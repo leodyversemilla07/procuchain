@@ -32,6 +32,6 @@ class DocumentViewObserver
         // Use file_key as stream key for grouping
         $key = $DocumentViewLog->file_key.'-'.($DocumentViewLog->user_id ?? 'anon').'-'.($DocumentViewLog->viewed_at?->timestamp ?? time());
 
-        BlockchainSyncService::publish($DocumentViewLog, Stream::DOCUMENT_ACCESS, $key);
+        app(BlockchainSyncService::class)->publish($DocumentViewLog, Stream::DOCUMENT_ACCESS, $key);
     }
 }

@@ -16,42 +16,44 @@ use Illuminate\Support\Facades\Log;
  * Follows the pattern: MySQL = query cache, Blockchain = source of truth.
  *
  * Usage:
- *   // Dual-write on model create
- *   BlockchainSyncService::publish($model, Stream::AUDIT_TRAIL);
- *
- *   // Recovery: rebuild MySQL from blockchain
- *   BlockchainSyncService::restoreTable('audit_logs', Stream::AUDIT_TRAIL);
+ *   $sync = app(BlockchainSyncService::class);
+ *   $sync->publish($model, Stream::AUDIT_TRAIL);
+ *   $sync->restoreTable('audit_logs', Stream::AUDIT_TRAIL, AuditLog::class);
  */
 class BlockchainSyncService
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $rpc,
+    ) {}
+
     /**
      * Publish a model's data to the blockchain and update its blockchain columns.
      *
      * Called after every write to a blockchain-backed table.
      * The model MUST have txid, data_hash, and blockchain_synced_at columns.
      *
-     * @param  Model  $model  The Eloquent model to publish
-     * @param  Stream  $stream  The blockchain stream to write to
-     * @param  string|null  $key  Stream key (defaults to model ID)
      * @return string|null The blockchain transaction ID
      */
-    public static function publish(Model $model, Stream $stream, ?string $key = null): ?string
+    public function publish(Model $model, Stream $stream, ?string $key = null): ?string
     {
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $data = $model->toArray();
 
-            $data = static::buildPayload($model);
-            $dataHash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            // Remove blockchain metadata columns — they're not part of the data
+            unset($data['txid'], $data['data_hash'], $data['blockchain_synced_at']);
+            unset($data['created_at'], $data['updated_at']);
+
+            $dataHash = $this->computeHash($data);
             $streamKey = $key ?? (string) $model->getKey();
 
-            $result = $BlockchainRpcClient->publish(
+            $result = $this->rpc->publish(
                 $stream->value,
                 $streamKey,
                 ['json' => $data],
             );
 
             if ($result === null || $result === false) {
-                Log::error('SyncProcurementStreams: publish failed', [
+                Log::error('BlockchainSyncService: publish failed', [
                     'model' => class_basename($model),
                     'id' => $model->getKey(),
                     'stream' => $stream->value,
@@ -62,14 +64,13 @@ class BlockchainSyncService
 
             $txid = is_string($result) ? $result : ($result['txid'] ?? null);
 
-            // Update the model's blockchain columns
             $model->updateQuietly([
                 'txid' => $txid,
                 'data_hash' => $dataHash,
                 'blockchain_synced_at' => now(),
             ]);
 
-            Log::debug('SyncProcurementStreams: published', [
+            Log::debug('BlockchainSyncService: published', [
                 'model' => class_basename($model),
                 'id' => $model->getKey(),
                 'stream' => $stream->value,
@@ -78,7 +79,7 @@ class BlockchainSyncService
 
             return $txid;
         } catch (\Exception $e) {
-            Log::error('SyncProcurementStreams: exception', [
+            Log::error('BlockchainSyncService: exception', [
                 'model' => class_basename($model),
                 'id' => $model->getKey(),
                 'stream' => $stream->value,
@@ -95,23 +96,18 @@ class BlockchainSyncService
      * Reads all items from the specified stream and upserts them
      * into the MySQL table. Used after MySQL destruction.
      *
-     * @param  string  $tableName  The MySQL table name
-     * @param  Stream  $stream  The blockchain stream to read from
-     * @param  string  $modelClass  The Eloquent model class
-     * @param  callable|null  $mapData  Optional callback to transform chain data before insert
      * @return array{imported: int, skipped: int, errors: int}
      */
-    public static function restoreTable(
+    public function restoreTable(
         string $tableName,
         Stream $stream,
         string $modelClass,
         ?callable $mapData = null,
     ): array {
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $BlockchainRpcClient->liststreamitems($stream->value, true, 100000);
+            $items = $this->rpc->liststreamitems($stream->value, true, 100000);
         } catch (\Exception $e) {
-            Log::error('SyncProcurementStreams: failed to read stream', [
+            Log::error('BlockchainSyncService: failed to read stream', [
                 'stream' => $stream->value,
                 'error' => $e->getMessage(),
             ]);
@@ -120,7 +116,7 @@ class BlockchainSyncService
         }
 
         if (! is_array($items) || empty($items)) {
-            Log::info('SyncProcurementStreams: no items in stream', ['stream' => $stream->value]);
+            Log::info('BlockchainSyncService: no items in stream', ['stream' => $stream->value]);
 
             return ['imported' => 0, 'skipped' => 0, 'errors' => 0];
         }
@@ -140,7 +136,6 @@ class BlockchainSyncService
                     continue;
                 }
 
-                // Check if already exists (dedup by txid)
                 $existing = DB::table($tableName)->where('txid', $txid)->first();
                 if ($existing) {
                     $skipped++;
@@ -148,18 +143,15 @@ class BlockchainSyncService
                     continue;
                 }
 
-                // Transform data if callback provided
                 $rowData = $mapData ? $mapData($data) : $data;
-
-                // Add blockchain metadata
                 $rowData['txid'] = $txid;
-                $rowData['data_hash'] = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                $rowData['data_hash'] = $this->computeHash($data);
                 $rowData['blockchain_synced_at'] = now();
 
                 DB::table($tableName)->insert($rowData);
                 $imported++;
             } catch (\Exception $e) {
-                Log::error('SyncProcurementStreams: failed to import item', [
+                Log::error('BlockchainSyncService: failed to import item', [
                     'stream' => $stream->value,
                     'txid' => $item['txid'] ?? 'unknown',
                     'error' => $e->getMessage(),
@@ -169,7 +161,7 @@ class BlockchainSyncService
             }
         }
 
-        Log::info('SyncProcurementStreams: restore completed', [
+        Log::info('BlockchainSyncService: restore completed', [
             'stream' => $stream->value,
             'table' => $tableName,
             'imported' => $imported,
@@ -181,38 +173,10 @@ class BlockchainSyncService
     }
 
     /**
-     * Verify a model's data_hash against the blockchain.
-     *
-     * @return array{valid: bool, computed_hash: string, stored_hash: string|null}
+     * Compute a SHA-256 hash for the given data array.
      */
-    public static function verify(Model $model, Stream $stream): array
+    public function computeHash(array $data): string
     {
-        $computedHash = hash('sha256', json_encode(
-            static::buildPayload($model),
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
-        ));
-
-        return [
-            'valid' => $computedHash === $model->data_hash,
-            'computed_hash' => $computedHash,
-            'stored_hash' => $model->data_hash,
-        ];
-    }
-
-    /**
-     * Build the JSON payload for blockchain from a model.
-     * Excludes blockchain metadata columns (txid, data_hash, blockchain_synced_at).
-     */
-    private static function buildPayload(Model $model): array
-    {
-        $data = $model->toArray();
-
-        // Remove blockchain metadata columns — they're not part of the data
-        unset($data['txid'], $data['data_hash'], $data['blockchain_synced_at']);
-
-        // Remove timestamps if they exist
-        unset($data['created_at'], $data['updated_at']);
-
-        return $data;
+        return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }

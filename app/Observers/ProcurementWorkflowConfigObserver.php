@@ -31,7 +31,7 @@ class ProcurementWorkflowConfigObserver
 
         $key = $config->procurement_mode.'-v'.$config->getKey();
 
-        BlockchainSyncService::publish($config, Stream::CONFIG_WORKFLOWS, $key);
+        app(BlockchainSyncService::class)->publish($config, Stream::CONFIG_WORKFLOWS, $key);
     }
 
     /**
@@ -47,7 +47,7 @@ class ProcurementWorkflowConfigObserver
         if ($config->wasChanged(['stages', 'optional_stages', 'is_active'])) {
             $key = $config->procurement_mode.'-v'.$config->getKey().'-'.time();
 
-            BlockchainSyncService::publish($config, Stream::CONFIG_WORKFLOWS, $key);
+            app(BlockchainSyncService::class)->publish($config, Stream::CONFIG_WORKFLOWS, $key);
         }
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\BreachType;
 use App\Services\BlockchainAuditTrailService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -32,7 +33,6 @@ use Illuminate\Support\Str;
  * @property string $source
  * @property array|null $revision_lineage
  * @property Carbon $created_at
- * @property array $revision_history
  */
 class IntegrityViolationLog extends Model
 {
@@ -41,9 +41,6 @@ class IntegrityViolationLog extends Model
 
     /** Append-only: no updates, no updated_at */
     const UPDATED_AT = null;
-
-    // Note: revision_history is NOT appended by default for performance.
-    // Use makeVisible(['revision_history']) when needed for detail pages.
 
     /** @var list<string> */
     protected $fillable = [
@@ -169,14 +166,9 @@ class IntegrityViolationLog extends Model
      */
     public static function severityForType(string $violationType): string
     {
-        return match ($violationType) {
-            'hash_mismatch', 'content_mismatch' => 'critical',
-            'user_address_tampered' => 'high',
-            'unauthorized_publisher' => 'medium',
-            'row_deleted' => 'low',
-            'unauthorized_record' => 'critical',
-            default => 'medium',
-        };
+        $enum = BreachType::tryFrom($violationType);
+
+        return $enum?->severity() ?? 'medium';
     }
 
     /**
@@ -190,7 +182,6 @@ class IntegrityViolationLog extends Model
      * @param  int|null  $revisionNumber  The revision number of the affected mirror record
      * @param  string|null  $parentTxid  The parent revision's txid
      * @param  string[]|null  $revisionLineage  Full lineage from root to this revision
-     * @param  bool  $publishToChain  Whether to also write to the blockchain audit trail
      */
     public static function recordViolation(
         string $stream,
@@ -206,7 +197,6 @@ class IntegrityViolationLog extends Model
         ?int $revisionNumber = null,
         ?string $parentTxid = null,
         ?array $revisionLineage = null,
-        bool $publishToChain = true,
     ): self {
         // Skip cooldown deduplication in unit tests
         if (! app()->runningUnitTests()) {
@@ -271,75 +261,10 @@ class IntegrityViolationLog extends Model
             'revision_lineage' => $revisionLineage,
         ]);
 
-        // Publish to blockchain for permanent, immutable audit trail
-        if ($publishToChain && ! app()->runningUnitTests()) {
-            $auditLog->publishToBlockchain();
-        }
-
         return $auditLog;
     }
 
-    /**
-     * Record a violation from a model, automatically
-     * extracting context.
-     */
-    public static function recordViolationFromModel(
-        Model $record,
-        string $tableName,
-        string $violationType,
-        array $fieldDifferences = [],
-        ?array $chainSnapshot = null,
-        ?string $runId = null,
-        string $source = 'scheduled',
-    ): self {
-        return self::recordViolation(
-            stream: $tableName,
-            streamKey: $record->pr_number ?? $record->stream_key ?? '',
-            violationType: $violationType,
-            txid: $record->txid ?? null,
-            fieldDifferences: $fieldDifferences,
-            mirrorSnapshot: $record->toArray(),
-            chainSnapshot: $chainSnapshot,
-            recordId: $record->id,
-            runId: $runId,
-            source: $source,
-        );
-    }
-
-    // ─── Revision History Accessor ─────────────────────────────────────
-
-    /**
-     * Get the full revision history for the affected record.
-     *
-     * Returns an array of records representing the
-     * complete revision tree for this stream + stream_key combination.
-     *
-     * @return array<int, array{txid: string, revision_number: int, parent_txid: string|null, is_latest_revision: bool, blocktime: string|null, publisher_address: string|null, data_hash: string, breach_detected_at: string|null, breach_type: string|null, repaired_at: string|null}>
-     */
-    public function getRevisionHistoryAttribute(): array
-    {
-        if (! $this->stream || ! $this->stream_key) {
-            return [];
-        }
-
-        // Query the appropriate table based on stream
-        $tableMap = [
-            'procurement.metadata' => Procurement::class,
-            'procurement.status' => ProcurementStage::class,
-            'procurement.documents' => ProcurementDocument::class,
-            'procurement.events' => ProcurementEvent::class,
-        ];
-
-        $modelClass = $tableMap[$this->stream] ?? null;
-        if (! $modelClass) {
-            return [];
-        }
-
-        return $modelClass::where('txid', $this->txid)
-            ->get()
-            ->map(fn ($r) => $r->toArray())
-            ->toArray();
-    }
+    // ─── State Transitions ───────────────────────────────────────────
 
     /**
      * Mark this violation as successfully restored.

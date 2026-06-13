@@ -31,7 +31,7 @@ class StageDocumentConfigObserver
 
         $key = $config->stage.'-'.$config->procurement_mode.'-v'.$config->getKey();
 
-        BlockchainSyncService::publish($config, Stream::CONFIG_STAGE_DOCS, $key);
+        app(BlockchainSyncService::class)->publish($config, Stream::CONFIG_STAGE_DOCS, $key);
     }
 
     /**
@@ -46,7 +46,7 @@ class StageDocumentConfigObserver
         if ($config->wasChanged(['required_documents', 'optional_documents', 'is_active'])) {
             $key = $config->stage.'-'.$config->procurement_mode.'-v'.$config->getKey().'-'.time();
 
-            BlockchainSyncService::publish($config, Stream::CONFIG_STAGE_DOCS, $key);
+            app(BlockchainSyncService::class)->publish($config, Stream::CONFIG_STAGE_DOCS, $key);
         }
     }
 }

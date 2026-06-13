@@ -69,8 +69,8 @@ describe('BlockchainSyncService — Publish', function () {
             'subject_id' => '1',
         ]);
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldReceive('publish')
             ->once()
             ->with(
                 Stream::AUDIT_TRAIL->value,
@@ -79,7 +79,7 @@ describe('BlockchainSyncService — Publish', function () {
             )
             ->andReturn('test-chain-txid-123');
 
-        $txid = BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
+        $txid = app(BlockchainSyncService::class)->publish($auditLog, Stream::AUDIT_TRAIL);
 
         expect($txid)->toBe('test-chain-txid-123');
 
@@ -95,12 +95,12 @@ describe('BlockchainSyncService — Publish', function () {
             'action' => 'test.fail',
         ]);
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldReceive('publish')
             ->once()
             ->andReturn(null);
 
-        $txid = BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
+        $txid = app(BlockchainSyncService::class)->publish($auditLog, Stream::AUDIT_TRAIL);
 
         expect($txid)->toBeNull();
     });
@@ -115,8 +115,8 @@ describe('BlockchainSyncService — Publish', function () {
 
         $capturedPayload = null;
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldReceive('publish')
             ->once()
             ->with(
                 Stream::AUDIT_TRAIL->value,
@@ -129,7 +129,7 @@ describe('BlockchainSyncService — Publish', function () {
             )
             ->andReturn('payload-txid');
 
-        BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
+        app(BlockchainSyncService::class)->publish($auditLog, Stream::AUDIT_TRAIL);
 
         expect($capturedPayload)->not->toBeNull();
         expect($capturedPayload)->not->toHaveKey('txid');
@@ -144,8 +144,8 @@ describe('BlockchainSyncService — Publish', function () {
             'action' => 'test.custom_key',
         ]);
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldReceive('publish')
             ->once()
             ->with(
                 Stream::AUDIT_TRAIL->value,
@@ -154,47 +154,9 @@ describe('BlockchainSyncService — Publish', function () {
             )
             ->andReturn('custom-txid');
 
-        $txid = BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL, 'custom-key-123');
+        $txid = app(BlockchainSyncService::class)->publish($auditLog, Stream::AUDIT_TRAIL, 'custom-key-123');
 
         expect($txid)->toBe('custom-txid');
-    });
-});
-
-// ═══════════════════════════════════════════════════════════════════════
-// BlockchainSyncService — Verify
-// ═══════════════════════════════════════════════════════════════════════
-
-describe('BlockchainSyncService — Verify', function () {
-    it('verifies a clean model hash', function () {
-        $auditLog = AuditLog::create([
-            'user_id' => null,
-            'action' => 'test.verify',
-        ]);
-
-        // Manually set the hash
-        $data = $auditLog->toArray();
-        unset($data['txid'], $data['data_hash'], $data['blockchain_synced_at'], $data['created_at'], $data['updated_at']);
-        $hash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        $auditLog->updateQuietly(['data_hash' => $hash]);
-
-        $result = BlockchainSyncService::verify($auditLog, Stream::AUDIT_TRAIL);
-
-        expect($result['valid'])->toBeTrue();
-        expect($result['computed_hash'])->toBe($hash);
-        expect($result['stored_hash'])->toBe($hash);
-    });
-
-    it('detects tampered model hash', function () {
-        $auditLog = AuditLog::create([
-            'user_id' => null,
-            'action' => 'test.tamper',
-        ]);
-
-        $auditLog->updateQuietly(['data_hash' => 'fake_hash_that_does_not_match']);
-
-        $result = BlockchainSyncService::verify($auditLog, Stream::AUDIT_TRAIL);
-
-        expect($result['valid'])->toBeFalse();
     });
 });
 
@@ -223,13 +185,13 @@ describe('BlockchainSyncService — Restore', function () {
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldReceive('liststreamitems')
             ->once()
             ->with(Stream::AUDIT_TRAIL->value, true, 100000)
             ->andReturn($chainItems);
 
-        $result = BlockchainSyncService::restoreTable(
+        $result = app(BlockchainSyncService::class)->restoreTable(
             'audit_logs',
             Stream::AUDIT_TRAIL,
             AuditLog::class,
@@ -238,7 +200,6 @@ describe('BlockchainSyncService — Restore', function () {
         expect($result['imported'])->toBe(2);
         expect($result['errors'])->toBe(0);
 
-        // Verify records exist in MySQL
         $restored1 = DB::table('audit_logs')->where('txid', 'restore-tx-1')->first();
         expect($restored1)->not->toBeNull();
         expect($restored1->action)->toBe('restored.action');
@@ -249,7 +210,6 @@ describe('BlockchainSyncService — Restore', function () {
     });
 
     it('skips duplicates during restore', function () {
-        // Create an existing record
         AuditLog::create([
             'user_id' => null,
             'action' => 'existing.action',
@@ -260,17 +220,17 @@ describe('BlockchainSyncService — Restore', function () {
 
         $chainItems = [
             [
-                'txid' => 'existing-txid', // Same txid
+                'txid' => 'existing-txid',
                 'data' => ['json' => ['action' => 'should.skip']],
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainItems);
 
-        $result = BlockchainSyncService::restoreTable(
+        $result = app(BlockchainSyncService::class)->restoreTable(
             'audit_logs',
             Stream::AUDIT_TRAIL,
             AuditLog::class,
@@ -287,8 +247,8 @@ describe('BlockchainSyncService — Restore', function () {
 
 describe('Observer Integration — AuditLog', function () {
     it('skips automatic publish during unit tests when AuditLog is created', function () {
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
 
         $log = AuditLog::create([
             'user_id' => null,
@@ -299,8 +259,8 @@ describe('Observer Integration — AuditLog', function () {
     });
 
     it('skips publish if txid already set', function () {
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
 
         AuditLog::create([
             'user_id' => null,
@@ -320,8 +280,8 @@ describe('Observer Integration — DocumentViewLog', function () {
     it('skips automatic publish during unit tests when DocumentViewLog is created', function () {
         $user = User::factory()->create();
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
 
         $view = DocumentViewLog::create([
             'user_id' => $user->id,
@@ -343,8 +303,8 @@ describe('Observer Integration — UserLoginLog', function () {
     it('skips automatic publish during unit tests when UserLoginLog is created', function () {
         $user = User::factory()->create();
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
 
         $log = UserLoginLog::create([
             'user_id' => $user->id,
@@ -354,5 +314,22 @@ describe('Observer Integration — UserLoginLog', function () {
         ]);
 
         expect($log->txid)->toBeNull();
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// BlockchainSyncService — Compute Hash
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('BlockchainSyncService — Compute Hash', function () {
+    it('computes consistent SHA-256 hash', function () {
+        $service = app(BlockchainSyncService::class);
+
+        $data = ['action' => 'test', 'user_id' => 1];
+        $hash1 = $service->computeHash($data);
+        $hash2 = $service->computeHash($data);
+
+        expect($hash1)->toBe($hash2);
+        expect(strlen($hash1))->toBe(64);
     });
 });

@@ -31,6 +31,6 @@ class UserLoginLogObserver
 
         $key = ($loginLog->user_id ?? 'unknown').'-'.($loginLog->login_at?->timestamp ?? time());
 
-        BlockchainSyncService::publish($loginLog, Stream::USER_LOGIN_SESSIONS, $key);
+        app(BlockchainSyncService::class)->publish($loginLog, Stream::USER_LOGIN_SESSIONS, $key);
     }
 }

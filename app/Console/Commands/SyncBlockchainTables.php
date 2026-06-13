@@ -141,7 +141,7 @@ class SyncBlockchainTables extends Command
         // Perform the restore
         $this->info('  Restoring from blockchain...');
 
-        $result = BlockchainSyncService::restoreTable(
+        $result = app(BlockchainSyncService::class)->restoreTable(
             $tableName,
             $stream,
             $config['model'],

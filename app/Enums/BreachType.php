@@ -48,6 +48,19 @@ enum BreachType: string
     }
 
     /**
+     * Get the severity level for this breach type.
+     */
+    public function severity(): string
+    {
+        return match ($this) {
+            self::HASH_MISMATCH, self::CONTENT_MISMATCH, self::UNAUTHORIZED_RECORD => 'critical',
+            self::USER_ADDRESS_TAMPERED => 'high',
+            self::UNAUTHORIZED_PUBLISHER => 'medium',
+            self::ROW_DELETED => 'low',
+        };
+    }
+
+    /**
      * Get all cases as an array of values
      *
      * @return array<string>
