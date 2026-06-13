@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\User;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Carbon\Carbon;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Contracts\Console\Kernel;
@@ -17,8 +17,8 @@ $kernel->bootstrap();
 
 $output = new OutputStyle(new StringInput(''), new ConsoleOutput);
 
-/** @var Manager $multichain */
-$multichain = app(Manager::class);
+/** @var BlockchainRpcClient $multichain */
+$multichain = app(BlockchainRpcClient::class);
 
 $users = User::all();
 if ($users->isEmpty()) {
@@ -78,7 +78,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
 
     // 1. PUBLISH METADATA
     try {
-        $multichain->publish(StreamEnums::METADATA->value, $prNumber, ['json' => [
+        $multichain->publish(Stream::METADATA->value, $prNumber, ['json' => [
             'pr_number' => $prNumber,
             'title' => $title,
             'description' => "Procurement for {$office} FY ".date('Y'),
@@ -111,7 +111,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
         $ts = (clone $now)->addHours($s * rand(24, 168));
 
         try {
-            $multichain->publish(StreamEnums::STATUS->value, $prNumber, ['json' => [
+            $multichain->publish(Stream::STATUS->value, $prNumber, ['json' => [
                 'pr_number' => $prNumber,
                 'procurement_title' => $title,
                 'stage' => $stage,
@@ -128,7 +128,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
 
         // Event for each status
         try {
-            $multichain->publish(StreamEnums::EVENTS->value, "{$prNumber}_event_{$s}", ['json' => [
+            $multichain->publish(Stream::EVENTS->value, "{$prNumber}_event_{$s}", ['json' => [
                 'pr_number' => $prNumber,
                 'procurement_title' => $title,
                 'stage' => $stage,
@@ -152,7 +152,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
         $fileName = $docType.'-'.bin2hex(random_bytes(4)).'.pdf';
 
         try {
-            $multichain->publish(StreamEnums::DOCUMENTS->value, $prNumber, ['json' => [
+            $multichain->publish(Stream::DOCUMENTS->value, $prNumber, ['json' => [
                 'pr_number' => $prNumber,
                 'stage' => $stages[$stageIdx],
                 'document_type' => $docType,
@@ -172,7 +172,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
 
         // Document upload events
         try {
-            $multichain->publish(StreamEnums::EVENTS->value, "{$prNumber}_doc_{$d}", ['json' => [
+            $multichain->publish(Stream::EVENTS->value, "{$prNumber}_doc_{$d}", ['json' => [
                 'pr_number' => $prNumber,
                 'procurement_title' => $title,
                 'stage' => $stages[$stageIdx],
@@ -194,7 +194,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
 
         // Document correction
         try {
-            $multichain->publish(StreamEnums::CORRECTIONS->value, $prNumber, ['json' => [
+            $multichain->publish(Stream::CORRECTIONS->value, $prNumber, ['json' => [
                 'pr_number' => $prNumber,
                 'procurement_title' => $title,
                 'correction_type' => 'document_replacement',
@@ -210,7 +210,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
 
         // Correction event
         try {
-            $multichain->publish(StreamEnums::EVENTS->value, "{$prNumber}_corr", ['json' => [
+            $multichain->publish(Stream::EVENTS->value, "{$prNumber}_corr", ['json' => [
                 'pr_number' => $prNumber,
                 'procurement_title' => $title,
                 'stage' => $stages[array_rand($stages)],
@@ -229,7 +229,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
     if (rand(1, 100) <= 25) {
         $archTs = (clone $now)->addDays(rand(30, 120));
         try {
-            $multichain->publish(StreamEnums::ARCHIVE->value, $prNumber, ['json' => [
+            $multichain->publish(Stream::ARCHIVE->value, $prNumber, ['json' => [
                 'pr_number' => $prNumber,
                 'archived' => true,
                 'archived_by' => $user->name,
@@ -251,7 +251,7 @@ $output->newLine();
 
 // Count items per stream
 $output->writeln('<comment>Stream counts:</comment>');
-foreach (StreamEnums::cases() as $stream) {
+foreach (Stream::cases() as $stream) {
     try {
         $items = $multichain->liststreamitems($stream->value, true, 5000, 0, false);
         $count = is_array($items) ? count($items) : 0;

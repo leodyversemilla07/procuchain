@@ -3,11 +3,11 @@
 namespace Database\Seeders;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\StageDocumentConfig;
-use App\Services\ModeAwareDocumentRequirements;
-use App\Services\StageDocumentRequirements;
+use App\Services\ModeAwareDocumentRequirementsService;
+use App\Services\StageDocumentRequirementsService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -23,12 +23,12 @@ class StageDocumentConfigSeeder extends Seeder
      */
     public function run(): void
     {
-        $baseRequirements = app(StageDocumentRequirements::class);
-        $modeAwareRequirements = new ModeAwareDocumentRequirements($baseRequirements);
+        $baseRequirements = app(StageDocumentRequirementsService::class);
+        $modeAwareRequirements = new ModeAwareDocumentRequirementsService($baseRequirements);
 
         $count = 0;
 
-        foreach (ProcurementModeEnums::cases() as $mode) {
+        foreach (ProcurementMode::cases() as $mode) {
             // Get stages for this mode
             $stages = StageEnums::getStagesForMode($mode);
 

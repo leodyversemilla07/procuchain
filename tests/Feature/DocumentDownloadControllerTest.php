@@ -67,7 +67,7 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
     app()->instance(DocumentRepository::class, $documentRepository);
 
     $this->actingAs($user)
-        ->get('/BlockchainFiles/locked-File.pdf')
+        ->get('/files/locked-File.pdf')
         ->assertForbidden();
 });
 

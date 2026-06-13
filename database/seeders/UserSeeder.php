@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Models\User;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -17,10 +17,10 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $multichain = app(Manager::class);
+        $multichain = app(BlockchainRpcClient::class);
 
         // Create BAC Secretariat user
-        Role::firstOrCreate(['name' => UserRoleEnums::BAC_SECRETARIAT->value, 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => UserRole::BAC_SECRETARIAT->value, 'guard_name' => 'web']);
         $bacSecretariat = User::firstOrCreate(
             ['email' => 'brylemaamo@gmail.com'],
             [
@@ -29,11 +29,11 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('BryleMaamo00'),
             ]
         );
-        $bacSecretariat->assignRole(UserRoleEnums::BAC_SECRETARIAT->value);
+        $bacSecretariat->assignRole(UserRole::BAC_SECRETARIAT->value);
         Log::info('BAC Secretariat user ready', ['address' => $bacSecretariat->blockchain_address]);
 
         // Create BAC Chairman user
-        Role::firstOrCreate(['name' => UserRoleEnums::BAC_CHAIRMAN->value, 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => UserRole::BAC_CHAIRMAN->value, 'guard_name' => 'web']);
         $bacChairman = User::firstOrCreate(
             ['email' => 'adriangupit18@gmail.com'],
             [
@@ -42,11 +42,11 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('Adrian18'),
             ]
         );
-        $bacChairman->assignRole(UserRoleEnums::BAC_CHAIRMAN->value);
+        $bacChairman->assignRole(UserRole::BAC_CHAIRMAN->value);
         Log::info('BAC Chairman user ready', ['address' => $bacChairman->blockchain_address]);
 
         // Create HOPE user
-        Role::firstOrCreate(['name' => UserRoleEnums::HOPE->value, 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => UserRole::HOPE->value, 'guard_name' => 'web']);
         $hope = User::firstOrCreate(
             ['email' => 'leifsagesemilla@gmail.com'],
             [
@@ -55,11 +55,11 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('LeifSage07'),
             ]
         );
-        $hope->assignRole(UserRoleEnums::HOPE->value);
+        $hope->assignRole(UserRole::HOPE->value);
         Log::info('HOPE user ready', ['address' => $hope->blockchain_address]);
 
         // Create Admin user
-        Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web']);
         $admin = User::firstOrCreate(
             ['email' => 'leobrielzilvrak@gmail.com'],
             [
@@ -68,7 +68,7 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('LeoBriel07'),
             ]
         );
-        $admin->assignRole(UserRoleEnums::ADMIN->value);
+        $admin->assignRole(UserRole::ADMIN->value);
         Log::info('Admin user ready', ['address' => $admin->blockchain_address]);
     }
 }

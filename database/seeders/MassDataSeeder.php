@@ -8,9 +8,9 @@ use App\DataTransferObjects\ProcurementCorrectionData;
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\ProcurementDocumentData;
 use App\DataTransferObjects\StatusData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\User;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
@@ -76,7 +76,7 @@ class MassDataSeeder extends Seeder
     ];
 
     public function __construct(
-        private readonly Manager $multichain,
+        private readonly BlockchainRpcClient $multichain,
     ) {}
 
     public function run(): void
@@ -127,7 +127,7 @@ class MassDataSeeder extends Seeder
             userAddress: $user->blockchain_address ?? '',
         );
 
-        $this->publish(StreamEnums::METADATA->value, $prNumber, array_merge(
+        $this->publish(Stream::METADATA->value, $prNumber, array_merge(
             $procurementData->toBlockchainArray(),
             [
                 'description' => "This procurement covers the acquisition of various items needed by {$office} for the fiscal year ".now()->year.'.',
@@ -165,7 +165,7 @@ class MassDataSeeder extends Seeder
                 metadata: ['stage_index' => $s],
             );
 
-            $this->publish(StreamEnums::STATUS->value, $prNumber, $statusData->toBlockchainArray());
+            $this->publish(Stream::STATUS->value, $prNumber, $statusData->toBlockchainArray());
             $previousStatus = $status;
 
             // 3. publish event for each status
@@ -200,7 +200,7 @@ class MassDataSeeder extends Seeder
 
             $docArray = $docData->toBlockchainArray();
             $docArray['file_key'] = 'file_'.bin2hex(random_bytes(8));
-            $this->publish(StreamEnums::DOCUMENTS->value, $prNumber, $docArray);
+            $this->publish(Stream::DOCUMENTS->value, $prNumber, $docArray);
 
             // event for document upload
             $this->publishEvent($prNumber, $title, $stage, $user, $docTimestamp, 99, 'document_upload', "Document uploaded: {$docType}");
@@ -213,7 +213,7 @@ class MassDataSeeder extends Seeder
 
         // 6. occasionally add archive (20% chance)
         if (rand(1, 100) <= 20) {
-            $this->publish(StreamEnums::ARCHIVE->value, $prNumber, [
+            $this->publish(Stream::ARCHIVE->value, $prNumber, [
                 'pr_number' => $prNumber,
                 'archived' => true,
                 'archived_by' => $user->name,
@@ -249,7 +249,7 @@ class MassDataSeeder extends Seeder
             metadata: ['event_index' => $index],
         );
 
-        $this->publish(StreamEnums::EVENTS->value, "{$prNumber}_event_{$index}", $eventData->toBlockchainArray());
+        $this->publish(Stream::EVENTS->value, "{$prNumber}_event_{$index}", $eventData->toBlockchainArray());
     }
 
     private function publishCorrection(string $prNumber, string $title, User $user, Carbon $now, string $vendor): void
@@ -274,7 +274,7 @@ class MassDataSeeder extends Seeder
             ],
         );
 
-        $this->publish(StreamEnums::CORRECTIONS->value, $prNumber, $correctionData->toBlockchainArray());
+        $this->publish(Stream::CORRECTIONS->value, $prNumber, $correctionData->toBlockchainArray());
 
         // Metadata correction
         $metaCorrectionData = new ProcurementCorrectionData(
@@ -293,7 +293,7 @@ class MassDataSeeder extends Seeder
             ],
         );
 
-        $this->publish(StreamEnums::PROCUREMENTS_CORRECTIONS->value, $prNumber, $metaCorrectionData->toBlockchainArray());
+        $this->publish(Stream::PROCUREMENTS_CORRECTIONS->value, $prNumber, $metaCorrectionData->toBlockchainArray());
     }
 
     private function publish(string $stream, string $key, array $data): void
@@ -310,7 +310,7 @@ class MassDataSeeder extends Seeder
 
     private function showStreamCounts(): void
     {
-        foreach (StreamEnums::cases() as $stream) {
+        foreach (Stream::cases() as $stream) {
             try {
                 $count = $this->multichain->getstreamitems($stream, false, 1, 0, false);
                 $this->command->info("  {$stream->value}: {$stream->getDisplayName()}");

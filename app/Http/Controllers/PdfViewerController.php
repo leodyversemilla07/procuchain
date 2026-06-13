@@ -40,7 +40,7 @@ class PdfViewerController extends BaseController
         return Inertia::render('documents/pdf-viewer', [
             'document' => $documentData,
             'fileKey' => $fileKey,
-            'pdfUrl' => route('BlockchainFiles.download', ['fileKey' => $fileKey]),
+            'pdfUrl' => route('files.download', ['fileKey' => $fileKey]),
             'viewStats' => $viewStats,
             'recentViews' => $recentViews->map(function ($view) {
                 return [

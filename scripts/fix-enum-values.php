@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\StreamEnums;
-use App\Services\Manager;
+use App\Enums\Stream;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Contracts\Console\Kernel;
 use Symfony\Component\Console\Input\StringInput;
@@ -15,8 +15,8 @@ $kernel->bootstrap();
 
 $output = new OutputStyle(new StringInput(''), new ConsoleOutput);
 
-/** @var Manager $multichain */
-$multichain = app(Manager::class);
+/** @var BlockchainRpcClient $multichain */
+$multichain = app(BlockchainRpcClient::class);
 
 $output->writeln('<info>Fixing blockchain records with invalid enum values...</info>');
 
@@ -38,7 +38,7 @@ $modeMap = [
 $fixed = 0;
 
 // Fetch all metadata items
-$items = $multichain->liststreamitems(StreamEnums::METADATA->value, true, 5000, 0, false);
+$items = $multichain->liststreamitems(Stream::METADATA->value, true, 5000, 0, false);
 
 if (! is_array($items)) {
     $output->error('No items found in metadata stream');
@@ -80,7 +80,7 @@ foreach ($items as $item) {
 
     if (! empty($changes)) {
         try {
-            $multichain->publish(StreamEnums::METADATA->value, $prNumber, ['json' => $data]);
+            $multichain->publish(Stream::METADATA->value, $prNumber, ['json' => $data]);
             $fixed++;
             $output->writeln("  Fixed {$prNumber}: ".implode(', ', $changes));
         } catch (Exception $e) {
@@ -95,7 +95,7 @@ $output->writeln("<info>✓ Fixed {$fixed} records</info>");
 // Verify by reading one record back
 if ($fixed > 0) {
     $output->writeln("\n<comment>Verifying fix...</comment>");
-    $verifyItems = $multichain->liststreamitems(StreamEnums::METADATA->value, true, 2, 0, false);
+    $verifyItems = $multichain->liststreamitems(Stream::METADATA->value, true, 2, 0, false);
     if (! empty($verifyItems[0])) {
         $sample = $verifyItems[0]['data']['json'] ?? [];
         $output->writeln('  category: '.($sample['category'] ?? 'N/A'));

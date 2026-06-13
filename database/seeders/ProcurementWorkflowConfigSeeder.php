@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
 use Illuminate\Database\Seeder;
@@ -20,7 +20,7 @@ class ProcurementWorkflowConfigSeeder extends Seeder
      */
     public function run(): void
     {
-        foreach (ProcurementModeEnums::cases() as $mode) {
+        foreach (ProcurementMode::cases() as $mode) {
             // Get default stages from StageEnums
             $stages = StageEnums::getStagesForMode($mode);
             $optionalStages = StageEnums::getOptionalStagesForMode($mode);
@@ -38,6 +38,6 @@ class ProcurementWorkflowConfigSeeder extends Seeder
             );
         }
 
-        $this->command->info('Seeded workflow configurations for '.count(ProcurementModeEnums::cases()).' procurement modes.');
+        $this->command->info('Seeded workflow configurations for '.count(ProcurementMode::cases()).' procurement modes.');
     }
 }

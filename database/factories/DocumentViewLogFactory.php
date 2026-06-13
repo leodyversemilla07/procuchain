@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<DocumentView>
+ * @extends Factory<DocumentViewLog>
  */
-class DocumentViewFactory extends Factory
+class DocumentViewLogFactory extends Factory
 {
     /**
      * Define the model's default state.
