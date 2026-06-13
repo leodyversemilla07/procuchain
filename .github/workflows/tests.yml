@@ -96,7 +96,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Node Dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Install Dependencies
         run: composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader
