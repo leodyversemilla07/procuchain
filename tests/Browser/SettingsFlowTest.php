@@ -20,7 +20,7 @@ describe('Settings Browser Flow', function () {
     it('displays proFile settings page', function () {
         $this->actingAs($this->user);
 
-        $page = visit('/settings/proFile');
+        $page = visit('/settings/profile');
 
         $page->assertSee('ProFile information')
             ->assertSee('Email address')
@@ -32,7 +32,7 @@ describe('Settings Browser Flow', function () {
     it('allows editing proFile information fields', function () {
         $this->actingAs($this->user);
 
-        $page = visit('/settings/proFile');
+        $page = visit('/settings/profile');
 
         $page->fill('name', 'Updated Name')
             ->fill('email', 'updated@example.test')

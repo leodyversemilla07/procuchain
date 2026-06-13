@@ -27,7 +27,7 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return Inertia::render('settings/proFile', [
+        return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
         ]);
@@ -55,7 +55,7 @@ class ProfileController extends Controller
             (string) $user->id,
         );
 
-        return to_route('settings.proFile.edit');
+        return to_route('settings.profile.edit');
     }
 
     /**

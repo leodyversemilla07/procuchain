@@ -14,7 +14,7 @@ it('allows users without 2fa to access settings pages', function () {
     $user->assignRole(UserRole::ADMIN->value);
 
     // User should be able to access various settings pages without 2FA
-    $this->actingAs($user)->get('/settings/proFile')->assertOk();
+    $this->actingAs($user)->get('/settings/profile')->assertOk();
     $this->actingAs($user)->get('/settings/password')->assertOk();
     $this->actingAs($user)->get('/settings/two-factor')->assertOk();
     $this->actingAs($user)->get('/settings/appearance')->assertOk();

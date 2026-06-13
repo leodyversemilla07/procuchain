@@ -49,9 +49,9 @@ class InitiateProcurementRequest extends FormRequest
 
             // Documents - Optional to support progressive upload (can upload after initiation)
             'Files' => ['nullable', 'array'],
-            'BlockchainFiles.*' => ['mimes:pdf', 'max:51200'], // 50MB max
+            'Files.*' => ['mimes:pdf', 'max:51200'], // 50MB max
             'document_types' => ['nullable', 'array'],
-            'document_types.*' => ['required_with:BlockchainFiles.*', Rule::enum(DocumentTypeEnums::class)],
+            'document_types.*' => ['required_with:Files.*', Rule::enum(DocumentTypeEnums::class)],
             'document_descriptions' => ['nullable', 'array'],
             'document_descriptions.*' => ['nullable', 'string', 'max:500'],
         ];
@@ -181,8 +181,8 @@ class InitiateProcurementRequest extends FormRequest
             'other_description.required_if' => 'Please specify the description when selecting "Other".',
             'other_funding_source.required_if' => 'Please specify the funding source when selecting "Other Sources".',
             'other_end_user.required_if' => 'Please specify the end user when selecting "Other".',
-            'BlockchainFiles.*.required' => 'All required documents must be uploaded per RA 12009 (NGPA) IRR.',
-            'BlockchainFiles.*.mimes' => 'All documents must be in PDF format for blockchain storage.',
+            'Files.*.required' => 'All required documents must be uploaded per RA 12009 (NGPA) IRR.',
+            'Files.*.mimes' => 'All documents must be in PDF format for blockchain storage.',
             'document_types.*.required' => 'Document type must be specified for each uploaded File.',
             'document_types.*.enum' => 'Invalid document type. Please select from the provided list of RA 12009 compliant document types.',
         ];

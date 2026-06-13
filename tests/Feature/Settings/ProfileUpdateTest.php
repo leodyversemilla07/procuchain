@@ -12,12 +12,12 @@ test('proFile page is displayed', function () {
     $response = $this
         ->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get('/settings/proFile');
+        ->get('/settings/profile');
 
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/proFile')
+            ->component('settings/profile')
             ->where('auth.role', null)
             ->where('auth.user.id', $user->id)
             ->where('auth.user.name', $user->name)
@@ -38,12 +38,12 @@ test('proFile page shares primary role and capabilities for role-based users', f
     $response = $this
         ->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get('/settings/proFile');
+        ->get('/settings/profile');
 
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/proFile')
+            ->component('settings/profile')
             ->where('auth.role', 'bac_secretariat')
             ->where('auth.user.id', $user->id)
             ->where('auth.user.name', 'BAC Secretariat User')
@@ -64,7 +64,7 @@ test('proFile information can be updated', function () {
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->patch('/settings/proFile', [
+        ->patch('/settings/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             '_token' => 'test-token',
@@ -72,7 +72,7 @@ test('proFile information can be updated', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect('/settings/proFile');
+        ->assertRedirect('/settings/profile');
 
     $user->refresh();
 
@@ -90,7 +90,7 @@ test('email verification status is unchanged when the email address is unchanged
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->patch('/settings/proFile', [
+        ->patch('/settings/profile', [
             'name' => 'Test User',
             'email' => $user->email,
             '_token' => 'test-token',
@@ -98,7 +98,7 @@ test('email verification status is unchanged when the email address is unchanged
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect('/settings/proFile');
+        ->assertRedirect('/settings/profile');
 
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
@@ -112,7 +112,7 @@ test('user can delete their account', function () {
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->delete('/settings/proFile', [
+        ->delete('/settings/profile', [
             'password' => 'password',
             '_token' => 'test-token',
         ]);
@@ -130,19 +130,19 @@ test('correct password must be provided to delete account', function () {
 
     $response = $this
         ->actingAs($user)
-        ->from('/settings/proFile')
+        ->from('/settings/profile')
         ->withSession([
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->delete('/settings/proFile', [
+        ->delete('/settings/profile', [
             'password' => 'wrong-password',
             '_token' => 'test-token',
         ]);
 
     $response
         ->assertSessionHasErrors('password')
-        ->assertRedirect('/settings/proFile');
+        ->assertRedirect('/settings/profile');
 
     expect($user->fresh())->not->toBeNull();
 });

@@ -213,7 +213,7 @@ it('revoking an invitation writes an admin.invitation_revoked audit log entry', 
 
 it('updating proFile writes a settings.profile_updated audit log entry', function () {
     $this->actingAs($this->admin)
-        ->patch('/settings/proFile', [
+        ->patch('/settings/profile', [
             'name' => 'Updated Admin',
             'email' => $this->admin->email,
         ]);

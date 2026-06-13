@@ -326,7 +326,7 @@ test('validation fails for non-pdf BlockchainFiles', function () {
         ]);
 
     $response->assertRedirect()
-        ->assertSessionHasErrors(['BlockchainFiles.0']);
+        ->assertSessionHasErrors(['Files.0']);
 });
 
 /**
