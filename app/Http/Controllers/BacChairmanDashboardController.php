@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
+
 class BacChairmanDashboardController extends BaseDashboardController
 {
     protected function getRoleName(): string
     {
-        return 'bac_chairman';
+        return UserRole::BAC_CHAIRMAN->value;
     }
 
     protected function getRoleLabel(): string

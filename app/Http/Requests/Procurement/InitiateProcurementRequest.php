@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Procurement;
 
 use App\Enums\DocumentTypeEnums;
+use App\Enums\Permission;
 use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use Illuminate\Foundation\Http\FormRequest;
@@ -14,7 +15,7 @@ class InitiateProcurementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() && $this->user()->can('manage procurement initiation');
+        return $this->user() && $this->user()->can(Permission::MANAGE_PROCUREMENT_INITIATION->value);
     }
 
     public function rules(): array

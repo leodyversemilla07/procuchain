@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
+use App\Enums\UserRole;
 use App\Repositories\ProcurementRepository;
 use App\Services\AdminAnalyticsService;
 use App\Services\BlockchainRpcClient;
@@ -28,7 +29,7 @@ class AdminDashboardController extends BaseDashboardController
      */
     protected function getRoleName(): string
     {
-        return 'admin';
+        return UserRole::ADMIN->value;
     }
 
     /**

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use Illuminate\Support\Collection;
 
 class HopeDashboardController extends BaseDashboardController
 {
     protected function getRoleName(): string
     {
-        return 'hope';
+        return UserRole::HOPE->value;
     }
 
     protected function getRoleLabel(): string

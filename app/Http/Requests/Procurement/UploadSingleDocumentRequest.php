@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Procurement;
 
 use App\Enums\DocumentTypeEnums;
+use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,7 @@ class UploadSingleDocumentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('bac_secretariat') ?? false;
+        return $this->user()?->hasRole(UserRole::BAC_SECRETARIAT->value) ?? false;
     }
 
     /**

@@ -12,6 +12,7 @@ use App\Contracts\NotificationServiceInterface;
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\Contracts\StatusPublisherInterface;
+use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\DocumentViewLog;
 use App\Models\ProcurementWorkflowConfig;
@@ -116,7 +117,7 @@ class AppServiceProvider extends ServiceProvider
         // However, certain self-targeting abilities must still go through policy
         // checks (e.g., admin cannot delete themselves, reset own password, etc.).
         Gate::before(function ($user, $ability) {
-            if (! $user->hasRole('admin')) {
+            if (! $user->hasRole(UserRole::ADMIN->value)) {
                 return null;
             }
 

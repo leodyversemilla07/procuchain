@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\CacheStrategyInterface;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Enums\UserRole;
 use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainRpcClient;
 use App\Services\DashboardCacheService;
@@ -30,7 +31,7 @@ class BacSecretariatDashboardController extends BaseDashboardController
 
     protected function getRoleName(): string
     {
-        return 'bac_secretariat';
+        return UserRole::BAC_SECRETARIAT->value;
     }
 
     protected function getRoleLabel(): string
