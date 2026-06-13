@@ -145,7 +145,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s GitHub Profile`}
                                                         >
-                                                            <GithubIcon />
+                                                            <GithubIcon className="size-5" />
                                                         </a>
                                                     )}
                                                     {member.email && (
@@ -165,7 +165,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s Facebook Profile`}
                                                         >
-                                                            <FacebookIcon />
+                                                            <FacebookIcon className="size-5" />
                                                         </a>
                                                     )}
                                                 </div>

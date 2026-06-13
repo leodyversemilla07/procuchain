@@ -248,7 +248,7 @@ describe('Smart Filter JavaScript BlockchainFiles', function () {
     });
 
     it('has File metadata filter File', function () {
-        expect(file_exists(resource_path('blockchain/filters/stream_FILE_METADATA_validation.js')))->toBeTrue();
+        expect(file_exists(resource_path('blockchain/filters/stream_file_metadata_validation.js')))->toBeTrue();
     });
 
     it('documents filter validates hash format', function () {
