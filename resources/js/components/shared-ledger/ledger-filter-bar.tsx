@@ -51,7 +51,18 @@ export function LedgerFilterBar({
 }: LedgerFilterBarProps) {
     const selectedStreamLabel = stream && stream !== 'all' ? (STREAM_CONFIG[stream]?.label ?? stream) : 'All streams';
 
-    const handleExport = (entries: Array<{ formatted_timestamp: string; stream_display: string; pr_number: string; action: string; summary: string; actor_address: string; txid: string; procurement_title?: string }>) => {
+    const handleExport = (
+        entries: Array<{
+            formatted_timestamp: string;
+            stream_display: string;
+            pr_number: string;
+            action: string;
+            summary: string;
+            actor_address: string;
+            txid: string;
+            procurement_title?: string;
+        }>,
+    ) => {
         const headers = ['Timestamp', 'Stream', 'PR Number', 'Action', 'Summary', 'Actor', 'TX ID', 'Procurement Title'];
         const rows = entries.map((e) => [
             e.formatted_timestamp,
@@ -122,11 +133,7 @@ export function LedgerFilterBar({
                                 {available_nodes.map((n) => (
                                     <SelectItem key={n.id} value={n.id}>
                                         <div className="flex items-center gap-2">
-                                            {n.is_purged ? (
-                                                <ServerCrash className="text-destructive" />
-                                            ) : (
-                                                <Server className="h-3.5 w-3.5" />
-                                            )}
+                                            {n.is_purged ? <ServerCrash className="text-destructive" /> : <Server className="h-3.5 w-3.5" />}
                                             {n.name}
                                         </div>
                                     </SelectItem>

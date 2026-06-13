@@ -35,8 +35,8 @@ export function CompletionDialog({ open, isMarkingComplete, stageName, prNumber,
                             </span>
                         ) : (
                             <>
-                                This will finalize <strong>{stageName}</strong> for <strong>{prNumber}</strong> and record it on the blockchain. This action
-                                cannot be undone.
+                                This will finalize <strong>{stageName}</strong> for <strong>{prNumber}</strong> and record it on the blockchain. This
+                                action cannot be undone.
                             </>
                         )}
                     </AlertDialogDescription>
@@ -47,7 +47,9 @@ export function CompletionDialog({ open, isMarkingComplete, stageName, prNumber,
                     </AlertDialogCancel>
                     <AlertDialogAction onClick={onConfirm} disabled={isMarkingComplete} className="rounded-lg px-8">
                         {isMarkingComplete ? (
-                            <span className="flex items-center gap-2"><Spinner /> Processing...</span>
+                            <span className="flex items-center gap-2">
+                                <Spinner /> Processing...
+                            </span>
                         ) : (
                             'Confirm'
                         )}

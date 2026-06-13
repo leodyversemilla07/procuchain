@@ -97,7 +97,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setShowCorrectionDetails(true)}
-                                className="h-8 text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground"
+                                className="text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground h-8"
                             >
                                 <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
                                 Corrections
@@ -140,7 +140,12 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
             {/* Mobile Actions (Bottom) */}
             <div className="mt-1 flex items-center justify-between gap-2 border-t pt-2 sm:hidden">
                 {doc.has_corrections && (
-                    <Button variant="ghost" size="sm" onClick={() => setShowCorrectionDetails(true)} className="h-8 px-2 text-xs text-muted-foreground">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCorrectionDetails(true)}
+                        className="text-muted-foreground h-8 px-2 text-xs"
+                    >
                         <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
                         Corrections
                     </Button>

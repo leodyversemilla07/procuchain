@@ -43,7 +43,7 @@ export function BasicInfoSection({
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">Required procurement details per RA 12009 (NGPA)</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 p-4 sm:flex flex-col gap-6 sm:p-6">
+            <CardContent className="flex flex-col gap-4 gap-6 p-4 sm:flex sm:p-6">
                 {/* PR Number and PPMP Reference - Grid */}
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                     {/* PR Number */}

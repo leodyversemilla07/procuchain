@@ -65,14 +65,7 @@ export function ReportTimeSeriesChart({ timeSeries }: ReportTimeSeriesChartProps
                                 />
                             }
                         />
-                        <Area
-                            type="monotone"
-                            dataKey="count"
-                            stroke="hsl(var(--primary))"
-                            fill="url(#fillCount)"
-                            fillOpacity={0.6}
-                            strokeWidth={2}
-                        />
+                        <Area type="monotone" dataKey="count" stroke="hsl(var(--primary))" fill="url(#fillCount)" fillOpacity={0.6} strokeWidth={2} />
                     </AreaChart>
                 </ChartContainer>
             </CardContent>

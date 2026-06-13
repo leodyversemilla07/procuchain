@@ -38,7 +38,7 @@ export const TitleCell = ({ procurement }: TitleCellProps) => {
         <div ref={textRef} className="max-w-[280px] truncate font-medium" title={procurement.title}>
             <Link
                 href={procurementUrl}
-                className="text-gray-900 transition-colors duration-150 hover:text-primary hover:underline dark:text-foreground"
+                className="hover:text-primary dark:text-foreground text-gray-900 transition-colors duration-150 hover:underline"
                 prefetch="hover"
                 cacheFor="5m"
                 aria-label={`View procurement: ${procurement.title}`}

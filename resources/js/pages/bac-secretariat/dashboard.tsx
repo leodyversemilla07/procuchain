@@ -11,8 +11,15 @@ import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { SharedData, User } from '@/types';
 import { UserRole } from '@/types/enums';
-import { buildErrorState, deduplicateProcurements, formatStageName, formatUserName, type DashboardStats, type RecentProcurement } from '@/utils/dashboard';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
+import {
+    buildErrorState,
+    deduplicateProcurements,
+    formatStageName,
+    formatUserName,
+    type DashboardStats,
+    type RecentProcurement,
+} from '@/utils/dashboard';
 import { Deferred, Head, usePage } from '@inertiajs/react';
 import { ActivityIcon, Bell, CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
@@ -229,7 +236,10 @@ export default function BACSecretariatDashboard() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-3 sm:p-4 md:p-6">
-                                <PriorityActionsStack actions={priorityActionItems} errorState={buildErrorState(error, 'Unable to load priority actions')} />
+                                <PriorityActionsStack
+                                    actions={priorityActionItems}
+                                    errorState={buildErrorState(error, 'Unable to load priority actions')}
+                                />
                             </CardContent>
                         </Card>
                     </Deferred>

@@ -124,9 +124,7 @@ export function MirrorStatusTab() {
                         </div>
                         <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Unresolved Breaches</p>
-                            <p
-                                className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-destructive' : 'text-primary'}`}
-                            >
+                            <p className={`text-2xl font-bold ${status.unresolved_breaches > 0 ? 'text-destructive' : 'text-primary'}`}>
                                 {status.unresolved_breaches}
                             </p>
                         </div>
@@ -146,7 +144,9 @@ export function MirrorStatusTab() {
                         </div>
                         <div className="flex flex-col gap-2">
                             <p className="text-muted-foreground text-sm">Pending Repairs</p>
-                            <p className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-muted-foreground dark:text-muted-foreground' : ''}`}>
+                            <p
+                                className={`text-sm font-medium ${status.pending_repairs > 0 ? 'text-muted-foreground dark:text-muted-foreground' : ''}`}
+                            >
                                 {status.pending_repairs}
                             </p>
                         </div>
@@ -187,7 +187,7 @@ export function MirrorStatusTab() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {(!status.stream_counts || Object.keys(status.stream_counts).length === 0) ? (
+                    {!status.stream_counts || Object.keys(status.stream_counts).length === 0 ? (
                         <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
                             <Database className="mb-2" />
                             <p>No mirror records yet. Run `php artisan blockchain:sync` to populate.</p>
@@ -232,9 +232,9 @@ export function MirrorStatusTab() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {(!status.breach_counts || Object.keys(status.breach_counts).length === 0) ? (
+                    {!status.breach_counts || Object.keys(status.breach_counts).length === 0 ? (
                         <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
-                            <CheckCircle2 className="mb-2 h-10 w-10 text-primary" />
+                            <CheckCircle2 className="text-primary mb-2 h-10 w-10" />
                             <p>No unresolved breaches. Mirror is in sync with blockchain.</p>
                         </div>
                     ) : (

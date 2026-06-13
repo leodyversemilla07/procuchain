@@ -10,8 +10,16 @@ import AppLayout from '@/layouts/app-layout';
 import { index as procurementsListIndex, show as procurementsShow } from '@/routes/bac-chairman/procurements';
 import type { BreadcrumbItem, SharedData } from '@/types';
 import { UserRole } from '@/types/enums';
-import { buildErrorState, deduplicateProcurements, formatStageName, formatUserName, type DashboardStats, type RecentActivity, type RecentProcurement } from '@/utils/dashboard';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
+import {
+    buildErrorState,
+    deduplicateProcurements,
+    formatStageName,
+    formatUserName,
+    type DashboardStats,
+    type RecentActivity,
+    type RecentProcurement,
+} from '@/utils/dashboard';
 import { Deferred, Head, Link, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';

@@ -258,7 +258,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                         <div className="grid grid-cols-1 gap-2">
                             <Button
                                 variant="outline"
-                                className="border-amber-200 text-muted-foreground hover:bg-muted/50"
+                                className="text-muted-foreground hover:bg-muted/50 border-amber-200"
                                 onClick={() => setShowCorrectionSheet(true)}
                             >
                                 <AlertTriangle />

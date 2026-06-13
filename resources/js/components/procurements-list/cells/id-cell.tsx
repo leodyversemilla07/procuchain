@@ -30,7 +30,7 @@ export const IdCell = ({ id }: IdCellProps) => {
     const procurementUrl = getProcurementShowUrl(userRole, id);
 
     return (
-        <div className="font-medium text-primary dark:text-primary">
+        <div className="text-primary dark:text-primary font-medium">
             <Link
                 href={procurementUrl}
                 className="flex items-center transition-all duration-150 hover:underline"
@@ -38,7 +38,7 @@ export const IdCell = ({ id }: IdCellProps) => {
                 cacheFor="5m"
                 aria-label={`View procurement ${id}`}
             >
-                <span className="rounded border border-blue-100 bg-primary/10 px-1.5 py-0.5 font-mono text-xs dark:border-blue-800/60 dark:bg-primary/20/30">
+                <span className="bg-primary/10 dark:bg-primary/20/30 rounded border border-blue-100 px-1.5 py-0.5 font-mono text-xs dark:border-blue-800/60">
                     {id}
                 </span>
             </Link>

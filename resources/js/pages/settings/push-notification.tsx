@@ -332,9 +332,7 @@ export default function PushNotification() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Permission Status</span>
                                     {permission === 'granted' ? (
-                                        <Badge variant="default">
-                                            Granted
-                                        </Badge>
+                                        <Badge variant="default">Granted</Badge>
                                     ) : permission === 'denied' ? (
                                         <Badge variant="destructive">Denied</Badge>
                                     ) : (

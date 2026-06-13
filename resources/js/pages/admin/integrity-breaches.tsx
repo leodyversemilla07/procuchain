@@ -119,11 +119,15 @@ export default function IntegrityBreaches() {
     const toastIdRef = useRef<string | number | null>(null);
     const isFirstMount = useRef(true);
 
-    const { start, stop } = usePoll(3000, {
-        only: ['verificationStatus', 'breaches', 'stats'],
-    }, {
-        autoStart: false,
-    });
+    const { start, stop } = usePoll(
+        3000,
+        {
+            only: ['verificationStatus', 'breaches', 'stats'],
+        },
+        {
+            autoStart: false,
+        },
+    );
 
     useEffect(() => {
         if (isFirstMount.current) {
@@ -293,10 +297,7 @@ export default function IntegrityBreaches() {
 
                 <div className="ml-auto flex gap-2">
                     <AlertDialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
-                        <AlertDialogTrigger
-                            render={<Button variant="destructive" size="sm" disabled={verifyAndRepairing} />}
-                            nativeButton={false}
-                        >
+                        <AlertDialogTrigger render={<Button variant="destructive" size="sm" disabled={verifyAndRepairing} />} nativeButton={false}>
                             <Wrench data-icon="inline-start" />
                             {verifyAndRepairing ? 'Running...' : 'Verify & Repair All'}
                         </AlertDialogTrigger>

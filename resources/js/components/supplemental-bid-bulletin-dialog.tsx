@@ -17,7 +17,14 @@ interface SupplementalBidDialogProps {
     onProcessingChange?: (processing: boolean) => void;
 }
 
-export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete, onProcessingChange }: SupplementalBidDialogProps) {
+export function SupplementalBidBulletinDialog({
+    open,
+    onOpenChange,
+    pr_number,
+    procurementTitle,
+    onComplete,
+    onProcessingChange,
+}: SupplementalBidDialogProps) {
     const [supplementalBidNeeded, setSupplementalBidNeeded] = useState<boolean | undefined>(undefined);
     const [fieldError, setFieldError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -146,15 +153,11 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                         <div
                             className={`flex items-start gap-3 rounded-lg border p-4 ${
                                 supplementalBidNeeded
-                                    ? 'border-blue-200 bg-primary/10 dark:border-blue-900 dark:bg-primary/10/30'
-                                    : 'border-amber-200 bg-muted/50 dark:border-amber-900 dark:bg-muted/50/30'
+                                    ? 'bg-primary/10 dark:bg-primary/10/30 border-blue-200 dark:border-blue-900'
+                                    : 'bg-muted/50 dark:bg-muted/50/30 border-amber-200 dark:border-amber-900'
                             }`}
                         >
-                            {supplementalBidNeeded ? (
-                                <CheckCircle2 />
-                            ) : (
-                                <AlertCircle />
-                            )}
+                            {supplementalBidNeeded ? <CheckCircle2 /> : <AlertCircle />}
                             <div className="flex-1">
                                 <p className="text-foreground text-sm font-medium sm:text-base">
                                     {supplementalBidNeeded ? 'Next Step: Upload Bulletin' : 'Next Step: Skip to Bid Opening'}

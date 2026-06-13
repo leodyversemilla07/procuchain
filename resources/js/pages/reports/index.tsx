@@ -1,5 +1,5 @@
-import { ReportDistributionCard, ReportFilterForm, ReportSummaryCards, ReportTimeSeriesChart, useReportGenerator } from '@/components/reports';
 import { HeroCard } from '@/components/hero-card';
+import { ReportDistributionCard, ReportFilterForm, ReportSummaryCards, ReportTimeSeriesChart, useReportGenerator } from '@/components/reports';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';

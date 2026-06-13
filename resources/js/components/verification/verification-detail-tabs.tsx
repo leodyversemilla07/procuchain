@@ -50,7 +50,7 @@ function IntegrityTab({ results }: { results: IntegrityResult[] }) {
                 {invalidCount > 0 && (
                     <div className="flex items-center gap-1.5">
                         <XCircle />
-                        <span className="font-medium text-destructive">{invalidCount} failed</span>
+                        <span className="text-destructive font-medium">{invalidCount} failed</span>
                     </div>
                 )}
             </div>
@@ -68,7 +68,8 @@ function IntegrityTab({ results }: { results: IntegrityResult[] }) {
 // =============================================================================
 
 function CompletenessTab({ result }: { result: CompletenessResult }) {
-    const progressColor = result.completion_percentage === 100 ? 'bg-primary/100' : result.completion_percentage >= 50 ? 'bg-muted/500' : 'bg-destructive/100';
+    const progressColor =
+        result.completion_percentage === 100 ? 'bg-primary/100' : result.completion_percentage >= 50 ? 'bg-muted/500' : 'bg-destructive/100';
 
     return (
         <Card>
@@ -86,24 +87,24 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                             <span className="text-muted-foreground text-xs">Required:</span>
                             <span className="text-xs font-semibold tabular-nums sm:text-sm">{result.document_counts.required}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 rounded-md border border-green-200 bg-primary/10 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-green-800 dark:bg-primary/10/50">
-                            <span className="text-xs text-primary/70 dark:text-primary/70">Uploaded:</span>
-                            <span className="text-xs font-semibold text-primary tabular-nums sm:text-sm dark:text-primary">
+                        <div className="bg-primary/10 dark:bg-primary/10/50 flex items-center gap-1.5 rounded-md border border-green-200 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-green-800">
+                            <span className="text-primary/70 dark:text-primary/70 text-xs">Uploaded:</span>
+                            <span className="text-primary dark:text-primary text-xs font-semibold tabular-nums sm:text-sm">
                                 {result.document_counts.uploaded}
                             </span>
                         </div>
                         {result.document_counts.uploaded_optional > 0 && (
-                            <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-primary/10 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-blue-800 dark:bg-primary/10/50">
-                                <span className="text-xs text-primary/70 dark:text-primary/70">Optional:</span>
-                                <span className="text-xs font-semibold text-primary tabular-nums sm:text-sm dark:text-primary">
+                            <div className="bg-primary/10 dark:bg-primary/10/50 flex items-center gap-1.5 rounded-md border border-blue-200 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-blue-800">
+                                <span className="text-primary/70 dark:text-primary/70 text-xs">Optional:</span>
+                                <span className="text-primary dark:text-primary text-xs font-semibold tabular-nums sm:text-sm">
                                     {result.document_counts.uploaded_optional}
                                 </span>
                             </div>
                         )}
                         {result.document_counts.missing > 0 && (
-                            <div className="flex items-center gap-1.5 rounded-md border border-red-200 bg-destructive/10 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-red-800 dark:bg-destructive/10/50">
-                                <span className="text-xs text-destructive/70 dark:text-destructive/70">Missing:</span>
-                                <span className="text-xs font-semibold text-destructive tabular-nums sm:text-sm dark:text-destructive">
+                            <div className="bg-destructive/10 dark:bg-destructive/10/50 flex items-center gap-1.5 rounded-md border border-red-200 px-2 py-1 sm:px-2.5 sm:py-1.5 dark:border-red-800">
+                                <span className="text-destructive/70 dark:text-destructive/70 text-xs">Missing:</span>
+                                <span className="text-destructive dark:text-destructive text-xs font-semibold tabular-nums sm:text-sm">
                                     {result.document_counts.missing}
                                 </span>
                             </div>
@@ -140,15 +141,15 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 pt-0 sm:flex flex-col gap-6">
+            <CardContent className="flex flex-col gap-4 gap-6 pt-0 sm:flex">
                 {result.is_complete && result.missing_documents.length === 0 && (
-                    <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-primary/10/50 p-3 sm:p-4 dark:border-green-800 dark:bg-primary/10/20">
-                        <div className="shrink-0 rounded-full bg-primary/20 p-2 dark:bg-primary/20">
+                    <div className="bg-primary/10/50 dark:bg-primary/10/20 flex items-center gap-3 rounded-lg border border-green-200 p-3 sm:p-4 dark:border-green-800">
+                        <div className="bg-primary/20 dark:bg-primary/20 shrink-0 rounded-full p-2">
                             <CheckCircle />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-primary dark:text-primary">All Documents Uploaded</p>
-                            <p className="text-xs text-primary/80 dark:text-primary/80">
+                            <p className="text-primary dark:text-primary text-sm font-medium">All Documents Uploaded</p>
+                            <p className="text-primary/80 dark:text-primary/80 text-xs">
                                 All {result.document_counts.required} required documents for this stage have been successfully uploaded.
                             </p>
                         </div>
@@ -170,7 +171,7 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                             {result.missing_documents.map((doc, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-center gap-3 bg-destructive/10/50 px-4 py-3 transition-colors hover:bg-destructive/10 dark:bg-destructive/10/20 dark:hover:bg-destructive/10/30"
+                                    className="bg-destructive/10/50 hover:bg-destructive/10 dark:bg-destructive/10/20 dark:hover:bg-destructive/10/30 flex items-center gap-3 px-4 py-3 transition-colors"
                                 >
                                     <FileWarning />
                                     <span className="text-sm">{doc}</span>
@@ -212,7 +213,7 @@ function CompletenessTab({ result }: { result: CompletenessResult }) {
                             {result.warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 text-sm dark:border-yellow-800 dark:bg-muted/50/30"
+                                    className="bg-muted/50 dark:bg-muted/50/30 flex items-start gap-3 rounded-lg border border-yellow-200 p-3 text-sm dark:border-yellow-800"
                                 >
                                     <Info />
                                     <span className="text-muted-foreground dark:text-muted-foreground">{warning}</span>
@@ -271,7 +272,7 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                         {mismatchCount > 0 && (
                             <div className="flex items-center gap-1.5">
                                 <XCircle />
-                                <span className="font-medium text-destructive">{mismatchCount} mismatched</span>
+                                <span className="text-destructive font-medium">{mismatchCount} mismatched</span>
                             </div>
                         )}
                     </div>
@@ -292,11 +293,7 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                                     )}
                                 >
                                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                                        {check.matches ? (
-                                            <CheckCircle />
-                                        ) : (
-                                            <XCircle />
-                                        )}
+                                        {check.matches ? <CheckCircle /> : <XCircle />}
                                         <div className="min-w-0">
                                             <p className="truncate text-xs font-medium sm:text-sm">{check.document_type_display}</p>
                                             <p className="text-muted-foreground truncate text-[10px] sm:text-xs">{check.file_key}</p>
@@ -314,7 +311,9 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                                             {check.pr_number_in_doc}
                                         </code>
                                         {!check.matches && (
-                                            <p className="mt-0.5 text-[10px] text-destructive sm:mt-1 sm:text-xs">Expected: {check.expected_pr_number}</p>
+                                            <p className="text-destructive mt-0.5 text-[10px] sm:mt-1 sm:text-xs">
+                                                Expected: {check.expected_pr_number}
+                                            </p>
                                         )}
                                     </div>
                                 </div>
@@ -338,7 +337,7 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                             {result.errors.map((error, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-red-200 bg-destructive/10 p-3 text-sm dark:border-red-800 dark:bg-destructive/10/30"
+                                    className="bg-destructive/10 dark:bg-destructive/10/30 flex items-start gap-3 rounded-lg border border-red-200 p-3 text-sm dark:border-red-800"
                                 >
                                     <AlertTriangle />
                                     <span className="text-destructive dark:text-destructive">{error}</span>
@@ -358,7 +357,7 @@ function CrossReferenceTab({ result }: { result: CrossReferenceResult }) {
                             {result.warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 text-sm dark:border-yellow-800 dark:bg-muted/50/30"
+                                    className="bg-muted/50 dark:bg-muted/50/30 flex items-start gap-3 rounded-lg border border-yellow-200 p-3 text-sm dark:border-yellow-800"
                                 >
                                     <Info />
                                     <span className="text-muted-foreground dark:text-muted-foreground">{warning}</span>
@@ -441,11 +440,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                                     )}
                                 >
                                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                                        {check.valid ? (
-                                            <CheckCircle />
-                                        ) : (
-                                            <AlertTriangle />
-                                        )}
+                                        {check.valid ? <CheckCircle /> : <AlertTriangle />}
                                         <div className="min-w-0">
                                             <p className="truncate text-xs font-medium sm:text-sm">{check.document_type_display}</p>
                                             <p className="text-muted-foreground truncate text-[10px] sm:text-xs">{check.file_key}</p>
@@ -455,7 +450,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                                         variant={check.valid ? 'default' : 'outline'}
                                         className={cn(
                                             'ml-6 w-fit shrink-0 text-[10px] sm:ml-0 sm:text-xs',
-                                            !check.valid && 'border-amber-300 text-muted-foreground dark:border-amber-700 dark:text-muted-foreground',
+                                            !check.valid && 'text-muted-foreground dark:text-muted-foreground border-amber-300 dark:border-amber-700',
                                         )}
                                     >
                                         {check.valid ? 'Valid' : 'Review'}
@@ -478,11 +473,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                             {optionalDocs.map((check, index) => (
                                 <div key={index} className="hover:bg-muted/50 flex items-center justify-between px-4 py-2.5 transition-colors">
                                     <div className="flex min-w-0 items-center gap-3">
-                                        {check.valid ? (
-                                            <CheckCircle />
-                                        ) : (
-                                            <AlertTriangle />
-                                        )}
+                                        {check.valid ? <CheckCircle /> : <AlertTriangle />}
                                         <span className="truncate text-sm">{check.document_type_display}</span>
                                     </div>
                                     <Badge variant="secondary" className="shrink-0 text-xs">
@@ -511,7 +502,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                             {result.errors.map((error, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-red-200 bg-destructive/10 p-3 text-sm dark:border-red-800 dark:bg-destructive/10/30"
+                                    className="bg-destructive/10 dark:bg-destructive/10/30 flex items-start gap-3 rounded-lg border border-red-200 p-3 text-sm dark:border-red-800"
                                 >
                                     <AlertTriangle />
                                     <span className="text-destructive dark:text-destructive">{error}</span>
@@ -531,7 +522,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
                             {result.warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-muted/50 p-3 text-sm dark:border-yellow-800 dark:bg-muted/50/30"
+                                    className="bg-muted/50 dark:bg-muted/50/30 flex items-start gap-3 rounded-lg border border-yellow-200 p-3 text-sm dark:border-yellow-800"
                                 >
                                     <Info />
                                     <span className="text-muted-foreground dark:text-muted-foreground">{warning}</span>
@@ -561,7 +552,7 @@ export function VerificationDetailTabs({ report }: VerificationDetailTabsProps) 
                     <div className="relative">
                         <FileCheck />
                         {!report.summary.integrity_valid && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-destructive/100 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="bg-destructive/100 absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Integrity</span>
@@ -570,7 +561,7 @@ export function VerificationDetailTabs({ report }: VerificationDetailTabsProps) 
                     <div className="relative">
                         <FileText />
                         {!report.completeness_result.is_complete && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-muted/500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="bg-muted/500 absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Completeness</span>
@@ -579,7 +570,7 @@ export function VerificationDetailTabs({ report }: VerificationDetailTabsProps) 
                     <div className="relative">
                         <Link2 />
                         {!report.summary.cross_references_consistent && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-destructive/100 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="bg-destructive/100 absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Cross-Ref</span>
@@ -588,7 +579,7 @@ export function VerificationDetailTabs({ report }: VerificationDetailTabsProps) 
                     <div className="relative">
                         <Scale />
                         {!report.summary.ra_12009_compliant && (
-                            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-muted/500 sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
+                            <span className="bg-muted/500 absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full sm:-top-1 sm:-right-1 sm:h-2 sm:w-2" />
                         )}
                     </div>
                     <span className="hidden sm:inline">Compliance</span>

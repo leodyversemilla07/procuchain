@@ -7,8 +7,8 @@ import type { LedgerEntry } from '@/types/blockchain';
 import { ArrowDownUp, ChevronDown, ClipboardCopy, ExternalLink, RotateCcw, ServerCrash, Trash2 } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
-import { computeDiff } from './utils';
 import { getStreamConfig } from './stream-config';
+import { computeDiff } from './utils';
 
 function copyTxid(txid: string) {
     navigator.clipboard
@@ -88,15 +88,7 @@ function LedgerEntryDetail({ entry, diff }: { entry: LedgerEntry; diff: Array<{ 
     );
 }
 
-export function LedgerEntryRow({
-    entry,
-    isExpanded,
-    onToggle,
-}: {
-    entry: LedgerEntry;
-    isExpanded: boolean;
-    onToggle: (txid: string) => void;
-}) {
+export function LedgerEntryRow({ entry, isExpanded, onToggle }: { entry: LedgerEntry; isExpanded: boolean; onToggle: (txid: string) => void }) {
     const streamCfg = getStreamConfig(entry.stream);
     const StreamIcon = streamCfg.icon;
     const isSystem = entry.pr_number === 'system';
@@ -153,16 +145,10 @@ export function LedgerEntryRow({
                     <div className="truncate text-sm" title={entry.summary}>
                         {entry.summary}
                     </div>
-                    {entry.procurement_title && (
-                        <div className="text-muted-foreground truncate text-xs">{entry.procurement_title}</div>
-                    )}
+                    {entry.procurement_title && <div className="text-muted-foreground truncate text-xs">{entry.procurement_title}</div>}
                 </TableCell>
                 <TableCell className="font-mono text-xs">
-                    {entry.actor_address ? (
-                        `${entry.actor_address.substring(0, 10)}...`
-                    ) : (
-                        <span className="text-muted-foreground italic">—</span>
-                    )}
+                    {entry.actor_address ? `${entry.actor_address.substring(0, 10)}...` : <span className="text-muted-foreground italic">—</span>}
                 </TableCell>
                 <TableCell>
                     <div className="flex items-center gap-1">

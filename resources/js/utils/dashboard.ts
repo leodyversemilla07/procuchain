@@ -51,7 +51,9 @@ export function buildErrorState(error: string | undefined, title: string) {
     };
 }
 
-export function deduplicateProcurements(procurements: Array<{ id?: string; title: string; stage: Stage; status: Status } | null | undefined>): RecentProcurement[] {
+export function deduplicateProcurements(
+    procurements: Array<{ id?: string; title: string; stage: Stage; status: Status } | null | undefined>,
+): RecentProcurement[] {
     const seen = new Set<string>();
     return procurements
         .filter((p) => p && p.id && !seen.has(p.id) && (seen.add(p.id), true))

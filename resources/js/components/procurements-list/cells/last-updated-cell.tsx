@@ -16,8 +16,8 @@ export const LastUpdatedCell = ({ date }: LastUpdatedCellProps) => {
 
     return (
         <div className="flex items-center gap-1.5">
-            <CalendarIcon className="h-3.5 w-3.5 text-gray-500 dark:text-muted-foreground" aria-hidden="true" />
-            <time className="text-sm font-medium text-gray-600 dark:text-muted-foreground" dateTime={date}>
+            <CalendarIcon className="dark:text-muted-foreground h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+            <time className="dark:text-muted-foreground text-sm font-medium text-gray-600" dateTime={date}>
                 {displayDate}
             </time>
         </div>

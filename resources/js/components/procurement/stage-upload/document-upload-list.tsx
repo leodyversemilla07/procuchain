@@ -74,7 +74,7 @@ export function DocumentUploadList({
                                                 )}
                                             </div>
                                             {isUploaded && (
-                                                <Badge className="bg-primary/100 py-0 text-[10px] hover:bg-primary">
+                                                <Badge className="bg-primary/100 hover:bg-primary py-0 text-[10px]">
                                                     <CheckCircle2 className="mr-1 h-3 w-3" /> UPLOADED
                                                 </Badge>
                                             )}

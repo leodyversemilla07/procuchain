@@ -113,7 +113,7 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                                 </div>
                                 <div>
                                     <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">ABC Amount</label>
-                                    <p className="text-sm font-semibold text-primary">{procurement.formatted_abc_amount}</p>
+                                    <p className="text-primary text-sm font-semibold">{procurement.formatted_abc_amount}</p>
                                 </div>
                             </div>
                             <div className="flex flex-col gap-4">
@@ -137,11 +137,11 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                         {procurement.has_corrections && procurement.latest_correction && (
                             <>
                                 <Separator />
-                                <div className="rounded-lg border border-amber-200 bg-muted/50 p-4 dark:border-amber-800 dark:bg-muted/50/20">
+                                <div className="bg-muted/50 dark:bg-muted/50/20 rounded-lg border border-amber-200 p-4 dark:border-amber-800">
                                     <div className="flex items-start gap-3">
-                                        <AlertCircle className="mt-0.5 text-muted-foreground" />
+                                        <AlertCircle className="text-muted-foreground mt-0.5" />
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-muted-foreground dark:text-muted-foreground">Latest Correction</h4>
+                                            <h4 className="text-muted-foreground dark:text-muted-foreground font-medium">Latest Correction</h4>
                                             <div className="mt-2 flex flex-col gap-2 text-sm">
                                                 <div className="flex items-center gap-2">
                                                     <User className="text-muted-foreground" />

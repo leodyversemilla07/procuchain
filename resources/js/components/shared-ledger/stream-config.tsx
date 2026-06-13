@@ -32,5 +32,4 @@ export const STREAM_CONFIG: Record<
     'file.chunks': { label: 'File Chunk', variant: 'outline', icon: FileText },
 };
 
-export const getStreamConfig = (stream: string) =>
-    STREAM_CONFIG[stream] ?? { label: stream, variant: 'outline' as const, icon: ScrollText };
+export const getStreamConfig = (stream: string) => STREAM_CONFIG[stream] ?? { label: stream, variant: 'outline' as const, icon: ScrollText };

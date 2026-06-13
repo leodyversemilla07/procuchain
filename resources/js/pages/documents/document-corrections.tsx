@@ -211,7 +211,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
                 {/* Permission Message for Non-Admin Users */}
                 {!canCorrectDocuments && (
-                    <Alert className="border-amber-200 bg-muted/50/50 dark:border-amber-900 dark:bg-muted/50/20">
+                    <Alert className="bg-muted/50/50 dark:bg-muted/50/20 border-amber-200 dark:border-amber-900">
                         <AlertCircle />
                         <AlertTitle>Limited Permissions</AlertTitle>
                         <AlertDescription>

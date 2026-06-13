@@ -152,15 +152,11 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                         <div
                             className={`flex items-start gap-3 rounded-lg border p-4 ${
                                 conferenceHeld
-                                    ? 'border-blue-200 bg-primary/10 dark:border-blue-900 dark:bg-primary/10/30'
-                                    : 'border-amber-200 bg-muted/50 dark:border-amber-900 dark:bg-muted/50/30'
+                                    ? 'bg-primary/10 dark:bg-primary/10/30 border-blue-200 dark:border-blue-900'
+                                    : 'bg-muted/50 dark:bg-muted/50/30 border-amber-200 dark:border-amber-900'
                             }`}
                         >
-                            {conferenceHeld ? (
-                                <CheckCircle2 />
-                            ) : (
-                                <AlertCircle />
-                            )}
+                            {conferenceHeld ? <CheckCircle2 /> : <AlertCircle />}
                             <div className="flex-1">
                                 <p className="text-foreground text-sm font-medium sm:text-base">
                                     {conferenceHeld ? 'Next Step: Upload Documents' : 'Next Step: Skip to Bidding Documents'}

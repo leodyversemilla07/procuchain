@@ -390,31 +390,31 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
 
             {/* Latest Correction Summary */}
             {latestCorrection && (
-                <div className="rounded-xl border border-amber-200 bg-muted/50/50 p-4">
+                <div className="bg-muted/50/50 rounded-xl border border-amber-200 p-4">
                     <div className="flex items-start gap-4">
-                        <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                        <div className="bg-muted text-muted-foreground mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
                             <Clock />
                         </div>
-                        <div className="min-w-0 flex-1 flex flex-col gap-1">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                             <div className="flex min-w-0 flex-wrap items-center justify-between gap-1">
-                                <h4 className="shrink-0 font-semibold text-muted-foreground">Latest Correction</h4>
-                                <span className="text-xs font-medium text-muted-foreground">
+                                <h4 className="text-muted-foreground shrink-0 font-semibold">Latest Correction</h4>
+                                <span className="text-muted-foreground text-xs font-medium">
                                     {new Date(latestCorrection.timestamp).toLocaleDateString()}
                                 </span>
                             </div>
-                            <p className="min-w-0 text-sm break-words text-muted-foreground">{latestCorrection.reason}</p>
+                            <p className="text-muted-foreground min-w-0 text-sm break-words">{latestCorrection.reason}</p>
                             <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
-                                <span className="shrink-0 font-medium text-muted-foreground">Changed:</span>
+                                <span className="text-muted-foreground shrink-0 font-medium">Changed:</span>
                                 {latestCorrection.changed_fields.map((field, index) => (
                                     <Badge
                                         key={index}
                                         variant="outline"
-                                        className="border-amber-300 bg-muted/50 text-muted-foreground hover:bg-muted"
+                                        className="bg-muted/50 text-muted-foreground hover:bg-muted border-amber-300"
                                     >
                                         {formatFieldName(field)}
                                     </Badge>
                                 ))}
-                                <span className="ml-auto shrink-0 truncate text-muted-foreground">by {latestCorrection.corrected_by}</span>
+                                <span className="text-muted-foreground ml-auto shrink-0 truncate">by {latestCorrection.corrected_by}</span>
                             </div>
                         </div>
                     </div>

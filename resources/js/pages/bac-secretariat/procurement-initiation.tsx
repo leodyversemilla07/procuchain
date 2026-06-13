@@ -72,13 +72,13 @@ export default function ProcurementInitiationForm({
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Draft Recovery Banner */}
                 {showDraftBanner && (
-                    <Card className="border-amber-500/50 bg-muted/50/50 dark:bg-muted/50/20">
+                    <Card className="bg-muted/50/50 dark:bg-muted/50/20 border-amber-500/50">
                         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-start gap-3">
                                 <AlertCircle />
                                 <div>
-                                    <p className="font-medium text-muted-foreground dark:text-muted-foreground">You have an unsaved draft</p>
-                                    <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+                                    <p className="text-muted-foreground dark:text-muted-foreground font-medium">You have an unsaved draft</p>
+                                    <p className="text-muted-foreground dark:text-muted-foreground text-sm">
                                         Last saved: {draftSavedAt ? new Date(draftSavedAt).toLocaleString() : 'Unknown'}
                                     </p>
                                 </div>
@@ -89,7 +89,7 @@ export default function ProcurementInitiationForm({
                                     variant="outline"
                                     size="sm"
                                     onClick={discardDraft}
-                                    className="border-amber-500/50 text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted/30"
+                                    className="text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted/30 border-amber-500/50"
                                 >
                                     <Trash2 />
                                     Discard
@@ -101,7 +101,7 @@ export default function ProcurementInitiationForm({
                                         const draft = loadDraft();
                                         if (draft) restoreDraft(draft);
                                     }}
-                                    className="bg-muted-foreground text-white hover:bg-muted-foreground/90"
+                                    className="bg-muted-foreground hover:bg-muted-foreground/90 text-white"
                                 >
                                     <Save />
                                     Restore Draft

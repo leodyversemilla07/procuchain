@@ -144,7 +144,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                     <CheckCircle2 />
                     <span className="text-muted-foreground text-xs">Successful</span>
                 </div>
-                <p className="mt-1 text-lg font-bold text-primary sm:text-xl md:text-2xl dark:text-primary">{stats.successful}</p>
+                <p className="text-primary dark:text-primary mt-1 text-lg font-bold sm:text-xl md:text-2xl">{stats.successful}</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
                 <div className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                 <TableCell className="hidden md:table-cell">
                                     <div className="flex items-center gap-2">
                                         <DeviceIcon />
-                                        <div className="min-w-0 flex flex-col gap-1">
+                                        <div className="flex min-w-0 flex-col gap-1">
                                             <div className="text-sm whitespace-nowrap capitalize">{log.device_type || 'Unknown'}</div>
                                             {log.browser && <div className="text-muted-foreground text-xs">{log.browser}</div>}
                                         </div>
@@ -292,7 +292,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                     {Array.from({ length: 5 }).map((_, i) => (
                         <div key={i} className="flex items-center gap-4">
                             <Skeleton className="h-12 w-12 rounded" />
-                            <div className="flex-1 flex flex-col gap-2">
+                            <div className="flex flex-1 flex-col gap-2">
                                 <Skeleton className="h-4 w-full" />
                                 <Skeleton className="h-3 w-3/4" />
                             </div>

@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import type { ReportFilters } from './report-utils';
 import { BarChart3, Download } from 'lucide-react';
+import type { ReportFilters } from './report-utils';
 
 interface ReportFilterFormProps {
     filters: ReportFilters;
@@ -92,7 +92,10 @@ export function ReportFilterForm({ filters, onFilterChange, onGenerate, onExport
                         <>
                             <div className="flex flex-col gap-2">
                                 <Label>Month</Label>
-                                <Select value={filters.month?.toString()} onValueChange={(value) => value && onFilterChange('month', parseInt(value))}>
+                                <Select
+                                    value={filters.month?.toString()}
+                                    onValueChange={(value) => value && onFilterChange('month', parseInt(value))}
+                                >
                                     <SelectTrigger className="w-full">
                                         <SelectValue>{() => selectedMonthLabel}</SelectValue>
                                     </SelectTrigger>
@@ -115,7 +118,10 @@ export function ReportFilterForm({ filters, onFilterChange, onGenerate, onExport
                         <>
                             <div className="flex flex-col gap-2">
                                 <Label>Quarter</Label>
-                                <Select value={filters.quarter?.toString()} onValueChange={(value) => value && onFilterChange('quarter', parseInt(value))}>
+                                <Select
+                                    value={filters.quarter?.toString()}
+                                    onValueChange={(value) => value && onFilterChange('quarter', parseInt(value))}
+                                >
                                     <SelectTrigger className="w-full">
                                         <SelectValue>{() => selectedQuarterLabel}</SelectValue>
                                     </SelectTrigger>
@@ -150,7 +156,11 @@ export function ReportFilterForm({ filters, onFilterChange, onGenerate, onExport
 
                     <div className="flex flex-col gap-2">
                         <Label>Search Query</Label>
-                        <Input placeholder="Search title, ID, description..." value={filters.query || ''} onChange={(e) => onFilterChange('query', e.target.value)} />
+                        <Input
+                            placeholder="Search title, ID, description..."
+                            value={filters.query || ''}
+                            onChange={(e) => onFilterChange('query', e.target.value)}
+                        />
                     </div>
                 </div>
 

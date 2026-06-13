@@ -19,8 +19,8 @@ import { dashboard } from '@/routes/admin';
 
 import { UserManagementFilterBar } from '@/components/admin/user-management-filter-bar';
 import { UserManagementTable } from '@/components/admin/user-management-table';
-import { getRoleDisplayName } from '@/types/user';
 import { useUserManagement } from '@/hooks/use-user-management';
+import { getRoleDisplayName } from '@/types/user';
 
 const breadcrumbs = [
     { title: 'Admin Dashboard', href: dashboard.url() },

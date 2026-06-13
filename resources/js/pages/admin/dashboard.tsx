@@ -6,7 +6,15 @@ import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { buildErrorState, deduplicateProcurements, formatStageName, formatUserName, type DashboardStats, type RecentActivity, type RecentProcurement } from '@/utils/dashboard';
+import {
+    buildErrorState,
+    deduplicateProcurements,
+    formatStageName,
+    formatUserName,
+    type DashboardStats,
+    type RecentActivity,
+    type RecentProcurement,
+} from '@/utils/dashboard';
 import { PageProps } from '@inertiajs/core';
 import { Deferred, Head, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText, Shield, Users } from 'lucide-react';
@@ -20,8 +28,6 @@ import { index as procurementsListIndex, show as procurementsShow } from '@/rout
 import { UserRole } from '@/types/enums';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
-
-
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 

@@ -121,9 +121,9 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             <SheetContent side="left" className="bg-sidebar flex h-full w-64 flex-col items-stretch justify-between">
                                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-foreground" />
+                                    <AppLogoIcon className="dark:text-foreground h-6 w-6 fill-current text-black" />
                                 </SheetHeader>
-                                <div className="flex h-full flex-1 flex-col flex flex-col gap-4 p-4">
+                                <div className="flex h-full flex-1 flex-col gap-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col gap-4">
                                             {mainNavItems.map((item) => (
@@ -176,7 +176,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                             {item.title}
                                         </Link>
                                         {page.url === item.href && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-background"></div>
+                                            <div className="dark:bg-background absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black"></div>
                                         )}
                                     </NavigationMenuItem>
                                 ))}
@@ -213,7 +213,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             <DropdownMenuTrigger render={<Button variant="ghost" className="size-10 rounded-full p-1" />}>
                                 <Avatar className="size-8 overflow-hidden rounded-full">
                                     <AvatarImage src={auth.user.avatar ?? undefined} alt={auth.user.name} />
-                                    <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-foreground">
+                                    <AvatarFallback className="dark:text-foreground rounded-lg bg-neutral-200 text-black dark:bg-neutral-700">
                                         {getInitials(auth.user.name)}
                                     </AvatarFallback>
                                 </Avatar>

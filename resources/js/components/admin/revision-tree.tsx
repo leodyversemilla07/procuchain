@@ -56,7 +56,7 @@ const STATUS_STYLES = {
         icon: AlertTriangle,
         iconColor: 'text-destructive',
         label: 'Breached',
-        badgeClass: 'bg-destructive/20 text-destructive'
+        badgeClass: 'bg-destructive/20 text-destructive',
     },
     repaired: {
         border: 'border-muted-foreground',
@@ -64,7 +64,7 @@ const STATUS_STYLES = {
         icon: CheckCircle2,
         iconColor: 'text-muted-foreground',
         label: 'Repaired',
-        badgeClass: 'bg-muted text-muted-foreground'
+        badgeClass: 'bg-muted text-muted-foreground',
     },
     normal: {
         border: 'border-border',
@@ -72,7 +72,7 @@ const STATUS_STYLES = {
         icon: Circle,
         iconColor: 'text-muted-foreground',
         label: 'Historical',
-        badgeClass: 'bg-muted text-muted-foreground'
+        badgeClass: 'bg-muted text-muted-foreground',
     },
 };
 
@@ -183,18 +183,16 @@ function RevisionDetails({ revision }: { revision: RevisionNode }) {
             </div>
 
             {revision.breach_type && (
-                <div className="rounded-md bg-destructive/10 p-2 text-xs dark:bg-destructive/10/30">
-                    <span className="font-medium text-destructive dark:text-destructive">Breach:</span>{' '}
+                <div className="bg-destructive/10 dark:bg-destructive/10/30 rounded-md p-2 text-xs">
+                    <span className="text-destructive dark:text-destructive font-medium">Breach:</span>{' '}
                     <span className="text-destructive dark:text-destructive">{revision.breach_type}</span>
                 </div>
             )}
 
             {revision.repaired_at && (
-                <div className="rounded-md bg-primary/10 p-2 text-xs dark:bg-primary/10/30">
-                    <span className="font-medium text-primary dark:text-primary">Repaired:</span>{' '}
-                    <span className="text-primary dark:text-primary">
-                        {formatDistanceToNow(parseISO(revision.repaired_at), { addSuffix: true })}
-                    </span>
+                <div className="bg-primary/10 dark:bg-primary/10/30 rounded-md p-2 text-xs">
+                    <span className="text-primary dark:text-primary font-medium">Repaired:</span>{' '}
+                    <span className="text-primary dark:text-primary">{formatDistanceToNow(parseISO(revision.repaired_at), { addSuffix: true })}</span>
                 </div>
             )}
         </div>
@@ -294,13 +292,7 @@ export function RevisionTree({ revisions, currentTxid, className, compact = fals
                                         {index < chain.length - 1 && (
                                             <div className="flex flex-col items-center px-1 pt-4">
                                                 <div className="bg-border h-0.5 w-6" />
-                                                <svg
-                                                   
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                >
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <path d="M9 5l7 7-7 7" />
                                                 </svg>
                                             </div>

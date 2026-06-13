@@ -193,7 +193,7 @@ export function ExplorerTabs({
                                 <Card key={block.hash} className="p-4">
                                     <button onClick={() => onToggleBlockExpansion(block.hash)} className="w-full touch-manipulation">
                                         <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 flex flex-col gap-2 text-left">
+                                            <div className="flex flex-1 flex-col gap-2 text-left">
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="outline">#{block.height}</Badge>
                                                     <span className="text-muted-foreground text-xs">
@@ -495,7 +495,7 @@ export function ExplorerTabs({
                                         <Card key={peer.id} className="p-4">
                                             <button onClick={() => onTogglePeerExpansion(peer.id)} className="w-full touch-manipulation">
                                                 <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex-1 flex flex-col gap-2 text-left">
+                                                    <div className="flex flex-1 flex-col gap-2 text-left">
                                                         <div className="font-mono text-sm break-all">{peer.addr}</div>
                                                         <div className="flex flex-wrap gap-2">
                                                             <Badge variant={peer.inbound ? 'secondary' : 'default'} className="text-xs">

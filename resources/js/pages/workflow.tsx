@@ -507,7 +507,7 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                                                 }`}
                                                             >
                                                                 <div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
-                                                                    <div className="rounded-lg bg-muted/500/10 p-1.5 sm:p-2">
+                                                                    <div className="bg-muted/500/10 rounded-lg p-1.5 sm:p-2">
                                                                         <ModeIcon />
                                                                     </div>
                                                                     <Badge variant="secondary" className="text-[10px] sm:text-xs">

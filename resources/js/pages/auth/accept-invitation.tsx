@@ -78,11 +78,13 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-muted/50 p-3 dark:border-amber-900 dark:bg-muted/50/20">
+                            <div className="bg-muted/50 dark:bg-muted/50/20 flex items-center gap-3 rounded-lg border border-amber-200 p-3 dark:border-amber-900">
                                 <Clock className="h-5 w-5 shrink-0" />
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Expires {invitation.expires_at_human}</p>
-                                    <p className="text-xs text-muted-foreground dark:text-muted-foreground">{invitation.expires_at}</p>
+                                    <p className="text-muted-foreground dark:text-muted-foreground text-sm font-medium">
+                                        Expires {invitation.expires_at_human}
+                                    </p>
+                                    <p className="text-muted-foreground dark:text-muted-foreground text-xs">{invitation.expires_at}</p>
                                 </div>
                             </div>
                         </div>

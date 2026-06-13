@@ -100,7 +100,7 @@ export default function RecentViewersCard({ recentViews }: Props) {
             </CardHeader>
             <CardContent>
                 <ScrollArea className="h-48 sm:h-64">
-                    <div className="flex flex-col gap-2 sm:flex flex-col gap-3">
+                    <div className="flex flex-col gap-2 gap-3 sm:flex">
                         {recentViews.slice(0, 10).map((view) => (
                             <div key={view.id} className="flex items-center justify-between gap-2 rounded-lg border p-2">
                                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">

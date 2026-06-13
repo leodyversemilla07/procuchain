@@ -57,7 +57,7 @@ export const PriorityActionsStack = ({
     }
 
     return (
-        <div className="flex flex-col gap-3 sm:flex flex-col gap-4">
+        <div className="flex flex-col gap-3 gap-4 sm:flex">
             {safeActions.map((action) => (
                 <Card
                     key={`${action.id}-${action.action}`}

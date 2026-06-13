@@ -170,7 +170,7 @@ export function UserManagementTable({
                                       <CardContent className="p-4">
                                           <div className="flex flex-col gap-4">
                                               <div className="flex items-start justify-between">
-                                                  <div className="flex-1 flex flex-col gap-2">
+                                                  <div className="flex flex-1 flex-col gap-2">
                                                       <Skeleton className="h-5 w-32" />
                                                       <Skeleton className="h-4 w-48" />
                                                   </div>
@@ -198,7 +198,7 @@ export function UserManagementTable({
                                                               onCheckedChange={(value) => row.toggleSelected(!!value)}
                                                           />
                                                       </div>
-                                                      <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                                                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                                                           <CardTitle className="truncate text-sm leading-tight">{user.name}</CardTitle>
                                                           <p className="text-muted-foreground truncate text-xs">{user.email}</p>
                                                       </div>
@@ -264,11 +264,11 @@ export function UserManagementTable({
                                               <div className="flex items-center justify-between text-xs sm:text-sm">
                                                   <span className="text-muted-foreground">Email Status</span>
                                                   {user.email_verified_at ? (
-                                                      <Badge className="border border-green-200 bg-primary/20 text-xs text-primary dark:border-green-800/30 dark:bg-primary/20/20 dark:text-primary">
+                                                      <Badge className="bg-primary/20 text-primary dark:bg-primary/20/20 dark:text-primary border border-green-200 text-xs dark:border-green-800/30">
                                                           Verified
                                                       </Badge>
                                                   ) : (
-                                                      <Badge className="border border-yellow-200 bg-muted text-xs text-muted-foreground dark:border-yellow-800/30 dark:bg-muted/20 dark:text-muted-foreground">
+                                                      <Badge className="bg-muted text-muted-foreground dark:bg-muted/20 dark:text-muted-foreground border border-yellow-200 text-xs dark:border-yellow-800/30">
                                                           Pending
                                                       </Badge>
                                                   )}
@@ -277,7 +277,7 @@ export function UserManagementTable({
                                                   <span className="text-muted-foreground">2FA Status</span>
                                                   {user.two_factor_enabled ? (
                                                       <div className="flex items-center gap-1.5">
-                                                          <Badge className="border border-green-200 bg-primary/20 text-xs text-primary dark:border-green-800/30 dark:bg-primary/20/20 dark:text-primary">
+                                                          <Badge className="bg-primary/20 text-primary dark:bg-primary/20/20 dark:text-primary border border-green-200 text-xs dark:border-green-800/30">
                                                               <QrCode className="mr-1 h-3 w-3" />
                                                               On
                                                           </Badge>
@@ -286,7 +286,7 @@ export function UserManagementTable({
                                                           )}
                                                       </div>
                                                   ) : (
-                                                      <Badge className="border border-border bg-muted text-xs text-foreground dark:border-border dark:bg-muted/50 dark:text-muted-foreground">
+                                                      <Badge className="border-border bg-muted text-foreground dark:border-border dark:bg-muted/50 dark:text-muted-foreground border text-xs">
                                                           Off
                                                       </Badge>
                                                   )}

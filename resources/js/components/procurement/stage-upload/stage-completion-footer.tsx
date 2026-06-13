@@ -26,13 +26,13 @@ export function StageCompletionFooter({
     return (
         <CardFooter className="bg-muted/5 flex flex-col gap-4 rounded-b-xl border-t p-6 lg:col-span-2">
             {isStageCompleted ? (
-                <div className="flex w-full items-center justify-between rounded-xl border border-green-500/20 bg-primary/100/10 p-4">
-                    <div className="flex items-center gap-3 text-primary">
+                <div className="bg-primary/100/10 flex w-full items-center justify-between rounded-xl border border-green-500/20 p-4">
+                    <div className="text-primary flex items-center gap-3">
                         <CheckCircle2 className="h-5 w-5" />
                         <span className="text-xs font-bold tracking-tight uppercase">Stage Complete</span>
                     </div>
                     {nextStageInfo && (
-                        <Button variant="outline" className="border-green-500/20 bg-white text-primary" render={<Link href={nextStageInfo.url} />}>
+                        <Button variant="outline" className="text-primary border-green-500/20 bg-white" render={<Link href={nextStageInfo.url} />}>
                             NEXT: {nextStageInfo.name} <ArrowRight />
                         </Button>
                     )}

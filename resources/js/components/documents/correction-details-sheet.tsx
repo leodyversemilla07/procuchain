@@ -210,11 +210,7 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
             <div className="grid gap-3">
                 <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Correction Type</h3>
                 <div className="flex items-center gap-3">
-                    {correction.action === 'replace' ? (
-                        <FileCheck className="text-primary" />
-                    ) : (
-                        <FileX className="text-destructive" />
-                    )}
+                    {correction.action === 'replace' ? <FileCheck className="text-primary" /> : <FileX className="text-destructive" />}
                     <Badge variant={correction.action === 'replace' ? 'default' : 'secondary'}>
                         {formatCorrectionType(correction.correction_type, correction.correction_type_display)}
                     </Badge>
@@ -254,7 +250,7 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
             {correction.action === 'replace' && correction.corrected_metadata && (
                 <div className="grid gap-4">
                     <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Corrected Information</h3>
-                    <div className="rounded-lg border bg-primary/10 p-4 dark:bg-primary/10/20">
+                    <div className="bg-primary/10 dark:bg-primary/10/20 rounded-lg border p-4">
                         <div className="grid gap-3">
                             {correction.corrected_metadata.file_name && (
                                 <div className="flex items-center gap-2">
@@ -351,11 +347,7 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                         <div className="bg-card rounded-lg border p-4 shadow-sm sm:p-5">
                             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                 <div className="flex items-center gap-3">
-                                    {correction.action === 'replace' ? (
-                                        <FileCheck />
-                                    ) : (
-                                        <FileX />
-                                    )}
+                                    {correction.action === 'replace' ? <FileCheck /> : <FileX />}
                                     <div className="min-w-0 flex-1">
                                         <h4 className="text-sm font-semibold sm:text-base">
                                             {correction.action === 'replace' ? 'Document Replaced' : 'Document Invalidated'}
@@ -407,10 +399,8 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                             </div>
 
                             {correction.action === 'replace' && correction.corrected_metadata && (
-                                <div className="-mx-4 mt-4 -mb-4 grid gap-3 rounded-b-lg border-t bg-primary/10 px-4 py-4 sm:-mx-5 sm:-mb-5 sm:px-5 dark:bg-primary/10/20">
-                                    <p className="text-xs font-semibold text-primary sm:text-sm dark:text-primary">
-                                        New Document Information
-                                    </p>
+                                <div className="bg-primary/10 dark:bg-primary/10/20 -mx-4 mt-4 -mb-4 grid gap-3 rounded-b-lg border-t px-4 py-4 sm:-mx-5 sm:-mb-5 sm:px-5">
+                                    <p className="text-primary dark:text-primary text-xs font-semibold sm:text-sm">New Document Information</p>
                                     <div className="grid gap-2 text-xs sm:text-sm">
                                         {correction.corrected_metadata.file_name && (
                                             <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">

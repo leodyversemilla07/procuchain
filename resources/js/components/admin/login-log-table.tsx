@@ -262,7 +262,7 @@ export default function LoginLogTable({
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="max-w-[180px] flex flex-col gap-1">
+                                            <div className="flex max-w-[180px] flex-col gap-1">
                                                 <div className="truncate font-medium" title={log.user?.name || 'Unknown User'}>
                                                     {highlightSearchTerm(log.user?.name || 'Unknown User', debouncedSearchTerm)}
                                                 </div>
@@ -274,12 +274,12 @@ export default function LoginLogTable({
                                         <TableCell>{getRoleBadge(log.user?.primary_role)}</TableCell>
                                         <TableCell>
                                             {log.user?.two_factor_enabled ? (
-                                                <Badge className="border border-green-200 bg-primary/20 px-2 py-1 text-xs text-primary dark:border-green-800/30 dark:bg-primary/20/20 dark:text-primary">
+                                                <Badge className="bg-primary/20 text-primary dark:bg-primary/20/20 dark:text-primary border border-green-200 px-2 py-1 text-xs dark:border-green-800/30">
                                                     <QrCode className="mr-1 h-3 w-3" />
                                                     Enabled
                                                 </Badge>
                                             ) : (
-                                                <Badge className="border border-border bg-muted px-2 py-1 text-xs text-foreground dark:border-border dark:bg-muted/50 dark:text-muted-foreground">
+                                                <Badge className="border-border bg-muted text-foreground dark:border-border dark:bg-muted/50 dark:text-muted-foreground border px-2 py-1 text-xs">
                                                     Disabled
                                                 </Badge>
                                             )}
@@ -306,7 +306,7 @@ export default function LoginLogTable({
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 {getDeviceIcon(log.device_type)}
-                                                <div className="max-w-20 flex flex-col gap-1">
+                                                <div className="flex max-w-20 flex-col gap-1">
                                                     <div className="truncate text-sm">{log.device_type || 'Unknown'}</div>
                                                     {log.platform && (
                                                         <div className="text-muted-foreground truncate text-xs" title={log.platform}>

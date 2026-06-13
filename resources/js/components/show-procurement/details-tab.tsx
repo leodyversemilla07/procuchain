@@ -160,17 +160,9 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <DetailItem label="BAC Resolution No." value={details.bac_resolution_number} />
-                                <DetailItem
-                                    label="BAC Res. Date"
-                                    value={details.bac_resolution_date_formatted}
-                                    icon={<Calendar />}
-                                />
+                                <DetailItem label="BAC Res. Date" value={details.bac_resolution_date_formatted} icon={<Calendar />} />
                                 <DetailItem label="PhilGEPS Ref." value={details.philgeps_reference} />
-                                <DetailItem
-                                    label="PhilGEPS Posting"
-                                    value={details.philgeps_posting_date_formatted}
-                                    icon={<Calendar />}
-                                />
+                                <DetailItem label="PhilGEPS Posting" value={details.philgeps_posting_date_formatted} icon={<Calendar />} />
                             </div>
                         </div>
 
@@ -216,7 +208,7 @@ const DetailItem = ({
     if (!value) return null;
 
     return (
-        <div className="min-w-0 flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
             <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
                 {icon}
                 {label}

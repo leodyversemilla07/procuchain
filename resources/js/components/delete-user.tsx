@@ -43,8 +43,8 @@ export default function DeleteUser() {
     return (
         <div className="flex flex-col gap-6">
             <HeadingSmall title="Delete account" description="Deactivate your account — data remains on-chain and recoverable" />
-            <div className="flex flex-col gap-4 rounded-lg border border-red-100 bg-destructive/10 p-4 dark:border-red-200/10 dark:bg-destructive/10">
-                <div className="relative flex flex-col gap-0.5 text-destructive dark:text-destructive">
+            <div className="bg-destructive/10 dark:bg-destructive/10 flex flex-col gap-4 rounded-lg border border-red-100 p-4 dark:border-red-200/10">
+                <div className="text-destructive dark:text-destructive relative flex flex-col gap-0.5">
                     <p className="font-medium">Warning</p>
                     <p className="text-sm">
                         Please proceed with caution. Your account will be deactivated but your data remains on-chain and can be restored by an

@@ -61,7 +61,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
             <Card className="shadow-sm transition-shadow duration-200 hover:shadow-md">
                 <CardHeader className="p-4 sm:p-6">
                     {/* Title and ID Section */}
-                    <div className="flex flex-col gap-1.5 sm:flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5 gap-2 sm:flex">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                             <CardTitle className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
                             {procurementModeLabel && (
@@ -85,7 +85,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
 
             {/* Workflow Visualization or Progress Bar */}
             {workflow ? (
-                <div className="mt-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-foreground/10 sm:mt-4 sm:p-6">
+                <div className="bg-card ring-foreground/10 mt-3 rounded-xl p-4 shadow-sm ring-1 sm:mt-4 sm:p-6">
                     <div className="flex flex-col gap-4">
                         <div className="text-muted-foreground text-xs font-medium sm:text-sm">
                             <span className="tracking-wider uppercase">Workflow Progress</span>

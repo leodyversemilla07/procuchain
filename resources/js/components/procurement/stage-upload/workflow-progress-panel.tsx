@@ -52,17 +52,13 @@ export function WorkflowProgressPanel({
                                                         stage.value === procurement.stage_value
                                                             ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
                                                             : stage.is_completed
-                                                              ? 'border-green-500 bg-primary/100 text-white shadow-sm'
+                                                              ? 'bg-primary/100 border-green-500 text-white shadow-sm'
                                                               : stage.is_optional
                                                                 ? 'border-muted-foreground/40 text-muted-foreground/40 border-dashed'
                                                                 : 'border-muted-foreground/20 text-muted-foreground/20 bg-muted/30'
                                                     }`}
                                                 >
-                                                    {stage.is_completed ? (
-                                                        <CheckCircle2 />
-                                                    ) : (
-                                                        <span className="text-xs font-bold">{index + 1}</span>
-                                                    )}
+                                                    {stage.is_completed ? <CheckCircle2 /> : <span className="text-xs font-bold">{index + 1}</span>}
                                                 </Link>
                                             }
                                         />
@@ -99,7 +95,7 @@ export function WorkflowProgressPanel({
                                 <div className="bg-primary h-2 w-2 rounded-full" /> <span>Current Stage</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-primary/100" /> <span>Completed</span>
+                                <div className="bg-primary/100 h-2 w-2 rounded-full" /> <span>Completed</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="bg-muted/30 border-muted-foreground/20 h-2 w-2 rounded-full border" />

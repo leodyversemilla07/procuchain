@@ -47,7 +47,7 @@ export function ClassificationAndOfficeCards({
                     </CardTitle>
                     <CardDescription className="text-muted-foreground text-sm">Procurement type and approved contract budget</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4 p-4 sm:flex flex-col gap-6 sm:p-6">
+                <CardContent className="flex flex-col gap-4 gap-6 p-4 sm:flex sm:p-6">
                     {/* Category and Funding Source - Grid */}
                     <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                         {/* Category */}
@@ -243,12 +243,12 @@ export function ClassificationAndOfficeCards({
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="text-muted-foreground text-xs font-medium sm:text-sm">Requirements:</span>
                             {selectedMode.requires_philgeps && (
-                                <Badge variant="outline" className="border-amber-500 text-muted-foreground dark:text-muted-foreground">
+                                <Badge variant="outline" className="text-muted-foreground dark:text-muted-foreground border-amber-500">
                                     PhilGEPS Required
                                 </Badge>
                             )}
                             {selectedMode.requires_bac_resolution && (
-                                <Badge variant="outline" className="border-blue-500 text-primary dark:text-primary">
+                                <Badge variant="outline" className="text-primary dark:text-primary border-blue-500">
                                     BAC Resolution Required
                                 </Badge>
                             )}
@@ -266,7 +266,7 @@ export function ClassificationAndOfficeCards({
                     </CardTitle>
                     <CardDescription className="text-muted-foreground text-sm">Requesting office and procurement justification</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4 p-4 sm:flex flex-col gap-6 sm:p-6">
+                <CardContent className="flex flex-col gap-4 gap-6 p-4 sm:flex sm:p-6">
                     {/* Office, End User, and Prepared By - Grid */}
                     <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                         {/* Office */}

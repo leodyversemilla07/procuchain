@@ -10,13 +10,13 @@ interface NetworkStatusCardProps {
 
 export function NetworkStatusCard({ overview, autoRefresh }: NetworkStatusCardProps) {
     return (
-        <Card className="border-emerald-500/20 bg-primary/100/5">
+        <Card className="bg-primary/100/5 border-emerald-500/20">
             <CardContent className="py-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <div className="h-3 w-3 rounded-full bg-primary/100" />
-                            <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-primary/100 opacity-75" />
+                            <div className="bg-primary/100 h-3 w-3 rounded-full" />
+                            <div className="bg-primary/100 absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-75" />
                         </div>
                         <div>
                             <p className="text-sm font-medium">Network Status: Online</p>

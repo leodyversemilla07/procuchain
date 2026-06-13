@@ -99,13 +99,7 @@ export function DataTableColumnHeader<TData, TValue>({ column, title, className 
         <div className={cn('flex items-center gap-2', className)}>
             <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{title}</div>
             <Button variant="ghost" size="sm" onClick={() => column.toggleSorting(isSorted === 'asc')} className="h-8 w-8 p-0">
-                {isSorted === 'desc' ? (
-                    <ArrowDownIcon />
-                ) : isSorted === 'asc' ? (
-                    <ArrowUpIcon />
-                ) : (
-                    <ArrowUpDown />
-                )}
+                {isSorted === 'desc' ? <ArrowDownIcon /> : isSorted === 'asc' ? <ArrowUpIcon /> : <ArrowUpDown />}
                 <span className="sr-only">Toggle sort</span>
             </Button>
         </div>

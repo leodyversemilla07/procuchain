@@ -1,7 +1,10 @@
 /**
  * Compute the diff fields between old and new values.
  */
-export function computeDiff(oldValues: Record<string, unknown>, newValues: Record<string, unknown>): Array<{ key: string; old: string; new: string }> {
+export function computeDiff(
+    oldValues: Record<string, unknown>,
+    newValues: Record<string, unknown>,
+): Array<{ key: string; old: string; new: string }> {
     const diff: Array<{ key: string; old: string; new: string }> = [];
     const allKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 

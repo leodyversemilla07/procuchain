@@ -59,10 +59,10 @@ export function DiffView({ oldValues, newValues, className }: DiffViewProps) {
                         {diff.map((d) => (
                             <TableRow key={d.key}>
                                 <TableCell className="p-1 font-mono text-[10px] font-medium whitespace-nowrap">{d.key}</TableCell>
-                                <TableCell className="bg-destructive/10/50 p-1 font-mono text-[10px] break-all dark:bg-destructive/10/20">
+                                <TableCell className="bg-destructive/10/50 dark:bg-destructive/10/20 p-1 font-mono text-[10px] break-all">
                                     {d.old || <span className="italic">(empty)</span>}
                                 </TableCell>
-                                <TableCell className="bg-primary/10/50 p-1 font-mono text-[10px] break-all dark:bg-primary/10/20">
+                                <TableCell className="bg-primary/10/50 dark:bg-primary/10/20 p-1 font-mono text-[10px] break-all">
                                     {d.new || <span className="italic">(empty)</span>}
                                 </TableCell>
                             </TableRow>

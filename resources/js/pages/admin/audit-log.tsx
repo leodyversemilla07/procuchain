@@ -92,7 +92,10 @@ const ACTION_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
 };
 
 function paginationLabel(label: string): string {
-    return label.replace(/&laquo;/g, '«').replace(/&raquo;/g, '»').replace(/&amp;/g, '&');
+    return label
+        .replace(/&laquo;/g, '«')
+        .replace(/&raquo;/g, '»')
+        .replace(/&amp;/g, '&');
 }
 
 export default function AuditLog() {
@@ -320,7 +323,13 @@ export default function AuditLog() {
                             </span>
                             <div className="flex gap-2">
                                 {safeLogs.links.map((link, i) => (
-                                    <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" disabled={!link.url} onClick={() => goToPage(link.url)}>
+                                    <Button
+                                        key={i}
+                                        variant={link.active ? 'default' : 'outline'}
+                                        size="sm"
+                                        disabled={!link.url}
+                                        onClick={() => goToPage(link.url)}
+                                    >
                                         {paginationLabel(link.label)}
                                     </Button>
                                 ))}

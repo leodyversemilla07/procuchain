@@ -128,16 +128,12 @@ export default function LoginLogDetailsSheet({ open, onOpenChange, log, category
                     )}
                 </SheetHeader>
 
-                <div className="min-h-0 flex-1 flex flex-col gap-6 overflow-x-hidden overflow-y-auto py-6 pr-1">
+                <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-x-hidden overflow-y-auto py-6 pr-1">
                     {/* Status Overview */}
                     <div className="flex flex-col gap-4">
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="flex items-start gap-3">
-                                {log.successful ? (
-                                    <CheckCircle2 />
-                                ) : (
-                                    <XCircle />
-                                )}
+                                {log.successful ? <CheckCircle2 /> : <XCircle />}
                                 <div className="flex flex-col gap-1">
                                     <p className="text-sm font-medium">Status</p>
                                     <Badge variant={log.successful ? 'default' : 'destructive'}>

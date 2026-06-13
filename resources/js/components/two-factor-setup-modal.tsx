@@ -47,10 +47,7 @@ function TwoFactorSetupStep({
 }) {
     const [copiedText, copy] = useClipboard();
     const IconComponent = copiedText === manualSetupKey ? Check : Copy;
-    const qrCodeDataUrl = useMemo(
-        () => (qrCodeSvg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCodeSvg)}` : null),
-        [qrCodeSvg],
-    );
+    const qrCodeDataUrl = useMemo(() => (qrCodeSvg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCodeSvg)}` : null), [qrCodeSvg]);
 
     return (
         <>
@@ -59,12 +56,12 @@ function TwoFactorSetupStep({
             ) : (
                 <>
                     <div className="mx-auto flex max-w-md flex-col items-center gap-3 overflow-hidden">
-                        <div className="border-border mx-auto aspect-square w-80 rounded-lg border-2 bg-white p-2 shadow-sm dark:bg-background">
+                        <div className="border-border dark:bg-background mx-auto aspect-square w-80 rounded-lg border-2 bg-white p-2 shadow-sm">
                             <div className="z-10 flex h-full w-full items-center justify-center">
                                 {qrCodeDataUrl ? (
                                     <img src={qrCodeDataUrl} alt="Two-factor authentication QR code" className="h-full w-full object-contain" />
                                 ) : (
-                                    <Spinner className="size-8 text-muted-foreground" />
+                                    <Spinner className="text-muted-foreground size-8" />
                                 )}
                             </div>
                         </div>
@@ -128,8 +125,8 @@ function TwoFactorVerificationStep({ onClose, onBack }: { onClose: () => void; o
         <Form action={confirm()} onSuccess={() => onClose()} resetOnError resetOnSuccess>
             {({ processing, errors }: { processing: boolean; errors?: { confirmTwoFactorAuthentication?: { code?: string } } }) => (
                 <>
-                    <div ref={pinInputContainerRef} className="relative w-full flex flex-col gap-3">
-                        <div className="flex w-full flex-col items-center flex flex-col gap-3 py-2">
+                    <div ref={pinInputContainerRef} className="relative flex w-full flex-col gap-3">
+                        <div className="flex w-full flex-col items-center gap-3 py-2">
                             <InputOTP
                                 id="otp"
                                 name="code"
@@ -256,7 +253,7 @@ export default function TwoFactorSetupModal({
                     <DialogDescription className="text-center">{modalConfig.description}</DialogDescription>
                 </DialogHeader>
 
-                <div className="flex flex-col items-center flex flex-col gap-5">
+                <div className="flex flex-col items-center gap-5">
                     {showVerificationStep ? (
                         <TwoFactorVerificationStep onClose={onClose} onBack={() => setShowVerificationStep(false)} />
                     ) : (

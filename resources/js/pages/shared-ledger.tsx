@@ -1,7 +1,7 @@
 import { index as sharedLedgerRoutes } from '@/actions/App/Http/Controllers/SharedLedgerController';
+import { HeroCard } from '@/components/hero-card';
 import { LedgerEntryRow, LedgerFilterBar, PurgeWarnings, STREAM_CONFIG } from '@/components/shared-ledger';
 import { getPaginationPages } from '@/components/shared-ledger/utils';
-import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';

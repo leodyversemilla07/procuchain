@@ -85,7 +85,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mt-3 flex flex-col gap-1.5 sm:mt-4 sm:flex flex-col gap-2">
+                <div className="mt-3 flex flex-col gap-1.5 gap-2 sm:mt-4 sm:flex">
                     <Progress value={workflow.progress_percentage} className="h-1.5 sm:h-2" />
                     <p className="text-muted-foreground text-[10px] sm:text-xs">{workflow.progress_percentage}% complete</p>
                 </div>
@@ -116,7 +116,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                             stage.is_current
                                                                 ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
                                                                 : stage.is_completed
-                                                                  ? 'border-primary bg-primary/100 text-white hover:bg-primary dark:border-primary/80 dark:bg-primary dark:hover:bg-primary/90'
+                                                                  ? 'border-primary bg-primary/100 hover:bg-primary dark:border-primary/80 dark:bg-primary dark:hover:bg-primary/90 text-white'
                                                                   : stage.is_optional
                                                                     ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
                                                                     : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
@@ -144,7 +144,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                         {stage.is_completed && (
                                                             <Badge
                                                                 variant="secondary"
-                                                                className="bg-primary/20 px-1.5 py-0 text-[10px] text-primary dark:bg-primary/20/30 dark:text-primary"
+                                                                className="bg-primary/20 text-primary dark:bg-primary/20/30 dark:text-primary px-1.5 py-0 text-[10px]"
                                                             >
                                                                 Completed
                                                             </Badge>
@@ -186,7 +186,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                     stage.is_current
                                                         ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
                                                         : stage.is_completed
-                                                          ? 'border-primary bg-primary/100 text-white hover:bg-primary dark:border-primary/80 dark:bg-primary dark:hover:bg-primary/90'
+                                                          ? 'border-primary bg-primary/100 hover:bg-primary dark:border-primary/80 dark:bg-primary dark:hover:bg-primary/90 text-white'
                                                           : stage.is_optional
                                                             ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
                                                             : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
@@ -240,7 +240,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                         <span>Current</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="h-2.5 w-2.5 rounded-full bg-primary/100 sm:h-3 sm:w-3 dark:bg-primary" />
+                        <div className="bg-primary/100 dark:bg-primary h-2.5 w-2.5 rounded-full sm:h-3 sm:w-3" />
                         <span>Completed</span>
                     </div>
                     <div className="flex items-center gap-1">

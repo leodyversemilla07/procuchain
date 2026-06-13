@@ -84,7 +84,7 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-amber-200 text-xs text-muted-foreground hover:bg-muted/50"
+                                className="text-muted-foreground hover:bg-muted/50 border-amber-200 text-xs"
                                 onClick={() => setShowCorrectionSheet(true)}
                             >
                                 <AlertTriangle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />

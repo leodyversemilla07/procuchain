@@ -118,10 +118,7 @@ export default function VerificationPage(props: VerificationPageProps) {
                                         <Badge variant="outline" className="text-[10px] font-normal sm:text-xs">
                                             {props.procurementStatus.stage_formatted}
                                         </Badge>
-                                        <Badge
-                                            variant="secondary"
-                                            className="text-[10px] font-normal sm:text-xs"
-                                        >
+                                        <Badge variant="secondary" className="text-[10px] font-normal sm:text-xs">
                                             {props.procurementStatus.status_formatted || props.procurementStatus.current_status}
                                         </Badge>
                                         <span className="bg-border hidden h-4 w-px sm:block" aria-hidden="true" />
@@ -139,12 +136,7 @@ export default function VerificationPage(props: VerificationPageProps) {
                                 </Tooltip>
                             </span>
                         }
-                        className={cn(
-                            'border-2 transition-colors',
-                            allValid
-                                ? 'border-primary/30 bg-primary/5'
-                                : 'border-muted bg-muted/50',
-                        )}
+                        className={cn('border-2 transition-colors', allValid ? 'border-primary/30 bg-primary/5' : 'border-muted bg-muted/50')}
                         iconWrapperClassName={allValid ? 'bg-primary/10' : 'bg-muted'}
                         iconClassName={allValid ? 'text-primary' : 'text-muted-foreground'}
                         actions={
@@ -224,19 +216,19 @@ export default function VerificationPage(props: VerificationPageProps) {
                                             <AlertTriangle className="text-muted-foreground" />
                                         )}
                                     </div>
-                                    <div className="min-w-0 flex-1 flex flex-col gap-0.5 sm:gap-1">
+                                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1">
                                         <h4 className="text-sm font-semibold sm:text-base">
                                             {report.summary.critical_issues > 0 ? 'Action Required' : 'Attention Needed'}
                                         </h4>
                                         <p className="text-muted-foreground text-xs sm:text-sm">
                                             {report.summary.critical_issues > 0 && (
-                                                <span className="font-medium text-destructive">
+                                                <span className="text-destructive font-medium">
                                                     {report.summary.critical_issues} critical issue{report.summary.critical_issues !== 1 ? 's' : ''}
                                                 </span>
                                             )}
                                             {report.summary.critical_issues > 0 && report.summary.warnings > 0 && ' and '}
                                             {report.summary.warnings > 0 && (
-                                                <span className="font-medium text-muted-foreground">
+                                                <span className="text-muted-foreground font-medium">
                                                     {report.summary.warnings} warning{report.summary.warnings !== 1 ? 's' : ''}
                                                 </span>
                                             )}{' '}

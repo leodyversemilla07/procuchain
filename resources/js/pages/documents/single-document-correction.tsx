@@ -144,7 +144,7 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
                         {/* Correction Status */}
                         {document.is_corrected && (
                             <div className="mt-4 border-t pt-4">
-                                <Alert className="border-amber-200 bg-muted/50/50">
+                                <Alert className="bg-muted/50/50 border-amber-200">
                                     <AlertCircle />
                                     <AlertTitle className="text-muted-foreground">Document Already Corrected</AlertTitle>
                                     <AlertDescription className="text-muted-foreground">

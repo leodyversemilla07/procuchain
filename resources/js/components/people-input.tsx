@@ -119,13 +119,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                         <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1 text-xs sm:text-sm">
                             <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             {person.name} - {person.affiliation}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                               
-                                onClick={() => removePerson(index)}
-                            >
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removePerson(index)}>
                                 <X />
                             </Button>
                         </Badge>

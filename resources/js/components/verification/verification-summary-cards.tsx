@@ -34,7 +34,7 @@ export function SummaryCard({ title, value, subtitle, isValid, icon: Icon, toolt
         >
             <CardContent className="p-3 pt-4 sm:px-6 sm:pt-6 sm:pb-4">
                 <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1 flex flex-col gap-0.5 sm:flex flex-col gap-1">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 gap-1 sm:flex">
                         <p className="text-muted-foreground truncate text-xs font-medium sm:text-sm">{title}</p>
                         <p
                             className={cn(

@@ -68,11 +68,11 @@ export default function BulkDeleteDialog({ open, onOpenChange, selectedUsers, on
                         </div>
                     </div>
 
-                    <div className="rounded-lg border border-emerald-200 bg-primary/10 p-4 dark:border-emerald-900 dark:bg-primary/10/20">
+                    <div className="bg-primary/10 dark:bg-primary/10/20 rounded-lg border border-emerald-200 p-4 dark:border-emerald-900">
                         <div className="flex items-start gap-3">
                             <Shield />
                             <div>
-                                <p className="text-sm font-medium text-primary dark:text-primary">On-chain • Recoverable</p>
+                                <p className="text-primary dark:text-primary text-sm font-medium">On-chain • Recoverable</p>
                                 <p className="text-muted-foreground mt-0.5 text-xs">
                                     Deletion events are recorded on the blockchain. Data remains replicated across all network nodes and can be
                                     restored by an authorized administrator.

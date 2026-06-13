@@ -25,7 +25,13 @@ interface UserColumnsProps {
     handleDeleteUser: (user: User) => void;
 }
 
-function SortableHeader({ label, column }: { label: string; column: { toggleSorting: (asc: boolean) => void; getIsSorted: () => false | 'asc' | 'desc' } }) {
+function SortableHeader({
+    label,
+    column,
+}: {
+    label: string;
+    column: { toggleSorting: (asc: boolean) => void; getIsSorted: () => false | 'asc' | 'desc' };
+}) {
     return (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-10 md:h-8">
             {label}
@@ -160,7 +166,11 @@ export function getUserColumns({
                 const d = formatDate(row.getValue('created_at') as string);
                 return (
                     <div className="text-muted-foreground text-sm">
-                        {d ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : <span className="text-muted-foreground/50">No date</span>}
+                        {d ? (
+                            d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                        ) : (
+                            <span className="text-muted-foreground/50">No date</span>
+                        )}
                     </div>
                 );
             },
@@ -173,7 +183,11 @@ export function getUserColumns({
                 const d = formatDate(row.getValue('updated_at') as string);
                 return (
                     <div className="text-muted-foreground text-sm">
-                        {d ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : <span className="text-muted-foreground/50">No date</span>}
+                        {d ? (
+                            d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                        ) : (
+                            <span className="text-muted-foreground/50">No date</span>
+                        )}
                     </div>
                 );
             },
