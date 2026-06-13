@@ -16,16 +16,15 @@ use App\Models\ProcurementEvent;
 use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
 use App\Services\BlockchainRpcClient;
+use App\Services\Concerns\HashesData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Verifies individual records against blockchain data: hash checks, content comparison,
- * publisher authorization, and superseded-revision detection.
- */
 class IntegrityRecordVerifier
 {
+    use HashesData;
+
     private const TABLE_STREAM_MAP = [
         'procurements' => Stream::METADATA,
         'procurement_stages' => Stream::STATUS,
@@ -212,7 +211,7 @@ class IntegrityRecordVerifier
             $data[$field] = $this->normaliseHashValue($record->{$field} ?? null);
         }
 
-        return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return $this->computeHash($data);
     }
 
     public function recordToArray(Model $record, string $tableName): array

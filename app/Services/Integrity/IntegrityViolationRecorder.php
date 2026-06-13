@@ -6,6 +6,7 @@ namespace App\Services\Integrity;
 
 use App\Enums\BreachType;
 use App\Enums\Stream;
+use App\Enums\UserRole;
 use App\Models\File;
 use App\Models\IntegrityViolationLog;
 use App\Models\Procurement;
@@ -147,7 +148,7 @@ class IntegrityViolationRecorder
     private function notifyBreach(string $type, string $prNumber, string $message, ?array $fieldDiffs, ?string $stream, ?string $txid): void
     {
         try {
-            $recipientRoles = config('integrity.breach_notifications.recipient_roles', ['admin', 'bac_chairman', 'hope']);
+            $recipientRoles = config('integrity.breach_notifications.recipient_roles', [UserRole::ADMIN->value, UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value]);
             $recipients = User::whereHas('roles', fn ($q) => $q->whereIn('name', $recipientRoles))->get();
             if ($recipients->isEmpty()) {
                 return;

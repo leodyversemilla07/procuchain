@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Requests\User\BulkDeleteUsersRequest;
 use App\Http\Requests\User\ResetUserPasswordRequest;
 use App\Http\Requests\User\StoreUserRequest;
@@ -67,7 +68,7 @@ class UserManagementController extends Controller
 
         return Inertia::render('admin/user-management', [
             'users' => $users,
-            'roles' => ['bac_secretariat', 'bac_chairman', 'hope', 'admin'],
+            'roles' => UserRole::values(),
         ]);
     }
 
@@ -275,9 +276,9 @@ class UserManagementController extends Controller
             }
 
             // Prevent bulk deletion that would remove the last admin
-            $adminIdsToDelete = $usersToDelete->filter(fn ($u) => $u->hasRole('admin'))->pluck('id');
+            $adminIdsToDelete = $usersToDelete->filter(fn ($u) => $u->hasRole(UserRole::ADMIN->value))->pluck('id');
             if ($adminIdsToDelete->isNotEmpty()) {
-                $remainingAdminCount = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->count()
+                $remainingAdminCount = User::whereHas('roles', fn ($q) => $q->where('name', UserRole::ADMIN->value))->count()
                     - $adminIdsToDelete->count();
                 if ($remainingAdminCount < 1) {
                     return redirect()->back()->with('error', 'Cannot delete the last admin user. At least one admin must remain.');

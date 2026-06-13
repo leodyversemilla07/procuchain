@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Permission as Perm;
+use App\Enums\UserRole;
 use App\Models\Concerns\HasAccountLock;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
@@ -268,122 +270,89 @@ class User extends Authenticatable
         return $this->loginLogs()->orderBy('login_at', 'desc')->limit($limit);
     }
 
-    /**
-     * Check if user is an admin
-     */
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->hasRole(UserRole::ADMIN->value);
     }
 
-    /**
-     * Check if user is a BAC Secretariat member
-     */
     public function isBacSecretariat(): bool
     {
-        return $this->hasRole('bac_secretariat');
+        return $this->hasRole(UserRole::BAC_SECRETARIAT->value);
     }
 
-    /**
-     * Check if user is the BAC Chairman
-     */
     public function isBacChairman(): bool
     {
-        return $this->hasRole('bac_chairman');
+        return $this->hasRole(UserRole::BAC_CHAIRMAN->value);
     }
 
-    /**
-     * Check if user is the HOPE (Head of Procuring Entity)
-     */
     public function isHope(): bool
     {
-        return $this->hasRole('hope');
+        return $this->hasRole(UserRole::HOPE->value);
     }
 
-    /**
-     * Check if user can manage procurement
-     */
     public function canManageProcurement(): bool
     {
         return $this->hasAnyPermission([
-            'create procurement',
-            'edit procurement',
-            'delete procurement',
+            Perm::CREATE_PROCUREMENT->value,
+            Perm::EDIT_PROCUREMENT->value,
+            Perm::DELETE_PROCUREMENT->value,
         ]);
     }
 
-    /**
-     * Check if user can approve procurement
-     */
     public function canApproveProcurement(): bool
     {
-        return $this->hasPermissionTo('approve procurement');
+        return $this->hasPermissionTo(Perm::APPROVE_PROCUREMENT->value);
     }
 
-    /**
-     * Check if user can manage documents
-     */
     public function canManageDocuments(): bool
     {
         return $this->hasAnyPermission([
-            'upload documents',
-            'delete documents',
+            Perm::UPLOAD_DOCUMENTS->value,
+            Perm::DELETE_DOCUMENTS->value,
         ]);
     }
 
-    /**
-     * Check if user can view documents
-     */
     public function canViewDocuments(): bool
     {
-        return $this->hasPermissionTo('view documents');
+        return $this->hasPermissionTo(Perm::VIEW_DOCUMENTS->value);
     }
 
-    /**
-     * Check if user can manage stages
-     */
     public function canManageStages(): bool
     {
         return $this->hasAnyPermission([
-            'manage procurement initiation',
-            'manage pre-procurement conference',
-            'manage bidding documents',
-            'manage pre-bid conference',
-            'manage supplemental bid bulletin',
-            'manage bid opening',
-            'manage bid evaluation',
-            'manage post-qualification',
-            'manage bac resolution',
-            'manage notice of award',
-            'manage performance bond contract po',
-            'manage notice to proceed',
-            'manage monitoring',
-            'manage completion',
+            Perm::MANAGE_PROCUREMENT_INITIATION->value,
+            Perm::MANAGE_PRE_PROCUREMENT_CONFERENCE->value,
+            Perm::MANAGE_BIDDING_DOCUMENTS->value,
+            Perm::MANAGE_PRE_BID_CONFERENCE->value,
+            Perm::MANAGE_SUPPLEMENTAL_BID_BULLETIN->value,
+            Perm::MANAGE_BID_OPENING->value,
+            Perm::MANAGE_BID_EVALUATION->value,
+            Perm::MANAGE_POST_QUALIFICATION->value,
+            Perm::MANAGE_BAC_RESOLUTION->value,
+            Perm::MANAGE_NOTICE_OF_AWARD->value,
+            Perm::MANAGE_PERFORMANCE_BOND_CONTRACT_PO->value,
+            Perm::MANAGE_NOTICE_TO_PROCEED->value,
+            Perm::MANAGE_MONITORING->value,
+            Perm::MANAGE_COMPLETION->value,
         ]);
     }
 
-    /**
-     * Check if user can access blockchain features
-     */
     public function canAccessBlockchain(): bool
     {
         return $this->hasAnyPermission([
-            'view blockchain transactions',
-            'publish to blockchain',
+            Perm::VIEW_BLOCKCHAIN_TRANSACTIONS->value,
+            Perm::PUBLISH_TO_BLOCKCHAIN->value,
         ]);
     }
 
-    /**
-     * Check if user can manage users
-     */
     public function canManageUsers(): bool
     {
         return $this->hasAnyPermission([
-            'manage users',
-            'create users',
-            'edit users',
-            'delete users',
-            'assign roles',
+            Perm::MANAGE_USERS->value,
+            Perm::CREATE_USERS->value,
+            Perm::EDIT_USERS->value,
+            Perm::DELETE_USERS->value,
+            Perm::ASSIGN_ROLES->value,
         ]);
     }
 
@@ -411,16 +380,13 @@ class User extends Authenticatable
         return $this->roles->first()?->name;
     }
 
-    /**
-     * Check if user has dashboard access
-     */
     public function hasDashboardAccess(): bool
     {
         return $this->hasAnyPermission([
-            'view admin dashboard',
-            'view bac-secretariat dashboard',
-            'view bac-chairman dashboard',
-            'view hope dashboard',
+            Perm::VIEW_ADMIN_DASHBOARD->value,
+            Perm::VIEW_BAC_SECRETARIAT_DASHBOARD->value,
+            Perm::VIEW_BAC_CHAIRMAN_DASHBOARD->value,
+            Perm::VIEW_HOPE_DASHBOARD->value,
         ]);
     }
 

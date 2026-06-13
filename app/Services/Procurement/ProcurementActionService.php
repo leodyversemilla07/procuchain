@@ -7,6 +7,7 @@ namespace App\Services\Procurement;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Enums\UserRole;
 use App\Repositories\ProcurementRepository;
 use Illuminate\Support\Facades\Log;
 
@@ -48,7 +49,7 @@ final class ProcurementActionService
         string $prNumber,
         string $stage,
         string $status,
-        string $userRole = 'bac_secretariat',
+        string $userRole = UserRole::BAC_SECRETARIAT->value,
         ?ProcurementMode $mode = null
     ): array {
         try {
@@ -67,16 +68,13 @@ final class ProcurementActionService
             }
 
             // Only BAC Secretariat can perform workflow actions
-            if ($userRole === 'bac_secretariat') {
+            if ($userRole === UserRole::BAC_SECRETARIAT->value) {
                 $actions = array_merge($actions, $this->getWorkflowActions($prNumber, $stageEnum, $statusEnum, $mode));
             }
 
-            // Add skip action if current stage is optional AND there's no dialog action already
-            // Dialog actions (like pre-procurement conference decision) include skip option in the dialog itself
-            // Also don't show skip if the stage is already in progress (work has started)
             $hasDialogAction = collect($actions)->contains(fn ($action) => ($action['type'] ?? '') === 'dialog');
             $stageInProgress = $this->isStageInProgress($statusEnum);
-            if ($userRole === 'bac_secretariat' && $mode && $this->isStageOptional($stageEnum, $mode) && ! $hasDialogAction && ! $stageInProgress) {
+            if ($userRole === UserRole::BAC_SECRETARIAT->value && $mode && $this->isStageOptional($stageEnum, $mode) && ! $hasDialogAction && ! $stageInProgress) {
                 $actions[] = $this->buildSkipAction($prNumber, $stageEnum);
             }
 
@@ -301,8 +299,7 @@ final class ProcurementActionService
             'href' => "/procurement/{$prNumber}/verification",
         ];
 
-        // View Corrections - only for BAC Secretariat
-        if ($userRole === 'bac_secretariat') {
+        if ($userRole === UserRole::BAC_SECRETARIAT->value) {
             $actions[] = [
                 'type' => 'corrections',
                 'label' => 'View Corrections',
@@ -321,10 +318,10 @@ final class ProcurementActionService
     private function getViewDetailsHref(string $prNumber, string $userRole): string
     {
         return match ($userRole) {
-            'bac_secretariat' => "/bac-secretariat/procurements-list/{$prNumber}",
-            'bac_chairman' => "/bac-chairman/procurements-list/{$prNumber}",
-            'hope' => "/hope/procurements-list/{$prNumber}",
-            'admin' => "/admin/procurements-list/{$prNumber}",
+            UserRole::BAC_SECRETARIAT->value => "/bac-secretariat/procurements-list/{$prNumber}",
+            UserRole::BAC_CHAIRMAN->value => "/bac-chairman/procurements-list/{$prNumber}",
+            UserRole::HOPE->value => "/hope/procurements-list/{$prNumber}",
+            UserRole::ADMIN->value => "/admin/procurements-list/{$prNumber}",
             default => "/admin/procurements-list/{$prNumber}",
         };
     }

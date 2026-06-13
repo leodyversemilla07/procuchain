@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\UserRole;
 use App\Models\IntegrityViolationLog;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
@@ -93,7 +94,7 @@ class IntegrityBreachDigestJob implements ShouldQueue
         })->toArray();
 
         // Get recipients with email preference enabled
-        $recipientRoles = config('integrity.breach_notifications.recipient_roles', ['admin', 'bac_chairman', 'hope']);
+        $recipientRoles = config('integrity.breach_notifications.recipient_roles', [UserRole::ADMIN->value, UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value]);
         $recipients = User::whereHas('roles', fn ($q) => $q->whereIn('name', $recipientRoles))
             ->where('email_notifications_enabled', true)
             ->get()

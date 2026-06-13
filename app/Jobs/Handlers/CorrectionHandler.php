@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs\Handlers;
 
 use App\DataTransferObjects\ProcurementData;
+use App\Enums\UserRole;
 use App\Jobs\Handlers\Concerns\HandlesTempFiles;
 use App\Models\User;
 use App\Notifications\ProcurementCorrectionSubmitted;
@@ -90,7 +91,7 @@ class CorrectionHandler
             $changedFields = [];
 
             $usersToNotify = User::whereHas('roles', function ($query) {
-                $query->whereIn('name', ['bac_chairman', 'hope', 'admin']);
+                $query->whereIn('name', [UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value, UserRole::ADMIN->value]);
             })->get();
 
             if ($usersToNotify->isEmpty()) {

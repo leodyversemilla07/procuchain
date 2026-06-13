@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -115,8 +116,7 @@ class DashboardCacheService
             Cache::forget($key);
         }
 
-        // Also clear user-specific BAC Secretariat cache
-        if ($role === 'bac_secretariat') {
+        if ($role === UserRole::BAC_SECRETARIAT->value) {
             try {
                 $cacheTable = config('cache.stores.database.table', 'cache');
                 $prefix = "dashboard:{$role}:%:user:%";
@@ -156,7 +156,7 @@ class DashboardCacheService
      */
     public static function clearAllRoles(): void
     {
-        $roles = ['admin', 'hope', 'bac_chairman', 'bac_secretariat'];
+        $roles = UserRole::values();
 
         foreach ($roles as $role) {
             self::clearAll($role);

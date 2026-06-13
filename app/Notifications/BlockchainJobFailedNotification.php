@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\UserRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -132,9 +133,9 @@ class BlockchainJobFailedNotification extends Notification
         $role = $notifiable->primary_role;
 
         return match ($role) {
-            'bac_chairman' => url("/bac-chairman/procurements-list/{$this->prNumber}"),
-            'hope' => url("/hope/procurements-list/{$this->prNumber}"),
-            'admin' => url("/admin/procurements-list/{$this->prNumber}"),
+            UserRole::BAC_CHAIRMAN->value => url("/bac-chairman/procurements-list/{$this->prNumber}"),
+            UserRole::HOPE->value => url("/hope/procurements-list/{$this->prNumber}"),
+            UserRole::ADMIN->value => url("/admin/procurements-list/{$this->prNumber}"),
             default => url("/bac-secretariat/procurements-list/{$this->prNumber}"),
         };
     }

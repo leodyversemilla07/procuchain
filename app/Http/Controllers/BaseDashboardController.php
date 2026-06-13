@@ -375,10 +375,10 @@ abstract class BaseDashboardController extends BaseController
     protected function authorizeDashboard(): void
     {
         $gateMap = [
-            'admin' => 'view-admin-dashboard',
-            'bac_secretariat' => 'view-bac-secretariat-dashboard',
-            'bac_chairman' => 'view-bac-chairman-dashboard',
-            'hope' => 'view-hope-dashboard',
+            UserRole::ADMIN->value => 'view-admin-dashboard',
+            UserRole::BAC_SECRETARIAT->value => 'view-bac-secretariat-dashboard',
+            UserRole::BAC_CHAIRMAN->value => 'view-bac-chairman-dashboard',
+            UserRole::HOPE->value => 'view-hope-dashboard',
         ];
 
         $gate = $gateMap[$this->getRoleName()] ?? null;

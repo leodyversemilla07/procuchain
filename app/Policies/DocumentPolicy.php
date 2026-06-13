@@ -2,23 +2,12 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Models\DocumentViewLog;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Services\ProcurementDataService;
 
-/**
- * Document policy.
- *
- * Abilities are registered in AppServiceProvider as named Gates:
- *   Gate::define('view-document',     [DocumentPolicy::class, 'view'])
- *   Gate::define('download-document', [DocumentPolicy::class, 'download'])
- *   Gate::define('upload-document',   [DocumentPolicy::class, 'upload'])
- *   Gate::define('correct-document',  [DocumentPolicy::class, 'correct'])
- *
- * Usage in controllers:
- *   $this->authorize('download-document');
- */
 class DocumentPolicy
 {
     public function __construct(
@@ -27,47 +16,34 @@ class DocumentPolicy
         private readonly ProcurementPolicy $procurementPolicy,
     ) {}
 
-    /**
-     * Determine whether the user can view documents (PDFs, File previews).
-     */
     public function view(User $user, ?string $fileKey = null): bool
     {
-        if (! $user->hasPermissionTo('view documents')) {
+        if (! $user->hasPermissionTo(Permission::VIEW_DOCUMENTS->value)) {
             return false;
         }
 
         return $this->canAccessScopedDocument($user, $fileKey);
     }
 
-    /**
-     * Determine whether the user can download procurement documents.
-     */
     public function download(User $user, ?string $fileKey = null): bool
     {
-        if (! $user->hasPermissionTo('download documents')) {
+        if (! $user->hasPermissionTo(Permission::DOWNLOAD_DOCUMENTS->value)) {
             return false;
         }
 
         return $this->canAccessScopedDocument($user, $fileKey);
     }
 
-    /**
-     * Determine whether the user can upload documents during a procurement stage.
-     */
     public function upload(User $user): bool
     {
-        return $user->hasPermissionTo('upload documents');
+        return $user->hasPermissionTo(Permission::UPLOAD_DOCUMENTS->value);
     }
 
-    /**
-     * Determine whether the user can submit a document correction.
-     * Allowed for Admin, BAC Chairman, and BAC Secretariat.
-     */
     public function correct(User $user, ?string $documentReference = null): bool
     {
         if (! $user->hasAnyPermission([
-            'edit procurement',
-            'approve procurement',
+            Permission::EDIT_PROCUREMENT->value,
+            Permission::APPROVE_PROCUREMENT->value,
         ])) {
             return false;
         }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\Permission;
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,17 +11,12 @@ use Illuminate\Validation\Rules\Password;
 
 class UpdateUserRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return $this->user()->can('edit users');
+        return $this->user()->can(Permission::EDIT_USERS->value);
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -30,14 +27,12 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user)],
             'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
-            'role' => ['required', 'string', Rule::in(['admin', 'bac_secretariat', 'bac_chairman', 'hope'])],
+            'role' => ['required', 'string', Rule::in(UserRole::values())],
             'blockchain_address' => ['nullable', 'string', 'max:255'],
         ];
     }
 
     /**
-     * Get custom messages for validator errors.
-     *
      * @return array<string, string>
      */
     public function messages(): array

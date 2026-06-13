@@ -2,24 +2,11 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 
-/**
- * Procurement policy.
- *
- * Abilities are registered in AppServiceProvider as named Gates:
- *   Gate::define('view-procurement',    [ProcurementPolicy::class, 'view'])
- *   Gate::define('archive-procurement', [ProcurementPolicy::class, 'archive'])
- *   Gate::define('restore-procurement', [ProcurementPolicy::class, 'restore'])
- *   Gate::define('correct-procurement', [ProcurementPolicy::class, 'correct'])
- *   Gate::define('approve-procurement', [ProcurementPolicy::class, 'approve'])
- *   Gate::define('publish-procurement', [ProcurementPolicy::class, 'publish'])
- *
- * Usage in controllers:
- *   $this->authorize('archive-procurement');
- */
 class ProcurementPolicy
 {
     public function __construct(
@@ -27,12 +14,9 @@ class ProcurementPolicy
         private readonly ProcurementDataService $procurementDataService,
     ) {}
 
-    /**
-     * Determine whether the user can view procurement records.
-     */
     public function view(User $user, ?string $prNumber = null): bool
     {
-        if (! $user->hasPermissionTo('view procurement')) {
+        if (! $user->hasPermissionTo(Permission::VIEW_PROCUREMENT->value)) {
             return false;
         }
 
@@ -43,66 +27,46 @@ class ProcurementPolicy
         return $this->canBacSecretariatAccessProcurement($user, $prNumber);
     }
 
-    /**
-     * Determine whether the user can initiate / create a procurement.
-     */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('create procurement');
+        return $user->hasPermissionTo(Permission::CREATE_PROCUREMENT->value);
     }
 
-    /**
-     * Determine whether the user can archive a completed procurement.
-     * Restricted to BAC Secretariat and Admin only.
-     */
     public function archive(User $user, ?string $prNumber = null): bool
     {
-        if (! $user->hasPermissionTo('manage procurements')) {
+        if (! $user->hasPermissionTo(Permission::MANAGE_PROCUREMENTS->value)) {
             return false;
         }
 
         return $this->canAccessScopedProcurement($user, $prNumber);
     }
 
-    /**
-     * Determine whether the user can restore an archived procurement.
-     * Restricted to BAC Secretariat and Admin only.
-     */
     public function restore(User $user, ?string $prNumber = null): bool
     {
-        if (! $user->hasPermissionTo('manage procurements')) {
+        if (! $user->hasPermissionTo(Permission::MANAGE_PROCUREMENTS->value)) {
             return false;
         }
 
         return $this->canAccessScopedProcurement($user, $prNumber);
     }
 
-    /**
-     * Determine whether the user can correct procurement metadata on the blockchain.
-     */
     public function correct(User $user, ?string $prNumber = null): bool
     {
-        if (! $user->hasPermissionTo('edit procurement')) {
+        if (! $user->hasPermissionTo(Permission::EDIT_PROCUREMENT->value)) {
             return false;
         }
 
         return $this->canAccessScopedProcurement($user, $prNumber);
     }
 
-    /**
-     * Determine whether the user can approve a procurement or stage transition.
-     */
     public function approve(User $user): bool
     {
-        return $user->hasPermissionTo('approve procurement');
+        return $user->hasPermissionTo(Permission::APPROVE_PROCUREMENT->value);
     }
 
-    /**
-     * Determine whether the user can publish procurement data to the blockchain.
-     */
     public function publish(User $user): bool
     {
-        return $user->hasPermissionTo('publish to blockchain');
+        return $user->hasPermissionTo(Permission::PUBLISH_TO_BLOCKCHAIN->value);
     }
 
     private function canAccessScopedProcurement(User $user, ?string $prNumber = null): bool

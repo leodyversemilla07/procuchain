@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\NotificationServiceInterface;
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\AuditEventNotification;
 use App\Notifications\ProcurementStageNotification;
@@ -11,20 +12,6 @@ use Illuminate\Support\Facades\Notification;
 
 class NotificationService implements NotificationServiceInterface
 {
-    /**
-     * Notify users about procurement stage updates.
-     *
-     * @param  string  $pr_number  The procurement ID
-     * @param  string  $procurementTitle  The procurement title
-     * @param  string  $stageIdentifier  The stage identifier
-     * @param  string  $currentStatus  The current status
-     * @param  string  $timestamp  The timestamp
-     * @param  string  $actionType  The action type
-     * @param  int  $documentCount  The document count
-     * @param  bool  $stageTransition  Whether this is a stage transition
-     * @param  string  $nextStage  The next stage (if transitioning)
-     * @param  array  $rolesToNotify  Roles to notify (defaults to bac_chairman, hope, admin)
-     */
     public function notifyStageUpdate(
         string $pr_number,
         string $procurementTitle,
@@ -35,10 +22,8 @@ class NotificationService implements NotificationServiceInterface
         int $documentCount = 0,
         bool $stageTransition = false,
         string $nextStage = '',
-        array $rolesToNotify = ['bac_chairman', 'hope', 'admin']
+        array $rolesToNotify = [UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value, UserRole::ADMIN->value]
     ): void {
-        // Use Spatie's whereHas helper to query users with specific roles
-        // Note: We can't use User::role() directly due to conflict with role attribute accessor
         $usersToNotify = User::whereHas('roles', function ($query) use ($rolesToNotify) {
             $query->whereIn('name', $rolesToNotify);
         })->get();
@@ -59,7 +44,7 @@ class NotificationService implements NotificationServiceInterface
             'current_status' => $currentStatus,
             'timestamp' => $timestamp,
             'action_type' => $actionType,
-            'document_count' => $documentCount, // Pass document_count
+            'document_count' => $documentCount,
         ];
 
         if ($stageTransition && ! empty($nextStage)) {
@@ -78,9 +63,6 @@ class NotificationService implements NotificationServiceInterface
         ]);
     }
 
-    /**
-     * Notify admin users about audit events.
-     */
     public function notifyAuditEvent(
         string $action,
         string $actorName,
@@ -88,7 +70,7 @@ class NotificationService implements NotificationServiceInterface
         ?string $subjectId = null,
         ?string $details = null,
         ?string $timestamp = null,
-        array $rolesToNotify = ['admin']
+        array $rolesToNotify = [UserRole::ADMIN->value]
     ): void {
         $usersToNotify = User::whereHas('roles', function ($query) use ($rolesToNotify) {
             $query->whereIn('name', $rolesToNotify);

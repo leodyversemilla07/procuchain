@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
 use App\Events\UserInvited;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\SendInvitationRequest;
@@ -65,7 +66,7 @@ class UserInvitationController extends Controller
 
         return Inertia::render('admin/user-invitations', [
             'invitations' => $invitations,
-            'roles' => ['bac_secretariat', 'bac_chairman', 'hope'],
+            'roles' => [UserRole::BAC_SECRETARIAT->value, UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value],
         ]);
     }
 

@@ -6,7 +6,7 @@ namespace App\Services\Concerns;
 
 trait HashesData
 {
-    private function computeHash(array $data): string
+    public function computeHash(array $data): string
     {
         return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }

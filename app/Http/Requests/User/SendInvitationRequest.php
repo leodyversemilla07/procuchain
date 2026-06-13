@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests\User;
 
-use App\Models\User;
+use App\Enums\Permission;
+use App\Enums\UserRole;
 use App\Models\UserInvitation;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,17 +11,12 @@ use Illuminate\Validation\Rule;
 
 class SendInvitationRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return $this->user()->can('create users');
+        return $this->user()->can(Permission::CREATE_USERS->value);
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -32,9 +28,7 @@ class SendInvitationRequest extends FormRequest
                 'string',
                 'email',
                 'max:255',
-                // Email must not already be a user
                 Rule::unique('users', 'email'),
-                // Email must not have a pending invitation
                 function ($attribute, $value, $fail) {
                     $pendingInvitation = UserInvitation::where('email', $value)
                         ->pending()
@@ -45,12 +39,16 @@ class SendInvitationRequest extends FormRequest
                     }
                 },
             ],
-            'role' => ['required', 'string', Rule::in(['bac_secretariat', 'bac_chairman', 'hope'])],
+            'role' => ['required', 'string', Rule::in([
+                UserRole::BAC_SECRETARIAT->value,
+                UserRole::BAC_CHAIRMAN->value,
+                UserRole::HOPE->value,
+            ])],
         ];
     }
 
     /**
-     * Get custom error messages
+     * @return array<string, string>
      */
     public function messages(): array
     {

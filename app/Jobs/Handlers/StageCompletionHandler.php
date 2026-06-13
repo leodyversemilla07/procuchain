@@ -6,6 +6,7 @@ namespace App\Jobs\Handlers;
 
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Enums\UserRole;
 use App\Services\NotificationService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
@@ -193,7 +194,7 @@ class StageCompletionHandler
                 documentCount: $data['document_count'],
                 stageTransition: $nextStageName !== null,
                 nextStage: $nextStageName ?? '',
-                rolesToNotify: ['bac_chairman', 'hope', 'admin'],
+                rolesToNotify: [UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value, UserRole::ADMIN->value],
             );
         } catch (Exception $e) {
             Log::warning('BlockchainWriteJob: Notification failed (non-critical)', [

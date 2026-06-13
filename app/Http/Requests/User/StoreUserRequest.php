@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\Permission;
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,17 +11,12 @@ use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return $this->user()->can('create users');
+        return $this->user()->can(Permission::CREATE_USERS->value);
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -28,14 +25,12 @@ class StoreUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
-            'role' => ['required', 'string', Rule::in(['admin', 'bac_secretariat', 'bac_chairman', 'hope'])],
+            'role' => ['required', 'string', Rule::in(UserRole::values())],
             'blockchain_address' => ['nullable', 'string', 'max:255'],
         ];
     }
 
     /**
-     * Get custom messages for validator errors.
-     *
      * @return array<string, string>
      */
     public function messages(): array

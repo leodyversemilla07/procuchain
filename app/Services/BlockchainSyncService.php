@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\Stream;
+use App\Services\Concerns\HashesData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\Log;
  */
 class BlockchainSyncService
 {
+    use HashesData;
+
     public function __construct(
         private readonly BlockchainRpcClient $rpc,
     ) {}
@@ -170,13 +173,5 @@ class BlockchainSyncService
         ]);
 
         return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
-    }
-
-    /**
-     * Compute a SHA-256 hash for the given data array.
-     */
-    public function computeHash(array $data): string
-    {
-        return hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }

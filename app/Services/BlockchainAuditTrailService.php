@@ -6,14 +6,14 @@ namespace App\Services;
 
 use App\Enums\Stream;
 use App\Models\IntegrityViolationLog;
+use App\Services\Concerns\HashesData;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Writes integrity violation records to immutable blockchain stream for permanent forensic record.
- */
 class BlockchainAuditTrailService
 {
+    use HashesData;
+
     /**
      * Publish an integrity violation to the blockchain audit trail.
      *
@@ -105,7 +105,7 @@ class BlockchainAuditTrailService
                 'detected_at' => $auditLog->created_at->toIso8601String(),
                 'verification_run_id' => $auditLog->verification_run_id,
                 'source' => $auditLog->source,
-                'chain_hash' => hash('sha256', json_encode($auditLog->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+                'chain_hash' => $this->computeHash($auditLog->toArray()),
             ];
 
             // Key: recovery-<violation_id> for unique lookup
@@ -350,7 +350,7 @@ class BlockchainAuditTrailService
             'source' => $auditLog->source,
             'revision_lineage' => $auditLog->revision_lineage,
             'detected_at' => $auditLog->created_at->toIso8601String(),
-            'chain_hash' => hash('sha256', json_encode($auditLog->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            'chain_hash' => $this->computeHash($auditLog->toArray()),
         ], $extraData);
     }
 

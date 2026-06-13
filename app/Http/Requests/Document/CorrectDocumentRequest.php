@@ -2,23 +2,23 @@
 
 namespace App\Http\Requests\Document;
 
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class CorrectDocumentRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['admin', 'bac_chairman', 'bac_secretariat']);
+        return $this->user()->hasAnyRole([
+            UserRole::ADMIN->value,
+            UserRole::BAC_CHAIRMAN->value,
+            UserRole::BAC_SECRETARIAT->value,
+        ]);
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -35,8 +35,6 @@ class CorrectDocumentRequest extends FormRequest
     }
 
     /**
-     * Get custom messages for validator errors.
-     *
      * @return array<string, string>
      */
     public function messages(): array

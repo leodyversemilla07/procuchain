@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\UserRole;
+
 return [
 
     /*
@@ -44,7 +46,7 @@ return [
          | Recipient roles that receive breach notifications.
          | Can be customized to limit who gets alerts.
          */
-        'recipient_roles' => ['admin', 'bac_chairman', 'hope'],
+        'recipient_roles' => [UserRole::ADMIN->value, UserRole::BAC_CHAIRMAN->value, UserRole::HOPE->value],
 
         /*
          | Minimum severity level to trigger notifications.

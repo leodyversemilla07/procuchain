@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\UserRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -56,13 +57,13 @@ class ProcurementCorrectionSubmitted extends Notification
 
         // Generate URL based on user role
         switch ($notifiable->getPrimaryRole()) {
-            case 'bac_chairman':
+            case UserRole::BAC_CHAIRMAN->value:
                 return url("/bac-chairman/procurements/{$prNumber}/corrections");
-            case 'hope':
+            case UserRole::HOPE->value:
                 return url("/hope/procurements/{$prNumber}/corrections");
-            case 'bac_secretariat':
+            case UserRole::BAC_SECRETARIAT->value:
                 return url("/bac-secretariat/procurements/{$prNumber}/corrections");
-            case 'admin':
+            case UserRole::ADMIN->value:
                 return url("/admin/procurements/{$prNumber}/corrections");
             default:
                 return url("/procurements/{$prNumber}/corrections");

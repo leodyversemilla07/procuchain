@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -27,37 +28,37 @@ class SyncProductionUsers extends Command
             'email' => 'brylemaamo@gmail.com',
             'name' => 'Bryle Maamo',
             'blockchain_address' => '1R5Be5615e3b7MjDiWxA9HAuzAAE3xTuVS3N54',
-            'roles' => ['bac_secretariat'],
+            'roles' => [UserRole::BAC_SECRETARIAT->value],
         ],
         [
             'email' => 'leifsagesemilla@gmail.com',
             'name' => 'Leif Sage Semilla',
             'blockchain_address' => '13JUtJaimUnhbXcUeE97Uzj4c4vwLyJvqHhMw9',
-            'roles' => ['hope'],
+            'roles' => [UserRole::HOPE->value],
         ],
         [
             'email' => 'leobrielzilvrak@gmail.com',
             'name' => 'LeoBriel Zilvrak',
             'blockchain_address' => '1YwGYaqaeMJxMHXhKRaKqgaha1ncVQ7peXbvuF',
-            'roles' => ['admin'],
+            'roles' => [UserRole::ADMIN->value],
         ],
         [
             'email' => 'brylemaamo@gmail.com',
             'name' => 'Bryle Maamo',
             'blockchain_address' => '1Y5R5CT8A1Be6RwnxQecEeWobYrmKH8p9HcQmb',
-            'roles' => ['bac_secretariat'],
+            'roles' => [UserRole::BAC_SECRETARIAT->value],
         ],
         [
             'email' => 'semillacelsojr@gmail.com',
             'name' => 'Celso Semilla',
             'blockchain_address' => '1TcErv2payomuanpZy5eJKVuNmrNjD2hMikjen',
-            'roles' => ['bac_chairman'],
+            'roles' => [UserRole::BAC_CHAIRMAN->value],
         ],
         [
             'email' => 'nidasemilla15@gmail.com',
             'name' => 'Leonida Monsanto',
             'blockchain_address' => '1RDVkCmEaeG9XBqL8NN6XsdGaoc4CnqURU5K4C',
-            'roles' => ['bac_secretariat'],
+            'roles' => [UserRole::BAC_SECRETARIAT->value],
         ],
     ];
 
