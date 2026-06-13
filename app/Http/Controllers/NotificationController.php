@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRoleEnums;
-use App\Services\AuditLogger;
+use App\Enums\UserRole;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,7 @@ use Inertia\Response;
 class NotificationController extends Controller
 {
     public function __construct(
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -36,7 +36,7 @@ class NotificationController extends Controller
         if ($notification) {
             $notification->markAsRead();
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'security.notification_read',
                 'notification',
                 $id,
@@ -63,7 +63,7 @@ class NotificationController extends Controller
 
         $user->unreadNotifications()->update(['read_at' => now()]);
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'security.notifications_all_read',
             'notification',
             'all',
@@ -81,7 +81,7 @@ class NotificationController extends Controller
 
         $user = $request->user();
 
-        if ($user && $user->role === UserRoleEnums::BAC_SECRETARIAT->value) {
+        if ($user && $user->role === UserRole::BAC_SECRETARIAT->value) {
             Log::info('User is BAC Secretariat (ID: '.$user->id.'), redirecting from notifications page to dashboard.');
 
             return Redirect::route('bac-secretariat.dashboard');

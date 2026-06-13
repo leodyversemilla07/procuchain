@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Procurement;
 
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use Carbon\Carbon;
 
 /**
@@ -160,13 +160,13 @@ final class ProcurementFormatterService
             return 'Unknown Status';
         }
 
-        $statusEnum = StatusEnums::tryFrom(strtolower(str_replace([' ', '-'], '_', $statusText)));
+        $statusEnum = ProcurementStatus::tryFrom(strtolower(str_replace([' ', '-'], '_', $statusText)));
 
         if ($statusEnum !== null) {
             return $statusEnum->getDisplayName();
         }
 
-        foreach (StatusEnums::cases() as $case) {
+        foreach (ProcurementStatus::cases() as $case) {
             if (strcasecmp($case->getDisplayName(), $statusText) === 0) {
                 return $case->getDisplayName();
             }
@@ -178,31 +178,31 @@ final class ProcurementFormatterService
     /**
      * Get status badge variant based on status
      */
-    public function getStatusVariant(StatusEnums $status): string
+    public function getStatusVariant(ProcurementStatus $status): string
     {
         return match ($status) {
-            StatusEnums::PROCUREMENT_SUBMITTED => 'default',
-            StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD => 'secondary',
-            StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED => 'outline',
-            StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED => 'secondary',
-            StatusEnums::BIDDING_DOCUMENTS_PUBLISHED => 'secondary',
-            StatusEnums::BIDDING_DOCUMENTS_SUBMITTED => 'secondary',
-            StatusEnums::PRE_BID_CONFERENCE_HELD => 'secondary',
-            StatusEnums::PRE_BID_CONFERENCE_SKIPPED => 'outline',
-            StatusEnums::PRE_BID_CONFERENCE_COMPLETED => 'secondary',
-            StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING => 'default',
-            StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED => 'secondary',
-            StatusEnums::BIDS_OPENED => 'outline',
-            StatusEnums::BIDS_EVALUATED => 'default',
-            StatusEnums::POST_QUALIFICATION_VERIFIED => 'secondary',
-            StatusEnums::POST_QUALIFICATION_FAILED => 'destructive',
-            StatusEnums::RESOLUTION_RECORDED => 'default',
-            StatusEnums::AWARDED => 'secondary',
-            StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED => 'outline',
-            StatusEnums::NTP_RECORDED => 'default',
-            StatusEnums::MONITORING_COMPLETED => 'secondary',
-            StatusEnums::COMPLETION_DOCUMENTS_UPLOADED => 'outline',
-            StatusEnums::COMPLETED => 'default',
+            ProcurementStatus::PROCUREMENT_SUBMITTED => 'default',
+            ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD => 'secondary',
+            ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_SKIPPED => 'outline',
+            ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED => 'secondary',
+            ProcurementStatus::BIDDING_DOCUMENTS_PUBLISHED => 'secondary',
+            ProcurementStatus::BIDDING_DOCUMENTS_SUBMITTED => 'secondary',
+            ProcurementStatus::PRE_BID_CONFERENCE_HELD => 'secondary',
+            ProcurementStatus::PRE_BID_CONFERENCE_SKIPPED => 'outline',
+            ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED => 'secondary',
+            ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING => 'default',
+            ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED => 'secondary',
+            ProcurementStatus::BIDS_OPENED => 'outline',
+            ProcurementStatus::BIDS_EVALUATED => 'default',
+            ProcurementStatus::POST_QUALIFICATION_VERIFIED => 'secondary',
+            ProcurementStatus::POST_QUALIFICATION_FAILED => 'destructive',
+            ProcurementStatus::RESOLUTION_RECORDED => 'default',
+            ProcurementStatus::AWARDED => 'secondary',
+            ProcurementStatus::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED => 'outline',
+            ProcurementStatus::NTP_RECORDED => 'default',
+            ProcurementStatus::MONITORING_COMPLETED => 'secondary',
+            ProcurementStatus::COMPLETION_DOCUMENTS_UPLOADED => 'outline',
+            ProcurementStatus::COMPLETED => 'default',
         };
     }
 
@@ -221,7 +221,7 @@ final class ProcurementFormatterService
             ];
         }
 
-        $statusEnum = StatusEnums::tryFrom(strtolower(str_replace([' ', '-'], '_', $statusText)));
+        $statusEnum = ProcurementStatus::tryFrom(strtolower(str_replace([' ', '-'], '_', $statusText)));
 
         if ($statusEnum !== null) {
             return [
@@ -319,9 +319,9 @@ final class ProcurementFormatterService
     }
 
     /**
-     * Format file size to human-readable format
+     * Format File size to human-readable format
      */
-    public function formatFileSize(?int $bytes): string
+    public function formatfileSize(?int $bytes): string
     {
         if ($bytes === null || $bytes < 0) {
             return 'N/A';

@@ -12,7 +12,7 @@ namespace App\Enums;
  *
  * @see ngpa/rule-04-modes-of-procurement.md
  */
-enum ProcurementModeEnums: string
+enum ProcurementMode: string
 {
     // ═══════════════════════════════════════════════════════════════════
     // COMPETITIVE MODES (Require full bidding process)

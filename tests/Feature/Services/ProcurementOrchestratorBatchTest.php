@@ -1,8 +1,8 @@
 <?php
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\Log;
 use function Pest\Laravel\mock;
 
 it('publishes status and event in single atomic batch transaction', function () {
-    // Mock the Manager service
-    $mockManager = mock(Manager::class);
+    // Mock the BlockchainRpcClient service
+    $mockBlockchainRpcClient = mock(BlockchainRpcClient::class);
 
     // Expect publishmulti to be called once with correct parameters
-    $mockManager->shouldReceive('publishmulti')
+    $mockBlockchainRpcClient->shouldReceive('publishmulti')
         ->once()
         ->withArgs(function ($stream, $items) {
             // Verify stream is correct
@@ -65,7 +65,7 @@ it('publishes status and event in single atomic batch transaction', function () 
         prNumber: 'PR-2024-001-0001',
         procurementTitle: 'Test Procurement',
         stage: StageEnums::PROCUREMENT_INITIATION,
-        currentStatus: StatusEnums::PROCUREMENT_INITIATED,
+        currentStatus: ProcurementStatus::PROCUREMENT_INITIATED,
         userAddress: '1ABC123xyz',
         eventData: [
             'event_type' => 'status_change',
@@ -91,10 +91,10 @@ it('publishes status and event in single atomic batch transaction', function () 
 });
 
 it('publishes only status when no event data provided', function () {
-    $mockManager = mock(Manager::class);
+    $mockBlockchainRpcClient = mock(BlockchainRpcClient::class);
 
     // Expect publishmulti with only 1 item (status, no event)
-    $mockManager->shouldReceive('publishmulti')
+    $mockBlockchainRpcClient->shouldReceive('publishmulti')
         ->once()
         ->withArgs(function ($stream, $items) {
             expect($items)->toHaveCount(1);
@@ -114,7 +114,7 @@ it('publishes only status when no event data provided', function () {
         prNumber: 'PR-2024-002-0001',
         procurementTitle: 'Another Test',
         stage: StageEnums::BIDDING_DOCUMENTS,
-        currentStatus: StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+        currentStatus: ProcurementStatus::BIDDING_DOCUMENTS_PUBLISHED,
         userAddress: '1XYZ789abc',
         eventData: null, // No event
     );
@@ -124,14 +124,14 @@ it('publishes only status when no event data provided', function () {
 });
 
 it('includes previous status when provided', function () {
-    $mockManager = mock(Manager::class);
+    $mockBlockchainRpcClient = mock(BlockchainRpcClient::class);
 
-    $mockManager->shouldReceive('publishmulti')
+    $mockBlockchainRpcClient->shouldReceive('publishmulti')
         ->once()
         ->withArgs(function ($stream, $items) {
             // Verify previous_status is included
             expect($items[0]['data']['json'])->toHaveKey('previous_status');
-            expect($items[0]['data']['json']['previous_status'])->toBe(StatusEnums::BIDS_OPENED->value);
+            expect($items[0]['data']['json']['previous_status'])->toBe(ProcurementStatus::BIDS_OPENED->value);
 
             return true;
         })
@@ -147,9 +147,9 @@ it('includes previous status when provided', function () {
         prNumber: 'PR-2024-003-0001',
         procurementTitle: 'Status Transition Test',
         stage: StageEnums::BID_EVALUATION,
-        currentStatus: StatusEnums::BIDS_EVALUATED,
+        currentStatus: ProcurementStatus::BIDS_EVALUATED,
         userAddress: '1TEST123',
-        previousStatus: StatusEnums::BIDS_OPENED,
+        previousStatus: ProcurementStatus::BIDS_OPENED,
     );
 
     expect($result['success'])->toBeTrue();
@@ -158,8 +158,8 @@ it('includes previous status when provided', function () {
 it('logs performance metrics for batch operations', function () {
     Log::spy();
 
-    $mockManager = mock(Manager::class);
-    $mockManager->shouldReceive('publishmulti')
+    $mockBlockchainRpcClient = mock(BlockchainRpcClient::class);
+    $mockBlockchainRpcClient->shouldReceive('publishmulti')
         ->once()
         ->andReturn('mock-txid-metrics');
 
@@ -173,7 +173,7 @@ it('logs performance metrics for batch operations', function () {
         prNumber: 'PR-2024-004-0001',
         procurementTitle: 'Performance Test',
         stage: StageEnums::PROCUREMENT_INITIATION,
-        currentStatus: StatusEnums::PROCUREMENT_INITIATED,
+        currentStatus: ProcurementStatus::PROCUREMENT_INITIATED,
         userAddress: '1PERF123',
     );
 

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\SharedLedgerService;
 
 beforeEach(function () {
-    $this->managerMock = Mockery::mock(Manager::class);
-    $this->managerMock->shouldReceive('success')->andReturn(true);
-    $this->service = new SharedLedgerService($this->managerMock);
+    $this->BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $this->BlockchainRpcClientMock->shouldReceive('success')->andReturn(true);
+    $this->service = new SharedLedgerService($this->BlockchainRpcClientMock);
 });
 
 afterEach(function () {
@@ -22,11 +22,11 @@ it('does not mark node as purged when purge and resync share the same blocktime'
     // → both have blocktime = 1779753638
     $sameBlocktime = 1779753638;
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_full_purge')
         ->andReturn([['blocktime' => $sameBlocktime, 'data' => ['json' => ['reason' => 'test-purge']]]]);
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_resync')
         ->andReturn([['blocktime' => $sameBlocktime]]);
 
@@ -45,11 +45,11 @@ it('marks node as purged when purge blocktime is strictly greater than resync', 
     $purgeBlocktime = 1779754000;
     $resyncBlocktime = 1779753638;
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'new-purge']]]]);
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_resync')
         ->andReturn([['blocktime' => $resyncBlocktime]]);
 
@@ -68,11 +68,11 @@ it('does not mark node as purged when resync blocktime is strictly greater than 
     $purgeBlocktime = 1779753638;
     $resyncBlocktime = 1779754000;
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'old-purge']]]]);
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_resync')
         ->andReturn([['blocktime' => $resyncBlocktime]]);
 
@@ -87,11 +87,11 @@ it('does not mark node as purged when resync blocktime is strictly greater than 
 it('marks node as purged when no resync event exists', function () {
     $purgeBlocktime = 1779753638;
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'just purged']]]]);
 
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_resync')
         ->andReturn([]);
 
@@ -104,7 +104,7 @@ it('marks node as purged when no resync event exists', function () {
 });
 
 it('does not mark node as purged when no purge event exists', function () {
-    $this->managerMock->shouldReceive('liststreamkeyitems')
+    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_hope_full_purge')
         ->andReturn([]);
 

@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\BreachTypeEnums;
-use App\Enums\StreamEnums;
+use App\Enums\BreachType;
+use App\Enums\Stream;
 use App\Http\Controllers\Controller;
-use App\Jobs\RunIntegrityVerification;
-use App\Models\IntegrityAuditLog;
+use App\Jobs\RunIntegrityVerificationJob;
+use App\Models\IntegrityViolationLog;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementStage;
 use App\Services\BlockchainRecordSyncService;
+use App\Services\BlockchainRpcClient;
 use App\Services\IntegrityVerificationService;
-use App\Services\Manager;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -41,7 +41,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $query = IntegrityAuditLog::query();
+        $query = IntegrityViolationLog::query();
 
         if ($type = $request->input('violation_type')) {
             $query->where('violation_type', $type);
@@ -67,13 +67,13 @@ class IntegrityBreachController extends Controller
             ->withQueryString();
 
         // Stats only count genuinely active pending violations (not superseded).
-        $activePending = IntegrityAuditLog::where('recovery_status', 'pending');
+        $activePending = IntegrityViolationLog::where('recovery_status', 'pending');
 
         return Inertia::render('admin/integrity-breaches', [
             'breaches' => $breaches,
             'filters' => $request->only(['violation_type', 'stream', 'status', 'pr_number']),
-            'breachTypes' => BreachTypeEnums::options(),
-            'streams' => collect(StreamEnums::cases())
+            'breachTypes' => BreachType::options(),
+            'streams' => collect(Stream::cases())
                 ->filter(fn ($case) => $case->isProcurementStream())
                 ->mapWithKeys(fn ($case) => [$case->value => $case->getDisplayName()])
                 ->toArray(),
@@ -94,7 +94,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $log = IntegrityAuditLog::find($id);
+        $log = IntegrityViolationLog::find($id);
 
         if (! $log) {
             return Inertia::render('admin/breach-detail', [
@@ -107,8 +107,8 @@ class IntegrityBreachController extends Controller
         // Get blockchain data for comparison
         $blockchainData = null;
         try {
-            $manager = app(Manager::class);
-            $items = $manager->liststreamkeyitems($log->stream, $log->stream_key);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $BlockchainRpcClient->liststreamkeyitems($log->stream, $log->stream_key);
             if (is_array($items) && ! empty($items)) {
                 foreach ($items as $item) {
                     if (($item['txid'] ?? null) === $log->txid) {
@@ -150,7 +150,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('update-audit-log');
 
-        $log = IntegrityAuditLog::findOrFail($id);
+        $log = IntegrityViolationLog::findOrFail($id);
 
         if ($log->recovery_status !== 'pending') {
             return back()->with('error', 'Already processed');
@@ -193,7 +193,7 @@ class IntegrityBreachController extends Controller
             $syncService->repairFromChain($prNumber);
 
             $verification = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'manual');
-            $stillBreached = IntegrityAuditLog::where('verification_run_id', $verification['run_id'])
+            $stillBreached = IntegrityViolationLog::where('verification_run_id', $verification['run_id'])
                 ->where('stream_key', $prNumber)
                 ->where('recovery_status', 'pending')
                 ->exists();
@@ -202,7 +202,7 @@ class IntegrityBreachController extends Controller
                 return back()->with('error', "Repair ran, but PR {$prNumber} still has reproducible integrity breaches.");
             }
 
-            IntegrityAuditLog::where('stream_key', $prNumber)
+            IntegrityViolationLog::where('stream_key', $prNumber)
                 ->where('recovery_status', 'pending')
                 ->each(fn ($log) => $log->markRestored([
                     'restored_by' => auth()->user()->name ?? 'admin',
@@ -236,7 +236,7 @@ class IntegrityBreachController extends Controller
             return back()->with('error', 'Verification is already in progress.');
         }
 
-        dispatch(new RunIntegrityVerification(
+        dispatch(new RunIntegrityVerificationJob(
             cacheKey: $cacheKey,
             userId: (string) auth()->id(),
             userName: auth()->user()?->name ?? 'admin',
@@ -261,7 +261,7 @@ class IntegrityBreachController extends Controller
             return back()->with('error', 'Verification is already in progress.');
         }
 
-        dispatch(new RunIntegrityVerification(
+        dispatch(new RunIntegrityVerificationJob(
             cacheKey: $cacheKey,
             userId: (string) auth()->id(),
             userName: auth()->user()?->name ?? 'admin',
@@ -346,7 +346,7 @@ class IntegrityBreachController extends Controller
 
         return response()->json([
             'total_records' => Procurement::count(),
-            'unresolved_breaches' => IntegrityAuditLog::where('recovery_status', 'pending')->count(),
+            'unresolved_breaches' => IntegrityViolationLog::where('recovery_status', 'pending')->count(),
             'stream_counts' => [
                 'procurements' => Procurement::count(),
                 'stages' => ProcurementStage::count(),
@@ -362,7 +362,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $query = IntegrityAuditLog::query();
+        $query = IntegrityViolationLog::query();
 
         if ($type = $request->input('violation_type')) {
             $query->where('violation_type', $type);
@@ -382,7 +382,7 @@ class IntegrityBreachController extends Controller
         return Inertia::render('admin/integrity-audit-logs', [
             'logs' => $logs,
             'filters' => $request->only(['violation_type', 'stream_key', 'severity', 'recovery_status']),
-            'violationTypes' => BreachTypeEnums::options(),
+            'violationTypes' => BreachType::options(),
             'recoveryStatuses' => ['pending' => 'Pending', 'restored' => 'Restored', 'failed' => 'Failed', 'skipped' => 'Skipped'],
             'severityLevels' => ['critical' => 'Critical', 'high' => 'High', 'medium' => 'Medium', 'low' => 'Low'],
             'sources' => ['scheduled' => 'Scheduled', 'manual' => 'Manual'],
@@ -393,7 +393,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('update-audit-log');
 
-        $log = IntegrityAuditLog::findOrFail($id);
+        $log = IntegrityViolationLog::findOrFail($id);
         if ($log->recovery_status !== 'pending') {
             return back()->with('error', 'Already processed');
         }
@@ -419,7 +419,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $logs = IntegrityAuditLog::forRun($runId)->orderByDesc('severity')->get();
+        $logs = IntegrityViolationLog::forRun($runId)->orderByDesc('severity')->get();
 
         $summary = [
             'total_violations' => $logs->count(),
@@ -442,7 +442,7 @@ class IntegrityBreachController extends Controller
     {
         $this->authorize('view-audit-log');
 
-        $log = IntegrityAuditLog::find($id);
+        $log = IntegrityViolationLog::find($id);
 
         return Inertia::render('admin/audit-log-detail', [
             'logId' => $id,

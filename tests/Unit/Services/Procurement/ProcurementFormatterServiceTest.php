@@ -131,11 +131,11 @@ describe('ProcurementFormatterService', function () {
                 ->toBe('Purchase Request (PR)');
         });
 
-        it('formats file size', function () {
-            expect($this->formatter->formatFileSize(0))->toBe('0 B');
-            expect($this->formatter->formatFileSize(1024))->toBe('1 KB');
-            expect($this->formatter->formatFileSize(1048576))->toBe('1.0 MB');
-            expect($this->formatter->formatFileSize(null))->toBe('N/A');
+        it('formats File size', function () {
+            expect($this->formatter->formatfileSize(0))->toBe('0 B');
+            expect($this->formatter->formatfileSize(1024))->toBe('1 KB');
+            expect($this->formatter->formatfileSize(1048576))->toBe('1.0 MB');
+            expect($this->formatter->formatfileSize(null))->toBe('N/A');
         });
 
         it('shortens hash correctly', function () {

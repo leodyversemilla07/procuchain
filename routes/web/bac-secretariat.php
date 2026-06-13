@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\BacSecretariatController;
+use App\Http\Controllers\BacSecretariatDashboardController;
 use App\Http\Controllers\Procurement\ProcurementInitiationController;
 use App\Http\Controllers\Procurement\ProcurementStageController;
 use App\Http\Controllers\ProcurementListController;
@@ -64,7 +64,7 @@ Route::middleware(['auth', 'role:bac_secretariat'])
     ->name('bac-secretariat.')
     ->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?', 'stage' => '[a-z_\-]+'])
     ->group(function () {
-        Route::get('/dashboard', [BacSecretariatController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', [BacSecretariatDashboardController::class, 'dashboard'])->name('dashboard');
 
         Route::get('/procurements-list', [ProcurementListController::class, 'index'])
             ->name('procurements.index');

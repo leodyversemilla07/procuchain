@@ -11,14 +11,14 @@
  */
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
@@ -39,8 +39,8 @@ beforeEach(function () {
         description: 'Test Description',
         abcAmount: 1000000.00,
         fundingSource: 'General Fund',
-        category: ProcurementCategoryEnums::GOODS,
-        procurementMode: ProcurementModeEnums::COMPETITIVE_BIDDING,
+        category: ProcurementCategory::GOODS,
+        procurementMode: ProcurementMode::COMPETITIVE_BIDDING,
         office: 'Test Office',
         endUser: 'Test User',
         deliveryLocation: null,
@@ -84,23 +84,23 @@ describe('Skip Stage Endpoint Availability', function () {
 
 describe('Optional Stage Detection', function () {
     it('identifies pre-bid conference as optional for SVP', function () {
-        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
+        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT);
         expect($optionalStages)->toContain(StageEnums::PRE_BID_CONFERENCE);
     });
 
     it('identifies pre-procurement conference as optional for competitive bidding', function () {
-        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementMode::COMPETITIVE_BIDDING);
         expect($optionalStages)->toContain(StageEnums::PRE_PROCUREMENT_CONFERENCE);
     });
 
     it('identifies supplemental bid bulletin as optional for competitive bidding', function () {
-        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementMode::COMPETITIVE_BIDDING);
         expect($optionalStages)->toContain(StageEnums::SUPPLEMENTAL_BID_BULLETIN);
     });
 
     it('returns empty array for modes with no optional stages', function () {
         // Direct Contracting typically has very few optional stages
-        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING);
+        $optionalStages = StageEnums::getOptionalStagesForMode(ProcurementMode::DIRECT_CONTRACTING);
         expect($optionalStages)->toBeArray();
     });
 });
@@ -117,11 +117,11 @@ describe('Skip Optional Stage', function () {
             ->andReturn($this->mockProcurementData);
         $this->instance(ProcurementRepository::class, $repository);
 
-        // Mock the Manager for blockchain operations
-        $multichain = mock(Manager::class);
+        // Mock the BlockchainRpcClient for blockchain operations
+        $multichain = mock(BlockchainRpcClient::class);
         $multichain->shouldReceive('listStreamKeyItems')
             ->andReturn([]);
-        $this->instance(Manager::class, $multichain);
+        $this->instance(BlockchainRpcClient::class, $multichain);
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
             'pr_number' => 'PR-2024-001-0001',
@@ -148,8 +148,8 @@ describe('Cannot Skip Required Stage', function () {
             description: 'Test Description',
             abcAmount: 50000.00,
             fundingSource: 'General Fund',
-            category: ProcurementCategoryEnums::GOODS,
-            procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+            category: ProcurementCategory::GOODS,
+            procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
             office: 'Test Office',
             endUser: 'Test User',
             deliveryLocation: null,
@@ -174,11 +174,11 @@ describe('Cannot Skip Required Stage', function () {
             ->andReturn($svpProcurement);
         $this->instance(ProcurementRepository::class, $repository);
 
-        // Mock the Manager for blockchain operations
-        $multichain = mock(Manager::class);
+        // Mock the BlockchainRpcClient for blockchain operations
+        $multichain = mock(BlockchainRpcClient::class);
         $multichain->shouldReceive('listStreamKeyItems')
             ->andReturn([]);
-        $this->instance(Manager::class, $multichain);
+        $this->instance(BlockchainRpcClient::class, $multichain);
 
         // RFQ is required for SVP - controller dispatches job async, validation happens in job
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
@@ -193,7 +193,7 @@ describe('Cannot Skip Required Stage', function () {
 
 describe('Skip Stage Status Enum', function () {
     it('has STAGE_SKIPPED status enum', function () {
-        $status = StatusEnums::STAGE_SKIPPED;
+        $status = ProcurementStatus::STAGE_SKIPPED;
 
         expect($status->value)->toBe('stage_skipped');
         expect($status->getDisplayName())->toBe('Stage Skipped');

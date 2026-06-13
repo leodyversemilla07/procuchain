@@ -82,11 +82,11 @@ class ProcurementDataService
     }
 
     /**
-     * Get document data from blockchain by file key
+     * Get document data from blockchain by File key
      */
-    public function getDocumentDataByFileKey(string $fileKey): ?array
+    public function getDocumentDataByfileKey(string $fileKey): ?array
     {
-        $document = $this->fetcher->getDocumentByFileKey($fileKey);
+        $document = $this->fetcher->getDocumentByfileKey($fileKey);
 
         if (! $document) {
             return null;
@@ -133,7 +133,7 @@ class ProcurementDataService
     }
 
     /**
-     * Get hash by procurement number and file key pattern matching
+     * Get hash by procurement number and File key pattern matching
      */
     public function getHashBypr_number(string $pr_number, string $fileKey): ?string
     {
@@ -141,7 +141,7 @@ class ProcurementDataService
     }
 
     /**
-     * Validate that the file exists in document stream
+     * Validate that the File exists in document stream
      */
     public function validateDocumentExistsInBlockchain(string $fileKey): ?array
     {
@@ -266,11 +266,11 @@ class ProcurementDataService
     }
 
     /**
-     * Format file size to human-readable format
+     * Format File size to human-readable format
      */
-    public function formatFileSize(?int $bytes): string
+    public function formatfileSize(?int $bytes): string
     {
-        return $this->formatter->formatFileSize($bytes);
+        return $this->formatter->formatfileSize($bytes);
     }
 
     /**

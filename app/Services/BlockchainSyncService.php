@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,10 +17,10 @@ use Illuminate\Support\Facades\Log;
  *
  * Usage:
  *   // Dual-write on model create
- *   BlockchainSyncService::publish($model, StreamEnums::AUDIT_TRAIL);
+ *   BlockchainSyncService::publish($model, Stream::AUDIT_TRAIL);
  *
  *   // Recovery: rebuild MySQL from blockchain
- *   BlockchainSyncService::restoreTable('audit_logs', StreamEnums::AUDIT_TRAIL);
+ *   BlockchainSyncService::restoreTable('audit_logs', Stream::AUDIT_TRAIL);
  */
 class BlockchainSyncService
 {
@@ -31,27 +31,27 @@ class BlockchainSyncService
      * The model MUST have txid, data_hash, and blockchain_synced_at columns.
      *
      * @param  Model  $model  The Eloquent model to publish
-     * @param  StreamEnums  $stream  The blockchain stream to write to
+     * @param  Stream  $stream  The blockchain stream to write to
      * @param  string|null  $key  Stream key (defaults to model ID)
      * @return string|null The blockchain transaction ID
      */
-    public static function publish(Model $model, StreamEnums $stream, ?string $key = null): ?string
+    public static function publish(Model $model, Stream $stream, ?string $key = null): ?string
     {
         try {
-            $manager = app(Manager::class);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
             $data = static::buildPayload($model);
             $dataHash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             $streamKey = $key ?? (string) $model->getKey();
 
-            $result = $manager->publish(
+            $result = $BlockchainRpcClient->publish(
                 $stream->value,
                 $streamKey,
                 ['json' => $data],
             );
 
             if ($result === null || $result === false) {
-                Log::error('BlockchainSync: publish failed', [
+                Log::error('SyncProcurementStreams: publish failed', [
                     'model' => class_basename($model),
                     'id' => $model->getKey(),
                     'stream' => $stream->value,
@@ -69,7 +69,7 @@ class BlockchainSyncService
                 'blockchain_synced_at' => now(),
             ]);
 
-            Log::debug('BlockchainSync: published', [
+            Log::debug('SyncProcurementStreams: published', [
                 'model' => class_basename($model),
                 'id' => $model->getKey(),
                 'stream' => $stream->value,
@@ -78,7 +78,7 @@ class BlockchainSyncService
 
             return $txid;
         } catch (\Exception $e) {
-            Log::error('BlockchainSync: exception', [
+            Log::error('SyncProcurementStreams: exception', [
                 'model' => class_basename($model),
                 'id' => $model->getKey(),
                 'stream' => $stream->value,
@@ -96,22 +96,22 @@ class BlockchainSyncService
      * into the MySQL table. Used after MySQL destruction.
      *
      * @param  string  $tableName  The MySQL table name
-     * @param  StreamEnums  $stream  The blockchain stream to read from
+     * @param  Stream  $stream  The blockchain stream to read from
      * @param  string  $modelClass  The Eloquent model class
      * @param  callable|null  $mapData  Optional callback to transform chain data before insert
      * @return array{imported: int, skipped: int, errors: int}
      */
     public static function restoreTable(
         string $tableName,
-        StreamEnums $stream,
+        Stream $stream,
         string $modelClass,
         ?callable $mapData = null,
     ): array {
         try {
-            $manager = app(Manager::class);
-            $items = $manager->liststreamitems($stream->value, true, 100000);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $BlockchainRpcClient->liststreamitems($stream->value, true, 100000);
         } catch (\Exception $e) {
-            Log::error('BlockchainSync: failed to read stream', [
+            Log::error('SyncProcurementStreams: failed to read stream', [
                 'stream' => $stream->value,
                 'error' => $e->getMessage(),
             ]);
@@ -120,7 +120,7 @@ class BlockchainSyncService
         }
 
         if (! is_array($items) || empty($items)) {
-            Log::info('BlockchainSync: no items in stream', ['stream' => $stream->value]);
+            Log::info('SyncProcurementStreams: no items in stream', ['stream' => $stream->value]);
 
             return ['imported' => 0, 'skipped' => 0, 'errors' => 0];
         }
@@ -159,7 +159,7 @@ class BlockchainSyncService
                 DB::table($tableName)->insert($rowData);
                 $imported++;
             } catch (\Exception $e) {
-                Log::error('BlockchainSync: failed to import item', [
+                Log::error('SyncProcurementStreams: failed to import item', [
                     'stream' => $stream->value,
                     'txid' => $item['txid'] ?? 'unknown',
                     'error' => $e->getMessage(),
@@ -169,7 +169,7 @@ class BlockchainSyncService
             }
         }
 
-        Log::info('BlockchainSync: restore completed', [
+        Log::info('SyncProcurementStreams: restore completed', [
             'stream' => $stream->value,
             'table' => $tableName,
             'imported' => $imported,
@@ -185,7 +185,7 @@ class BlockchainSyncService
      *
      * @return array{valid: bool, computed_hash: string, stored_hash: string|null}
      */
-    public static function verify(Model $model, StreamEnums $stream): array
+    public static function verify(Model $model, Stream $stream): array
     {
         $computedHash = hash('sha256', json_encode(
             static::buildPayload($model),

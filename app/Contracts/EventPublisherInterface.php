@@ -77,7 +77,7 @@ interface EventPublisherInterface
      * @param  string  $procurementTitle  Procurement title
      * @param  string  $stage  Stage identifier
      * @param  string  $documentType  Type of document uploaded
-     * @param  string  $filename  Name of the uploaded file
+     * @param  string  $filename  Name of the uploaded File
      * @param  string  $userAddress  User blockchain address
      * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array<string, mixed>

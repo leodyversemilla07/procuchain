@@ -9,21 +9,21 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Clean up orphaned temp files from blockchain uploads.
+ * Clean up orphaned temp BlockchainFiles from blockchain uploads.
  *
- * Temp files are created during HTTP requests and consumed by queue jobs.
- * If a job fails all retries, the temp file remains on disk as an orphan.
- * This command removes temp files older than the specified age (default: 1 hour).
+ * Temp BlockchainFiles are created during HTTP requests and consumed by queue jobs.
+ * If a job fails all retries, the temp File remains on disk as an orphan.
+ * This command removes temp BlockchainFiles older than the specified age (default: 1 hour).
  *
  * Scheduled to run hourly via the Laravel scheduler.
  */
 class CleanupTempFiles extends Command
 {
     protected $signature = 'temp:cleanup
-                            {--hours=1 : Delete files older than this many hours}
+                            {--hours=1 : Delete BlockchainFiles older than this many hours}
                             {--dry-run : Show what would be deleted without deleting}';
 
-    protected $description = 'Remove orphaned temp files older than 1 hour';
+    protected $description = 'Remove orphaned temp BlockchainFiles older than 1 hour';
 
     public function handle(): int
     {
@@ -41,10 +41,10 @@ class CleanupTempFiles extends Command
         $deleted = 0;
         $failed = 0;
 
-        foreach (File::files($tempDir) as $file) {
-            if ($file->getMTime() < $cutoff) {
+        foreach (File::BlockchainFiles($tempDir) as $File) {
+            if ($File->getMTime() < $cutoff) {
                 if ($dryRun) {
-                    $this->line("[DRY-RUN] Would delete: {$file->getFilename()}");
+                    $this->line("[DRY-RUN] Would delete: {$File->getfilename()}");
 
                     $deleted++;
 
@@ -52,12 +52,12 @@ class CleanupTempFiles extends Command
                 }
 
                 try {
-                    File::delete($file->getPathname());
+                    File::delete($File->getPathname());
                     $deleted++;
                 } catch (\Throwable $e) {
                     $failed++;
-                    Log::warning('temp:cleanup — failed to delete file', [
-                        'file' => $file->getFilename(),
+                    Log::warning('temp:cleanup — failed to delete File', [
+                        'File' => $File->getfilename(),
                         'error' => $e->getMessage(),
                     ]);
                 }
@@ -65,10 +65,10 @@ class CleanupTempFiles extends Command
         }
 
         $mode = $dryRun ? '[DRY-RUN] ' : '';
-        $this->info("{$mode}Cleaned up {$deleted} orphaned temp file(s) older than {$hours} hour(s).");
+        $this->info("{$mode}Cleaned up {$deleted} orphaned temp File(s) older than {$hours} hour(s).");
 
         if ($failed > 0) {
-            $this->warn("Failed to delete {$failed} file(s).");
+            $this->warn("Failed to delete {$failed} File(s).");
         }
 
         Log::info('temp:cleanup completed', [

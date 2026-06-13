@@ -7,11 +7,11 @@ use App\Models\Procurement;
 use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
+use App\Services\Procurement\BlockchainAddressResolverService;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
-use App\Services\Procurement\UserNameResolverService;
 use App\Services\ProcurementDataService;
 use App\Services\UserService;
 use Illuminate\Support\Collection;
@@ -375,7 +375,7 @@ function bindProcurementControllerMocks(
     $aggregator = new ProcurementListAggregatorService(
         new ProcurementFormatterService,
         new ProcurementActionService($repository),
-        new UserNameResolverService(app(UserService::class)),
+        new BlockchainAddressResolverService(app(UserService::class)),
     );
 
     $correctionRepository = mock(ProcurementCorrectionRepositoryInterface::class);

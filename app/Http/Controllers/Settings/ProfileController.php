@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,25 +16,25 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     public function __construct(
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
-     * Show the user's profile settings page.
+     * Show the user's proFile settings page.
      */
     public function edit(Request $request): Response
     {
         /** @var User $user */
         $user = $request->user();
 
-        return Inertia::render('settings/profile', [
+        return Inertia::render('settings/proFile', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
         ]);
     }
 
     /**
-     * Update the user's profile settings.
+     * Update the user's proFile settings.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -49,13 +49,13 @@ class ProfileController extends Controller
 
         $user->save();
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'settings.profile_updated',
             'user',
             (string) $user->id,
         );
 
-        return to_route('settings.profile.edit');
+        return to_route('settings.proFile.edit');
     }
 
     /**
@@ -70,7 +70,7 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'settings.account_deleted',
             'user',
             (string) $user->id,

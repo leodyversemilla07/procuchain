@@ -11,7 +11,7 @@ use App\Enums\StageEnums;
  * Maps required and optional documents to each procurement stage
  * Based on RA 12009 (NGPA) requirements
  */
-class StageDocumentRequirements
+class StageDocumentRequirementsService
 {
     /**
      * Get required documents for a specific stage

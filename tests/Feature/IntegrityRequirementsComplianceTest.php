@@ -1,14 +1,14 @@
 <?php
 
-use App\Enums\BreachTypeEnums;
+use App\Enums\BreachType;
 use App\Models\File;
-use App\Models\IntegrityAuditLog;
+use App\Models\IntegrityViolationLog;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Services\BlockchainAuditTrailService;
+use App\Services\BlockchainRpcClient;
 use App\Services\IntegrityVerificationService;
-use App\Services\Manager;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -53,7 +53,7 @@ it('detects unauthorized database modifications and reports exact blockchain dif
         ],
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($procurement, $chainItem) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($procurement, $chainItem) {
         $mock->shouldReceive('liststreamkeyitems')
             ->with('procurement.metadata', $procurement->pr_number)
             ->andReturn([$chainItem]);
@@ -62,11 +62,11 @@ it('detects unauthorized database modifications and reports exact blockchain dif
     });
 
     $result = app(IntegrityVerificationService::class)->verifyPr($procurement->pr_number);
-    $log = IntegrityAuditLog::where('stream_key', $procurement->pr_number)->firstOrFail();
+    $log = IntegrityViolationLog::where('stream_key', $procurement->pr_number)->firstOrFail();
     $report = app(IntegrityVerificationService::class)->generateReport($result['run_id']);
 
-    expect($result['violations'])->toHaveKey(BreachTypeEnums::CONTENT_MISMATCH->value)
-        ->and($log->violation_type)->toBe(BreachTypeEnums::CONTENT_MISMATCH->value)
+    expect($result['violations'])->toHaveKey(BreachType::CONTENT_MISMATCH->value)
+        ->and($log->violation_type)->toBe(BreachType::CONTENT_MISMATCH->value)
         ->and($log->field_differences)->toContain([
             'field' => 'title',
             'old_value' => 'Original Blockchain Title',
@@ -105,7 +105,7 @@ it('detects deleted mirror records that still exist on blockchain', function () 
         ]],
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($metadataItem, $deletedEventItem) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($metadataItem, $deletedEventItem) {
         $mock->shouldReceive('liststreamitems')
             ->with('procurement.metadata', false, 10000)
             ->andReturn([$metadataItem]);
@@ -118,25 +118,25 @@ it('detects deleted mirror records that still exist on blockchain', function () 
     });
 
     $result = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'panel-test');
-    $log = IntegrityAuditLog::where('stream', 'procurement.events')->firstOrFail();
+    $log = IntegrityViolationLog::where('stream', 'procurement.events')->firstOrFail();
 
-    expect($result['violations'])->toHaveKey(BreachTypeEnums::ROW_DELETED->value)
-        ->and($log->violation_type)->toBe(BreachTypeEnums::ROW_DELETED->value)
+    expect($result['violations'])->toHaveKey(BreachType::ROW_DELETED->value)
+        ->and($log->violation_type)->toBe(BreachType::ROW_DELETED->value)
         ->and($log->stream_key)->toBe($procurement->pr_number)
         ->and($log->txid)->toBe('event-deleted-on-db-txid')
         ->and(ProcurementEvent::where('txid', 'event-deleted-on-db-txid')->exists())->toBeFalse();
 });
 
 it('restores deleted records from trusted blockchain data and verifies repair before closing', function () {
-    $auditLog = IntegrityAuditLog::recordViolation(
+    $auditLog = IntegrityViolationLog::recordViolation(
         stream: 'procurement.metadata',
         streamKey: 'PR-PANEL-003',
-        violationType: BreachTypeEnums::ROW_DELETED->value,
+        violationType: BreachType::ROW_DELETED->value,
         txid: 'metadata-panel-txid-003',
         publishToChain: false,
     );
 
-    $this->mock(Manager::class, function ($mock) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) {
         $mock->shouldReceive('liststreamitems')
             ->with('procurement.metadata', false, 10000)
             ->andReturn([
@@ -174,16 +174,16 @@ it('restores deleted records from trusted blockchain data and verifies repair be
 });
 
 it('publishes violation and recovery operations to the permanent blockchain audit trail', function () {
-    $auditLog = IntegrityAuditLog::recordViolation(
+    $auditLog = IntegrityViolationLog::recordViolation(
         stream: 'procurement.metadata',
         streamKey: 'PR-PANEL-004',
-        violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+        violationType: BreachType::CONTENT_MISMATCH->value,
         fieldDifferences: [['field' => 'title', 'old_value' => 'Chain', 'new_value' => 'DB']],
         publishToChain: false,
     );
 
     $published = [];
-    $this->mock(Manager::class, function ($mock) use (&$published) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use (&$published) {
         $mock->shouldReceive('publish')->twice()->andReturnUsing(function (string $stream, string $key, array $payload) use (&$published) {
             $published[] = compact('stream', 'key', 'payload');
 
@@ -205,37 +205,37 @@ it('publishes violation and recovery operations to the permanent blockchain audi
 });
 
 it('deduplicates identical pending violations in audit log', function () {
-    $first = IntegrityAuditLog::recordViolation(
+    $first = IntegrityViolationLog::recordViolation(
         stream: 'procurement.metadata',
         streamKey: 'PR-DEDUP-001',
-        violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+        violationType: BreachType::CONTENT_MISMATCH->value,
         txid: 'dedup-txid-001',
         publishToChain: false,
     );
 
     // Second identical violation should return the same record
-    $second = IntegrityAuditLog::recordViolation(
+    $second = IntegrityViolationLog::recordViolation(
         stream: 'procurement.metadata',
         streamKey: 'PR-DEDUP-001',
-        violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+        violationType: BreachType::CONTENT_MISMATCH->value,
         txid: 'dedup-txid-001',
         publishToChain: false,
     );
 
     expect($first->id)->toBe($second->id)
-        ->and(IntegrityAuditLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(1);
+        ->and(IntegrityViolationLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(1);
 
     // Different violation type should create a new record
-    $third = IntegrityAuditLog::recordViolation(
+    $third = IntegrityViolationLog::recordViolation(
         stream: 'procurement.metadata',
         streamKey: 'PR-DEDUP-001',
-        violationType: BreachTypeEnums::ROW_DELETED->value,
+        violationType: BreachType::ROW_DELETED->value,
         txid: 'dedup-txid-001',
         publishToChain: false,
     );
 
     expect($third->id)->not->toBe($first->id)
-        ->and(IntegrityAuditLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(2);
+        ->and(IntegrityViolationLog::where('stream_key', 'PR-DEDUP-001')->count())->toBe(2);
 });
 
 it('detects unauthorized records with tampered pr_number via txid lookup', function () {
@@ -266,7 +266,7 @@ it('detects unauthorized records with tampered pr_number via txid lookup', funct
         'status' => 'draft',
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($originalChainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($originalChainData) {
         $mock->shouldReceive('liststreamitems')
             ->andReturnUsing(function (string $stream) use ($originalChainData) {
                 if ($stream === 'procurement.metadata') {
@@ -296,8 +296,8 @@ it('detects unauthorized records with tampered pr_number via txid lookup', funct
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'tamper-test');
 
-    $log = IntegrityAuditLog::where('stream', 'procurement.metadata')
-        ->where('violation_type', BreachTypeEnums::UNAUTHORIZED_RECORD->value)
+    $log = IntegrityViolationLog::where('stream', 'procurement.metadata')
+        ->where('violation_type', BreachType::UNAUTHORIZED_RECORD->value)
         ->first();
 
     expect($log)->not->toBeNull();
@@ -334,7 +334,7 @@ it('detects pr_number changed to another valid blockchain PR by comparing txid p
         'status' => 'draft',
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($chainA, $chainB) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainA, $chainB) {
         $mock->shouldReceive('liststreamitems')
             ->andReturnUsing(function (string $stream) use ($chainA, $chainB) {
                 if ($stream === 'procurement.metadata') {
@@ -352,10 +352,10 @@ it('detects pr_number changed to another valid blockchain PR by comparing txid p
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'valid-pr-swap-test');
 
-    $matchingDiff = IntegrityAuditLog::where('stream', 'procurement.metadata')
-        ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+    $matchingDiff = IntegrityViolationLog::where('stream', 'procurement.metadata')
+        ->where('violation_type', BreachType::CONTENT_MISMATCH->value)
         ->get()
-        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->flatMap(fn (IntegrityViolationLog $log): array => $log->field_differences ?? [])
         ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'pr_number'
             && ($diff['old_value'] ?? null) === 'PR-VALID-A'
             && ($diff['new_value'] ?? null) === 'PR-VALID-B');
@@ -392,7 +392,7 @@ it('detects pr_number tampering even when the local hash is recomputed', functio
         'status' => 'draft',
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($chainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainData) {
         $mock->shouldReceive('liststreamitems')
             ->andReturnUsing(function (string $stream) use ($chainData) {
                 if ($stream === 'procurement.metadata') {
@@ -407,11 +407,11 @@ it('detects pr_number tampering even when the local hash is recomputed', functio
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'rehashed-pr-tamper-test');
 
-    $contentLog = IntegrityAuditLog::where('stream', 'procurement.metadata')
-        ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+    $contentLog = IntegrityViolationLog::where('stream', 'procurement.metadata')
+        ->where('violation_type', BreachType::CONTENT_MISMATCH->value)
         ->first();
 
-    expect(IntegrityAuditLog::where('violation_type', BreachTypeEnums::HASH_MISMATCH->value)->count())->toBe(0);
+    expect(IntegrityViolationLog::where('violation_type', BreachType::HASH_MISMATCH->value)->count())->toBe(0);
     expect($contentLog)->not->toBeNull();
     expect($contentLog->field_differences)->toContain([
         'field' => 'pr_number',
@@ -439,7 +439,7 @@ it('auto repairs a tampered pr_number back to the trusted blockchain PR', functi
         'status' => 'draft',
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($chainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainData) {
         $mock->shouldReceive('liststreamitems')
             ->andReturnUsing(function (string $stream) use ($chainData) {
                 if ($stream === 'procurement.metadata') {
@@ -457,7 +457,7 @@ it('auto repairs a tampered pr_number back to the trusted blockchain PR', functi
     expect($result['restored'])->toBeGreaterThanOrEqual(1);
     expect(Procurement::where('pr_number', 'PR-AUTO-REPAIR-TAMPERED')->exists())->toBeFalse();
     expect(Procurement::where('pr_number', 'PR-AUTO-REPAIR-ORIGINAL')->exists())->toBeTrue();
-    expect(IntegrityAuditLog::where('source', 'auto-repair-pr-tamper-test')->where('recovery_status', 'restored')->count())
+    expect(IntegrityViolationLog::where('source', 'auto-repair-pr-tamper-test')->where('recovery_status', 'restored')->count())
         ->toBeGreaterThanOrEqual(1);
 });
 
@@ -474,7 +474,7 @@ it('detects procurement txid removed from a blockchain-backed row', function () 
 
     $chainData = ['pr_number' => 'PR-TXID-NULL', 'title' => 'Original Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
 
-    $this->mock(Manager::class, function ($mock) use ($chainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainData) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
             ? [['txid' => 'metadata-null-original-txid', 'data' => ['json' => $chainData]]]
             : []);
@@ -484,9 +484,9 @@ it('detects procurement txid removed from a blockchain-backed row', function () 
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'missing-txid-test');
 
-    expect(IntegrityAuditLog::where('source', 'missing-txid-test')
+    expect(IntegrityViolationLog::where('source', 'missing-txid-test')
         ->where('stream', 'procurement.metadata')
-        ->where('violation_type', BreachTypeEnums::UNAUTHORIZED_RECORD->value)
+        ->where('violation_type', BreachType::UNAUTHORIZED_RECORD->value)
         ->exists())->toBeTrue();
 });
 
@@ -504,7 +504,7 @@ it('detects procurement txid swapped to another valid PR txid', function () {
     $chainA = ['pr_number' => 'PR-TXID-SWAP-A', 'title' => 'A Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
     $chainB = ['pr_number' => 'PR-TXID-SWAP-B', 'title' => 'B Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
 
-    $this->mock(Manager::class, function ($mock) use ($chainA, $chainB) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainA, $chainB) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
             ? [
                 ['txid' => 'metadata-txid-a', 'data' => ['json' => $chainA]],
@@ -517,11 +517,11 @@ it('detects procurement txid swapped to another valid PR txid', function () {
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'txid-swap-test');
 
-    $matchingDiff = IntegrityAuditLog::where('source', 'txid-swap-test')
+    $matchingDiff = IntegrityViolationLog::where('source', 'txid-swap-test')
         ->where('stream', 'procurement.metadata')
-        ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+        ->where('violation_type', BreachType::CONTENT_MISMATCH->value)
         ->get()
-        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->flatMap(fn (IntegrityViolationLog $log): array => $log->field_differences ?? [])
         ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'pr_number'
             && ($diff['old_value'] ?? null) === 'PR-TXID-SWAP-B'
             && ($diff['new_value'] ?? null) === 'PR-TXID-SWAP-A');
@@ -546,7 +546,7 @@ it('detects child row procurement_id moved to another procurement', function () 
 
     $chainEvent = ['pr_number' => $original->pr_number, 'event_type' => 'document_upload', 'category' => 'document', 'severity' => 'info', 'details' => 'Document uploaded', 'stage' => 'procurement_initiation', 'timestamp' => now()->toIso8601String()];
 
-    $this->mock(Manager::class, function ($mock) use ($chainEvent) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainEvent) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.events'
             ? [['txid' => 'event-original-txid', 'data' => ['json' => $chainEvent]]]
             : []);
@@ -556,11 +556,11 @@ it('detects child row procurement_id moved to another procurement', function () 
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'child-procurement-id-test');
 
-    $expectedDiff = IntegrityAuditLog::where('source', 'child-procurement-id-test')
+    $expectedDiff = IntegrityViolationLog::where('source', 'child-procurement-id-test')
         ->where('stream', 'procurement.events')
-        ->where('violation_type', BreachTypeEnums::CONTENT_MISMATCH->value)
+        ->where('violation_type', BreachType::CONTENT_MISMATCH->value)
         ->get()
-        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->flatMap(fn (IntegrityViolationLog $log): array => $log->field_differences ?? [])
         ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'procurement_id'
             && ($diff['old_value'] ?? null) === $original->id
             && ($diff['new_value'] ?? null) === $other->id);
@@ -585,7 +585,7 @@ it('detects tampered procurement document hash', function () {
 
     $chainDocument = ['pr_number' => $procurement->pr_number, 'document_type' => 'purchase_request', 'stage' => 'procurement_initiation', 'file_name' => 'purchase-request.pdf', 'file_key' => 'PR-DOC-HASH/purchase-request.pdf', 'hash' => 'original-hash', 'uploaded_by' => 'Alice', 'timestamp' => now()->toIso8601String()];
 
-    $this->mock(Manager::class, function ($mock) use ($chainDocument) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainDocument) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.documents'
             ? [['txid' => 'document-hash-txid', 'data' => ['json' => $chainDocument]]]
             : []);
@@ -595,10 +595,10 @@ it('detects tampered procurement document hash', function () {
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'document-hash-test');
 
-    $hashDiff = IntegrityAuditLog::where('source', 'document-hash-test')
+    $hashDiff = IntegrityViolationLog::where('source', 'document-hash-test')
         ->where('stream', 'procurement.documents')
         ->get()
-        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->flatMap(fn (IntegrityViolationLog $log): array => $log->field_differences ?? [])
         ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'hash'
             && ($diff['old_value'] ?? null) === 'original-hash'
             && ($diff['new_value'] ?? null) === 'tampered-hash');
@@ -609,7 +609,7 @@ it('detects tampered procurement document hash', function () {
 it('restores a hard-deleted procurement from blockchain metadata', function () {
     $chainData = ['pr_number' => 'PR-HARD-DELETED', 'title' => 'Restored Hard Deleted PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
 
-    $this->mock(Manager::class, function ($mock) use ($chainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainData) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
             ? [['txid' => 'hard-deleted-txid', 'data' => ['json' => $chainData]]]
             : []);
@@ -619,7 +619,7 @@ it('restores a hard-deleted procurement from blockchain metadata', function () {
 
     $result = app(IntegrityVerificationService::class)->verifyPr('PR-HARD-DELETED', true, 'hard-delete-restore-test');
 
-    expect($result['violations'])->toHaveKey(BreachTypeEnums::ROW_DELETED->value);
+    expect($result['violations'])->toHaveKey(BreachType::ROW_DELETED->value);
     expect($result['restored'])->toBeGreaterThanOrEqual(1);
     expect(Procurement::where('pr_number', 'PR-HARD-DELETED')->value('title'))->toBe('Restored Hard Deleted PR');
 });
@@ -631,7 +631,7 @@ it('restores integrity audit logs from the blockchain audit trail stream', funct
         'stream' => 'procurement.metadata',
         'stream_key' => 'PR-AUDIT-RESTORE',
         'txid' => 'audit-restore-txid',
-        'violation_type' => BreachTypeEnums::CONTENT_MISMATCH->value,
+        'violation_type' => BreachType::CONTENT_MISMATCH->value,
         'severity' => 'critical',
         'field_differences' => [['field' => 'title', 'old_value' => 'Chain', 'new_value' => 'DB']],
         'mirror_snapshot' => ['title' => 'DB'],
@@ -642,7 +642,7 @@ it('restores integrity audit logs from the blockchain audit trail stream', funct
         'detected_at' => now()->toIso8601String(),
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($chainViolation) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainViolation) {
         $mock->shouldReceive('liststreamitems')
             ->with('integrity.violations', true, 10000)
             ->andReturn([
@@ -651,11 +651,11 @@ it('restores integrity audit logs from the blockchain audit trail stream', funct
     });
 
     $result = app(BlockchainAuditTrailService::class)->restoreAuditLogsToMySQL();
-    $restored = IntegrityAuditLog::where('stream_key', 'PR-AUDIT-RESTORE')->first();
+    $restored = IntegrityViolationLog::where('stream_key', 'PR-AUDIT-RESTORE')->first();
 
     expect($result['imported'])->toBe(1);
     expect($restored)->not->toBeNull();
-    expect($restored->violation_type)->toBe(BreachTypeEnums::CONTENT_MISMATCH->value);
+    expect($restored->violation_type)->toBe(BreachType::CONTENT_MISMATCH->value);
     expect($restored->recovery_status)->toBe('superseded');
 });
 
@@ -679,7 +679,7 @@ it('restores a soft-deleted procurement from blockchain metadata', function () {
         'status' => 'draft',
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($chainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainData) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
             ? [['txid' => 'soft-deleted-txid', 'data' => ['json' => $chainData]]]
             : []);
@@ -689,98 +689,98 @@ it('restores a soft-deleted procurement from blockchain metadata', function () {
 
     $result = app(IntegrityVerificationService::class)->verifyPr('PR-SOFT-DELETED', true, 'soft-delete-restore-test');
 
-    expect($result['violations'])->toHaveKey(BreachTypeEnums::ROW_DELETED->value);
+    expect($result['violations'])->toHaveKey(BreachType::ROW_DELETED->value);
     expect($result['restored'])->toBeGreaterThanOrEqual(1);
     expect(Procurement::where('pr_number', 'PR-SOFT-DELETED')->exists())->toBeTrue();
     expect(Procurement::withTrashed()->where('pr_number', 'PR-SOFT-DELETED')->first()?->trashed())->toBeFalse();
 });
 
 it('detects tampered procurement document file_key', function () {
-    $procurement = Procurement::create(['pr_number' => 'PR-DOC-FILEKEY', 'title' => 'Document File Key PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'current_stage' => 'procurement_initiation', 'current_status' => 'draft']);
+    $procurement = Procurement::create(['pr_number' => 'PR-DOC-fileKey', 'title' => 'Document File Key PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'current_stage' => 'procurement_initiation', 'current_status' => 'draft']);
 
     ProcurementDocument::create([
         'procurement_id' => $procurement->id,
         'document_type' => 'purchase_request',
         'stage' => 'procurement_initiation',
         'filename' => 'purchase-request.pdf',
-        'file_key' => 'tampered/file-key.pdf',
+        'file_key' => 'tampered/File-key.pdf',
         'hash' => 'original-hash',
         'uploaded_by' => 'Alice',
-        'txid' => 'document-filekey-txid',
+        'txid' => 'document-fileKey-txid',
         'uploaded_at' => now(),
     ]);
 
-    $chainDocument = ['pr_number' => $procurement->pr_number, 'document_type' => 'purchase_request', 'stage' => 'procurement_initiation', 'file_name' => 'purchase-request.pdf', 'file_key' => 'original/file-key.pdf', 'hash' => 'original-hash', 'uploaded_by' => 'Alice', 'timestamp' => now()->toIso8601String()];
+    $chainDocument = ['pr_number' => $procurement->pr_number, 'document_type' => 'purchase_request', 'stage' => 'procurement_initiation', 'file_name' => 'purchase-request.pdf', 'file_key' => 'original/File-key.pdf', 'hash' => 'original-hash', 'uploaded_by' => 'Alice', 'timestamp' => now()->toIso8601String()];
 
-    $this->mock(Manager::class, function ($mock) use ($chainDocument) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainDocument) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.documents'
-            ? [['txid' => 'document-filekey-txid', 'data' => ['json' => $chainDocument]]]
+            ? [['txid' => 'document-fileKey-txid', 'data' => ['json' => $chainDocument]]]
             : []);
         $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
         $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
     });
 
-    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'document-filekey-test');
+    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'document-fileKey-test');
 
-    $fileKeyDiff = IntegrityAuditLog::where('source', 'document-filekey-test')
+    $fileKeyDiff = IntegrityViolationLog::where('source', 'document-fileKey-test')
         ->where('stream', 'procurement.documents')
         ->get()
-        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? [])
+        ->flatMap(fn (IntegrityViolationLog $log): array => $log->field_differences ?? [])
         ->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'file_key'
-            && ($diff['old_value'] ?? null) === 'original/file-key.pdf'
-            && ($diff['new_value'] ?? null) === 'tampered/file-key.pdf');
+            && ($diff['old_value'] ?? null) === 'original/File-key.pdf'
+            && ($diff['new_value'] ?? null) === 'tampered/File-key.pdf');
 
     expect($fileKeyDiff)->toBeTrue();
 });
 
-it('detects tampered file metadata hash and file key', function () {
+it('detects tampered File metadata hash and File key', function () {
     File::create([
-        'file_key' => 'tampered/file.pdf',
-        'filename' => 'file.pdf',
+        'file_key' => 'tampered/File.pdf',
+        'filename' => 'File.pdf',
         'mime_type' => 'application/pdf',
         'size' => 123,
         'hash' => 'tampered-hash',
         'storage_method' => 'direct',
-        'pr_number' => 'PR-FILE-META',
+        'pr_number' => 'PR-File-META',
         'stage' => 'procurement_initiation',
         'document_type' => 'purchase_request',
-        'txid' => 'file-metadata-txid',
+        'txid' => 'File-metadata-txid',
         'stored_at' => now(),
     ]);
 
     $chainFile = [
-        'file_key' => 'original/file.pdf',
-        'filename' => 'file.pdf',
+        'file_key' => 'original/File.pdf',
+        'filename' => 'File.pdf',
         'mime_type' => 'application/pdf',
         'size' => 123,
         'hash' => 'original-hash',
         'storage_method' => 'direct',
-        'pr_number' => 'PR-FILE-META',
+        'pr_number' => 'PR-File-META',
         'stage' => 'procurement_initiation',
         'document_type' => 'purchase_request',
     ];
 
-    $this->mock(Manager::class, function ($mock) use ($chainFile) {
-        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'file.metadata'
-            ? [['txid' => 'file-metadata-txid', 'data' => ['json' => $chainFile]]]
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainFile) {
+        $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'File.metadata'
+            ? [['txid' => 'File-metadata-txid', 'data' => ['json' => $chainFile]]]
             : []);
         $mock->shouldReceive('getrawtransaction')->andReturn([])->byDefault();
         $mock->shouldReceive('publish')->andReturn('integrity-violation-txid')->byDefault();
     });
 
-    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'file-metadata-test');
+    app(IntegrityVerificationService::class)->verifyAndRepair(false, 'File-metadata-test');
 
-    $diffs = IntegrityAuditLog::where('source', 'file-metadata-test')
-        ->where('stream', 'file.metadata')
+    $diffs = IntegrityViolationLog::where('source', 'File-metadata-test')
+        ->where('stream', 'File.metadata')
         ->get()
-        ->flatMap(fn (IntegrityAuditLog $log): array => $log->field_differences ?? []);
+        ->flatMap(fn (IntegrityViolationLog $log): array => $log->field_differences ?? []);
 
     expect($diffs->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'hash'
         && ($diff['old_value'] ?? null) === 'original-hash'
         && ($diff['new_value'] ?? null) === 'tampered-hash'))->toBeTrue();
     expect($diffs->contains(fn (array $diff): bool => ($diff['field'] ?? null) === 'file_key'
-        && ($diff['old_value'] ?? null) === 'original/file.pdf'
-        && ($diff['new_value'] ?? null) === 'tampered/file.pdf'))->toBeTrue();
+        && ($diff['old_value'] ?? null) === 'original/File.pdf'
+        && ($diff['new_value'] ?? null) === 'tampered/File.pdf'))->toBeTrue();
 });
 
 it('detects unauthorized DB-only child row with no blockchain txid', function () {
@@ -799,7 +799,7 @@ it('detects unauthorized DB-only child row with no blockchain txid', function ()
 
     $chainMetadata = ['pr_number' => $procurement->pr_number, 'title' => 'Injected Child PR', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
 
-    $this->mock(Manager::class, function ($mock) use ($chainMetadata) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainMetadata) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
             ? [['txid' => 'injected-child-metadata-txid', 'data' => ['json' => $chainMetadata]]]
             : []);
@@ -809,9 +809,9 @@ it('detects unauthorized DB-only child row with no blockchain txid', function ()
 
     app(IntegrityVerificationService::class)->verifyAndRepair(false, 'unauthorized-child-test');
 
-    expect(IntegrityAuditLog::where('source', 'unauthorized-child-test')
+    expect(IntegrityViolationLog::where('source', 'unauthorized-child-test')
         ->where('stream', 'procurement.events')
-        ->where('violation_type', BreachTypeEnums::UNAUTHORIZED_RECORD->value)
+        ->where('violation_type', BreachType::UNAUTHORIZED_RECORD->value)
         ->exists())->toBeTrue();
 });
 
@@ -828,7 +828,7 @@ it('continues recording mysql violations when blockchain audit publish fails', f
 
     $chainData = ['pr_number' => 'PR-AUDIT-PUBLISH-FAIL', 'title' => 'Original Title', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding', 'status' => 'draft'];
 
-    $this->mock(Manager::class, function ($mock) use ($chainData) {
+    $this->mock(BlockchainRpcClient::class, function ($mock) use ($chainData) {
         $mock->shouldReceive('liststreamitems')->andReturnUsing(fn (string $stream): array => $stream === 'procurement.metadata'
             ? [['txid' => 'audit-publish-fail-txid', 'data' => ['json' => $chainData]]]
             : []);
@@ -839,7 +839,7 @@ it('continues recording mysql violations when blockchain audit publish fails', f
     $result = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'audit-publish-fail-test');
 
     expect($result['violations'])->not->toBeEmpty();
-    expect(IntegrityAuditLog::where('source', 'audit-publish-fail-test')->exists())->toBeTrue();
+    expect(IntegrityViolationLog::where('source', 'audit-publish-fail-test')->exists())->toBeTrue();
 });
 
 it('skips a concurrent full audit when the verification lock is held', function () {

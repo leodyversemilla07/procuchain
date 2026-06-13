@@ -13,7 +13,7 @@ use Illuminate\Http\UploadedFile;
 class DocumentUploadException extends Exception
 {
     /**
-     * The file that failed to upload
+     * The File that failed to upload
      */
     protected ?string $filename = null;
 
@@ -54,7 +54,7 @@ class DocumentUploadException extends Exception
     /**
      * Get the filename that failed to upload
      */
-    public function getFilename(): ?string
+    public function getfilename(): ?string
     {
         return $this->filename;
     }
@@ -86,20 +86,20 @@ class DocumentUploadException extends Exception
     }
 
     /**
-     * Create exception for file validation failure
+     * Create exception for File validation failure
      */
     public static function validationFailed(
-        UploadedFile $file,
+        UploadedFile $File,
         string $reason,
         ?string $procurementId = null
     ): self {
         return new self(
             message: "File validation failed: {$reason}",
-            filename: $file->getClientOriginalName(),
+            filename: $File->getClientOriginalName(),
             procurementId: $procurementId,
             context: [
-                'size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
+                'size' => $File->getSize(),
+                'mime_type' => $File->getMimeType(),
                 'reason' => $reason,
             ]
         );
@@ -156,7 +156,7 @@ class DocumentUploadException extends Exception
     }
 
     /**
-     * Create exception for file size exceeded
+     * Create exception for File size exceeded
      */
     public static function fileSizeExceeded(
         string $filename,

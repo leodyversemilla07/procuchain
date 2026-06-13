@@ -17,7 +17,7 @@
  * - Direct Acquisition threshold: ₱200,000
  */
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Services\DashboardService;
 
 beforeEach(function () {
@@ -244,13 +244,13 @@ describe('NGPA Mode Enum Integration', function () {
     it('validates isAlternativeMode returns correct values for all modes', function () {
         // Alternative modes per IRR Sections 31-37
         $alternativeModes = [
-            ProcurementModeEnums::DIRECT_CONTRACTING,
-            ProcurementModeEnums::DIRECT_ACQUISITION,
-            ProcurementModeEnums::REPEAT_ORDER,
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
-            ProcurementModeEnums::NEGOTIATED_PROCUREMENT,
-            ProcurementModeEnums::DIRECT_SALES,
-            ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI,
+            ProcurementMode::DIRECT_CONTRACTING,
+            ProcurementMode::DIRECT_ACQUISITION,
+            ProcurementMode::REPEAT_ORDER,
+            ProcurementMode::SMALL_VALUE_PROCUREMENT,
+            ProcurementMode::NEGOTIATED_PROCUREMENT,
+            ProcurementMode::DIRECT_SALES,
+            ProcurementMode::DIRECT_PROCUREMENT_FOR_STI,
         ];
 
         foreach ($alternativeModes as $mode) {
@@ -261,10 +261,10 @@ describe('NGPA Mode Enum Integration', function () {
 
         // Competitive modes per IRR Sections 27-30
         $competitiveModes = [
-            ProcurementModeEnums::COMPETITIVE_BIDDING,
-            ProcurementModeEnums::LIMITED_SOURCE_BIDDING,
-            ProcurementModeEnums::COMPETITIVE_DIALOGUE,
-            ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING,
+            ProcurementMode::COMPETITIVE_BIDDING,
+            ProcurementMode::LIMITED_SOURCE_BIDDING,
+            ProcurementMode::COMPETITIVE_DIALOGUE,
+            ProcurementMode::UNSOLICITED_OFFER_WITH_BID_MATCHING,
         ];
 
         foreach ($competitiveModes as $mode) {
@@ -278,7 +278,7 @@ describe('NGPA Mode Enum Integration', function () {
     });
 
     it('validates Municipality of Gloria threshold for SVP', function () {
-        $svp = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
+        $svp = ProcurementMode::SMALL_VALUE_PROCUREMENT;
 
         // Municipality of Gloria is 4th class, threshold should be ₱400,000
         expect($svp->thresholdAmount())->toBe(400000.0);
@@ -286,7 +286,7 @@ describe('NGPA Mode Enum Integration', function () {
     });
 
     it('validates Municipality of Gloria threshold for Direct Acquisition', function () {
-        $da = ProcurementModeEnums::DIRECT_ACQUISITION;
+        $da = ProcurementMode::DIRECT_ACQUISITION;
 
         // Municipality of Gloria is 4th class, threshold should be ₱200,000
         expect($da->thresholdAmount())->toBe(200000.0);

@@ -13,7 +13,7 @@ use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\Contracts\StatusPublisherInterface;
 use App\Models\AuditLog;
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\StageDocumentConfig;
 use App\Models\UserLoginLog;
@@ -36,12 +36,12 @@ use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\BlockchainRecordSyncService;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
 use App\Services\CacheStrategyService;
 use App\Services\IntegrityVerificationService;
-use App\Services\Manager;
 use App\Services\NotificationService;
 use App\Services\ProcurementStageTransitionService;
 use App\Services\Publishers\DocumentPublisher;
@@ -62,8 +62,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Register MultiChain Manager as singleton
-        $this->app->singleton(Manager::class);
+        // Register MultiChain BlockchainRpcClient as singleton
+        $this->app->singleton(BlockchainRpcClient::class);
 
         // Register core services as singletons
         $this->app->singleton(ProcurementStageTransitionService::class);
@@ -102,7 +102,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register observers for blockchain-backed tables
         AuditLog::observe(AuditLogObserver::class);
-        DocumentView::observe(DocumentViewObserver::class);
+        DocumentViewLog::observe(DocumentViewObserver::class);
         UserLoginLog::observe(UserLoginLogObserver::class);
         ProcurementWorkflowConfig::observe(ProcurementWorkflowConfigObserver::class);
         StageDocumentConfig::observe(StageDocumentConfigObserver::class);
@@ -222,7 +222,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-stage-document-config', [SettingsPolicy::class, 'manageStageDocumentConfig']);
         Gate::define('manage-user-invitations', [SettingsPolicy::class, 'manageUserInvitations']);
         Gate::define('view-workflow', [SettingsPolicy::class, 'viewWorkflow']);
-        Gate::define('manage-recoverable-data', [SettingsPolicy::class, 'manageRecoverableData']);
+        Gate::define('manage-recoverable-data', [SettingsPolicy::class, 'BlockchainRpcClientecoverableData']);
 
         // Register custom rate limiter for blockchain writes (Issue #20: use config)
         RateLimiter::for('blockchain_writes', function ($request) {
@@ -257,7 +257,7 @@ class AppServiceProvider extends ServiceProvider
         // 2FA Fortify Event Hooks — Audit Logging (NGPA compliance)
         // ──────────────────────────────────────────────────────────────
         Event::listen(TwoFactorAuthenticationEnabled::class, function ($event) {
-            app(AuditLogger::class)->log(
+            app(AuditLogService::class)->log(
                 'settings.two_factor_enabled',
                 'user',
                 (string) $event->user->id,
@@ -265,7 +265,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(TwoFactorAuthenticationConfirmed::class, function ($event) {
-            app(AuditLogger::class)->log(
+            app(AuditLogService::class)->log(
                 'settings.two_factor_confirmed',
                 'user',
                 (string) $event->user->id,
@@ -273,7 +273,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(TwoFactorAuthenticationDisabled::class, function ($event) {
-            app(AuditLogger::class)->log(
+            app(AuditLogService::class)->log(
                 'settings.two_factor_disabled',
                 'user',
                 (string) $event->user->id,

@@ -35,9 +35,9 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
     $user->assignRole('bac_secretariat');
 
     $dataService = Mockery::mock(ProcurementDataService::class);
-    $dataService->shouldReceive('getDocumentDataByFileKey')
+    $dataService->shouldReceive('getDocumentDataByfileKey')
         ->once()
-        ->with('locked-file.pdf')
+        ->with('locked-File.pdf')
         ->andReturn([
             'pr_number' => 'PR-2025-998-0001',
         ]);
@@ -57,9 +57,9 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
     app()->instance(ProcurementRepository::class, $repository);
 
     $documentRepository = Mockery::mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByFileKey')
+    $documentRepository->shouldReceive('findByfileKey')
         ->once()
-        ->with('locked-file.pdf')
+        ->with('locked-File.pdf')
         ->andReturn(null);
     $documentRepository->shouldReceive('findByTxid')
         ->zeroOrMoreTimes()
@@ -67,7 +67,7 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
     app()->instance(DocumentRepository::class, $documentRepository);
 
     $this->actingAs($user)
-        ->get('/files/locked-file.pdf')
+        ->get('/BlockchainFiles/locked-File.pdf')
         ->assertForbidden();
 });
 

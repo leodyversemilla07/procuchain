@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Integrity;
 
-use App\Enums\StreamEnums;
-use App\Services\Manager;
+use App\Enums\Stream;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -31,15 +31,15 @@ class BlockchainVerificationIndex
     /** @var array<string, string> */
     private array $failedStreams = [];
 
-    public function __construct(private Manager $manager) {}
+    public function __construct(private BlockchainRpcClient $BlockchainRpcClient) {}
 
     /**
-     * @param  iterable<StreamEnums|string>  $streams
+     * @param  iterable<Stream|string>  $streams
      */
     public function loadStreams(iterable $streams): void
     {
         foreach ($streams as $stream) {
-            $this->loadStream($stream instanceof StreamEnums ? $stream->value : $stream);
+            $this->loadStream($stream instanceof Stream ? $stream->value : $stream);
         }
     }
 
@@ -50,7 +50,7 @@ class BlockchainVerificationIndex
         }
 
         try {
-            $items = $this->manager->liststreamitems($stream, false, 10000);
+            $items = $this->BlockchainRpcClient->liststreamitems($stream, false, 10000);
             $items = is_array($items) ? $items : [];
         } catch (\Throwable $e) {
             Log::warning('BlockchainVerificationIndex: failed to load stream', [
@@ -109,9 +109,9 @@ class BlockchainVerificationIndex
     /**
      * @return list<array<string, mixed>>
      */
-    public function items(string|StreamEnums $stream): array
+    public function items(string|Stream $stream): array
     {
-        $streamName = $stream instanceof StreamEnums ? $stream->value : $stream;
+        $streamName = $stream instanceof Stream ? $stream->value : $stream;
         $this->loadStream($streamName);
 
         return $this->itemsByStream[$streamName] ?? [];
@@ -120,13 +120,13 @@ class BlockchainVerificationIndex
     /**
      * @return array<string, mixed>|null
      */
-    public function itemByTxid(string|StreamEnums $stream, ?string $txid): ?array
+    public function itemByTxid(string|Stream $stream, ?string $txid): ?array
     {
         if (! $txid) {
             return null;
         }
 
-        $streamName = $stream instanceof StreamEnums ? $stream->value : $stream;
+        $streamName = $stream instanceof Stream ? $stream->value : $stream;
         $this->loadStream($streamName);
 
         return $this->itemsByTxid[$streamName][$txid] ?? null;
@@ -135,7 +135,7 @@ class BlockchainVerificationIndex
     /**
      * @return array<string, mixed>|null
      */
-    public function jsonByTxid(string|StreamEnums $stream, ?string $txid): ?array
+    public function jsonByTxid(string|Stream $stream, ?string $txid): ?array
     {
         $item = $this->itemByTxid($stream, $txid);
         $json = $item['data']['json'] ?? null;
@@ -146,9 +146,9 @@ class BlockchainVerificationIndex
     /**
      * @return list<array<string, mixed>>
      */
-    public function itemsByPrNumber(string|StreamEnums $stream, string $prNumber): array
+    public function itemsByPrNumber(string|Stream $stream, string $prNumber): array
     {
-        $streamName = $stream instanceof StreamEnums ? $stream->value : $stream;
+        $streamName = $stream instanceof Stream ? $stream->value : $stream;
         $this->loadStream($streamName);
 
         return $this->itemsByPrNumber[$streamName][$prNumber] ?? [];
@@ -157,7 +157,7 @@ class BlockchainVerificationIndex
     /**
      * @return array<string, mixed>|null
      */
-    public function latestJsonByPrNumber(string|StreamEnums $stream, string $prNumber): ?array
+    public function latestJsonByPrNumber(string|Stream $stream, string $prNumber): ?array
     {
         $items = $this->itemsByPrNumber($stream, $prNumber);
         $latest = end($items);
@@ -174,9 +174,9 @@ class BlockchainVerificationIndex
     /**
      * @return list<string>
      */
-    public function txids(string|StreamEnums $stream): array
+    public function txids(string|Stream $stream): array
     {
-        $streamName = $stream instanceof StreamEnums ? $stream->value : $stream;
+        $streamName = $stream instanceof Stream ? $stream->value : $stream;
         $this->loadStream($streamName);
 
         return array_values(array_keys($this->itemsByTxid[$streamName] ?? []));
@@ -185,15 +185,15 @@ class BlockchainVerificationIndex
     /**
      * @return list<string>
      */
-    public function prNumbers(string|StreamEnums $stream = StreamEnums::METADATA): array
+    public function prNumbers(string|Stream $stream = Stream::METADATA): array
     {
-        $streamName = $stream instanceof StreamEnums ? $stream->value : $stream;
+        $streamName = $stream instanceof Stream ? $stream->value : $stream;
         $this->loadStream($streamName);
 
         return array_values(array_keys($this->itemsByPrNumber[$streamName] ?? []));
     }
 
-    public function hasTxid(string|StreamEnums $stream, ?string $txid): bool
+    public function hasTxid(string|Stream $stream, ?string $txid): bool
     {
         return $this->itemByTxid($stream, $txid) !== null;
     }

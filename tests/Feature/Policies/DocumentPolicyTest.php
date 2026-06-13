@@ -80,9 +80,9 @@ describe('DocumentPolicy', function () {
         it('denies bac_secretariat from viewing inaccessible procurement documents', function () {
             $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
-            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-2025-998-0004');
+            bindInaccessibleDocumentContext($this, 'locked-File', 'PR-2025-998-0004');
 
-            expect($this->secretariat->can('view-document', 'locked-file'))->toBeFalse();
+            expect($this->secretariat->can('view-document', 'locked-File'))->toBeFalse();
         });
     });
 
@@ -110,9 +110,9 @@ describe('DocumentPolicy', function () {
         it('denies bac_secretariat from downloading inaccessible procurement documents', function () {
             $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
-            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-2025-998-0004');
+            bindInaccessibleDocumentContext($this, 'locked-File', 'PR-2025-998-0004');
 
-            expect($this->secretariat->can('download-document', 'locked-file'))->toBeFalse();
+            expect($this->secretariat->can('download-document', 'locked-File'))->toBeFalse();
         });
     });
 
@@ -165,14 +165,14 @@ describe('DocumentPolicy', function () {
     });
 
     describe('download route authorization (HTTP)', function () {
-        it('redirects unauthenticated users to login when accessing a file', function () {
-            $this->get('/files/some-file-key.pdf')
+        it('redirects unauthenticated users to login when accessing a File', function () {
+            $this->get('/BlockchainFiles/some-File-key.pdf')
                 ->assertRedirect('/login');
         });
 
         it('returns 403 when a user without download permission tries to download', function () {
             $this->actingAs($this->guest)
-                ->get('/files/some-file-key.pdf')
+                ->get('/BlockchainFiles/some-File-key.pdf')
                 ->assertForbidden();
         });
     });
@@ -181,7 +181,7 @@ describe('DocumentPolicy', function () {
 function bindInaccessibleDocumentContext($testCase, string $reference, string $prNumber, bool $isTxid = false): void
 {
     $dataService = Mockery::mock(ProcurementDataService::class);
-    $dataService->shouldReceive('getDocumentDataByFileKey')
+    $dataService->shouldReceive('getDocumentDataByfileKey')
         ->zeroOrMoreTimes()
         ->andReturn($isTxid ? null : [
             'pr_number' => $prNumber,
@@ -194,13 +194,13 @@ function bindInaccessibleDocumentContext($testCase, string $reference, string $p
         ]));
 
     $documentRepository = Mockery::mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByFileKey')
+    $documentRepository->shouldReceive('findByfileKey')
         ->once()
         ->with($reference)
         ->andReturn($isTxid ? null : inaccessibleDocumentFixture($reference, $prNumber));
     $documentRepository->shouldReceive('findByTxid')
         ->zeroOrMoreTimes()
-        ->andReturn($isTxid ? inaccessibleDocumentFixture('locked-file.pdf', $prNumber, $reference) : null);
+        ->andReturn($isTxid ? inaccessibleDocumentFixture('locked-File.pdf', $prNumber, $reference) : null);
 
     $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
@@ -240,7 +240,7 @@ function inaccessibleDocumentFixture(string $fileKey, string $prNumber, string $
         status: 'draft',
         documentType: 'test_document',
         fileKey: $fileKey,
-        fileName: 'test.pdf',
+        filename: 'test.pdf',
         fileSize: 1000,
         mimeType: 'application/pdf',
         hash: 'hash',

@@ -3,15 +3,15 @@
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Services\DocumentValidationService;
-use App\Services\ModeAwareDocumentRequirements;
-use App\Services\StageDocumentRequirements;
+use App\Services\ModeAwareDocumentRequirementsService;
+use App\Services\StageDocumentRequirementsService;
 use App\Services\WorkflowDefinitionService;
 
 beforeEach(function () {
-    $this->requirements = new StageDocumentRequirements;
+    $this->requirements = new StageDocumentRequirementsService;
     $this->workflowDefinitionService = new WorkflowDefinitionService(
         $this->requirements,
-        new ModeAwareDocumentRequirements($this->requirements),
+        new ModeAwareDocumentRequirementsService($this->requirements),
     );
     $this->service = new DocumentValidationService(
         $this->requirements,

@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Http\Requests\Procurement\BiddingDocumentsRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,7 +14,7 @@ describe('BiddingDocumentsRequest', function () {
     beforeEach(function () {
         Storage::fake('local');
         $this->user = User::factory()->create();
-        $this->user->assignRole(UserRoleEnums::BAC_SECRETARIAT->value);
+        $this->user->assignRole(UserRole::BAC_SECRETARIAT->value);
         $this->actingAs($this->user);
     });
 
@@ -43,7 +43,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024, 'application/pdf'),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024, 'application/pdf'),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -60,7 +60,7 @@ describe('BiddingDocumentsRequest', function () {
         test('it requires pr_number', function () {
             $data = [
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -77,7 +77,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => str_repeat('A', 51),
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -95,7 +95,7 @@ describe('BiddingDocumentsRequest', function () {
         test('it requires procurement_title', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -112,7 +112,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Test',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -129,7 +129,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Tests',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -145,7 +145,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => str_repeat('A', 256),
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -159,8 +159,8 @@ describe('BiddingDocumentsRequest', function () {
         });
     });
 
-    describe('bidding_document_file validation', function () {
-        test('it requires bidding_document_file', function () {
+    describe('bidding_document_File validation', function () {
+        test('it requires bidding_document_File', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
@@ -173,14 +173,14 @@ describe('BiddingDocumentsRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('bidding_document_file'))->toBeTrue();
+            expect($validator->errors()->has('bidding_document_File'))->toBeTrue();
         });
 
-        test('it accepts PDF files', function () {
+        test('it accepts PDF BlockchainFiles', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('document.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('document.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -192,11 +192,11 @@ describe('BiddingDocumentsRequest', function () {
             expect($validator->passes())->toBeTrue();
         });
 
-        test('it rejects non-PDF files', function () {
+        test('it rejects non-PDF BlockchainFiles', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('document.docx', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('document.docx', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -206,14 +206,14 @@ describe('BiddingDocumentsRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('bidding_document_file'))->toBeTrue();
+            expect($validator->errors()->has('bidding_document_File'))->toBeTrue();
         });
 
-        test('it rejects files exceeding 50MB', function () {
+        test('it rejects BlockchainFiles exceeding 50MB', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 51201, 'application/pdf'), // 50MB + 1KB
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 51201, 'application/pdf'), // 50MB + 1KB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -223,14 +223,14 @@ describe('BiddingDocumentsRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('bidding_document_file'))->toBeTrue();
+            expect($validator->errors()->has('bidding_document_File'))->toBeTrue();
         });
 
-        test('it accepts files up to 50MB', function () {
+        test('it accepts BlockchainFiles up to 50MB', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 51200), // 50MB
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 51200), // 50MB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -248,7 +248,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
             ];
@@ -264,7 +264,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -280,7 +280,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '15-01-2024',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -299,7 +299,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => $futureDate,
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -318,7 +318,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => $today,
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -336,7 +336,7 @@ describe('BiddingDocumentsRequest', function () {
             $dataStart = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_end' => '2024-02-20',
             ];
@@ -350,7 +350,7 @@ describe('BiddingDocumentsRequest', function () {
             $dataEnd = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
             ];
@@ -365,7 +365,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-02-20',
                 'validity_period_end' => '2024-01-20',
@@ -382,7 +382,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-02-20',
                 'validity_period_end' => '2024-02-20',
@@ -399,7 +399,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -413,11 +413,11 @@ describe('BiddingDocumentsRequest', function () {
     });
 
     describe('custom error messages', function () {
-        test('it provides custom message for file size', function () {
+        test('it provides custom message for File size', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 51201, 'application/pdf'), // 50MB + 1KB
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 51201, 'application/pdf'), // 50MB + 1KB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -426,14 +426,14 @@ describe('BiddingDocumentsRequest', function () {
             $request = new BiddingDocumentsRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
-            expect($validator->errors()->first('bidding_document_file'))->toContain('50MB');
+            expect($validator->errors()->first('bidding_document_File'))->toContain('50MB');
         });
 
-        test('it provides custom message for file type', function () {
+        test('it provides custom message for File type', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.docx', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.docx', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -442,14 +442,14 @@ describe('BiddingDocumentsRequest', function () {
             $request = new BiddingDocumentsRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
-            expect($validator->errors()->first('bidding_document_file'))->toContain('PDF');
+            expect($validator->errors()->first('bidding_document_File'))->toContain('PDF');
         });
 
         test('it provides custom message for validity period', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 1024),
+                'bidding_document_File' => UploadedFile::fake()->create('bidding.pdf', 1024),
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-02-20',
                 'validity_period_end' => '2024-01-20',

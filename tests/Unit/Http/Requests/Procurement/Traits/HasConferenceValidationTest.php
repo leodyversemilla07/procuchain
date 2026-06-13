@@ -10,8 +10,8 @@ describe('HasConferenceValidation Trait', function () {
             $rules = $request->rules();
 
             // Check for conference-specific rules
-            expect($rules)->toHaveKey('minutes_file');
-            expect($rules)->toHaveKey('attendance_file');
+            expect($rules)->toHaveKey('minutes_File');
+            expect($rules)->toHaveKey('attendance_File');
             expect($rules)->toHaveKey('meeting_date');
             expect($rules)->toHaveKey('participants');
             expect($rules)->toHaveKey('participants.*.name');
@@ -23,8 +23,8 @@ describe('HasConferenceValidation Trait', function () {
             $rules = $request->rules();
 
             // Check for conference-specific rules
-            expect($rules)->toHaveKey('minutes_file');
-            expect($rules)->toHaveKey('attendance_file');
+            expect($rules)->toHaveKey('minutes_File');
+            expect($rules)->toHaveKey('attendance_File');
             expect($rules)->toHaveKey('meeting_date');
             expect($rules)->toHaveKey('participants');
             expect($rules)->toHaveKey('participants.*.name');
@@ -39,7 +39,7 @@ describe('HasConferenceValidation Trait', function () {
             $preBidRules = $preBidRequest->rules();
 
             // Conference-specific rules should be identical
-            $conferenceFields = ['minutes_file', 'attendance_file', 'meeting_date', 'participants', 'participants.*.name', 'participants.*.organization'];
+            $conferenceFields = ['minutes_File', 'attendance_File', 'meeting_date', 'participants', 'participants.*.name', 'participants.*.organization'];
 
             foreach ($conferenceFields as $field) {
                 expect($preProcurementRules[$field])->toBe($preBidRules[$field], "Rule for {$field} should be identical in both requests");
@@ -112,27 +112,27 @@ describe('HasConferenceValidation Trait', function () {
         });
     });
 
-    describe('file validation', function () {
-        it('minutes_file must be a PDF', function () {
+    describe('File validation', function () {
+        it('minutes_File must be a PDF', function () {
             $request = new PreProcurementConferenceDocumentsRequest;
             $rules = $request->rules();
 
-            expect($rules['minutes_file'])->toContain('mimes:pdf');
+            expect($rules['minutes_File'])->toContain('mimes:pdf');
         });
 
-        it('attendance_file must be a PDF', function () {
+        it('attendance_File must be a PDF', function () {
             $request = new PreProcurementConferenceDocumentsRequest;
             $rules = $request->rules();
 
-            expect($rules['attendance_file'])->toContain('mimes:pdf');
+            expect($rules['attendance_File'])->toContain('mimes:pdf');
         });
 
-        it('files have max size of 50MB (51200KB)', function () {
+        it('BlockchainFiles have max size of 50MB (51200KB)', function () {
             $request = new PreProcurementConferenceDocumentsRequest;
             $rules = $request->rules();
 
-            expect($rules['minutes_file'])->toContain('max:51200');
-            expect($rules['attendance_file'])->toContain('max:51200');
+            expect($rules['minutes_File'])->toContain('max:51200');
+            expect($rules['attendance_File'])->toContain('max:51200');
         });
     });
 

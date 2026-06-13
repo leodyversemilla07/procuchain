@@ -3,9 +3,9 @@
 namespace App\Services\Publishers;
 
 use App\DataTransferObjects\ProcurementData;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
-use App\Services\Procurement\StageStatusMapper;
+use App\Services\Procurement\StageStatusMappingService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,7 +25,7 @@ class DecisionPublisher
     public function __construct(
         protected StatusPublisher $statusPublisher,
         protected EventPublisher $eventPublisher,
-        protected StageStatusMapper $statusMapper
+        protected StageStatusMappingService $statusMapper
     ) {}
 
     /**
@@ -33,8 +33,8 @@ class DecisionPublisher
      *
      * @var array<string, array{
      *     stage: StageEnums,
-     *     held_status: StatusEnums,
-     *     skipped_status: StatusEnums,
+     *     held_status: ProcurementStatus,
+     *     skipped_status: ProcurementStatus,
      *     next_stage: StageEnums,
      *     held_event_type: string,
      *     skipped_event_type: string,
@@ -47,8 +47,8 @@ class DecisionPublisher
     private const DECISION_CONFIG = [
         'pre_procurement_conference' => [
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
-            'held_status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
-            'skipped_status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
+            'held_status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD,
+            'skipped_status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
             'next_stage' => StageEnums::BIDDING_DOCUMENTS,
             'held_event_type' => 'conference_decision',
             'skipped_event_type' => 'conference_skipped',
@@ -59,8 +59,8 @@ class DecisionPublisher
         ],
         'pre_bid_conference' => [
             'stage' => StageEnums::PRE_BID_CONFERENCE,
-            'held_status' => StatusEnums::PRE_BID_CONFERENCE_HELD,
-            'skipped_status' => StatusEnums::PRE_BID_CONFERENCE_SKIPPED,
+            'held_status' => ProcurementStatus::PRE_BID_CONFERENCE_HELD,
+            'skipped_status' => ProcurementStatus::PRE_BID_CONFERENCE_SKIPPED,
             'next_stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
             'held_event_type' => 'conference_decision',
             'skipped_event_type' => 'conference_skipped',
@@ -71,8 +71,8 @@ class DecisionPublisher
         ],
         'supplemental_bid_bulletin' => [
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-            'held_status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
-            'skipped_status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            'held_status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING,
+            'skipped_status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED,
             'next_stage' => StageEnums::BID_OPENING,
             'held_event_type' => 'bulletin_decision',
             'skipped_event_type' => 'bulletin_skipped',
@@ -147,7 +147,7 @@ class DecisionPublisher
     ): array {
         /** @var StageEnums $stage */
         $stage = $config['stage'];
-        /** @var StatusEnums $heldStatus */
+        /** @var ProcurementStatus $heldStatus */
         $heldStatus = $config['held_status'];
 
         // Publish status update
@@ -197,7 +197,7 @@ class DecisionPublisher
     ): array {
         /** @var StageEnums $stage */
         $stage = $config['stage'];
-        /** @var StatusEnums $skippedStatus */
+        /** @var ProcurementStatus $skippedStatus */
         $skippedStatus = $config['skipped_status'];
         /** @var StageEnums $nextStage */
         $nextStage = $config['next_stage'];
@@ -328,14 +328,14 @@ class DecisionPublisher
     /**
      * Get the initial status when entering a stage.
      */
-    private function getEnteredStatus(StageEnums $stage): StatusEnums
+    private function getEnteredStatus(StageEnums $stage): ProcurementStatus
     {
         return match ($stage) {
-            StageEnums::BIDDING_DOCUMENTS => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
-            StageEnums::PRE_BID_CONFERENCE => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
-            StageEnums::SUPPLEMENTAL_BID_BULLETIN => StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
-            StageEnums::BID_OPENING => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
-            default => StatusEnums::PROCUREMENT_SUBMITTED,
+            StageEnums::BIDDING_DOCUMENTS => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+            StageEnums::PRE_BID_CONFERENCE => ProcurementStatus::BIDDING_DOCUMENTS_PUBLISHED,
+            StageEnums::SUPPLEMENTAL_BID_BULLETIN => ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED,
+            StageEnums::BID_OPENING => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            default => ProcurementStatus::PROCUREMENT_SUBMITTED,
         };
     }
 }

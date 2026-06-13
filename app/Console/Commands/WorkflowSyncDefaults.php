@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\StageDocumentConfig;
 use App\Services\ProcurementWorkflowService;
@@ -27,7 +27,7 @@ class WorkflowSyncDefaults extends Command
         $createdWorkflowConfigs = 0;
         $createdDocumentConfigs = 0;
 
-        foreach (ProcurementModeEnums::cases() as $mode) {
+        foreach (ProcurementMode::cases() as $mode) {
             $existingWorkflowConfig = ProcurementWorkflowConfig::query()
                 ->forMode($mode)
                 ->first();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\File;
 use App\Models\Procurement;
 use App\Models\ProcurementArchive;
@@ -33,11 +33,11 @@ class NormalizedTableSyncService
 {
     use HashesData;
 
-    private Manager $manager;
+    private BlockchainRpcClient $BlockchainRpcClient;
 
     public function __construct()
     {
-        $this->manager = app(Manager::class);
+        $this->BlockchainRpcClient = app(BlockchainRpcClient::class);
     }
 
     // ----------------------------------------------------------------
@@ -58,7 +58,7 @@ class NormalizedTableSyncService
                 'corrections' => 0,
                 'archives' => 0,
                 'metadata_corrections' => 0,
-                'files' => 0,
+                'Files' => 0,
             ];
 
             Log::info('NormalizedTableSync: starting full sync from blockchain');
@@ -84,8 +84,8 @@ class NormalizedTableSyncService
             // 7. Sync procurement metadata corrections -> procurement_metadata_corrections table
             $counts['metadata_corrections'] = $this->syncMetadataCorrections();
 
-            // 8. Sync file metadata -> files table
-            $counts['files'] = $this->syncFileMetadata();
+            // 8. Sync File metadata -> BlockchainFiles table
+            $counts['Files'] = $this->syncFileMetadata();
 
             Log::info('NormalizedTableSync: sync completed', $counts);
 
@@ -119,7 +119,7 @@ class NormalizedTableSyncService
             $counts['corrections'] = $this->syncCorrectionsForPr($prNumber);
             $counts['archives'] = $this->syncArchivesForPr($prNumber);
             $counts['metadata_corrections'] = $this->syncMetadataCorrectionsForPr($prNumber);
-            $counts['files'] = $this->syncFilesForPr($prNumber);
+            $counts['Files'] = $this->syncBlockchainFilesForPr($prNumber);
 
             Log::info('NormalizedTableSync: PR sync completed', ['pr_number' => $prNumber] + $counts);
 
@@ -132,7 +132,7 @@ class NormalizedTableSyncService
      */
     private function syncMetadataForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::METADATA->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::METADATA->value, $prNumber);
         $count = 0;
 
         foreach ($items as $item) {
@@ -204,7 +204,7 @@ class NormalizedTableSyncService
      */
     private function syncStatusUpdatesForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::STATUS->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::STATUS->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -280,7 +280,7 @@ class NormalizedTableSyncService
      */
     private function syncEventsForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::EVENTS->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::EVENTS->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -346,7 +346,7 @@ class NormalizedTableSyncService
      */
     private function syncDocumentsForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::DOCUMENTS->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::DOCUMENTS->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -421,7 +421,7 @@ class NormalizedTableSyncService
      */
     private function syncCorrectionsForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::CORRECTIONS->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::CORRECTIONS->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -488,7 +488,7 @@ class NormalizedTableSyncService
     private function getStreamItemsForKey(string $stream, string $key): array
     {
         try {
-            $items = $this->manager->liststreamkeyitems($stream, $key, false, 1000);
+            $items = $this->BlockchainRpcClient->liststreamkeyitems($stream, $key, false, 1000);
 
             return is_array($items) ? $items : [];
         } catch (\Exception $e) {
@@ -537,7 +537,7 @@ class NormalizedTableSyncService
      */
     private function syncProcurementMetadata(): int
     {
-        $items = $this->getStreamItems(StreamEnums::METADATA->value);
+        $items = $this->getStreamItems(Stream::METADATA->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -627,7 +627,7 @@ class NormalizedTableSyncService
      */
     private function syncStatusUpdates(): int
     {
-        $items = $this->getStreamItems(StreamEnums::STATUS->value);
+        $items = $this->getStreamItems(Stream::STATUS->value);
         $count = 0;
 
         usort($items, fn ($a, $b) => ($a['blocktime'] ?? 0) <=> ($b['blocktime'] ?? 0));
@@ -705,7 +705,7 @@ class NormalizedTableSyncService
      */
     private function syncDocuments(): int
     {
-        $items = $this->getStreamItems(StreamEnums::DOCUMENTS->value);
+        $items = $this->getStreamItems(Stream::DOCUMENTS->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -781,7 +781,7 @@ class NormalizedTableSyncService
      */
     private function syncEvents(): int
     {
-        $items = $this->getStreamItems(StreamEnums::EVENTS->value);
+        $items = $this->getStreamItems(Stream::EVENTS->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -848,7 +848,7 @@ class NormalizedTableSyncService
      */
     private function syncCorrections(): int
     {
-        $items = $this->getStreamItems(StreamEnums::CORRECTIONS->value);
+        $items = $this->getStreamItems(Stream::CORRECTIONS->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -915,7 +915,7 @@ class NormalizedTableSyncService
      */
     private function syncArchives(): int
     {
-        $items = $this->getStreamItems(StreamEnums::ARCHIVE->value);
+        $items = $this->getStreamItems(Stream::ARCHIVE->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -977,7 +977,7 @@ class NormalizedTableSyncService
      */
     private function syncMetadataCorrections(): int
     {
-        $items = $this->getStreamItems(StreamEnums::PROCUREMENTS_CORRECTIONS->value);
+        $items = $this->getStreamItems(Stream::PROCUREMENTS_CORRECTIONS->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -1061,11 +1061,11 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync file.metadata stream -> files table
+     * Sync File.metadata stream -> BlockchainFiles table
      */
     private function syncFileMetadata(): int
     {
-        $items = $this->getStreamItems(StreamEnums::FILE_METADATA->value);
+        $items = $this->getStreamItems(Stream::FILE_METADATA->value);
         $count = 0;
 
         foreach ($items as $item) {
@@ -1117,7 +1117,7 @@ class NormalizedTableSyncService
             $count++;
         }
 
-        Log::info('NormalizedTableSync: files synced', ['count' => $count]);
+        Log::info('NormalizedTableSync: BlockchainFiles synced', ['count' => $count]);
 
         return $count;
     }
@@ -1131,7 +1131,7 @@ class NormalizedTableSyncService
      */
     private function syncArchivesForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::ARCHIVE->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::ARCHIVE->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -1198,7 +1198,7 @@ class NormalizedTableSyncService
      */
     private function syncMetadataCorrectionsForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::PROCUREMENTS_CORRECTIONS->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::PROCUREMENTS_CORRECTIONS->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -1287,11 +1287,11 @@ class NormalizedTableSyncService
     }
 
     /**
-     * Sync file metadata for a specific PR only.
+     * Sync File metadata for a specific PR only.
      */
-    private function syncFilesForPr(string $prNumber): int
+    private function syncBlockchainFilesForPr(string $prNumber): int
     {
-        $items = $this->getStreamItemsForKey(StreamEnums::FILE_METADATA->value, $prNumber);
+        $items = $this->getStreamItemsForKey(Stream::FILE_METADATA->value, $prNumber);
         $count = 0;
 
         // Sort by blocktime to ensure correct order
@@ -1306,8 +1306,8 @@ class NormalizedTableSyncService
                 continue;
             }
 
-            $filePrNumber = $data['pr_number'] ?? null;
-            if ($filePrNumber !== $prNumber) {
+            $BlockchainFilePrNumber = $data['pr_number'] ?? null;
+            if ($BlockchainFilePrNumber !== $prNumber) {
                 continue;
             }
 
@@ -1341,7 +1341,7 @@ class NormalizedTableSyncService
                 'storage_method' => $data['storage_method'] ?? 'blockchain',
                 'data_txid' => $data['data_txid'] ?? null,
                 'data_key' => $data['data_key'] ?? null,
-                'pr_number' => $filePrNumber,
+                'pr_number' => $BlockchainFilePrNumber,
                 'stage' => $data['stage'] ?? null,
                 'document_type' => $data['document_type'] ?? null,
                 'txid' => $txid,
@@ -1370,7 +1370,7 @@ class NormalizedTableSyncService
     private function getStreamItems(string $stream): array
     {
         try {
-            $items = $this->manager->liststreamitems($stream, false, 10000);
+            $items = $this->BlockchainRpcClient->liststreamitems($stream, false, 10000);
 
             return is_array($items) ? $items : [];
         } catch (\Exception $e) {

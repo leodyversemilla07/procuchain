@@ -93,10 +93,10 @@ describe('SettingsPolicy', function () {
         });
 
         it('denies users who can only manage settings but not create users', function () {
-            $settingsManager = User::factory()->create();
-            $settingsManager->givePermissionTo('manage settings');
+            $settingsBlockchainRpcClient = User::factory()->create();
+            $settingsBlockchainRpcClient->givePermissionTo('manage settings');
 
-            expect($settingsManager->can('manage-user-invitations'))->toBeFalse();
+            expect($settingsBlockchainRpcClient->can('manage-user-invitations'))->toBeFalse();
         });
     });
 });

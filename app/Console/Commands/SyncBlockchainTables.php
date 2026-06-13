@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\AuditLog;
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\StageDocumentConfig;
 use App\Models\UserLoginLog;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainSyncService;
-use App\Services\Manager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  *   php artisan blockchain:sync-table --table=all
  *   php artisan blockchain:sync-table --table=audit_logs --dry-run
  */
-class BlockchainSyncTable extends Command
+class SyncBlockchainTables extends Command
 {
     protected $signature = 'blockchain:sync-table
         {--table= : Table to sync (audit_logs, document_views, workflow_configs, stage_document_configs, user_login_logs, or all)}
@@ -41,23 +41,23 @@ class BlockchainSyncTable extends Command
      */
     private const TABLE_MAP = [
         'audit_logs' => [
-            'stream' => StreamEnums::AUDIT_TRAIL,
+            'stream' => Stream::AUDIT_TRAIL,
             'model' => AuditLog::class,
         ],
         'document_views' => [
-            'stream' => StreamEnums::DOCUMENT_ACCESS,
-            'model' => DocumentView::class,
+            'stream' => Stream::DOCUMENT_ACCESS,
+            'model' => DocumentViewLog::class,
         ],
         'procurement_workflow_configs' => [
-            'stream' => StreamEnums::CONFIG_WORKFLOWS,
+            'stream' => Stream::CONFIG_WORKFLOWS,
             'model' => ProcurementWorkflowConfig::class,
         ],
         'stage_document_configs' => [
-            'stream' => StreamEnums::CONFIG_STAGE_DOCS,
+            'stream' => Stream::CONFIG_STAGE_DOCS,
             'model' => StageDocumentConfig::class,
         ],
         'user_login_logs' => [
-            'stream' => StreamEnums::USER_LOGIN_SESSIONS,
+            'stream' => Stream::USER_LOGIN_SESSIONS,
             'model' => UserLoginLog::class,
         ],
     ];
@@ -113,8 +113,8 @@ class BlockchainSyncTable extends Command
 
         // Count blockchain records
         try {
-            $manager = app(Manager::class);
-            $items = $manager->liststreamitems($stream->value, true, 100000);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $BlockchainRpcClient->liststreamitems($stream->value, true, 100000);
             $chainCount = is_array($items) ? count($items) : 0;
         } catch (\Exception $e) {
             $this->error("  Failed to read from blockchain: {$e->getMessage()}");

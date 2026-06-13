@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\StageDocumentConfig;
 
@@ -24,7 +24,7 @@ class StageDocumentConfigService
      *
      * @return array<DocumentTypeEnums>
      */
-    public function getRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getRequiredDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         return $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
     }
@@ -34,7 +34,7 @@ class StageDocumentConfigService
      *
      * @return array<DocumentTypeEnums>
      */
-    public function getOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getOptionalDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         return $this->workflowDefinitionService->getOptionalDocuments($stage, $mode);
     }
@@ -42,7 +42,7 @@ class StageDocumentConfigService
     /**
      * Get document counts for a stage and mode.
      */
-    public function getDocumentCounts(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getDocumentCounts(StageEnums $stage, ProcurementMode $mode): array
     {
         return $this->workflowDefinitionService->getDocumentCounts($stage, $mode);
     }
@@ -53,7 +53,7 @@ class StageDocumentConfigService
      * @param  array<DocumentTypeEnums>  $uploadedTypes
      * @return array<DocumentTypeEnums>
      */
-    public function getMissingDocuments(StageEnums $stage, ProcurementModeEnums $mode, array $uploadedTypes): array
+    public function getMissingDocuments(StageEnums $stage, ProcurementMode $mode, array $uploadedTypes): array
     {
         return $this->workflowDefinitionService->getMissingDocuments($stage, $mode, $uploadedTypes);
     }
@@ -63,7 +63,7 @@ class StageDocumentConfigService
      *
      * @param  array<DocumentTypeEnums>  $uploadedTypes
      */
-    public function hasMinimumRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode, array $uploadedTypes): bool
+    public function hasMinimumRequiredDocuments(StageEnums $stage, ProcurementMode $mode, array $uploadedTypes): bool
     {
         return empty($this->getMissingDocuments($stage, $mode, $uploadedTypes));
     }
@@ -71,7 +71,7 @@ class StageDocumentConfigService
     /**
      * Get complete document guide for a stage and mode.
      */
-    public function getStageDocumentGuide(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getStageDocumentGuide(StageEnums $stage, ProcurementMode $mode): array
     {
         return $this->workflowDefinitionService->getStageDocumentGuide($stage, $mode);
     }
@@ -79,7 +79,7 @@ class StageDocumentConfigService
     /**
      * Get all document configurations for a mode.
      */
-    public function getAllConfigsForMode(ProcurementModeEnums $mode): array
+    public function getAllConfigsForMode(ProcurementMode $mode): array
     {
         $configs = [];
 
@@ -93,7 +93,7 @@ class StageDocumentConfigService
     /**
      * Clear cache for a specific stage/mode or all.
      */
-    public function clearCache(?StageEnums $stage = null, ?ProcurementModeEnums $mode = null): void
+    public function clearCache(?StageEnums $stage = null, ?ProcurementMode $mode = null): void
     {
         $this->workflowDefinitionService->clearCache($mode, $stage);
     }
@@ -106,7 +106,7 @@ class StageDocumentConfigService
      */
     public function saveDocumentConfig(
         StageEnums $stage,
-        ProcurementModeEnums $mode,
+        ProcurementMode $mode,
         array $requiredDocuments,
         array $optionalDocuments = [],
         ?int $updatedBy = null
@@ -139,7 +139,7 @@ class StageDocumentConfigService
     /**
      * Reset document configuration to defaults for a stage and mode.
      */
-    public function resetToDefaults(StageEnums $stage, ProcurementModeEnums $mode, ?int $updatedBy = null): StageDocumentConfig
+    public function resetToDefaults(StageEnums $stage, ProcurementMode $mode, ?int $updatedBy = null): StageDocumentConfig
     {
         $defaultRequired = $this->workflowDefinitionService->getDefaultRequiredDocuments($stage, $mode);
         $defaultOptional = $this->workflowDefinitionService->getDefaultOptionalDocuments($stage, $mode);

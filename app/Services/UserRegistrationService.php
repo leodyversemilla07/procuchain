@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -35,7 +35,7 @@ class UserRegistrationService
         }
 
         try {
-            $manager = app(Manager::class);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
             $data = [
                 'user_id' => $user->id,
@@ -46,23 +46,23 @@ class UserRegistrationService
                 'registered_at' => now()->toIso8601String(),
             ];
 
-            $txid = $manager->publish(
-                StreamEnums::USER_REGISTRATIONS->value,
+            $txid = $BlockchainRpcClient->publish(
+                Stream::USER_REGISTRATIONS->value,
                 (string) $user->id,
                 ['json' => $data]
             );
 
             Log::info('UserRegistrationService: registration published to blockchain', [
                 'user_id' => $user->id,
-                'stream' => StreamEnums::USER_REGISTRATIONS->value,
+                'stream' => Stream::USER_REGISTRATIONS->value,
                 'txid' => $txid,
             ]);
 
             // Best-effort sync; registration must not fail if read models lag.
             try {
                 $syncService = app(BlockchainRecordSyncService::class);
-                $syncService->upstream(
-                    stream: StreamEnums::USER_REGISTRATIONS->value,
+                $syncService->syncToMirror(
+                    stream: Stream::USER_REGISTRATIONS->value,
                     key: (string) $user->id,
                     txid: $txid ?? '',
                     publisherAddress: $user->blockchain_address ?? '',
@@ -100,7 +100,7 @@ class UserRegistrationService
         }
 
         try {
-            $manager = app(Manager::class);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
             $data = [
                 'user_id' => $user->id,
@@ -113,23 +113,23 @@ class UserRegistrationService
                 'change_type' => 'address_change',
             ];
 
-            $txid = $manager->publish(
-                StreamEnums::USER_REGISTRATIONS->value,
+            $txid = $BlockchainRpcClient->publish(
+                Stream::USER_REGISTRATIONS->value,
                 (string) $user->id,
                 ['json' => $data]
             );
 
             Log::info('UserRegistrationService: address change published to blockchain', [
                 'user_id' => $user->id,
-                'stream' => StreamEnums::USER_REGISTRATIONS->value,
+                'stream' => Stream::USER_REGISTRATIONS->value,
                 'txid' => $txid,
             ]);
 
             // Best-effort sync; address changes must not fail if read models lag.
             try {
                 $syncService = app(BlockchainRecordSyncService::class);
-                $syncService->upstream(
-                    stream: StreamEnums::USER_REGISTRATIONS->value,
+                $syncService->syncToMirror(
+                    stream: Stream::USER_REGISTRATIONS->value,
                     key: (string) $user->id,
                     txid: $txid ?? '',
                     publisherAddress: $user->blockchain_address ?? '',

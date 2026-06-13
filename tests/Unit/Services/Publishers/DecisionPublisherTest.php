@@ -1,8 +1,8 @@
 <?php
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
-use App\Services\Procurement\StageStatusMapper;
+use App\Services\Procurement\StageStatusMappingService;
 use App\Services\Publishers\DecisionPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
@@ -13,7 +13,7 @@ use function Pest\Laravel\mock;
 beforeEach(function () {
     $this->statusPublisher = mock(StatusPublisher::class);
     $this->eventPublisher = mock(EventPublisher::class);
-    $this->statusMapper = new StageStatusMapper;
+    $this->statusMapper = new StageStatusMappingService;
 
     $this->publisher = new DecisionPublisher(
         $this->statusPublisher,
@@ -32,7 +32,7 @@ describe('DecisionPublisher', function () {
                     'PR-001',
                     'Test Procurement',
                     StageEnums::PRE_PROCUREMENT_CONFERENCE,
-                    StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
+                    ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD,
                     '0x123'
                 );
 
@@ -68,7 +68,7 @@ describe('DecisionPublisher', function () {
                     'PR-001',
                     'Test Procurement',
                     StageEnums::PRE_PROCUREMENT_CONFERENCE,
-                    StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
+                    ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
                     '0x123'
                 );
 
@@ -87,7 +87,7 @@ describe('DecisionPublisher', function () {
                     return $prNumber === 'PR-001'
                         && $fromStage === StageEnums::PRE_PROCUREMENT_CONFERENCE
                         && $toStage === StageEnums::BIDDING_DOCUMENTS
-                        && $status === StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED;
+                        && $status === ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED;
                 });
 
             $this->eventPublisher
@@ -124,7 +124,7 @@ describe('DecisionPublisher', function () {
                     'PR-002',
                     'Pre-Bid Test',
                     StageEnums::PRE_BID_CONFERENCE,
-                    StatusEnums::PRE_BID_CONFERENCE_HELD,
+                    ProcurementStatus::PRE_BID_CONFERENCE_HELD,
                     '0x456'
                 );
 
@@ -193,7 +193,7 @@ describe('DecisionPublisher', function () {
                     'PR-003',
                     'SBB Test',
                     StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-                    StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
+                    ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING,
                     '0x789'
                 );
 

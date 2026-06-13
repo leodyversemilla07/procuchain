@@ -13,7 +13,7 @@ use Illuminate\Console\Command;
  * Reads data DIRECTLY FROM blockchain and populates normalized tables.
  * No procurement_records table needed.
  */
-class SyncNormalizedTables extends Command
+class SyncAllTables extends Command
 {
     protected $signature = 'blockchain:sync-normalized';
 
@@ -39,7 +39,7 @@ class SyncNormalizedTables extends Command
             ['Documents', $counts['documents']],
             ['Events', $counts['events']],
             ['Corrections', $counts['corrections']],
-            ['Files', $counts['files']],
+            ['Files', $counts['Files']],
         ]);
 
         $total = array_sum($counts);

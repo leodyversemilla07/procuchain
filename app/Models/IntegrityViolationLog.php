@@ -34,7 +34,7 @@ use Illuminate\Support\Str;
  * @property Carbon $created_at
  * @property array $revision_history
  */
-class IntegrityAuditLog extends Model
+class IntegrityViolationLog extends Model
 {
     /** @var string */
     protected $table = 'integrity_audit_logs';
@@ -229,7 +229,7 @@ class IntegrityAuditLog extends Model
                 // Update the existing record with the new run_id for tracking
                 $recent->update(['verification_run_id' => $runId ?? self::newRunId()]);
 
-                Log::debug('IntegrityAuditLog: skipping duplicate violation within cooldown', [
+                Log::debug('IntegrityViolationLog: skipping duplicate violation within cooldown', [
                     'stream' => $stream,
                     'stream_key' => $streamKey,
                     'type' => $violationType,
@@ -361,7 +361,7 @@ class IntegrityAuditLog extends Model
                 app(BlockchainAuditTrailService::class)->publishRecovery($this, $result);
             } catch (\Exception $e) {
                 // Non-critical — violation is already on chain, recovery is supplementary
-                Log::debug('IntegrityAuditLog: failed to publish recovery to chain', [
+                Log::debug('IntegrityViolationLog: failed to publish recovery to chain', [
                     'audit_log_id' => $this->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -386,7 +386,7 @@ class IntegrityAuditLog extends Model
             // Non-critical — the MySQL record is already created.
             // Blockchain publishing is best-effort; failures are logged
             // but must never block the integrity verification pipeline.
-            Log::debug('IntegrityAuditLog: failed to publish to blockchain', [
+            Log::debug('IntegrityViolationLog: failed to publish to blockchain', [
                 'audit_log_id' => $this->id,
                 'error' => $e->getMessage(),
             ]);

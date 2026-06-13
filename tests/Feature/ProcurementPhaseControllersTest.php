@@ -2,10 +2,10 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
@@ -117,7 +117,7 @@ describe('ProcurementStageController (Actions)', function () {
                 ->withoutMiddleware(PreventRequestForgery::class)
                 ->startSession()
                 ->post($case['route'], [
-                    'document_file' => UploadedFile::fake()->create($case['filename'], 1000, 'application/pdf'),
+                    'document_File' => UploadedFile::fake()->create($case['filename'], 1000, 'application/pdf'),
                     'document_type' => $case['document_type'],
                 ]);
 
@@ -196,7 +196,7 @@ describe('ProcurementStageController (Actions)', function () {
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
             ]), [
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
-                'file' => UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf'),
+                'File' => UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf'),
             ]);
 
         $response->assertSuccessful();
@@ -240,8 +240,8 @@ function buildPhaseProcurementData(User $user): ProcurementData
         description: 'Test Description',
         abcAmount: 1000000.00,
         fundingSource: 'General Fund',
-        category: ProcurementCategoryEnums::GOODS,
-        procurementMode: ProcurementModeEnums::COMPETITIVE_BIDDING,
+        category: ProcurementCategory::GOODS,
+        procurementMode: ProcurementMode::COMPETITIVE_BIDDING,
         office: 'Test Office',
         endUser: 'Test User',
         deliveryLocation: null,
@@ -324,7 +324,7 @@ function bindSupportServiceStub(ProcurementData $procurementData): void
         ->andReturn([]);
     $support->shouldReceive('getOngoingStatusForStage')
         ->zeroOrMoreTimes()
-        ->andReturn(StatusEnums::PROCUREMENT_SUBMITTED);
+        ->andReturn(ProcurementStatus::PROCUREMENT_SUBMITTED);
 
     app()->instance(ProcurementSupportService::class, $support);
 }
@@ -363,8 +363,8 @@ function bindCompletionValidationStub(array $completion = ['can_complete' => fal
             'uploaded_documents' => [],
             'missing_documents' => [],
             'completion_percentage' => 0,
-            'mode' => ProcurementModeEnums::COMPETITIVE_BIDDING->value,
-            'mode_display_name' => ProcurementModeEnums::COMPETITIVE_BIDDING->getDisplayName(),
+            'mode' => ProcurementMode::COMPETITIVE_BIDDING->value,
+            'mode_display_name' => ProcurementMode::COMPETITIVE_BIDDING->getDisplayName(),
             'is_alternative_mode' => false,
         ], $completion));
 

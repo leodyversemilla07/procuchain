@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementWorkflowConfig;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\ProcurementWorkflowService;
 use App\Services\StageDocumentConfigService;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +19,7 @@ class ProcurementWorkflowConfigController extends Controller
     public function __construct(
         private readonly ProcurementWorkflowService $workflowService,
         private readonly StageDocumentConfigService $documentConfigService,
-        private readonly AuditLogger $auditLogger,
+        private readonly AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -31,7 +31,7 @@ class ProcurementWorkflowConfigController extends Controller
 
         $configs = [];
 
-        foreach (ProcurementModeEnums::cases() as $mode) {
+        foreach (ProcurementMode::cases() as $mode) {
             $dbConfig = ProcurementWorkflowConfig::forMode($mode)->first();
             $workflowConfig = $this->workflowService->getWorkflowConfig($mode);
 
@@ -63,11 +63,11 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Show the form for editing a workflow configuration.
      */
-    public function edit(Request $request, string|ProcurementModeEnums $mode): Response
+    public function edit(Request $request, string|ProcurementMode $mode): Response
     {
         $this->authorize('manage-workflow-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
 
         if (! $modeEnum) {
             abort(404, 'Invalid procurement mode');
@@ -108,11 +108,11 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Update the workflow configuration.
      */
-    public function update(Request $request, string|ProcurementModeEnums $mode): RedirectResponse
+    public function update(Request $request, string|ProcurementMode $mode): RedirectResponse
     {
         $this->authorize('manage-workflow-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
 
         if (! $modeEnum) {
             abort(404, 'Invalid procurement mode');
@@ -155,7 +155,7 @@ class ProcurementWorkflowConfigController extends Controller
             $request->user()->id
         );
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'admin.workflow_config_updated',
             'workflow_config',
             $modeEnum->value,
@@ -171,11 +171,11 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Reset workflow configuration to defaults.
      */
-    public function resetToDefaults(Request $request, string|ProcurementModeEnums $mode): RedirectResponse
+    public function resetToDefaults(Request $request, string|ProcurementMode $mode): RedirectResponse
     {
         $this->authorize('manage-workflow-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
 
         if (! $modeEnum) {
             abort(404, 'Invalid procurement mode');
@@ -183,7 +183,7 @@ class ProcurementWorkflowConfigController extends Controller
 
         $this->workflowService->resetToDefaults($modeEnum, $request->user()->id);
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'admin.workflow_config_reset',
             'workflow_config',
             $modeEnum->value,
@@ -198,11 +198,11 @@ class ProcurementWorkflowConfigController extends Controller
      * Preview the complete workflow and document configuration for a mode.
      * Shows admins what users will see for a given procurement mode.
      */
-    public function preview(Request $request, string|ProcurementModeEnums $mode): Response
+    public function preview(Request $request, string|ProcurementMode $mode): Response
     {
         $this->authorize('manage-workflow-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
 
         if (! $modeEnum) {
             abort(404, 'Invalid procurement mode');
@@ -252,13 +252,13 @@ class ProcurementWorkflowConfigController extends Controller
         }
 
         // Get all modes for the dropdown
-        $allModes = array_map(fn (ProcurementModeEnums $m) => [
+        $allModes = array_map(fn (ProcurementMode $m) => [
             'value' => $m->value,
             'display_name' => $m->getDisplayName(),
             'description' => $m->getDescription(),
             'irr_section' => $m->getIrrSection(),
             'is_alternative_mode' => $m->isAlternativeMode(),
-        ], ProcurementModeEnums::cases());
+        ], ProcurementMode::cases());
 
         return Inertia::render('admin/workflow-preview', [
             'mode' => [

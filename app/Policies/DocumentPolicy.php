@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Services\ProcurementDataService;
@@ -28,7 +28,7 @@ class DocumentPolicy
     ) {}
 
     /**
-     * Determine whether the user can view documents (PDFs, file previews).
+     * Determine whether the user can view documents (PDFs, File previews).
      */
     public function view(User $user, ?string $fileKey = null): bool
     {
@@ -92,22 +92,22 @@ class DocumentPolicy
 
     private function resolveProcurementNumber(string $fileKey): ?string
     {
-        $document = $this->documentRepository->findByFileKey($fileKey)
+        $document = $this->documentRepository->findByfileKey($fileKey)
             ?? $this->documentRepository->findByTxid($fileKey);
 
         if ($document !== null && $document->prNumber !== '') {
             return $document->prNumber;
         }
 
-        $documentView = DocumentView::query()
+        $DocumentViewLog = DocumentViewLog::query()
             ->where('file_key', $fileKey)
             ->first();
 
-        if ($documentView !== null && ! empty($documentView->pr_number)) {
-            return $documentView->pr_number;
+        if ($DocumentViewLog !== null && ! empty($DocumentViewLog->pr_number)) {
+            return $DocumentViewLog->pr_number;
         }
 
-        $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey)
+        $documentData = $this->procurementDataService->getDocumentDataByfileKey($fileKey)
             ?? $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
 
         $prNumber = data_get($documentData, 'pr_number');

@@ -40,13 +40,13 @@ trait SecureBlockchainLogging
     /**
      * Log document operation with minimal sensitive data
      */
-    protected function logDocumentOperation(string $level, string $message, string $prNumber, string $fileName, array $context = []): void
+    protected function logDocumentOperation(string $level, string $message, string $prNumber, string $filename, array $context = []): void
     {
         $context['pr_number'] = $this->maskPrNumber($prNumber);
-        $context['file_name'] = basename($fileName); // Filename only, no path
-        $context['file_extension'] = pathinfo($fileName, PATHINFO_EXTENSION);
+        $context['file_name'] = basename($filename); // filename only, no path
+        $context['BlockchainFile_extension'] = pathinfo($filename, PATHINFO_EXTENSION);
 
-        // Don't log file contents, full paths, or large metadata
+        // Don't log File contents, full paths, or large metadata
 
         Log::log($level, $message, $context);
     }

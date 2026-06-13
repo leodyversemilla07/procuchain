@@ -10,7 +10,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\DocumentRepository;
 use App\Services\DocumentValidationService;
-use App\Services\StageDocumentRequirements;
+use App\Services\StageDocumentRequirementsService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +19,7 @@ final class DocumentCompletenessVerifier
     public function __construct(
         private readonly DocumentRepository $documentRepository,
         private readonly DocumentValidationService $validationService,
-        private readonly StageDocumentRequirements $requirements,
+        private readonly StageDocumentRequirementsService $requirements,
     ) {}
 
     /**

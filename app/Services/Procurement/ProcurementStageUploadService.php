@@ -4,10 +4,10 @@ namespace App\Services\Procurement;
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
@@ -32,7 +32,7 @@ class ProcurementStageUploadService
     public function queueDocumentUpload(
         string $prNumber,
         StageEnums $stage,
-        UploadedFile $file,
+        UploadedFile $File,
         DocumentTypeEnums $documentType,
         ?string $description,
         array $metadata,
@@ -68,7 +68,7 @@ class ProcurementStageUploadService
             ];
         }
 
-        $tempPath = $file->store('temp/blockchain-uploads');
+        $tempPath = $File->store('temp/blockchain-uploads');
         $jobId = Str::uuid()->toString();
 
         BlockchainWriteJob::dispatch('upload_document', [
@@ -77,14 +77,14 @@ class ProcurementStageUploadService
             'user_address' => $user->blockchain_address,
             'stage' => $stage->value,
             'status' => $procurement->status,
-            'current_status' => (StatusEnums::tryFrom($procurement->status) ?? $this->procurementSupport->getOngoingStatusForStage($stage))->value,
+            'current_status' => (ProcurementStatus::tryFrom($procurement->status) ?? $this->procurementSupport->getOngoingStatusForStage($stage))->value,
             'document_type' => $documentType->value,
             'uploaded_by' => $user->name,
             'description' => $description,
             'stage_metadata' => $metadata,
             'temp_file_path' => $tempPath,
-            'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
+            'original_filename' => $File->getClientOriginalName(),
+            'mime_type' => $File->getMimeType() ?? 'application/octet-stream',
         ], $jobId, $user->id);
 
         return [
@@ -128,8 +128,8 @@ class ProcurementStageUploadService
             description: $statusData['description'] ?? 'N/A',
             abcAmount: (float) ($statusData['abc_amount'] ?? 0),
             fundingSource: $statusData['funding_source'] ?? 'N/A',
-            category: ProcurementCategoryEnums::tryFrom($statusData['category'] ?? '') ?? ProcurementCategoryEnums::GOODS,
-            procurementMode: $this->procurementSupport->getProcurementMode($prNumber) ?? ProcurementModeEnums::COMPETITIVE_BIDDING,
+            category: ProcurementCategory::tryFrom($statusData['category'] ?? '') ?? ProcurementCategory::GOODS,
+            procurementMode: $this->procurementSupport->getProcurementMode($prNumber) ?? ProcurementMode::COMPETITIVE_BIDDING,
             office: $statusData['office'] ?? 'N/A',
             endUser: $statusData['end_user'] ?? null,
             deliveryLocation: $statusData['delivery_location'] ?? null,
@@ -142,7 +142,7 @@ class ProcurementStageUploadService
             philgepsPostingDate: isset($statusData['philgeps_posting_date']) ? Carbon::parse($statusData['philgeps_posting_date']) : null,
             approvedBy: $statusData['approved_by'] ?? null,
             approvalDate: isset($statusData['approval_date']) ? Carbon::parse($statusData['approval_date']) : null,
-            status: StatusEnums::tryFrom($statusData['current_status'] ?? '')?->value ?? $this->procurementSupport->getOngoingStatusForStage($stage)->value,
+            status: ProcurementStatus::tryFrom($statusData['current_status'] ?? '')?->value ?? $this->procurementSupport->getOngoingStatusForStage($stage)->value,
             userId: (string) ($statusData['user_id'] ?? $user->id),
             createdAt: isset($statusData['created_at']) ? Carbon::parse($statusData['created_at']) : now(),
         );

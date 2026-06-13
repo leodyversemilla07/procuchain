@@ -9,8 +9,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
  *
  * Used by PreProcurementConferenceDocumentsRequest and PreBidConferenceDocumentsRequest
  * which have identical validation requirements for:
- * - Minutes file (PDF)
- * - Attendance file (PDF)
+ * - Minutes File (PDF)
+ * - Attendance File (PDF)
  * - Meeting date (past or today)
  * - Participants array with name and organization
  */
@@ -24,8 +24,8 @@ trait HasConferenceValidation
     protected function conferenceRules(): array
     {
         return [
-            ...$this->documentRules('minutes_file'),
-            ...$this->documentRules('attendance_file'),
+            ...$this->documentRules('minutes_File'),
+            ...$this->documentRules('attendance_File'),
             'meeting_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'participants' => 'required|array|min:1',
             'participants.*.name' => 'required|string|min:1|max:255',
@@ -36,17 +36,17 @@ trait HasConferenceValidation
     /**
      * Get the error messages for conference document validation.
      *
-     * @param  string  $minutesLabel  Human-readable label for minutes file
-     * @param  string  $attendanceLabel  Human-readable label for attendance file
+     * @param  string  $minutesLabel  Human-readable label for minutes File
+     * @param  string  $attendanceLabel  Human-readable label for attendance File
      * @return array<string, string>
      */
     protected function conferenceMessages(
-        string $minutesLabel = 'minutes file',
-        string $attendanceLabel = 'attendance file'
+        string $minutesLabel = 'minutes File',
+        string $attendanceLabel = 'attendance File'
     ): array {
         return [
-            ...$this->documentMessages('minutes_file', $minutesLabel),
-            ...$this->documentMessages('attendance_file', $attendanceLabel),
+            ...$this->documentMessages('minutes_File', $minutesLabel),
+            ...$this->documentMessages('attendance_File', $attendanceLabel),
             'meeting_date.required' => 'The meeting date is required.',
             'meeting_date.date_format' => 'The meeting date must be in YYYY-MM-DD format.',
             'meeting_date.before_or_equal' => 'The meeting date cannot be in the future.',

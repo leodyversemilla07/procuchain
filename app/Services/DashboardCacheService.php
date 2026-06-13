@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Centralized cache key management for dashboard controllers.
  */
-class DashboardCacheKeys
+class DashboardCacheService
 {
     /**
      * Get cache key for procurements by key data

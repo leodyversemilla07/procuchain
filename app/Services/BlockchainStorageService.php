@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\BlockchainStorageInterface;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\User;
 use App\Services\Blockchain\FileLifecycleManager;
 use App\Services\Blockchain\FileRetriever;
@@ -15,7 +15,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Blockchain Storage Service — thin facade for MultiChain file operations.
+ * Blockchain Storage Service — thin facade for MultiChain File operations.
  *
  * Delegates to four focused services:
  * - FileUploader: upload + chunked encoding
@@ -38,7 +38,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
     private FileLifecycleManager $lifecycle;
 
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {
         $this->maxChunkSize = config('blockchain.upload.absolute_max_file_size', 52428800);
         $this->recommendedMaxSize = config('blockchain.upload.max_file_size', 2097152);
@@ -58,14 +58,14 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
     // ── Upload ──────────────────────────────────────────────
 
-    public function uploadFile(UploadedFile $file, string $prNumber, int $stageId, string $documentType, array $metadata = []): array
+    public function uploadFile(UploadedFile $File, string $prNumber, int $stageId, string $documentType, array $metadata = []): array
     {
-        return $this->uploader->uploadFile($file, $prNumber, $stageId, $documentType, $metadata);
+        return $this->uploader->uploadFile($File, $prNumber, $stageId, $documentType, $metadata);
     }
 
-    public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
+    public function uploadAndPrepare(array $BlockchainFiles, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
     {
-        return $this->uploader->uploadAndPrepare($files, $metadata, $prNumber, $stageId, $procurementTitle, $authUser);
+        return $this->uploader->uploadAndPrepare($BlockchainFiles, $metadata, $prNumber, $stageId, $procurementTitle, $authUser);
     }
 
     // ── Retrieval ───────────────────────────────────────────
@@ -78,7 +78,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
     public function verifyFileIntegrity(string $fileKey, string $metadataTxid): bool
     {
         try {
-            $metadataItem = $this->multichain->getstreamitem(StreamEnums::FILE_METADATA->value, $metadataTxid, true);
+            $metadataItem = $this->multichain->getstreamitem(Stream::FILE_METADATA->value, $metadataTxid, true);
             $metadata = $metadataItem['data']['json'] ?? null;
 
             if (! $metadata) {
@@ -96,9 +96,9 @@ class BlockchainStorageService implements BlockchainStorageInterface
                 return false;
             }
 
-            $fileData = $this->retrieveFile($fileKey, $dataTxid);
+            $BlockchainFileData = $this->retrieveFile($fileKey, $dataTxid);
 
-            return $fileData['hash'] === $blockchainHash;
+            return $BlockchainFileData['hash'] === $blockchainHash;
         } catch (Exception $e) {
             Log::error('File integrity verification failed', [
                 'file_key' => $fileKey,
@@ -111,7 +111,7 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
     public function getFileMetadata(string $metadataTxid): array
     {
-        $metadataItem = $this->multichain->getstreamitem(StreamEnums::FILE_METADATA->value, $metadataTxid, true);
+        $metadataItem = $this->multichain->getstreamitem(Stream::FILE_METADATA->value, $metadataTxid, true);
 
         return $metadataItem['data']['json'] ?? [];
     }
@@ -128,34 +128,34 @@ class BlockchainStorageService implements BlockchainStorageInterface
         return $this->lifecycle->restoreFile($fileKey, $reason);
     }
 
-    public function isFileDeleted(string $fileKey): bool
+    public function isBlockchainFileDeleted(string $fileKey): bool
     {
-        return $this->lifecycle->isFileDeleted($fileKey);
+        return $this->lifecycle->isBlockchainFileDeleted($fileKey);
     }
 
-    public function getDeletedFiles(): array
+    public function getDeletedBlockchainFiles(): array
     {
-        return $this->lifecycle->getDeletedFiles();
+        return $this->lifecycle->getDeletedBlockchainFiles();
     }
 
     // ── Config helpers ──────────────────────────────────────
 
-    public function getMaxFileSize(): int
+    public function getMaxfileSize(): int
     {
         return $this->maxChunkSize;
     }
 
-    public function getMaxFileSizeFormatted(): string
+    public function getMaxfileSizeFormatted(): string
     {
         return number_format($this->maxChunkSize / 1048576, 0).' MB';
     }
 
-    public function getRecommendedMaxFileSize(): int
+    public function getRecommendedMaxfileSize(): int
     {
         return $this->recommendedMaxSize;
     }
 
-    public function getRecommendedMaxFileSizeFormatted(): string
+    public function getRecommendedMaxfileSizeFormatted(): string
     {
         return number_format($this->recommendedMaxSize / 1048576, 0).' MB';
     }
@@ -169,9 +169,9 @@ class BlockchainStorageService implements BlockchainStorageInterface
     {
         return [
             'max_size_bytes' => $this->maxChunkSize,
-            'max_size_formatted' => $this->getMaxFileSizeFormatted(),
+            'max_size_formatted' => $this->getMaxfileSizeFormatted(),
             'recommended_size_bytes' => $this->recommendedMaxSize,
-            'recommended_size_formatted' => $this->getRecommendedMaxFileSizeFormatted(),
+            'recommended_size_formatted' => $this->getRecommendedMaxfileSizeFormatted(),
             'chunking_enabled' => config('blockchain.upload.chunking.enabled', false),
             'chunk_size' => config('blockchain.upload.chunking.chunk_size', 1048576),
         ];

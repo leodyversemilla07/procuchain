@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\BacChairmanController;
-use App\Http\Controllers\HopeController;
+use App\Http\Controllers\BacChairmanDashboardController;
+use App\Http\Controllers\HopeDashboardController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\SharedLedgerController;
 use Illuminate\Support\Facades\Route;
@@ -11,7 +11,7 @@ Route::middleware(['auth', 'role:bac_chairman'])
     ->name('bac-chairman.')
     ->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?'])
     ->group(function () {
-        Route::get('/dashboard', [BacChairmanController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [BacChairmanDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/procurements-list', [ProcurementListController::class, 'index'])
             ->name('procurements.index');
@@ -27,7 +27,7 @@ Route::middleware(['auth', 'role:hope'])
     ->name('hope.')
     ->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?'])
     ->group(function () {
-        Route::get('/dashboard', [HopeController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [HopeDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/procurements-list', [ProcurementListController::class, 'index'])
             ->name('procurements.index');

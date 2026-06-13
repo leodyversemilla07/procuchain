@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class NodeNetworkController extends Controller
+class BlockchainNodeController extends Controller
 {
     /** RPC credentials (read from config for consistency with .env) */
     private function getRpcUser(): string

@@ -1,14 +1,14 @@
 <?php
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Models\Procurement;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 
 beforeEach(function () {
-    $this->mockMultichain = Mockery::mock(Manager::class);
+    $this->mockMultichain = Mockery::mock(BlockchainRpcClient::class);
     $this->repository = new ProcurementRepository($this->mockMultichain);
 });
 
@@ -20,8 +20,8 @@ it('creates procurement metadata on blockchain', function () {
         description: 'Purchase of office supplies for municipal office',
         abcAmount: 150000.00,
         fundingSource: 'General Fund',
-        category: ProcurementCategoryEnums::GOODS,
-        procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+        category: ProcurementCategory::GOODS,
+        procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
         office: 'General Services',
         endUser: 'All Departments',
         // Delivery details are populated at Contract Implementation stage per NGPA IRR

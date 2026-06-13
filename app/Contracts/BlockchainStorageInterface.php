@@ -7,16 +7,16 @@ namespace App\Contracts;
 use Illuminate\Http\UploadedFile;
 
 /**
- * Interface for blockchain file storage operations
+ * Interface for blockchain File storage operations
  *
- * Implementations handle file upload, retrieval, and verification on blockchain
+ * Implementations handle File upload, retrieval, and verification on blockchain
  */
 interface BlockchainStorageInterface
 {
     /**
-     * Upload a file directly to blockchain (on-chain storage)
+     * Upload a File directly to blockchain (on-chain storage)
      *
-     * @param  UploadedFile  $file  The file to upload
+     * @param  UploadedFile  $File  The File to upload
      * @param  string  $prNumber  PR Number (e.g., PR-2025-001)
      * @param  int  $stageId  Stage ID (1-15)
      * @param  string  $documentType  Document type (e.g., "Purchase Request")
@@ -34,7 +34,7 @@ interface BlockchainStorageInterface
      * @throws \Exception If storage fails
      */
     public function uploadFile(
-        UploadedFile $file,
+        UploadedFile $File,
         string $prNumber,
         int $stageId,
         string $documentType,
@@ -42,9 +42,9 @@ interface BlockchainStorageInterface
     ): array;
 
     /**
-     * Retrieve a file from blockchain storage
+     * Retrieve a File from blockchain storage
      *
-     * @param  string  $fileKey  The unique file key
+     * @param  string  $fileKey  The unique File key
      * @param  string|null  $dataTxid  Optional data transaction ID for direct retrieval
      * @return array{
      *     content: string,
@@ -57,24 +57,24 @@ interface BlockchainStorageInterface
      *     stored_at: string|null
      * }
      *
-     * @throws \Exception If file not found or retrieval fails
+     * @throws \Exception If File not found or retrieval fails
      */
     public function retrieveFile(string $fileKey, ?string $dataTxid = null): array;
 
     /**
-     * Verify file integrity by comparing stored hash
+     * Verify File integrity by comparing stored hash
      *
-     * @param  string  $fileKey  The file key
+     * @param  string  $fileKey  The File key
      * @param  string  $metadataTxid  The metadata transaction ID
      * @return bool True if hash matches, false otherwise
      */
     public function verifyFileIntegrity(string $fileKey, string $metadataTxid): bool;
 
     /**
-     * Get file metadata from blockchain
+     * Get File metadata from blockchain
      *
      * @param  string  $metadataTxid  The metadata transaction ID
-     * @return array<string, mixed> The file metadata
+     * @return array<string, mixed> The File metadata
      */
     public function getFileMetadata(string $metadataTxid): array;
 }

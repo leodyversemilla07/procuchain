@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\Procurement;
 use App\Models\ProcurementArchive;
-use App\Services\DashboardCacheKeys;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
+use App\Services\DashboardCacheService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
 class ProcurementArchiveRepository
 {
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {}
 
     /**
@@ -36,7 +36,7 @@ class ProcurementArchiveRepository
         ];
 
         $txid = $this->multichain->publish(
-            StreamEnums::ARCHIVE->value,
+            Stream::ARCHIVE->value,
             $prNumber,
             ['json' => $data]
         );
@@ -46,7 +46,7 @@ class ProcurementArchiveRepository
         }
 
         Log::info('Procurement archived', ['pr_number' => $prNumber, 'txid' => $txid]);
-        DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheService::clearAllProcurementCaches();
     }
 
     /**
@@ -61,7 +61,7 @@ class ProcurementArchiveRepository
         ];
 
         $txid = $this->multichain->publish(
-            StreamEnums::ARCHIVE->value,
+            Stream::ARCHIVE->value,
             $prNumber,
             ['json' => $data]
         );
@@ -71,7 +71,7 @@ class ProcurementArchiveRepository
         }
 
         Log::info('Procurement restored', ['pr_number' => $prNumber, 'txid' => $txid]);
-        DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheService::clearAllProcurementCaches();
     }
 
     /**

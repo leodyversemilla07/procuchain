@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * MultiChain RPC wrapper with automatic failover and retry logic.
  */
-class Manager
+class BlockchainRpcClient
 {
     private Client $client;
 
@@ -146,7 +146,7 @@ class Manager
                 }
 
                 // Verify the node can read streams (not purged/unsubscribed)
-                // Use the procurement.status stream (actual stream from StreamEnums)
+                // Use the procurement.status stream (actual stream from Stream)
                 $testClient->liststreamitems(
                     'procurement.status',
                     false,
@@ -231,7 +231,7 @@ class Manager
             }
 
             // Primary is alive — verify it can read streams
-            // Use the procurement.status stream (actual stream from StreamEnums)
+            // Use the procurement.status stream (actual stream from Stream)
             $testClient->liststreamitems(
                 'procurement.status',
                 false,
@@ -298,9 +298,9 @@ class Manager
      * Magic method - forwards all RPC calls to the client with retry + failover logic
      *
      * Examples:
-     * $manager->getinfo()
-     * $manager->liststreamitems('stream1', true, 100)
-     * $manager->publish('stream1', 'key1', ['json' => $data])
+     * $BlockchainRpcClient->getinfo()
+     * $BlockchainRpcClient->liststreamitems('stream1', true, 100)
+     * $BlockchainRpcClient->publish('stream1', 'key1', ['json' => $data])
      */
     public function __call(string $method, array $params): mixed
     {
@@ -431,7 +431,7 @@ class Manager
     }
 
     /**
-     * Whether the Manager has failed over to a peer node.
+     * Whether the BlockchainRpcClient has failed over to a peer node.
      */
     public function isFailedOver(): bool
     {
@@ -449,7 +449,7 @@ class Manager
 
     /**
      * Clear the primaryPurged flag after a resync operation.
-     * This re-enables tryPromotePrimaryBack so the Manager can
+     * This re-enables tryPromotePrimaryBack so the BlockchainRpcClient can
      * detect when the primary has recovered and switch back.
      */
     public function resetByResync(): void

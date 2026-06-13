@@ -2,10 +2,10 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
@@ -133,8 +133,8 @@ describe('SVP Stage Pages', function () {
                     'uploaded_documents' => [],
                     'completion_percentage' => 0,
                     'missing_documents' => [DocumentTypeEnums::REQUEST_FOR_QUOTATION->value],
-                    'mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
-                    'mode_display_name' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->getDisplayName(),
+                    'mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
+                    'mode_display_name' => ProcurementMode::SMALL_VALUE_PROCUREMENT->getDisplayName(),
                     'is_alternative_mode' => true,
                 ],
                 [
@@ -143,8 +143,8 @@ describe('SVP Stage Pages', function () {
                     'uploaded_documents' => [],
                     'completion_percentage' => 0,
                     'missing_documents' => [DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS->value],
-                    'mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
-                    'mode_display_name' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->getDisplayName(),
+                    'mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
+                    'mode_display_name' => ProcurementMode::SMALL_VALUE_PROCUREMENT->getDisplayName(),
                     'is_alternative_mode' => true,
                 ],
             );
@@ -173,13 +173,13 @@ describe('SVP Stage Pages', function () {
 
 describe('Mode-Aware Stage Navigation', function () {
     it('validates stage inclusion and next-stage mappings for RFQ and Abstract', function () {
-        $svpStages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
-        $competitiveStages = StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $svpStages = StageEnums::getStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT);
+        $competitiveStages = StageEnums::getStagesForMode(ProcurementMode::COMPETITIVE_BIDDING);
         $rfqNextStages = StageEnums::REQUEST_FOR_QUOTATION->getNextStagesForMode(
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
         $abstractNextStages = StageEnums::ABSTRACT_OF_QUOTATIONS->getNextStagesForMode(
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         expect($svpStages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
@@ -191,17 +191,17 @@ describe('Mode-Aware Stage Navigation', function () {
     });
 
     it('validates which procurement modes include RFQ and Abstract stages', function () {
-        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING))
+        expect(StageEnums::getStagesForMode(ProcurementMode::DIRECT_CONTRACTING))
             ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-        expect(StageEnums::getStagesForMode(ProcurementModeEnums::REPEAT_ORDER))
+        expect(StageEnums::getStagesForMode(ProcurementMode::REPEAT_ORDER))
             ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_SALES))
+        expect(StageEnums::getStagesForMode(ProcurementMode::DIRECT_SALES))
             ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI))
+        expect(StageEnums::getStagesForMode(ProcurementMode::DIRECT_PROCUREMENT_FOR_STI))
             ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-        expect(StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT))
+        expect(StageEnums::getStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT))
             ->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
-        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING))
+        expect(StageEnums::getStagesForMode(ProcurementMode::DIRECT_CONTRACTING))
             ->not->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
     });
 });
@@ -254,8 +254,8 @@ function buildSvpProcurementData(User $user): ProcurementData
         description: 'Test Description',
         abcAmount: 100000.00,
         fundingSource: 'General Fund',
-        category: ProcurementCategoryEnums::GOODS,
-        procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+        category: ProcurementCategory::GOODS,
+        procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
         office: 'Test Office',
         endUser: 'Test User',
         deliveryLocation: null,
@@ -328,7 +328,7 @@ function bindSvpStageSupportStubs(ProcurementData $procurementData): void
         ->andReturn([]);
     $support->shouldReceive('getOngoingStatusForStage')
         ->zeroOrMoreTimes()
-        ->andReturn(StatusEnums::PROCUREMENT_SUBMITTED);
+        ->andReturn(ProcurementStatus::PROCUREMENT_SUBMITTED);
     app()->instance(ProcurementSupportService::class, $support);
 }
 

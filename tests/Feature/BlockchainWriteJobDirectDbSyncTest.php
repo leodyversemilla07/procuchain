@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Jobs\Handlers\ProcurementInitiationHandler;
 use App\Jobs\Handlers\ProcurementUpdateHandler;
@@ -33,7 +33,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'pr_number' => 'PR-2025-DDB-001',
             'title' => 'Direct DB Sync Test',
             'current_stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
-            'current_status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'current_status' => ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED->value,
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
         ]);
@@ -45,7 +45,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
                 'success' => true,
                 'held' => true,
                 'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
-                'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value,
+                'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING->value,
                 'status_txid' => 'tx-status-held-001',
                 'event_txid' => 'tx-event-held-001',
             ]);
@@ -68,14 +68,14 @@ describe('BlockchainWriteJob direct DB sync', function () {
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
-            ->and($procurement->current_status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value);
+            ->and($procurement->current_status)->toBe(ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING->value);
 
         $stageRecord = ProcurementStage::where('procurement_id', $procurement->id)
             ->where('txid', 'tx-status-held-001')
             ->first();
         expect($stageRecord)->not->toBeNull()
             ->and($stageRecord->stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
-            ->and($stageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value)
+            ->and($stageRecord->status)->toBe(ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING->value)
             ->and($stageRecord->data_hash)->toBeString()
             ->and(strlen($stageRecord->data_hash))->toBe(64)
             ->and($stageRecord->blockchain_hash)->toBe($stageRecord->data_hash);
@@ -89,7 +89,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'pr_number' => 'PR-2025-DDB-002',
             'title' => 'Skip DB Sync Test',
             'current_stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
-            'current_status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'current_status' => ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED->value,
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
         ]);
@@ -101,7 +101,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
                 'success' => true,
                 'held' => false,
                 'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
-                'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value,
+                'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED->value,
                 'next_stage' => StageEnums::BID_OPENING->value,
                 'status_txid' => 'tx-status-skip-001',
                 'event_txid' => 'tx-event-skip-001',
@@ -126,12 +126,12 @@ describe('BlockchainWriteJob direct DB sync', function () {
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::BID_OPENING->value)
-            ->and($procurement->current_status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value);
+            ->and($procurement->current_status)->toBe(ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED->value);
 
         $statusStageRecord = ProcurementStage::where('txid', 'tx-status-skip-001')->first();
         expect($statusStageRecord)->not->toBeNull()
             ->and($statusStageRecord->stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
-            ->and($statusStageRecord->status)->toBe(StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value)
+            ->and($statusStageRecord->status)->toBe(ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED->value)
             ->and($statusStageRecord->blockchain_hash)->toBe($statusStageRecord->data_hash);
 
         $transitionStageRecord = ProcurementStage::where('txid', 'tx-trans-skip-001')->first();
@@ -219,7 +219,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
                 'success' => true,
                 'held' => true,
                 'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
-                'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING->value,
+                'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING->value,
                 'status_txid' => 'tx-no-proc-001',
                 'event_txid' => 'tx-no-proc-ev-001',
             ]);
@@ -249,7 +249,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'pr_number' => 'PR-2025-DDB-004',
             'title' => 'Skip Stage Test',
             'current_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-            'current_status' => StatusEnums::PROCUREMENT_SUBMITTED->value,
+            'current_status' => ProcurementStatus::PROCUREMENT_SUBMITTED->value,
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
         ]);
@@ -259,7 +259,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             ->once()
             ->andReturn([
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-                'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value,
+                'status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value,
                 'next_stage' => StageEnums::BIDDING_DOCUMENTS->value,
                 'status_txid' => 'tx-skip-stage-001',
                 'event_txid' => 'tx-skip-stage-ev-001',
@@ -283,7 +283,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::BIDDING_DOCUMENTS->value)
-            ->and($procurement->current_status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value);
+            ->and($procurement->current_status)->toBe(ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value);
 
         $cached = Cache::get('blockchain_job:job-skip-stage');
         expect($cached['status'])->toBe('done');
@@ -294,7 +294,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'pr_number' => 'PR-2025-DDB-006',
             'title' => 'Initiation Completion DB Sync Test',
             'current_stage' => StageEnums::PROCUREMENT_INITIATION->value,
-            'current_status' => StatusEnums::PROCUREMENT_INITIATED->value,
+            'current_status' => ProcurementStatus::PROCUREMENT_INITIATED->value,
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
         ]);
@@ -322,7 +322,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
                 'user_address' => '0xTEST',
                 'current_stage' => StageEnums::PROCUREMENT_INITIATION->value,
                 'next_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-                'next_stage_status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value,
+                'next_stage_status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD->value,
                 'document_count' => 3,
             ],
             'job-init-complete-sync',
@@ -332,12 +332,12 @@ describe('BlockchainWriteJob direct DB sync', function () {
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE->value)
-            ->and($procurement->current_status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value);
+            ->and($procurement->current_status)->toBe(ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD->value);
 
         $stageRecord = ProcurementStage::where('txid', 'tx-init-complete-001')->first();
         expect($stageRecord)->not->toBeNull()
             ->and($stageRecord->stage)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE->value)
-            ->and($stageRecord->status)->toBe(StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value)
+            ->and($stageRecord->status)->toBe(ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD->value)
             ->and($stageRecord->blockchain_hash)->toBe($stageRecord->data_hash);
     });
 
@@ -346,7 +346,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'pr_number' => 'PR-2025-DDB-007',
             'title' => 'Stage Completion Transition DB Sync Test',
             'current_stage' => StageEnums::BID_OPENING->value,
-            'current_status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'current_status' => ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED->value,
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
         ]);
@@ -371,9 +371,9 @@ describe('BlockchainWriteJob direct DB sync', function () {
                 'procurement_title' => 'Stage Completion Transition DB Sync Test',
                 'user_address' => '0xTEST',
                 'current_stage' => StageEnums::BID_OPENING->value,
-                'completion_status' => StatusEnums::BIDS_OPENED->value,
+                'completion_status' => ProcurementStatus::BIDS_OPENED->value,
                 'next_stage' => StageEnums::BID_EVALUATION->value,
-                'next_stage_status' => StatusEnums::BIDS_EVALUATED->value,
+                'next_stage_status' => ProcurementStatus::BIDS_EVALUATED->value,
                 'document_count' => 2,
             ],
             'job-stage-complete-sync',
@@ -383,16 +383,16 @@ describe('BlockchainWriteJob direct DB sync', function () {
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::BID_EVALUATION->value)
-            ->and($procurement->current_status)->toBe(StatusEnums::BIDS_EVALUATED->value);
+            ->and($procurement->current_status)->toBe(ProcurementStatus::BIDS_EVALUATED->value);
 
         $completionRecord = ProcurementStage::where('txid', 'tx-bid-opened-001')->first();
         expect($completionRecord)->not->toBeNull()
             ->and($completionRecord->stage)->toBe(StageEnums::BID_OPENING->value)
-            ->and($completionRecord->status)->toBe(StatusEnums::BIDS_OPENED->value);
+            ->and($completionRecord->status)->toBe(ProcurementStatus::BIDS_OPENED->value);
 
         $transitionRecord = ProcurementStage::where('txid', 'tx-bid-evaluation-001')->first();
         expect($transitionRecord)->not->toBeNull()
             ->and($transitionRecord->stage)->toBe(StageEnums::BID_EVALUATION->value)
-            ->and($transitionRecord->status)->toBe(StatusEnums::BIDS_EVALUATED->value);
+            ->and($transitionRecord->status)->toBe(ProcurementStatus::BIDS_EVALUATED->value);
     });
 });

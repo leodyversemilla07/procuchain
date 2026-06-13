@@ -5,9 +5,9 @@ use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\AdminAnalyticsService;
-use App\Services\DashboardCacheKeys;
+use App\Services\BlockchainRpcClient;
+use App\Services\DashboardCacheService;
 use App\Services\DashboardService;
-use App\Services\Manager;
 use App\Services\ProcurementStageTransitionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -143,7 +143,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             && $collection->keys()->all() === ['PR-2025-001-0001'];
     };
 
-    $manager = Mockery::mock(Manager::class);
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getProcurementsByKey')
@@ -176,11 +176,11 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
     $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
-            if ($key === DashboardCacheKeys::recentActivities('bac_secretariat')) {
+            if ($key === DashboardCacheService::recentActivities('bac_secretariat')) {
                 return $callback();
             }
 
-            if ($key === DashboardCacheKeys::procurementDistribution('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::procurementDistribution('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
@@ -188,11 +188,11 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
         });
     $cacheStrategy->shouldReceive('rememberSmall')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
-            if ($key === DashboardCacheKeys::stats('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::stats('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
-            if ($key === DashboardCacheKeys::totalDocuments('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::totalDocuments('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
@@ -218,7 +218,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $this->app->instance(Manager::class, $manager);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
@@ -230,11 +230,11 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
     $this->get(route('bac-secretariat.dashboard'))->assertOk();
 
     expect(Cache::store('database')->get(
-        DashboardCacheKeys::procurements('bac_secretariat', (string) $secretariatUser->id)
+        DashboardCacheService::procurements('bac_secretariat', (string) $secretariatUser->id)
     ))->toBeArray()->toHaveKey('PR-2025-001-0001');
 
     expect(Cache::store('database')->get(
-        DashboardCacheKeys::procurementsSnapshot('bac_secretariat', (string) $secretariatUser->id)
+        DashboardCacheService::procurementsSnapshot('bac_secretariat', (string) $secretariatUser->id)
     ))->toBeArray()->toHaveKey('PR-2025-001-0001');
 });
 
@@ -246,7 +246,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
     ]);
     $secretariatUser->assignRole('bac_secretariat');
 
-    $manager = Mockery::mock(Manager::class);
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
@@ -279,7 +279,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
         ]);
 
     Cache::store('database')->put(
-        DashboardCacheKeys::procurementsSnapshot('bac_secretariat', (string) $secretariatUser->id),
+        DashboardCacheService::procurementsSnapshot('bac_secretariat', (string) $secretariatUser->id),
         [
             'PR-2025-001-0001' => [
                 'id' => 'PR-2025-001-0001',
@@ -295,11 +295,11 @@ test('bac secretariat dashboard renders without global error when multichain is 
     $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
-            if ($key === DashboardCacheKeys::recentActivities('bac_secretariat')) {
+            if ($key === DashboardCacheService::recentActivities('bac_secretariat')) {
                 return $callback();
             }
 
-            if ($key === DashboardCacheKeys::procurementDistribution('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::procurementDistribution('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
@@ -307,11 +307,11 @@ test('bac secretariat dashboard renders without global error when multichain is 
         });
     $cacheStrategy->shouldReceive('rememberSmall')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
-            if ($key === DashboardCacheKeys::stats('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::stats('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
-            if ($key === DashboardCacheKeys::totalDocuments('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::totalDocuments('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
@@ -333,7 +333,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $this->app->instance(Manager::class, $manager);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
@@ -363,7 +363,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
     $secretariatUser->assignRole('bac_secretariat');
 
     Cache::store('database')->put(
-        DashboardCacheKeys::procurements('bac_secretariat', (string) $secretariatUser->id),
+        DashboardCacheService::procurements('bac_secretariat', (string) $secretariatUser->id),
         [
             'PR-2025-001-0001' => [
                 'id' => 'PR-2025-001-0001',
@@ -376,8 +376,8 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         now()->addMinutes(config('dashboard.cache_ttl.procurements'))
     );
 
-    $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')->never();
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClient->shouldReceive('liststreamitems')->never();
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
@@ -412,11 +412,11 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
     $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
-            if ($key === DashboardCacheKeys::recentActivities('bac_secretariat')) {
+            if ($key === DashboardCacheService::recentActivities('bac_secretariat')) {
                 return $callback();
             }
 
-            if ($key === DashboardCacheKeys::procurementDistribution('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::procurementDistribution('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
@@ -424,11 +424,11 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         });
     $cacheStrategy->shouldReceive('rememberSmall')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
-            if ($key === DashboardCacheKeys::stats('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::stats('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
-            if ($key === DashboardCacheKeys::totalDocuments('bac_secretariat', (string) $secretariatUser->id)) {
+            if ($key === DashboardCacheService::totalDocuments('bac_secretariat', (string) $secretariatUser->id)) {
                 return $callback();
             }
 
@@ -451,7 +451,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $this->app->instance(Manager::class, $manager);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
@@ -465,8 +465,8 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
 
 function bindDashboardDependencies(): void
 {
-    $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClient->shouldReceive('liststreamitems')
         ->zeroOrMoreTimes()
         ->andReturn([]);
 
@@ -535,7 +535,7 @@ function bindDashboardDependencies(): void
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    app()->instance(Manager::class, $manager);
+    app()->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
     app()->instance(DashboardService::class, $dashboardService);
     app()->instance(CacheStrategyInterface::class, $cacheStrategy);
     app()->instance(ProcurementRepository::class, $procurementRepository);

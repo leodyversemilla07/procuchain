@@ -15,7 +15,7 @@ class NoticeToProceedDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('ntp_file'),
+            ...$this->documentRules('ntp_File'),
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
@@ -29,7 +29,7 @@ class NoticeToProceedDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('ntp_file', 'notice to proceed file'),
+            ...$this->documentMessages('ntp_File', 'notice to proceed File'),
         ];
     }
 }

@@ -15,7 +15,7 @@ class CompletionDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('completion_file'),
+            ...$this->documentRules('completion_File'),
             'completion_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'completion_notes' => 'required|string|min:5|max:1000',
         ];
@@ -30,7 +30,7 @@ class CompletionDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('completion_file', 'completion file'),
+            ...$this->documentMessages('completion_File', 'completion File'),
         ];
     }
 }

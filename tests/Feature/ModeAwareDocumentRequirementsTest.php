@@ -1,21 +1,21 @@
 <?php
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
-use App\Services\ModeAwareDocumentRequirements;
+use App\Services\ModeAwareDocumentRequirementsService;
 use App\Services\ModeAwareDocumentValidationService;
-use App\Services\StageDocumentRequirements;
+use App\Services\StageDocumentRequirementsService;
 
 beforeEach(function () {
-    $this->baseRequirements = app(StageDocumentRequirements::class);
-    $this->modeAwareRequirements = app(ModeAwareDocumentRequirements::class);
+    $this->baseRequirements = app(StageDocumentRequirementsService::class);
+    $this->modeAwareRequirements = app(ModeAwareDocumentRequirementsService::class);
     $this->validationService = app(ModeAwareDocumentValidationService::class);
 });
 
-describe('ModeAwareDocumentRequirements - Competitive Modes', function () {
+describe('ModeAwareDocumentRequirementsService - Competitive Modes', function () {
     it('returns full requirements for Competitive Bidding mode', function () {
-        $mode = ProcurementModeEnums::COMPETITIVE_BIDDING;
+        $mode = ProcurementMode::COMPETITIVE_BIDDING;
         $stage = StageEnums::BID_OPENING;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -26,7 +26,7 @@ describe('ModeAwareDocumentRequirements - Competitive Modes', function () {
     });
 
     it('returns full requirements for Limited Source Bidding mode', function () {
-        $mode = ProcurementModeEnums::LIMITED_SOURCE_BIDDING;
+        $mode = ProcurementMode::LIMITED_SOURCE_BIDDING;
         $stage = StageEnums::BID_EVALUATION;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -37,7 +37,7 @@ describe('ModeAwareDocumentRequirements - Competitive Modes', function () {
     });
 
     it('includes Pre-Procurement Conference docs for Competitive Bidding', function () {
-        $mode = ProcurementModeEnums::COMPETITIVE_BIDDING;
+        $mode = ProcurementMode::COMPETITIVE_BIDDING;
         $stage = StageEnums::PRE_PROCUREMENT_CONFERENCE;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -46,9 +46,9 @@ describe('ModeAwareDocumentRequirements - Competitive Modes', function () {
     });
 });
 
-describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
+describe('ModeAwareDocumentRequirementsService - Alternative Modes', function () {
     it('returns simplified requirements for Small Value Procurement', function () {
-        $mode = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
+        $mode = ProcurementMode::SMALL_VALUE_PROCUREMENT;
         $stage = StageEnums::REQUEST_FOR_QUOTATION;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -60,7 +60,7 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
     });
 
     it('returns empty for stages not in SVP workflow', function () {
-        $mode = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
+        $mode = ProcurementMode::SMALL_VALUE_PROCUREMENT;
         $stage = StageEnums::BID_OPENING;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -70,7 +70,7 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
     });
 
     it('returns minimal requirements for Direct Acquisition (≤₱200,000)', function () {
-        $mode = ProcurementModeEnums::DIRECT_ACQUISITION;
+        $mode = ProcurementMode::DIRECT_ACQUISITION;
         $stage = StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -81,7 +81,7 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
     });
 
     it('returns RFQ only for Direct Contracting', function () {
-        $mode = ProcurementModeEnums::DIRECT_CONTRACTING;
+        $mode = ProcurementMode::DIRECT_CONTRACTING;
         $stage = StageEnums::REQUEST_FOR_QUOTATION;
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
@@ -94,13 +94,13 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
         // Direct Acquisition - Minimal monitoring
         $directAcq = $this->modeAwareRequirements->getRequiredDocuments(
             StageEnums::MONITORING,
-            ProcurementModeEnums::DIRECT_ACQUISITION
+            ProcurementMode::DIRECT_ACQUISITION
         );
 
         // SVP - Standard monitoring
         $svp = $this->modeAwareRequirements->getRequiredDocuments(
             StageEnums::MONITORING,
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         // Direct Acquisition should have fewer monitoring requirements
@@ -108,22 +108,22 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
     });
 });
 
-describe('ModeAwareDocumentRequirements - Municipality of Gloria Thresholds', function () {
+describe('ModeAwareDocumentRequirementsService - Municipality of Gloria Thresholds', function () {
     it('confirms SVP threshold of ₱400,000 for 4th class municipality', function () {
-        $threshold = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->thresholdAmount();
+        $threshold = ProcurementMode::SMALL_VALUE_PROCUREMENT->thresholdAmount();
 
         // Municipality of Gloria is a 4th Class Municipality
         expect($threshold)->toBe(400000.00);
     });
 
     it('confirms Direct Acquisition threshold of ₱200,000', function () {
-        $threshold = ProcurementModeEnums::DIRECT_ACQUISITION->thresholdAmount();
+        $threshold = ProcurementMode::DIRECT_ACQUISITION->thresholdAmount();
 
         expect($threshold)->toBe(200000.00);
     });
 
     it('validates amount within SVP threshold is valid', function () {
-        $mode = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
+        $mode = ProcurementMode::SMALL_VALUE_PROCUREMENT;
 
         // ₱150,000 is within threshold
         expect($mode->isValidAmount(150000))->toBeTrue();
@@ -133,7 +133,7 @@ describe('ModeAwareDocumentRequirements - Municipality of Gloria Thresholds', fu
     });
 
     it('validates amount exceeding SVP threshold is invalid', function () {
-        $mode = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
+        $mode = ProcurementMode::SMALL_VALUE_PROCUREMENT;
 
         // ₱450,000 exceeds threshold
         expect($mode->isValidAmount(450000))->toBeFalse();
@@ -146,7 +146,7 @@ describe('ModeAwareDocumentValidationService', function () {
             StageEnums::REQUEST_FOR_QUOTATION,
             DocumentTypeEnums::REQUEST_FOR_QUOTATION,
             [],
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         expect($result['valid'])->toBeTrue();
@@ -158,7 +158,7 @@ describe('ModeAwareDocumentValidationService', function () {
             StageEnums::BID_OPENING,
             DocumentTypeEnums::SEALED_BID_PROPOSALS,
             [],
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         expect($result['valid'])->toBeFalse();
@@ -170,7 +170,7 @@ describe('ModeAwareDocumentValidationService', function () {
             StageEnums::REQUEST_FOR_QUOTATION,
             DocumentTypeEnums::REQUEST_FOR_QUOTATION,
             [],
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         // Should include NGPA reference warning
@@ -194,7 +194,7 @@ describe('ModeAwareDocumentValidationService', function () {
         $result = $this->validationService->validateStageCompletion(
             StageEnums::REQUEST_FOR_QUOTATION,
             $uploadedDocs,
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         expect($result['can_complete'])->toBeTrue();
@@ -210,7 +210,7 @@ describe('ModeAwareDocumentValidationService', function () {
         $result = $this->validationService->validateStageCompletion(
             StageEnums::REQUEST_FOR_QUOTATION,
             $uploadedDocs,
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         // SVP RFQ stage requires 3 docs, 1 uploaded = 33.33%
@@ -218,32 +218,32 @@ describe('ModeAwareDocumentValidationService', function () {
     });
 });
 
-describe('ProcurementModeEnums - Mode Classification', function () {
+describe('ProcurementMode - Mode Classification', function () {
     it('correctly identifies alternative modes', function () {
-        expect(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->isAlternativeMode())->toBeTrue();
-        expect(ProcurementModeEnums::DIRECT_CONTRACTING->isAlternativeMode())->toBeTrue();
-        expect(ProcurementModeEnums::DIRECT_ACQUISITION->isAlternativeMode())->toBeTrue();
-        expect(ProcurementModeEnums::REPEAT_ORDER->isAlternativeMode())->toBeTrue();
-        expect(ProcurementModeEnums::NEGOTIATED_PROCUREMENT->isAlternativeMode())->toBeTrue();
-        expect(ProcurementModeEnums::DIRECT_SALES->isAlternativeMode())->toBeTrue();
-        expect(ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::SMALL_VALUE_PROCUREMENT->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::DIRECT_CONTRACTING->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::DIRECT_ACQUISITION->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::REPEAT_ORDER->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::NEGOTIATED_PROCUREMENT->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::DIRECT_SALES->isAlternativeMode())->toBeTrue();
+        expect(ProcurementMode::DIRECT_PROCUREMENT_FOR_STI->isAlternativeMode())->toBeTrue();
     });
 
     it('correctly identifies competitive modes', function () {
-        expect(ProcurementModeEnums::COMPETITIVE_BIDDING->isCompetitiveMode())->toBeTrue();
-        expect(ProcurementModeEnums::LIMITED_SOURCE_BIDDING->isCompetitiveMode())->toBeTrue();
-        expect(ProcurementModeEnums::COMPETITIVE_DIALOGUE->isCompetitiveMode())->toBeTrue();
-        expect(ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING->isCompetitiveMode())->toBeTrue();
+        expect(ProcurementMode::COMPETITIVE_BIDDING->isCompetitiveMode())->toBeTrue();
+        expect(ProcurementMode::LIMITED_SOURCE_BIDDING->isCompetitiveMode())->toBeTrue();
+        expect(ProcurementMode::COMPETITIVE_DIALOGUE->isCompetitiveMode())->toBeTrue();
+        expect(ProcurementMode::UNSOLICITED_OFFER_WITH_BID_MATCHING->isCompetitiveMode())->toBeTrue();
     });
 
     it('correctly identifies modes that can be delegated', function () {
         // Alternative modes can be delegated per Section 26.4
-        expect(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->canBeDelegated())->toBeTrue();
-        expect(ProcurementModeEnums::DIRECT_CONTRACTING->canBeDelegated())->toBeTrue();
+        expect(ProcurementMode::SMALL_VALUE_PROCUREMENT->canBeDelegated())->toBeTrue();
+        expect(ProcurementMode::DIRECT_CONTRACTING->canBeDelegated())->toBeTrue();
 
         // Competitive modes cannot be delegated
-        expect(ProcurementModeEnums::COMPETITIVE_BIDDING->canBeDelegated())->toBeFalse();
-        expect(ProcurementModeEnums::LIMITED_SOURCE_BIDDING->canBeDelegated())->toBeFalse();
+        expect(ProcurementMode::COMPETITIVE_BIDDING->canBeDelegated())->toBeFalse();
+        expect(ProcurementMode::LIMITED_SOURCE_BIDDING->canBeDelegated())->toBeFalse();
     });
 });
 
@@ -251,7 +251,7 @@ describe('Document Guide with Mode Awareness', function () {
     it('returns mode-specific document guide', function () {
         $guide = $this->validationService->getStageDocumentGuide(
             StageEnums::REQUEST_FOR_QUOTATION,
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
 
         expect($guide)->toHaveKey('mode');
@@ -276,7 +276,7 @@ describe('Document Guide with Mode Awareness', function () {
     it('provides requirements comparison between base and mode', function () {
         $comparison = $this->validationService->getRequirementsComparison(
             StageEnums::MONITORING,
-            ProcurementModeEnums::DIRECT_ACQUISITION
+            ProcurementMode::DIRECT_ACQUISITION
         );
 
         expect($comparison)->toHaveKey('base_required_count');

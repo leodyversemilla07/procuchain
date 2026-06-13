@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Jobs\Handlers\CorrectionHandler;
 use App\Jobs\Handlers\DocumentUploadHandler;
 use App\Jobs\Handlers\ProcurementInitiationHandler;
@@ -194,14 +194,14 @@ class BlockchainWriteJob implements ShouldQueue
         string $operation
     ): int {
         $stream = match ($type) {
-            'metadata' => StreamEnums::METADATA,
-            'status' => StreamEnums::STATUS,
-            'event' => StreamEnums::EVENTS,
-            'documents' => StreamEnums::DOCUMENTS,
-            'correction' => StreamEnums::CORRECTIONS,
-            'procurement_correction' => StreamEnums::PROCUREMENTS_CORRECTIONS,
-            'decision' => StreamEnums::EVENTS,
-            'archive' => StreamEnums::ARCHIVE,
+            'metadata' => Stream::METADATA,
+            'status' => Stream::STATUS,
+            'event' => Stream::EVENTS,
+            'documents' => Stream::DOCUMENTS,
+            'correction' => Stream::CORRECTIONS,
+            'procurement_correction' => Stream::PROCUREMENTS_CORRECTIONS,
+            'decision' => Stream::EVENTS,
+            'archive' => Stream::ARCHIVE,
             default => null,
         };
 
@@ -235,14 +235,14 @@ class BlockchainWriteJob implements ShouldQueue
                 if (empty($docTxid)) {
                     continue;
                 }
-                $syncService->upstream($stream->value, $prNumber, $docTxid, $userAddress, null, $docEntry, true);
+                $syncService->syncToMirror($stream->value, $prNumber, $docTxid, $userAddress, null, $docEntry, true);
                 $count++;
             }
 
             return $count;
         }
 
-        $syncService->upstream($stream->value, $prNumber, $txid, $userAddress, null, is_array($txData) ? $txData : [], true);
+        $syncService->syncToMirror($stream->value, $prNumber, $txid, $userAddress, null, is_array($txData) ? $txData : [], true);
 
         return 1;
     }
@@ -511,8 +511,8 @@ class BlockchainWriteJob implements ShouldQueue
         // even if the direct write above was incomplete.
         try {
             $syncService = app(BlockchainRecordSyncService::class);
-            $syncService->upstream(
-                StreamEnums::STATUS->value,
+            $syncService->syncToMirror(
+                Stream::STATUS->value,
                 $prNumber,
                 $statusTxid ?? 'pending-verification',
                 $userAddress,
@@ -584,7 +584,7 @@ class BlockchainWriteJob implements ShouldQueue
     {
         $sanitized = $message;
 
-        // Remove file paths that could expose server structure
+        // Remove File paths that could expose server structure
         $sanitized = preg_replace('/in .*?\.php:\d+/', '', $sanitized) ?? $sanitized;
 
         // Remove database credentials or connection details

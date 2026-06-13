@@ -21,7 +21,7 @@ final class DocumentData
         public readonly string $status,
         public readonly string $documentType,
         public readonly string $fileKey,
-        public readonly string $fileName,
+        public readonly string $filename,
         public readonly int $fileSize,
         public readonly string $mimeType,
         public readonly string $hash,
@@ -43,7 +43,7 @@ final class DocumentData
             'status' => $this->status,
             'document_type' => $this->documentType,
             'file_key' => $this->fileKey,
-            'file_name' => $this->fileName,
+            'file_name' => $this->filename,
             'file_size' => $this->fileSize,
             'mime_type' => $this->mimeType,
             'hash' => $this->hash,
@@ -76,7 +76,7 @@ final class DocumentData
                 status: $data['status'] ?? 'unknown',
                 documentType: $data['document_type'] ?? 'unknown',
                 fileKey: $data['file_key'] ?? '',
-                fileName: $data['file_name'] ?? 'Unknown File',
+                filename: $data['file_name'] ?? 'Unknown File',
                 fileSize: (int) ($data['file_size'] ?? 0),
                 mimeType: $data['mime_type'] ?? 'application/octet-stream',
                 hash: $data['hash'] ?? '',
@@ -117,9 +117,9 @@ final class DocumentData
     }
 
     /**
-     * Format file size to human-readable format
+     * Format File size to human-readable format
      */
-    public function getFormattedFileSize(): string
+    public function getFormattedfileSize(): string
     {
         if ($this->fileSize < 0) {
             return 'N/A';

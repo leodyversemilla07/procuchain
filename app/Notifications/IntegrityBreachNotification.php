@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use App\Enums\BreachTypeEnums;
+use App\Enums\BreachType;
 use App\Services\NotificationPreferenceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\DatabaseMessage;
@@ -61,7 +61,7 @@ class IntegrityBreachNotification extends Notification
     ];
 
     /**
-     * @param  string  $breachType  The breach type (BreachTypeEnums value)
+     * @param  string  $breachType  The breach type (BreachType value)
      * @param  string  $stream  The blockchain stream where the breach was detected
      * @param  string  $streamKey  The stream key (e.g. PR number)
      * @param  string  $txid  The transaction ID
@@ -236,7 +236,7 @@ class IntegrityBreachNotification extends Notification
      */
     private function breachDisplayName(): string
     {
-        $enum = BreachTypeEnums::tryFrom($this->breachType);
+        $enum = BreachType::tryFrom($this->breachType);
 
         return $enum ? $enum->getDisplayName() : ucfirst(str_replace('_', ' ', $this->breachType));
     }

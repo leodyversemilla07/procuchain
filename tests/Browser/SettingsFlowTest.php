@@ -17,22 +17,22 @@ describe('Settings Browser Flow', function () {
         $this->user->assignRole('admin');
     });
 
-    it('displays profile settings page', function () {
+    it('displays proFile settings page', function () {
         $this->actingAs($this->user);
 
-        $page = visit('/settings/profile');
+        $page = visit('/settings/proFile');
 
-        $page->assertSee('Profile information')
+        $page->assertSee('ProFile information')
             ->assertSee('Email address')
             ->assertSee('Blockchain Address')
             ->assertNoJavascriptErrors()
             ->assertNoConsoleLogs();
     });
 
-    it('allows editing profile information fields', function () {
+    it('allows editing proFile information fields', function () {
         $this->actingAs($this->user);
 
-        $page = visit('/settings/profile');
+        $page = visit('/settings/proFile');
 
         $page->fill('name', 'Updated Name')
             ->fill('email', 'updated@example.test')

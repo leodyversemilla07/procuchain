@@ -15,7 +15,7 @@ class MonitoringDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('compliance_file'),
+            ...$this->documentRules('compliance_File'),
             'report_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'report_notes' => 'required|string|min:5|max:1000',
         ];
@@ -30,7 +30,7 @@ class MonitoringDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('compliance_file', 'compliance file'),
+            ...$this->documentMessages('compliance_File', 'compliance File'),
         ];
     }
 }

@@ -3,9 +3,9 @@
 namespace App\Services\Blockchain;
 
 use App\DataTransferObjects\FileMetadata;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\User;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 class FileUploader
 {
     public function __construct(
-        private Manager $multichain,
+        private BlockchainRpcClient $multichain,
         private int $maxChunkSize,
         private int $recommendedMaxSize,
         private int $chunkThreshold,
@@ -23,9 +23,9 @@ class FileUploader
     ) {}
 
     /**
-     * Upload a file directly to blockchain (on-chain storage)
+     * Upload a File directly to blockchain (on-chain storage)
      *
-     * @param  UploadedFile  $file  The file to upload
+     * @param  UploadedFile  $File  The File to upload
      * @param  string  $prNumber  PR Number (e.g., PR-2025-001)
      * @param  int  $stageId  Stage ID (1-17, per RA 12009 NGPA)
      * @param  string  $documentType  Document type (e.g., "Purchase Request")
@@ -34,80 +34,80 @@ class FileUploader
      *
      * @throws Exception If storage fails
      */
-    public function uploadFile(UploadedFile $file, string $prNumber, int $stageId, string $documentType, array $metadata = []): array
+    public function uploadFile(UploadedFile $File, string $prNumber, int $stageId, string $documentType, array $metadata = []): array
     {
-        $filename = $file->getClientOriginalName();
-        $extension = $file->getClientOriginalExtension();
-        $fileSize = $file->getSize();
-        $mimeType = $file->getMimeType();
+        $filename = $File->getClientOriginalName();
+        $extension = $File->getClientOriginalExtension();
+        $fileSize = $File->getSize();
+        $mimeType = $File->getMimeType();
 
-        // Read file content using Laravel's UploadedFile::get() method
-        // This is more reliable than file_get_contents(getRealPath()) for uploaded files
-        $fileContent = $file->get();
-        $fileHash = hash('sha256', $fileContent);
+        // Read File content using Laravel's UploadedFile::get() method
+        // This is more reliable than file_get_contents(getRealPath()) for uploaded BlockchainFiles
+        $BlockchainFileContent = $File->get();
+        $BlockchainFileHash = hash('sha256', $BlockchainFileContent);
 
-        // Validate that we actually read the file content
-        // Empty files should not be uploaded to blockchain
-        if (empty($fileContent)) {
-            Log::error('Empty file content detected during upload - rejecting upload', [
-                'filename' => $file->getClientOriginalName(),
+        // Validate that we actually read the File content
+        // Empty BlockchainFiles should not be uploaded to blockchain
+        if (empty($BlockchainFileContent)) {
+            Log::error('Empty File content detected during upload - rejecting upload', [
+                'filename' => $File->getClientOriginalName(),
                 'size' => $fileSize,
-                'mime_type' => $file->getMimeType(),
+                'mime_type' => $File->getMimeType(),
                 'pr_number' => $prNumber,
                 'document_type' => $documentType,
             ]);
 
-            throw new Exception("Failed to read file content. File appears to be empty or inaccessible. Reported size: {$fileSize} bytes");
+            throw new Exception("Failed to read File content. File appears to be empty or inaccessible. Reported size: {$fileSize} bytes");
         }
 
-        if (strlen($fileContent) !== $fileSize) {
+        if (strlen($BlockchainFileContent) !== $fileSize) {
             Log::warning('File content size mismatch', [
                 'filename' => $filename,
                 'reported_size' => $fileSize,
-                'actual_content_size' => strlen($fileContent),
+                'actual_content_size' => strlen($BlockchainFileContent),
             ]);
         }
 
-        // Check file size against absolute maximum
+        // Check File size against absolute maximum
         if ($fileSize > $this->maxChunkSize) {
             throw new Exception("File size ({$fileSize} bytes) exceeds maximum on-chain storage limit ({$this->maxChunkSize} bytes or ".($this->maxChunkSize / 1048576).' MB)');
         }
 
-        // Generate standardized file key with phase
-        $fileKey = $this->generateFileKey($prNumber, $stageId, $documentType, $extension, $fileHash);
+        // Generate standardized File key with phase
+        $fileKey = $this->generatefileKey($prNumber, $stageId, $documentType, $extension, $BlockchainFileHash);
         $dataKey = str_replace('/', '_', $fileKey);
 
         // Determine if chunking is needed
         $needsChunking = $this->chunkingEnabled && $fileSize > $this->chunkThreshold;
 
         if ($needsChunking) {
-            return $this->uploadFileChunked($fileContent, $filename, $fileKey, $dataKey, $fileSize, $mimeType, $fileHash, $prNumber, $stageId, $documentType, $metadata);
+            return $this->uploadBlockchainFileChunked($BlockchainFileContent, $filename, $fileKey, $dataKey, $fileSize, $mimeType, $BlockchainFileHash, $prNumber, $stageId, $documentType, $metadata);
         }
 
-        return $this->uploadFileSingleTransaction($fileContent, $filename, $fileKey, $dataKey, $fileSize, $mimeType, $fileHash, $prNumber, $stageId, $documentType, $metadata);
+        return $this->uploadBlockchainFileSingleTransaction($BlockchainFileContent, $filename, $fileKey, $dataKey, $fileSize, $mimeType, $BlockchainFileHash, $prNumber, $stageId, $documentType, $metadata);
     }
 
     /**
-     * Upload files and prepare metadata for procurement documents with blockchain transaction IDs.
+     * Upload BlockchainFiles and prepare metadata for procurement documents with blockchain transaction IDs.
      *
-     * @param  UploadedFile[]  $files
-     * @param  array  $metadata  Metadata for each file
+     * @param  UploadedFile[]  $BlockchainFiles
+     * @param  array  $metadata  Metadata for each File
      * @param  string  $prNumber  PR Number
      * @param  int  $stageId  Stage ID (1-17, per RA 12009 NGPA)
      * @param  string  $procurementTitle  Procurement title
      * @return array Complete metadata array with blockchain transaction IDs
      */
-    public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
+    public function uploadAndPrepare(array $BlockchainFiles, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
     {
         $results = [];
 
-        foreach ($files as $index => $file) {
+        foreach ($BlockchainFiles as $index => $File) {
             $meta = $metadata[$index] ?? [];
             $documentType = $meta['document_type'] ?? 'General Document';
 
             // Upload with standardized phase-based naming
             $result = $this->uploadFile(
-                $file,
+                $File,
                 $prNumber,
                 $stageId,
                 $documentType,
@@ -130,42 +130,42 @@ class FileUploader
     }
 
     /**
-     * Upload a small file in a single blockchain transaction
+     * Upload a small File in a single blockchain transaction
      */
-    private function uploadFileSingleTransaction(
-        string $fileContent,
+    private function uploadBlockchainFileSingleTransaction(
+        string $BlockchainFileContent,
         string $filename,
         string $fileKey,
         string $dataKey,
         int $fileSize,
         string $mimeType,
-        string $fileHash,
+        string $BlockchainFileHash,
         string $prNumber,
         int $stageId,
         string $documentType,
         array $metadata
     ): array {
-        $fileHex = bin2hex($fileContent);
+        $BlockchainFileHex = bin2hex($BlockchainFileContent);
 
-        Log::info('Storing file on blockchain (single transaction)', [
+        Log::info('Storing File on blockchain (single transaction)', [
             'filename' => $filename,
             'file_key' => $fileKey,
             'size' => $fileSize,
-            'hash' => $fileHash,
-            'hex_length' => strlen($fileHex),
+            'hash' => $BlockchainFileHash,
+            'hex_length' => strlen($BlockchainFileHex),
         ]);
 
         $startTime = microtime(true);
 
         // Create FileMetadata DTO
-        $fileMetadata = new FileMetadata(
+        $FileMetadata = new FileMetadata(
             filename: $filename,
             fileKey: $fileKey,
             dataTxid: '',
             dataKey: $dataKey,
             mimeType: $mimeType,
             size: $fileSize,
-            hash: $fileHash,
+            hash: $BlockchainFileHash,
             storageMethod: 'on_chain',
             storedAt: now(),
             additionalMetadata: array_merge($metadata, [
@@ -180,21 +180,21 @@ class FileUploader
         $items = [
             [
                 'key' => $dataKey,
-                'data' => $fileHex,
-                'for' => StreamEnums::FILE_DATA->value,
+                'data' => $BlockchainFileHex,
+                'for' => Stream::FILE_DATA->value,
             ],
             [
                 'key' => $dataKey,
                 'data' => ['json' => array_merge(
-                    $fileMetadata->toBlockchainArray(),
+                    $FileMetadata->toBlockchainArray(),
                     ['data_txid' => 'BATCH_TXID']
                 )],
-                'for' => StreamEnums::FILE_METADATA->value,
+                'for' => Stream::FILE_METADATA->value,
             ],
         ];
 
         // Publish both data and metadata atomically
-        $txid = $this->multichain->publishmulti(StreamEnums::FILE_DATA->value, $items);
+        $txid = $this->multichain->publishmulti(Stream::FILE_DATA->value, $items);
 
         $duration = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -213,36 +213,36 @@ class FileUploader
             'filename' => $filename,
             'size' => $fileSize,
             'mime_type' => $mimeType,
-            'hash' => $fileHash,
+            'hash' => $BlockchainFileHash,
             'storage_method' => 'on_chain',
             'chunked' => false,
         ];
     }
 
     /**
-     * Upload a large file using chunked storage across multiple transactions
+     * Upload a large File using chunked storage across multiple transactions
      */
-    private function uploadFileChunked(
-        string $fileContent,
+    private function uploadBlockchainFileChunked(
+        string $BlockchainFileContent,
         string $filename,
         string $fileKey,
         string $dataKey,
         int $fileSize,
         string $mimeType,
-        string $fileHash,
+        string $BlockchainFileHash,
         string $prNumber,
         int $stageId,
         string $documentType,
         array $metadata
     ): array {
-        $chunks = str_split($fileContent, $this->chunkSize);
+        $chunks = str_split($BlockchainFileContent, $this->chunkSize);
         $totalChunks = count($chunks);
 
-        Log::info('Storing large file on blockchain (chunked)', [
+        Log::info('Storing large File on blockchain (chunked)', [
             'filename' => $filename,
             'file_key' => $fileKey,
             'size' => $fileSize,
-            'hash' => $fileHash,
+            'hash' => $BlockchainFileHash,
             'total_chunks' => $totalChunks,
             'chunk_size' => $this->chunkSize,
         ]);
@@ -250,7 +250,7 @@ class FileUploader
         $startTime = microtime(true);
         $chunkTxids = [];
 
-        // Upload each chunk to the file.chunks stream
+        // Upload each chunk to the File.chunks stream
         foreach ($chunks as $index => $chunk) {
             $chunkHex = bin2hex($chunk);
             $chunkKey = "{$dataKey}_chunk_{$index}";
@@ -271,16 +271,16 @@ class FileUploader
                 [
                     'key' => $chunkKey,
                     'data' => $chunkHex,
-                    'for' => StreamEnums::FILE_CHUNKS->value,
+                    'for' => Stream::FILE_CHUNKS->value,
                 ],
                 [
                     'key' => $chunkKey.'_meta',
                     'data' => $chunkData,
-                    'for' => StreamEnums::FILE_CHUNKS->value,
+                    'for' => Stream::FILE_CHUNKS->value,
                 ],
             ];
 
-            $chunkTxid = $this->multichain->publishmulti(StreamEnums::FILE_CHUNKS->value, $items);
+            $chunkTxid = $this->multichain->publishmulti(Stream::FILE_CHUNKS->value, $items);
             $chunkTxids[] = [
                 'txid' => $chunkTxid,
                 'index' => $index,
@@ -297,14 +297,14 @@ class FileUploader
         }
 
         // Create FileMetadata with chunk references
-        $fileMetadata = new FileMetadata(
+        $FileMetadata = new FileMetadata(
             filename: $filename,
             fileKey: $fileKey,
             dataTxid: $chunkTxids[0]['txid'], // Reference first chunk as primary
             dataKey: $dataKey,
             mimeType: $mimeType,
             size: $fileSize,
-            hash: $fileHash,
+            hash: $BlockchainFileHash,
             storageMethod: 'on_chain_chunked',
             storedAt: now(),
             additionalMetadata: array_merge($metadata, [
@@ -319,16 +319,16 @@ class FileUploader
             ]),
         );
 
-        // Publish file metadata to file.metadata stream
+        // Publish File metadata to File.metadata stream
         $metadataTxid = $this->multichain->publish(
-            StreamEnums::FILE_METADATA->value,
+            Stream::FILE_METADATA->value,
             $dataKey,
-            ['json' => $fileMetadata->toBlockchainArray()]
+            ['json' => $FileMetadata->toBlockchainArray()]
         );
 
         $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-        Log::info('Large file stored successfully on blockchain (chunked)', [
+        Log::info('Large File stored successfully on blockchain (chunked)', [
             'file_key' => $fileKey,
             'metadata_txid' => $metadataTxid,
             'filename' => $filename,
@@ -344,7 +344,7 @@ class FileUploader
             'filename' => $filename,
             'size' => $fileSize,
             'mime_type' => $mimeType,
-            'hash' => $fileHash,
+            'hash' => $BlockchainFileHash,
             'storage_method' => 'on_chain_chunked',
             'chunked' => true,
             'total_chunks' => $totalChunks,
@@ -353,17 +353,17 @@ class FileUploader
     }
 
     /**
-     * Generate a standardized blockchain file key with comprehensive metadata
+     * Generate a standardized blockchain File key with comprehensive metadata
      *
      * Pattern: {pr_number}/{phase}/{stage_id}/{document_type}_{timestamp}_{hash_short}.{ext}
      * Example: PR-2025-001/pre-procurement/stage-01/purchase_request_20251115143022_a3f5b8c.pdf
      */
-    private function generateFileKey(
+    private function generatefileKey(
         string $prNumber,
         int $stageId,
         string $documentType,
         string $extension,
-        string $fileHash
+        string $BlockchainFileHash
     ): string {
         // Sanitize document type (e.g., "Purchase Request" -> "purchase_request")
         // Remove any potentially dangerous characters
@@ -377,7 +377,7 @@ class FileUploader
         }
 
         // Get short hash (first 7 chars) for uniqueness verification
-        $hashShort = substr($fileHash, 0, 7);
+        $hashShort = substr($BlockchainFileHash, 0, 7);
 
         // Generate timestamp (YmdHis format for sortability)
         $timestamp = now()->format('YmdHis');
@@ -388,7 +388,7 @@ class FileUploader
         // Determine phase based on stage ID
         $phase = $this->getPhaseFromStage($stageId);
 
-        // Build hierarchical file key with phase
+        // Build hierarchical File key with phase
         return sprintf(
             '%s/%s/%s/%s_%s_%s.%s',
             $prNumber,           // PR-2025-001

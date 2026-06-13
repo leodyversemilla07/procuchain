@@ -13,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-class RunIntegrityVerification implements ShouldQueue
+class RunIntegrityVerificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -50,7 +50,7 @@ class RunIntegrityVerification implements ShouldQueue
         Cache::put("{$this->cacheKey}_status", 'running', 3600);
         Cache::put("{$this->cacheKey}_started_at", now()->toIso8601String(), 3600);
 
-        Log::info('RunIntegrityVerification: job started', [
+        Log::info('RunIntegrityVerificationJob: job started', [
             'cache_key' => $this->cacheKey,
             'auto_repair' => $this->autoRepair,
             'user' => $this->userName,
@@ -65,12 +65,12 @@ class RunIntegrityVerification implements ShouldQueue
             Cache::put("{$this->cacheKey}_status", 'completed', 3600);
             Cache::put("{$this->cacheKey}_result", $result, 3600);
 
-            Log::info('RunIntegrityVerification: job completed', $result);
+            Log::info('RunIntegrityVerificationJob: job completed', $result);
         } catch (\Throwable $e) {
             Cache::put("{$this->cacheKey}_status", 'failed', 3600);
             Cache::put("{$this->cacheKey}_error", 'Verification failed. Please try again or contact support.', 3600);
 
-            Log::error('RunIntegrityVerification: job failed', [
+            Log::error('RunIntegrityVerificationJob: job failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

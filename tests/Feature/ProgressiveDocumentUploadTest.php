@@ -23,13 +23,13 @@ describe('Progressive Document Upload - Authorization', function () {
     it('requires authentication', function () {
         auth()->logout();
 
-        $file = UploadedFile::fake()->create('document.pdf', 1024, 'application/pdf');
+        $File = UploadedFile::fake()->create('document.pdf', 1024, 'application/pdf');
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
             'pr_number' => 'PR-2025-001-0001',
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]), [
-            'document_file' => $file,
+            'document_File' => $File,
             'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
         ]);
 
@@ -41,13 +41,13 @@ describe('Progressive Document Upload - Authorization', function () {
         $user->assignRole('hope');
         $this->actingAs($user);
 
-        $file = UploadedFile::fake()->create('document.pdf', 1024, 'application/pdf');
+        $File = UploadedFile::fake()->create('document.pdf', 1024, 'application/pdf');
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
             'pr_number' => 'PR-2025-001-0001',
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]), [
-            'document_file' => $file,
+            'document_File' => $File,
             'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
         ]);
 

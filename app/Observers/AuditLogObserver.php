@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\AuditLog;
 use App\Services\BlockchainSyncService;
 
@@ -30,6 +30,6 @@ class AuditLogObserver
             return;
         }
 
-        BlockchainSyncService::publish($auditLog, StreamEnums::AUDIT_TRAIL);
+        BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
     }
 }

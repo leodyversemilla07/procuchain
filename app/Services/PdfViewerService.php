@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Repositories\DocumentRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +21,7 @@ class PdfViewerService
      */
     public function prepareDocumentData(string $fileKey, Request $request): array
     {
-        $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey);
+        $documentData = $this->procurementDataService->getDocumentDataByfileKey($fileKey);
 
         // Map data_txid to blockchain_txid for frontend compatibility
         // But only if the document actually exists in blockchain
@@ -68,7 +68,7 @@ class PdfViewerService
         if (! $documentData) {
             Log::info('Blockchain data not found, creating fallback data', ['file_key' => $fileKey]);
 
-            $documentView = DocumentView::where('file_key', $fileKey)->first();
+            $DocumentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
 
             $parts = explode('/', $fileKey);
             $pr_number = 'Unknown';
@@ -86,13 +86,13 @@ class PdfViewerService
 
             $alternativeHash = $this->procurementDataService->getHashBypr_number($pr_number, $fileKey);
 
-            if (! $documentView) {
-                $documentView = DocumentView::create([
+            if (! $DocumentViewLog) {
+                $DocumentViewLog = DocumentViewLog::create([
                     'user_id' => $this->request->user()?->id,
                     'file_key' => $fileKey,
                     'pr_number' => $pr_number,
                     'procurement_title' => 'Document Viewer (Development Mode)',
-                    'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
+                    'document_type' => pathinfo($fileKey, PATHINFO_filename),
                     'stage' => $parts[1] ?? 'Unknown',
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
@@ -104,7 +104,7 @@ class PdfViewerService
                 ]);
             }
 
-            $existingView = DocumentView::where('pr_number', $pr_number)
+            $existingView = DocumentViewLog::where('pr_number', $pr_number)
                 ->whereNotNull('procurement_title')
                 ->where('procurement_title', '!=', 'Document Viewer (Development Mode)')
                 ->where('procurement_title', '!=', 'Document (Development Mode)')
@@ -126,12 +126,12 @@ class PdfViewerService
             $documentData = [
                 'pr_number' => $pr_number,
                 'procurement_title' => $procurementTitle,
-                'document_type' => $documentView->document_type ?? pathinfo($fileKey, PATHINFO_FILENAME),
-                'document_type_display' => $this->formatDocumentType($documentView->document_type ?? pathinfo($fileKey, PATHINFO_FILENAME)),
-                'stage' => $documentView->stage ?? ($parts[1] ?? 'Unknown'),
-                'stage_display' => $this->formatStage($documentView->stage ?? ($parts[1] ?? 'Unknown')),
-                'file_size' => $this->getFileSize($fileKey),
-                'timestamp' => $documentView->created_at->toISOString(),
+                'document_type' => $DocumentViewLog->document_type ?? pathinfo($fileKey, PATHINFO_filename),
+                'document_type_display' => $this->formatDocumentType($DocumentViewLog->document_type ?? pathinfo($fileKey, PATHINFO_filename)),
+                'stage' => $DocumentViewLog->stage ?? ($parts[1] ?? 'Unknown'),
+                'stage_display' => $this->formatStage($DocumentViewLog->stage ?? ($parts[1] ?? 'Unknown')),
+                'file_size' => $this->getfileSize($fileKey),
+                'timestamp' => $DocumentViewLog->created_at->toISOString(),
                 'hash' => $alternativeHash ?: '',
                 'user_address' => $request->user()->blockchain_address ?? 'no-blockchain-address',
             ];
@@ -158,7 +158,7 @@ class PdfViewerService
         }
 
         if (! isset($documentData['file_size']) || $documentData['file_size'] === null) {
-            $documentData['file_size'] = $this->getFileSize($fileKey);
+            $documentData['file_size'] = $this->getfileSize($fileKey);
         }
 
         Log::info('Final PDF Viewer Document Data', [
@@ -173,25 +173,25 @@ class PdfViewerService
     }
 
     /**
-     * Get comprehensive view statistics for a file
+     * Get comprehensive view statistics for a File
      */
-    public function getFileViewStats(string $fileKey): array
+    public function getBlockchainFileViewStats(string $fileKey): array
     {
-        $totalViews = DocumentView::where('file_key', $fileKey)->count();
-        $uniqueViewers = DocumentView::where('file_key', $fileKey)
+        $totalViews = DocumentViewLog::where('file_key', $fileKey)->count();
+        $uniqueViewers = DocumentViewLog::where('file_key', $fileKey)
             ->distinct('user_id')
             ->count('user_id');
-        $todayViews = DocumentView::where('file_key', $fileKey)
+        $todayViews = DocumentViewLog::where('file_key', $fileKey)
             ->whereDate('viewed_at', today())
             ->count();
-        $weekViews = DocumentView::where('file_key', $fileKey)
+        $weekViews = DocumentViewLog::where('file_key', $fileKey)
             ->where('viewed_at', '>=', now()->subWeek())
             ->count();
-        $monthViews = DocumentView::where('file_key', $fileKey)
+        $monthViews = DocumentViewLog::where('file_key', $fileKey)
             ->where('viewed_at', '>=', now()->subMonth())
             ->count();
 
-        $viewsByRole = DocumentView::where('file_key', $fileKey)
+        $viewsByRole = DocumentViewLog::where('file_key', $fileKey)
             ->join('users', 'document_views.user_id', '=', 'users.id')
             ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
             ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
@@ -203,7 +203,7 @@ class PdfViewerService
                 return [$item->role => $item->view_count];
             });
 
-        $viewsByDay = DocumentView::where('file_key', $fileKey)
+        $viewsByDay = DocumentViewLog::where('file_key', $fileKey)
             ->where('viewed_at', '>=', now()->subDays(30))
             ->selectRaw('DATE(viewed_at) as date, COUNT(*) as views')
             ->groupBy('date')
@@ -221,10 +221,10 @@ class PdfViewerService
             'month_views' => $monthViews,
             'views_by_role' => $viewsByRole,
             'views_by_day' => $viewsByDay,
-            'first_viewed' => DocumentView::where('file_key', $fileKey)
+            'first_viewed' => DocumentViewLog::where('file_key', $fileKey)
                 ->orderBy('viewed_at')
                 ->first()?->viewed_at?->format('M j, Y g:i A'),
-            'last_viewed' => DocumentView::where('file_key', $fileKey)
+            'last_viewed' => DocumentViewLog::where('file_key', $fileKey)
                 ->orderBy('viewed_at', 'desc')
                 ->first()?->viewed_at?->format('M j, Y g:i A'),
         ];
@@ -282,16 +282,16 @@ class PdfViewerService
     }
 
     /**
-     * Get file size from blockchain metadata
+     * Get File size from blockchain metadata
      */
-    public function getFileSize(string $fileKey): ?int
+    public function getfileSize(string $fileKey): ?int
     {
         try {
-            // Get file size from blockchain metadata using ProcurementDataService
-            $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey);
+            // Get File size from blockchain metadata using ProcurementDataService
+            $documentData = $this->procurementDataService->getDocumentDataByfileKey($fileKey);
 
             if ($documentData && isset($documentData['file_size'])) {
-                Log::info('Got file size from blockchain metadata', [
+                Log::info('Got File size from blockchain metadata', [
                     'file_key' => $fileKey,
                     'size' => $documentData['file_size'],
                 ]);
@@ -299,14 +299,14 @@ class PdfViewerService
                 return (int) $documentData['file_size'];
             }
 
-            Log::warning('Could not determine file size from blockchain', [
+            Log::warning('Could not determine File size from blockchain', [
                 'file_key' => $fileKey,
                 'has_document_data' => $documentData !== null,
             ]);
 
             return null;
         } catch (\Exception $e) {
-            Log::error('Failed to get file size from blockchain', [
+            Log::error('Failed to get File size from blockchain', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
             ]);

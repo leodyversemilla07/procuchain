@@ -8,10 +8,10 @@ use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
+use App\Services\BlockchainRpcClient;
 use App\Services\Dashboard\ModeAnalyzer;
 use App\Services\Dashboard\StatisticsCalculator;
 use App\Services\DashboardService;
-use App\Services\Manager;
 use App\Services\UserService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,12 +22,12 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Log::spy();
 
-    $this->manager = mock(Manager::class);
+    $this->BlockchainRpcClient = mock(BlockchainRpcClient::class);
     $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
     $this->procurementRepository = mock(ProcurementRepository::class);
 
     $this->service = new DashboardService(
-        $this->manager,
+        $this->BlockchainRpcClient,
         $this->procurementRepository,
         new StatisticsCalculator,
         new ModeAnalyzer,
@@ -647,7 +647,7 @@ describe('DashboardService', function () {
                 status: 'Active',
                 documentType: 'Contract',
                 fileKey: 'key1',
-                fileName: 'doc1.pdf',
+                filename: 'doc1.pdf',
                 fileSize: 1000,
                 mimeType: 'application/pdf',
                 hash: 'hash1',
@@ -664,7 +664,7 @@ describe('DashboardService', function () {
                 status: 'Active',
                 documentType: 'Contract',
                 fileKey: 'key2',
-                fileName: 'doc2.pdf',
+                filename: 'doc2.pdf',
                 fileSize: 1000,
                 mimeType: 'application/pdf',
                 hash: 'hash2',
@@ -681,7 +681,7 @@ describe('DashboardService', function () {
                 status: 'Active',
                 documentType: 'Bid',
                 fileKey: 'key3',
-                fileName: 'doc3.pdf',
+                filename: 'doc3.pdf',
                 fileSize: 1000,
                 mimeType: 'application/pdf',
                 hash: 'hash3',
@@ -720,7 +720,7 @@ describe('DashboardService', function () {
                 status: 'Active',
                 documentType: 'Contract',
                 fileKey: 'key1',
-                fileName: 'doc1.pdf',
+                filename: 'doc1.pdf',
                 fileSize: 1000,
                 mimeType: 'application/pdf',
                 hash: 'duplicate_hash',
@@ -737,7 +737,7 @@ describe('DashboardService', function () {
                 status: 'Active',
                 documentType: 'Contract',
                 fileKey: 'key2',
-                fileName: 'doc2.pdf',
+                filename: 'doc2.pdf',
                 fileSize: 1000,
                 mimeType: 'application/pdf',
                 hash: 'duplicate_hash', // Same hash
@@ -778,7 +778,7 @@ describe('DashboardService', function () {
                 status: 'Active',
                 documentType: 'Contract',
                 fileKey: 'key1',
-                fileName: 'doc1.pdf',
+                filename: 'doc1.pdf',
                 fileSize: 1000,
                 mimeType: 'application/pdf',
                 hash: 'valid_hash',
@@ -973,7 +973,7 @@ function seedDashboardDocument(DocumentData $document): ProcurementDocument
         'procurement_id' => $procurement->id,
         'document_type' => $document->documentType,
         'stage' => $document->stage,
-        'filename' => $document->fileName,
+        'filename' => $document->filename,
         'file_key' => $document->fileKey,
         'mime_type' => $document->mimeType,
         'file_size' => $document->fileSize,

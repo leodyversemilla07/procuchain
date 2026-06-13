@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\StreamEnums;
-use App\Services\Manager;
+use App\Enums\Stream;
+use App\Services\BlockchainRpcClient;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
  *
  * @see https://www.multichain.com/developers/smart-filters/
  */
-class SmartContractSetup extends Command
+class SmartFilterSetup extends Command
 {
     protected $signature = 'smartcontract:setup
                             {--check : Check deployment status only}
@@ -22,7 +22,7 @@ class SmartContractSetup extends Command
 
     protected $description = 'Deploy and manage MultiChain smart contracts (deploys by default)';
 
-    private Manager $multichain;
+    private BlockchainRpcClient $multichain;
 
     /**
      * Stream filters - validated when items are published to streams
@@ -32,26 +32,26 @@ class SmartContractSetup extends Command
      */
     private const STREAM_FILTERS = [
         // Primary validation filters (recommended for production)
-        ['name' => 'sf_metadata_validation', 'file' => 'stream_metadata_validation.js', 'stream' => 'METADATA'],
-        ['name' => 'sf_document_validation', 'file' => 'stream_document_validation.js', 'stream' => 'DOCUMENTS'],
-        ['name' => 'sf_status_validation', 'file' => 'stream_status_validation.js', 'stream' => 'STATUS'],
-        ['name' => 'sf_file_metadata_validation', 'file' => 'stream_file_metadata_validation.js', 'stream' => 'FILE_METADATA'],
-        ['name' => 'sf_event_validation', 'file' => 'stream_event_validation.js', 'stream' => 'EVENTS'],
-        ['name' => 'sf_corrections_validation', 'file' => 'corrections_filter_v1_standalone.js', 'stream' => 'CORRECTIONS'],
-        ['name' => 'sf_proc_corr_validation', 'file' => 'stream_procurement_corrections_validation.js', 'stream' => 'PROCUREMENTS_CORRECTIONS'],
-        ['name' => 'sf_archive_validation', 'file' => 'stream_archive_validation.js', 'stream' => 'ARCHIVE'],
-        ['name' => 'sf_file_data_validation', 'file' => 'stream_file_data_validation.js', 'stream' => 'FILE_DATA'],
-        ['name' => 'sf_file_chunks_validation', 'file' => 'stream_file_chunks_validation.js', 'stream' => 'FILE_CHUNKS'],
+        ['name' => 'sf_metadata_validation', 'File' => 'stream_metadata_validation.js', 'stream' => 'METADATA'],
+        ['name' => 'sf_document_validation', 'File' => 'stream_document_validation.js', 'stream' => 'DOCUMENTS'],
+        ['name' => 'sf_status_validation', 'File' => 'stream_status_validation.js', 'stream' => 'STATUS'],
+        ['name' => 'sf_FILE_METADATA_validation', 'File' => 'stream_FILE_METADATA_validation.js', 'stream' => 'FILE_METADATA'],
+        ['name' => 'sf_event_validation', 'File' => 'stream_event_validation.js', 'stream' => 'EVENTS'],
+        ['name' => 'sf_corrections_validation', 'File' => 'corrections_filter_v1_standalone.js', 'stream' => 'CORRECTIONS'],
+        ['name' => 'sf_proc_corr_validation', 'File' => 'stream_procurement_corrections_validation.js', 'stream' => 'PROCUREMENTS_CORRECTIONS'],
+        ['name' => 'sf_archive_validation', 'File' => 'stream_archive_validation.js', 'stream' => 'ARCHIVE'],
+        ['name' => 'sf_FILE_DATA_validation', 'File' => 'stream_FILE_DATA_validation.js', 'stream' => 'FILE_DATA'],
+        ['name' => 'sf_FILE_CHUNKS_validation', 'File' => 'stream_FILE_CHUNKS_validation.js', 'stream' => 'FILE_CHUNKS'],
     ];
 
     /**
      * Transaction filters - validated before transactions are accepted
      */
     private const TX_FILTERS = [
-        ['name' => 'tf_procurement_validation', 'file' => 'tx_procurement_validation.js'],
+        ['name' => 'tf_procurement_validation', 'File' => 'tx_procurement_validation.js'],
     ];
 
-    public function handle(Manager $multichain): int
+    public function handle(BlockchainRpcClient $multichain): int
     {
         $this->multichain = $multichain;
 
@@ -120,10 +120,10 @@ class SmartContractSetup extends Command
         $this->newLine();
         $this->comment('Stream Filters:');
         foreach (self::STREAM_FILTERS as $filter) {
-            $path = "{$filtersPath}/{$filter['file']}";
+            $path = "{$filtersPath}/{$filter['File']}";
 
             if (! File::exists($path)) {
-                $this->warn("  [FAIL] {$filter['name']}: file not found");
+                $this->warn("  [FAIL] {$filter['name']}: File not found");
 
                 continue;
             }
@@ -144,10 +144,10 @@ class SmartContractSetup extends Command
         $this->newLine();
         $this->comment('Transaction Filters:');
         foreach (self::TX_FILTERS as $filter) {
-            $path = "{$filtersPath}/{$filter['file']}";
+            $path = "{$filtersPath}/{$filter['File']}";
 
             if (! File::exists($path)) {
-                $this->warn("  [FAIL] {$filter['name']}: file not found");
+                $this->warn("  [FAIL] {$filter['name']}: File not found");
 
                 continue;
             }
@@ -188,7 +188,7 @@ class SmartContractSetup extends Command
             // Build stream map from STREAM_FILTERS constant
             $streamMap = [];
             foreach (self::STREAM_FILTERS as $filter) {
-                $streamEnum = constant(StreamEnums::class.'::'.$filter['stream']);
+                $streamEnum = constant(Stream::class.'::'.$filter['stream']);
                 $streamMap[$filter['name']] = $streamEnum->value;
             }
 

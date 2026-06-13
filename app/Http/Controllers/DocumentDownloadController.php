@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller as BaseController;
-use App\Models\DocumentView;
-use App\Services\AuditLogger;
+use App\Models\DocumentViewLog;
+use App\Services\AuditLogService;
 use App\Services\BlockchainStorageService;
 use App\Services\ProcurementDataService;
 use Exception;
@@ -16,12 +16,12 @@ class DocumentDownloadController extends BaseController
 {
     public function __construct(
         private ProcurementDataService $procurementDataService,
-        private BlockchainStorageService $fileStorageService,
-        private AuditLogger $auditLogger,
+        private BlockchainStorageService $BlockchainFileStorageService,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
-     * Securely download a file with authentication validation
+     * Securely download a File with authentication validation
      */
     public function downloadFile(Request $request, string $fileKey): Response
     {
@@ -30,31 +30,31 @@ class DocumentDownloadController extends BaseController
 
         try {
             if (empty($fileKey)) {
-                abort(400, 'Invalid file key');
+                abort(400, 'Invalid File key');
             }
 
-            $documentData = $this->validateFileAccess($fileKey);
+            $documentData = $this->validateBlockchainFileAccess($fileKey);
             if (! $documentData) {
                 abort(404, 'File not found or access denied');
             }
 
             // Pure blockchain architecture - get data_txid from blockchain metadata
             $dataTxid = $documentData['data_txid'] ?? null;
-            $fileName = $documentData['file_name'] ?? basename($fileKey);
+            $filename = $documentData['file_name'] ?? basename($fileKey);
 
-            Log::info('Retrieving file from blockchain', [
+            Log::info('Retrieving File from blockchain', [
                 'file_key' => $fileKey,
                 'data_txid' => $dataTxid,
                 'user_id' => $request->user()?->id,
             ]);
 
-            // Retrieve file from blockchain using data_txid
+            // Retrieve File from blockchain using data_txid
             try {
-                $fileData = $this->fileStorageService->retrieveFile($fileKey, $dataTxid);
+                $BlockchainFileData = $this->BlockchainFileStorageService->retrieveFile($fileKey, $dataTxid);
 
-                $this->recordDocumentView($request, $fileKey, $documentData);
+                $this->recordDocumentViewLog($request, $fileKey, $documentData);
 
-                $this->auditLogger->log(
+                $this->AuditLogService->log(
                     'document.downloaded',
                     'document',
                     $fileKey,
@@ -62,7 +62,7 @@ class DocumentDownloadController extends BaseController
                     ['pr_number' => $documentData['pr_number'] ?? null, 'document_type' => $documentData['document_type'] ?? null],
                 );
 
-                Log::info('Secure file access from blockchain', [
+                Log::info('Secure File access from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
                     'user_id' => $request->user()?->id,
@@ -70,16 +70,16 @@ class DocumentDownloadController extends BaseController
                     'ip' => $request->ip(),
                 ]);
 
-                return response($fileData['content'])
+                return response($BlockchainFileData['content'])
                     ->header('Content-Type', 'application/pdf')
-                    ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
+                    ->header('Content-Disposition', 'inline; filename="'.$filename.'"')
                     ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
                     ->header('Pragma', 'no-cache')
                     ->header('Expires', '0')
                     ->header('Accept-Ranges', 'bytes');
             } catch (Exception $blockchainError) {
                 report($blockchainError);
-                Log::error('Failed to retrieve file from blockchain', [
+                Log::error('Failed to retrieve File from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
                     'error' => $blockchainError->getMessage(),
@@ -88,7 +88,7 @@ class DocumentDownloadController extends BaseController
                 // Return placeholder PDF if blockchain retrieval fails
                 $placeholderPdf = $this->createPlaceholderPdf($fileKey, $documentData);
 
-                $this->recordDocumentView($request, $fileKey, $documentData);
+                $this->recordDocumentViewLog($request, $fileKey, $documentData);
 
                 return response($placeholderPdf)
                     ->header('Content-Type', 'application/pdf')
@@ -100,20 +100,20 @@ class DocumentDownloadController extends BaseController
             }
         } catch (Exception $e) {
             report($e);
-            Log::error('Secure file download failed', [
+            Log::error('Secure File download failed', [
                 'file_key' => $fileKey,
                 'error' => 'An error occurred downloading the document.',
                 'user_id' => $request->user()?->id ?? 'guest',
             ]);
 
-            abort(500, 'Unable to retrieve file');
+            abort(500, 'Unable to retrieve File');
         }
     }
 
     /**
-     * Validate that the file exists in our document stream and user has access
+     * Validate that the File exists in our document stream and user has access
      */
-    private function validateFileAccess(string $fileKey): ?array
+    private function validateBlockchainFileAccess(string $fileKey): ?array
     {
         try {
             $blockchainData = $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
@@ -122,15 +122,15 @@ class DocumentDownloadController extends BaseController
                 return $blockchainData;
             }
 
-            $documentView = DocumentView::where('file_key', $fileKey)->first();
+            $DocumentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
 
-            if ($documentView) {
+            if ($DocumentViewLog) {
                 $parts = explode('/', $fileKey);
 
                 return [
                     'pr_number' => $parts[0] ?? 'Unknown',
                     'procurement_title' => 'Document (Development Mode)',
-                    'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
+                    'document_type' => pathinfo($fileKey, PATHINFO_filename),
                     'stage' => $parts[1] ?? 'Unknown',
                     'file_key' => $fileKey,
                 ];
@@ -144,15 +144,15 @@ class DocumentDownloadController extends BaseController
                 'error' => 'An error occurred downloading the document.',
             ]);
 
-            $documentView = DocumentView::where('file_key', $fileKey)->first();
+            $DocumentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
 
-            if ($documentView) {
+            if ($DocumentViewLog) {
                 $parts = explode('/', $fileKey);
 
                 return [
                     'pr_number' => $parts[0] ?? 'Unknown',
                     'procurement_title' => 'Document (Development Mode)',
-                    'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
+                    'document_type' => pathinfo($fileKey, PATHINFO_filename),
                     'stage' => $parts[1] ?? 'Unknown',
                     'file_key' => $fileKey,
                 ];
@@ -165,10 +165,10 @@ class DocumentDownloadController extends BaseController
     /**
      * Record a document view in the database
      */
-    private function recordDocumentView(Request $request, string $fileKey, array $documentData): void
+    private function recordDocumentViewLog(Request $request, string $fileKey, array $documentData): void
     {
         try {
-            DocumentView::create([
+            DocumentViewLog::create([
                 'user_id' => $request->user()?->id,
                 'file_key' => $fileKey,
                 'pr_number' => $documentData['pr_number'] ?? '',
@@ -195,7 +195,7 @@ class DocumentDownloadController extends BaseController
     }
 
     /**
-     * Create a simple placeholder PDF for development when actual file is missing
+     * Create a simple placeholder PDF for development when actual File is missing
      */
     private function createPlaceholderPdf(string $fileKey, array $documentData): string
     {
@@ -211,7 +211,7 @@ class DocumentDownloadController extends BaseController
         $stream .= "0 -20 Td\n(Stage: {$stage}) Tj\n";
         $stream .= "0 -40 Td\n(File Key: {$fileKey}) Tj\n";
         $stream .= "0 -60 Td\n(This is a placeholder PDF for development purposes.) Tj\n";
-        $stream .= "0 -20 Td\n(The actual file is not available in the storage.) Tj\n";
+        $stream .= "0 -20 Td\n(The actual File is not available in the storage.) Tj\n";
         $stream .= "ET\n";
 
         $streamLength = strlen($stream);

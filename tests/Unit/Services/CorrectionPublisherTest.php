@@ -1,8 +1,8 @@
 <?php
 
 use App\Repositories\CorrectionRepository;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
-use App\Services\Manager;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -17,18 +17,18 @@ beforeEach(function () {
     Cache::swap(app('cache')->store('array'));
     Cache::flush();
 
-    $this->mockMultichain = Mockery::mock(Manager::class);
-    $this->mockFileStorageMultichain = Mockery::mock(Manager::class);
+    $this->mockMultichain = Mockery::mock(BlockchainRpcClient::class);
+    $this->mockBlockchainFileStorageMultichain = Mockery::mock(BlockchainRpcClient::class);
 
-    // Mock file storage multichain for uploadFile - BlockchainStorageService now uses publishmulti for atomic operations
-    $this->mockFileStorageMultichain->shouldReceive('publishmulti')
-        ->andReturn('file_data_txid');
+    // Mock File storage multichain for uploadFile - BlockchainStorageService now uses publishmulti for atomic operations
+    $this->mockBlockchainFileStorageMultichain->shouldReceive('publishmulti')
+        ->andReturn('FILE_DATA_txid');
 
-    $this->fileStorage = new BlockchainStorageService($this->mockFileStorageMultichain);
+    $this->BlockchainFileStorage = new BlockchainStorageService($this->mockBlockchainFileStorageMultichain);
     $this->repository = new CorrectionRepository($this->mockMultichain);
-    $this->publisher = new CorrectionPublisher($this->repository, $this->fileStorage);
+    $this->publisher = new CorrectionPublisher($this->repository, $this->BlockchainFileStorage);
 
-    // Setup fake storage for uploaded files
+    // Setup fake storage for uploaded BlockchainFiles
     Storage::fake('local');
 });
 
@@ -49,10 +49,10 @@ it('can publish a replacement correction', function () {
         )
         ->andReturn('correction_txid_123');
 
-    // Create a fake uploaded file with actual PDF-like content
-    // Using createWithContent to ensure the file has readable content
+    // Create a fake uploaded File with actual PDF-like content
+    // Using createWithContent to ensure the File has readable content
     $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
-    $file = UploadedFile::fake()->createWithContent('test.pdf', $pdfContent);
+    $File = UploadedFile::fake()->createWithContent('test.pdf', $pdfContent);
 
     // Test the publishReplacement method
     $result = $this->publisher->publishReplacement(
@@ -64,7 +64,7 @@ it('can publish a replacement correction', function () {
         reason: 'Test correction',
         correctedBy: 'Test User',
         userAddress: 'test_address',
-        correctedFile: $file,
+        correctedFile: $File,
         originalStage: '5'  // Preserve original stage
     );
 
@@ -115,11 +115,11 @@ it('preserves original stage when publishing replacement correction', function (
         ->once()
         ->andReturn('correction_txid_789');
 
-    // Create a fake uploaded file
+    // Create a fake uploaded File
     $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
-    $file = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
+    $File = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
 
-    // The fileStorage->uploadFile should be called with stage 5, not default 1
+    // The BlockchainFileStorage->uploadFile should be called with stage 5, not default 1
     // This is verified implicitly by the mock setup in BlockchainStorageService
 
     $result = $this->publisher->publish(
@@ -132,7 +132,7 @@ it('preserves original stage when publishing replacement correction', function (
         reason: 'Correcting document at stage 5',
         correctedBy: 'Test User',
         userAddress: 'test_address',
-        correctedFile: $file,
+        correctedFile: $File,
         originalStage: '5'  // Should use stage 5, not default stage 1
     );
 
@@ -148,9 +148,9 @@ it('uses default stage 1 when original stage is not provided', function () {
         ->once()
         ->andReturn('correction_txid_default');
 
-    // Create a fake uploaded file
+    // Create a fake uploaded File
     $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
-    $file = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
+    $File = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
 
     $result = $this->publisher->publish(
         prNumber: 'PR-2024-001-0001',
@@ -162,7 +162,7 @@ it('uses default stage 1 when original stage is not provided', function () {
         reason: 'Correcting document with default stage',
         correctedBy: 'Test User',
         userAddress: 'test_address',
-        correctedFile: $file,
+        correctedFile: $File,
         originalStage: null  // No stage provided, should default to 1
     );
 

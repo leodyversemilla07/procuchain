@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Jobs\Handlers;
 
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\Handlers\Concerns\HandlesTempFiles;
 use App\Services\Publishers\ProcurementOrchestrator;
 use Exception;
@@ -21,7 +21,7 @@ class DocumentUploadHandler
 
     public function execute(array $data): array
     {
-        $file = $this->reconstituteTempFile(
+        $File = $this->reconstituteTempFile(
             $data['temp_file_path'],
             $data['original_filename'],
             $data['mime_type'],
@@ -33,7 +33,7 @@ class DocumentUploadHandler
                 'procurement_title' => $data['procurement_title'],
                 'user_address' => $data['user_address'],
             ],
-            file: $file,
+            File: $File,
             documentData: [
                 'stage' => StageEnums::from($data['stage']),
                 'status' => $data['status'],
@@ -44,7 +44,7 @@ class DocumentUploadHandler
             ],
             statusData: [
                 'stage' => StageEnums::from($data['stage']),
-                'current_status' => StatusEnums::from($data['current_status']),
+                'current_status' => ProcurementStatus::from($data['current_status']),
                 'metadata' => [
                     'documents_uploaded' => 1,
                     'uploaded_at' => now()->toIso8601String(),

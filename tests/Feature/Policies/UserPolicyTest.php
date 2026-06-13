@@ -38,15 +38,15 @@ describe('UserPolicy', function () {
     });
 
     describe('view', function () {
-        it('allows users to view their own profile', function () {
+        it('allows users to view their own proFile', function () {
             expect($this->regularUser->can('view', $this->regularUser))->toBeTrue();
         });
 
-        it('allows admins to view any user profile', function () {
+        it('allows admins to view any user proFile', function () {
             expect($this->admin->can('view', $this->targetUser))->toBeTrue();
         });
 
-        it('denies regular users from viewing other profiles without permission', function () {
+        it('denies regular users from viewing other proBlockchainFiles without permission', function () {
             expect($this->regularUser->can('view', $this->targetUser))->toBeFalse();
         });
     });
@@ -62,7 +62,7 @@ describe('UserPolicy', function () {
     });
 
     describe('update', function () {
-        it('allows users to update their own profile', function () {
+        it('allows users to update their own proFile', function () {
             expect($this->regularUser->can('update', $this->regularUser))->toBeTrue();
         });
 
@@ -164,11 +164,11 @@ describe('UserPolicy', function () {
         });
 
         it('allows users with assign roles permission to assign roles to others', function () {
-            $roleManager = User::factory()->create();
-            $roleManager->givePermissionTo('assign roles');
+            $roleBlockchainRpcClient = User::factory()->create();
+            $roleBlockchainRpcClient->givePermissionTo('assign roles');
 
-            expect($roleManager->can('assignRoles', $this->targetUser))->toBeTrue();
-            expect($roleManager->can('assignRoles', $roleManager))->toBeFalse();
+            expect($roleBlockchainRpcClient->can('assignRoles', $this->targetUser))->toBeTrue();
+            expect($roleBlockchainRpcClient->can('assignRoles', $roleBlockchainRpcClient))->toBeFalse();
         });
     });
 

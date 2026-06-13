@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 
 /**
@@ -22,7 +22,7 @@ class ModeAwareDocumentValidationService
 {
     public function __construct(
         private readonly WorkflowDefinitionService $workflowDefinitionService,
-        private readonly StageDocumentRequirements $baseRequirements
+        private readonly StageDocumentRequirementsService $baseRequirements
     ) {}
 
     /**
@@ -32,7 +32,7 @@ class ModeAwareDocumentValidationService
         StageEnums $stage,
         DocumentTypeEnums $documentType,
         array $uploadedTypes,
-        ?ProcurementModeEnums $mode = null
+        ?ProcurementMode $mode = null
     ): array {
         // If no mode provided, fall back to base validation
         if ($mode === null) {
@@ -130,7 +130,7 @@ class ModeAwareDocumentValidationService
     public function validateStageCompletion(
         StageEnums $stage,
         array $uploadedDocumentEnums,
-        ?ProcurementModeEnums $mode = null
+        ?ProcurementMode $mode = null
     ): array {
         if ($mode === null) {
             return $this->validateBaseStageCompletion($stage, $uploadedDocumentEnums);
@@ -172,7 +172,7 @@ class ModeAwareDocumentValidationService
     public function calculateCompletionPercentage(
         StageEnums $stage,
         array $uploadedDocumentEnums,
-        ?ProcurementModeEnums $mode = null
+        ?ProcurementMode $mode = null
     ): float {
         if ($mode === null) {
             $requiredDocs = $this->baseRequirements->getRequiredDocuments($stage);
@@ -200,7 +200,7 @@ class ModeAwareDocumentValidationService
     /**
      * Get complete document guide for a stage with mode awareness
      */
-    public function getStageDocumentGuide(StageEnums $stage, ?ProcurementModeEnums $mode = null): array
+    public function getStageDocumentGuide(StageEnums $stage, ?ProcurementMode $mode = null): array
     {
         if ($mode === null) {
             return $this->getBaseStageDocumentGuide($stage);
@@ -214,7 +214,7 @@ class ModeAwareDocumentValidationService
      *
      * This is useful to show users how requirements differ based on mode.
      */
-    public function getRequirementsComparison(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getRequirementsComparison(StageEnums $stage, ProcurementMode $mode): array
     {
         $baseRequired = $this->baseRequirements->getRequiredDocuments($stage);
         $modeRequired = $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);

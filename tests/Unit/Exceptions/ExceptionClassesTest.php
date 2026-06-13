@@ -65,16 +65,16 @@ describe('DocumentUploadException', function () {
     it('creates exception with default message', function () {
         $exception = new DocumentUploadException;
         expect($exception->getMessage())->toBe('Document upload failed');
-        expect($exception->getFilename())->toBeNull();
+        expect($exception->getfilename())->toBeNull();
         expect($exception->getProcurementId())->toBeNull();
     });
 
     it('creates validation failed exception', function () {
-        $file = UploadedFile::fake()->create('test.exe', 1024);
-        $exception = DocumentUploadException::validationFailed($file, 'Invalid file type', 'PR-2025-000-0001');
+        $File = UploadedFile::fake()->create('test.exe', 1024);
+        $exception = DocumentUploadException::validationFailed($File, 'Invalid File type', 'PR-2025-000-0001');
 
         expect($exception->getMessage())->toContain('validation failed');
-        expect($exception->getFilename())->toBe('test.exe');
+        expect($exception->getfilename())->toBe('test.exe');
         expect($exception->getProcurementId())->toBe('PR-2025-000-0001');
         expect($exception->getContext())->toHaveKey('reason');
     });
@@ -82,13 +82,13 @@ describe('DocumentUploadException', function () {
     it('creates storage failed exception', function () {
         $exception = DocumentUploadException::storageFailed('document.pdf', 'Disk full', 'PR-2025-000-0001');
         expect($exception->getMessage())->toContain('Failed to store document');
-        expect($exception->getFilename())->toBe('document.pdf');
+        expect($exception->getfilename())->toBe('document.pdf');
     });
 
     it('creates blockchain storage failed exception', function () {
         $exception = DocumentUploadException::blockchainStorageFailed('document.pdf', 'Node offline');
         expect($exception->getMessage())->toContain('blockchain');
-        expect($exception->getFilename())->toBe('document.pdf');
+        expect($exception->getfilename())->toBe('document.pdf');
     });
 
     it('creates invalid document type exception', function () {
@@ -98,10 +98,10 @@ describe('DocumentUploadException', function () {
         expect($exception->getContext()['actual_type'])->toBe('docx');
     });
 
-    it('creates file size exceeded exception', function () {
+    it('creates File size exceeded exception', function () {
         $maxSize = 10 * 1024 * 1024; // 10MB
         $actualSize = 15 * 1024 * 1024; // 15MB
-        $exception = DocumentUploadException::fileSizeExceeded('large-file.pdf', $maxSize, $actualSize);
+        $exception = DocumentUploadException::fileSizeExceeded('large-File.pdf', $maxSize, $actualSize);
 
         expect($exception->getMessage())->toContain('exceeds maximum');
         expect($exception->getContext()['max_size'])->toBe($maxSize);

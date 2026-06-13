@@ -3,8 +3,8 @@
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\AccountLockoutService;
-use App\Services\AuditLogger;
-use App\Services\Manager;
+use App\Services\AuditLogService;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
@@ -52,10 +52,10 @@ it('non-admin is forbidden from viewing the audit log', function () {
 // ─── UserManagementController writes audit entries ───────────────────────────
 
 it('creating a user writes a user.created audit log entry', function () {
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('getNewAddress')->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
-    $managerMock->shouldReceive('validateAddress')->andReturn(['isvalid' => true]);
-    $this->app->instance(Manager::class, $managerMock);
+    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClientMock->shouldReceive('getNewAddress')->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
+    $BlockchainRpcClientMock->shouldReceive('validateAddress')->andReturn(['isvalid' => true]);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
 
     $this->actingAs($this->admin)
         ->post('/admin/users', [
@@ -178,10 +178,10 @@ it('resetting login attempts writes an account.attempts_reset audit log entry', 
     )->toBeTrue();
 });
 
-// ─── AuditLogger safety ───────────────────────────────────────────────────────
+// ─── AuditLogService safety ───────────────────────────────────────────────────────
 
-it('AuditLogger does not throw when the database write fails', function () {
-    $logger = $this->app->make(AuditLogger::class);
+it('AuditLogService does not throw when the database write fails', function () {
+    $logger = $this->app->make(AuditLogService::class);
 
     Schema::drop('audit_logs');
 

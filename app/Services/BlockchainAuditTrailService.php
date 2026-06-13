@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\StreamEnums;
-use App\Models\IntegrityAuditLog;
+use App\Enums\Stream;
+use App\Models\IntegrityViolationLog;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -20,30 +20,30 @@ class BlockchainAuditTrailService
      * Called immediately after recording a violation in integrity_audit_logs.
      * The blockchain record is the permanent, immutable backup.
      *
-     * @param  IntegrityAuditLog  $auditLog  The MySQL audit log entry
+     * @param  IntegrityViolationLog  $auditLog  The MySQL audit log entry
      * @param  array  $extraData  Additional context to include on-chain
      * @return string|null The blockchain transaction ID, or null on failure
      */
-    public function publishViolation(IntegrityAuditLog $auditLog, array $extraData = []): ?string
+    public function publishViolation(IntegrityViolationLog $auditLog, array $extraData = []): ?string
     {
         try {
-            $manager = app(Manager::class);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
             $chainPayload = $this->buildChainPayload($auditLog, $extraData);
 
             // Key: violation ID for unique lookup, also indexable by stream_key
             $key = (string) $auditLog->id;
 
-            $result = $manager->publish(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+            $result = $BlockchainRpcClient->publish(
+                Stream::INTEGRITY_VIOLATIONS->value,
                 $key,
                 ['json' => $chainPayload],
             );
 
             if ($result === null || $result === false) {
-                Log::error('BlockchainAuditTrail: failed to publish violation', [
+                Log::error('BlockchainAuditLog: failed to publish violation', [
                     'audit_log_id' => $auditLog->id,
-                    'error' => $manager->getClient()->errormessage(),
+                    'error' => $BlockchainRpcClient->getClient()->errormessage(),
                 ]);
 
                 return null;
@@ -57,7 +57,7 @@ class BlockchainAuditTrailService
                 $this->attachTxidToAuditLog($auditLog, $txid);
             }
 
-            Log::info('BlockchainAuditTrail: violation published to chain', [
+            Log::info('BlockchainAuditLog: violation published to chain', [
                 'audit_log_id' => $auditLog->id,
                 'txid' => $txid,
                 'violation_type' => $auditLog->violation_type,
@@ -66,7 +66,7 @@ class BlockchainAuditTrailService
 
             return $txid;
         } catch (Exception $e) {
-            Log::error('BlockchainAuditTrail: exception publishing violation', [
+            Log::error('BlockchainAuditLog: exception publishing violation', [
                 'audit_log_id' => $auditLog->id,
                 'error' => $e->getMessage(),
             ]);
@@ -82,14 +82,14 @@ class BlockchainAuditTrailService
      * Records that the recovery happened, creating a permanent
      * chain of: violation detected -> recovery performed.
      *
-     * @param  IntegrityAuditLog  $auditLog  The restored audit log entry
+     * @param  IntegrityViolationLog  $auditLog  The restored audit log entry
      * @param  array  $recoveryResult  What was restored
      * @return string|null The blockchain transaction ID
      */
-    public function publishRecovery(IntegrityAuditLog $auditLog, array $recoveryResult = []): ?string
+    public function publishRecovery(IntegrityViolationLog $auditLog, array $recoveryResult = []): ?string
     {
         try {
-            $manager = app(Manager::class);
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
             $chainPayload = [
                 'type' => 'recovery',
@@ -111,16 +111,16 @@ class BlockchainAuditTrailService
             // Key: recovery-<violation_id> for unique lookup
             $key = 'recovery-'.$auditLog->id;
 
-            $result = $manager->publish(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+            $result = $BlockchainRpcClient->publish(
+                Stream::INTEGRITY_VIOLATIONS->value,
                 $key,
                 ['json' => $chainPayload],
             );
 
             if ($result === null || $result === false) {
-                Log::error('BlockchainAuditTrail: failed to publish recovery', [
+                Log::error('BlockchainAuditLog: failed to publish recovery', [
                     'audit_log_id' => $auditLog->id,
-                    'error' => $manager->getClient()->errormessage(),
+                    'error' => $BlockchainRpcClient->getClient()->errormessage(),
                 ]);
 
                 return null;
@@ -128,14 +128,14 @@ class BlockchainAuditTrailService
 
             $txid = is_string($result) ? $result : ($result['txid'] ?? null);
 
-            Log::info('BlockchainAuditTrail: recovery published to chain', [
+            Log::info('BlockchainAuditLog: recovery published to chain', [
                 'audit_log_id' => $auditLog->id,
                 'recovery_txid' => $txid,
             ]);
 
             return $txid;
         } catch (Exception $e) {
-            Log::error('BlockchainAuditTrail: exception publishing recovery', [
+            Log::error('BlockchainAuditLog: exception publishing recovery', [
                 'audit_log_id' => $auditLog->id,
                 'error' => $e->getMessage(),
             ]);
@@ -156,15 +156,15 @@ class BlockchainAuditTrailService
     public function recoverAuditTrail(int $limit = 10000): array
     {
         try {
-            $manager = app(Manager::class);
-            $items = $manager->liststreamitems(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $BlockchainRpcClient->liststreamitems(
+                Stream::INTEGRITY_VIOLATIONS->value,
                 true,
                 $limit,
             );
 
             if (! is_array($items) || empty($items)) {
-                Log::info('BlockchainAuditTrail: no entries found on chain');
+                Log::info('BlockchainAuditLog: no entries found on chain');
 
                 return [];
             }
@@ -181,13 +181,13 @@ class BlockchainAuditTrailService
                 ];
             }
 
-            Log::info('BlockchainAuditTrail: recovered audit trail from chain', [
+            Log::info('BlockchainAuditLog: recovered audit trail from chain', [
                 'count' => count($entries),
             ]);
 
             return $entries;
         } catch (Exception $e) {
-            Log::error('BlockchainAuditTrail: failed to recover audit trail', [
+            Log::error('BlockchainAuditLog: failed to recover audit trail', [
                 'error' => $e->getMessage(),
             ]);
 
@@ -203,9 +203,9 @@ class BlockchainAuditTrailService
     public function recoverAuditTrailForKey(string $streamKey): array
     {
         try {
-            $manager = app(Manager::class);
-            $items = $manager->liststreamitems(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $BlockchainRpcClient->liststreamitems(
+                Stream::INTEGRITY_VIOLATIONS->value,
                 true,
                 10000,
             );
@@ -233,7 +233,7 @@ class BlockchainAuditTrailService
 
             return $entries;
         } catch (Exception $e) {
-            Log::error('BlockchainAuditTrail: failed to recover audit trail for key', [
+            Log::error('BlockchainAuditLog: failed to recover audit trail for key', [
                 'stream_key' => $streamKey,
                 'error' => $e->getMessage(),
             ]);
@@ -273,7 +273,7 @@ class BlockchainAuditTrailService
             // Check if this violation already exists in MySQL (dedup)
             $existingId = $data['violation_id'] ?? null;
 
-            if ($existingId && IntegrityAuditLog::where('id', $existingId)->exists()) {
+            if ($existingId && IntegrityViolationLog::where('id', $existingId)->exists()) {
                 $skipped++;
 
                 continue;
@@ -285,7 +285,7 @@ class BlockchainAuditTrailService
                 // This prevents restored audit logs from creating false positives.
                 $restoredStatus = 'superseded';
 
-                IntegrityAuditLog::create([
+                IntegrityViolationLog::create([
                     'stream' => $data['stream'] ?? '',
                     'stream_key' => $data['stream_key'] ?? '',
                     'txid' => $data['txid'] ?? null,
@@ -308,7 +308,7 @@ class BlockchainAuditTrailService
 
                 $imported++;
             } catch (Exception $e) {
-                Log::error('BlockchainAuditTrail: failed to import violation', [
+                Log::error('BlockchainAuditLog: failed to import violation', [
                     'key' => $entry['key'],
                     'error' => $e->getMessage(),
                 ]);
@@ -317,7 +317,7 @@ class BlockchainAuditTrailService
             }
         }
 
-        Log::info('BlockchainAuditTrail: restore to MySQL completed', [
+        Log::info('BlockchainAuditLog: restore to MySQL completed', [
             'imported' => $imported,
             'skipped' => $skipped,
             'errors' => $errors,
@@ -329,7 +329,7 @@ class BlockchainAuditTrailService
     /**
      * Build the JSON payload for the blockchain audit trail entry.
      */
-    private function buildChainPayload(IntegrityAuditLog $auditLog, array $extraData): array
+    private function buildChainPayload(IntegrityViolationLog $auditLog, array $extraData): array
     {
         return array_merge([
             'type' => 'violation',
@@ -357,7 +357,7 @@ class BlockchainAuditTrailService
     /**
      * Attach a blockchain txid to the MySQL audit log entry.
      */
-    private function attachTxidToAuditLog(IntegrityAuditLog $auditLog, string $txid): void
+    private function attachTxidToAuditLog(IntegrityViolationLog $auditLog, string $txid): void
     {
         try {
             // Store the blockchain txid in revision_lineage metadata
@@ -369,7 +369,7 @@ class BlockchainAuditTrailService
             $auditLog->update(['revision_lineage' => $lineage]);
         } catch (Exception $e) {
             // Non-critical — the violation is already on chain
-            Log::debug('BlockchainAuditTrail: could not attach txid to audit log', [
+            Log::debug('BlockchainAuditLog: could not attach txid to audit log', [
                 'audit_log_id' => $auditLog->id,
                 'txid' => $txid,
                 'error' => $e->getMessage(),
@@ -390,13 +390,13 @@ class BlockchainAuditTrailService
         }
 
         try {
-            $log = IntegrityAuditLog::find($violationId);
+            $log = IntegrityViolationLog::find($violationId);
 
             if ($log && $log->recovery_status === 'pending') {
                 $log->markRestored($data['recovery_result'] ?? [], publishToChain: false);
             }
         } catch (Exception $e) {
-            Log::debug('BlockchainAuditTrail: could not update recovery status', [
+            Log::debug('BlockchainAuditLog: could not update recovery status', [
                 'violation_id' => $violationId,
                 'error' => $e->getMessage(),
             ]);

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\DataTransferObjects\StatusData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\ProcurementStage;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 final readonly class StatusRepository
 {
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {}
 
     /**
@@ -27,7 +27,7 @@ final readonly class StatusRepository
     {
         try {
             $txid = $this->multichain->publish(
-                StreamEnums::STATUS->value,
+                Stream::STATUS->value,
                 $data->prNumber,
                 ['json' => $data->toBlockchainArray()]
             );

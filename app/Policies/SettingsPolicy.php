@@ -14,7 +14,7 @@ use App\Models\User;
  * Gate::define('manage-stage-document-config', [SettingsPolicy::class, 'manageStageDocumentConfig'])
  * Gate::define('manage-user-invitations', [SettingsPolicy::class, 'manageUserInvitations'])
  * Gate::define('view-workflow', [SettingsPolicy::class, 'viewWorkflow'])
- * Gate::define('manage-recoverable-data', [SettingsPolicy::class, 'manageRecoverableData'])
+ * Gate::define('manage-recoverable-data', [SettingsPolicy::class, 'BlockchainRpcClientecoverableData'])
  *
  * Usage in controllers:
  * $this->authorize('manage-settings');
@@ -23,7 +23,7 @@ class SettingsPolicy
 {
     /**
      * Determine whether the user can view settings pages.
-     * All authenticated users can view their own profile settings.
+     * All authenticated users can view their own proFile settings.
      * Role-specific settings require the 'view settings' permission.
      */
     public function view(User $user): bool
@@ -74,7 +74,7 @@ class SettingsPolicy
     /**
      * Determine whether the user can manage recoverable data.
      */
-    public function manageRecoverableData(User $user): bool
+    public function BlockchainRpcClientecoverableData(User $user): bool
     {
         return $user->can('manage settings');
     }

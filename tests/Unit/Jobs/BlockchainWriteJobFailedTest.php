@@ -58,7 +58,7 @@ describe('BlockchainWriteJob failed() method', function () {
             ->and($cached['error'])->toBe('Node unreachable');
     });
 
-    it('cleans up upload temp file only after permanent failure', function () {
+    it('cleans up upload temp File only after permanent failure', function () {
         $jobId = 'job-uuid-cleanup-final-failure';
         Storage::put('temp/final-failure.pdf', 'content');
 

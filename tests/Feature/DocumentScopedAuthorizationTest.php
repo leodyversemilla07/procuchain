@@ -36,11 +36,11 @@ beforeEach(function () {
     ])->assignRole('bac_secretariat');
 });
 
-it('forbids bac secretariat from verifying inaccessible documents by file key', function () {
-    bindLockedDocumentAccess('locked-file.pdf', 'PR-2025-998-0002');
+it('forbids bac secretariat from verifying inaccessible documents by File key', function () {
+    bindLockedDocumentAccess('locked-File.pdf', 'PR-2025-998-0002');
 
     $this->actingAs($this->secretariat)
-        ->post(route('documents.verify', ['fileKey' => 'locked-file.pdf']))
+        ->post(route('documents.verify', ['fileKey' => 'locked-File.pdf']))
         ->assertForbidden();
 });
 
@@ -63,7 +63,7 @@ it('forbids bac secretariat from correcting inaccessible documents by txid', fun
 function bindLockedDocumentAccess(string $reference, string $prNumber, bool $isTxid = false): void
 {
     $dataService = Mockery::mock(ProcurementDataService::class);
-    $dataService->shouldReceive('getDocumentDataByFileKey')
+    $dataService->shouldReceive('getDocumentDataByfileKey')
         ->zeroOrMoreTimes()
         ->andReturn($isTxid ? null : lockedDocumentFixture($reference, $prNumber)->toBlockchainArray());
     $dataService->shouldReceive('fetchStatusItems')
@@ -75,13 +75,13 @@ function bindLockedDocumentAccess(string $reference, string $prNumber, bool $isT
     app()->instance(ProcurementDataService::class, $dataService);
 
     $documentRepository = Mockery::mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByFileKey')
+    $documentRepository->shouldReceive('findByfileKey')
         ->once()
         ->with($reference)
         ->andReturn($isTxid ? null : lockedDocumentFixture($reference, $prNumber));
     $documentRepository->shouldReceive('findByTxid')
         ->zeroOrMoreTimes()
-        ->andReturn($isTxid ? lockedDocumentFixture('locked-file.pdf', $prNumber, $reference) : null);
+        ->andReturn($isTxid ? lockedDocumentFixture('locked-File.pdf', $prNumber, $reference) : null);
     app()->instance(DocumentRepository::class, $documentRepository);
 
     $procurementRepository = Mockery::mock(ProcurementRepository::class);
@@ -102,7 +102,7 @@ function lockedDocumentFixture(string $fileKey, string $prNumber, string $txid =
         status: 'draft',
         documentType: 'test_document',
         fileKey: $fileKey,
-        fileName: 'test.pdf',
+        filename: 'test.pdf',
         fileSize: 1000,
         mimeType: 'application/pdf',
         hash: 'hash',

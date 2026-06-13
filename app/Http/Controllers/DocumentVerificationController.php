@@ -121,23 +121,23 @@ final class DocumentVerificationController extends Controller
     }
 
     /**
-     * Verify a single document by file key
+     * Verify a single document by File key
      *
      * POST /documents/{fileKey}/verify
      */
     public function verifyDocument(VerifySingleDocumentRequest $request, string $fileKey): JsonResponse
     {
-        // Decode the file key (may be URL encoded)
-        $decodedFileKey = urldecode($fileKey);
-        $this->authorize('view-document', $decodedFileKey);
+        // Decode the File key (may be URL encoded)
+        $decodedfileKey = urldecode($fileKey);
+        $this->authorize('view-document', $decodedfileKey);
 
         Log::info('Verifying single document', [
-            'file_key' => $decodedFileKey,
+            'file_key' => $decodedfileKey,
             'user_id' => $request->user()->id,
             'ip' => $request->ip(),
         ]);
 
-        $result = $this->verificationService->verifySingleDocument($decodedFileKey);
+        $result = $this->verificationService->verifySingleDocument($decodedfileKey);
 
         return response()->json([
             'success' => $result->isValid,

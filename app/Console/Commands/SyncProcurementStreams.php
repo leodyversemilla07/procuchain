@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Syncs procurement blockchain streams to normalized read-model tables.
  */
-class BlockchainSync extends Command
+class SyncProcurementStreams extends Command
 {
     protected $signature = 'blockchain:sync
         {--stream= : Sync only a specific stream by name}

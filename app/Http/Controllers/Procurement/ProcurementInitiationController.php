@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Procurement;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller as BaseController;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
@@ -15,7 +15,7 @@ use App\Jobs\BlockchainWriteJob;
 use App\Models\Procurement;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\Procurement\ProcurementStageCompletionService;
 use App\Services\Procurement\ProcurementStagePageService;
 use App\Services\Procurement\ProcurementStageUploadService;
@@ -35,7 +35,7 @@ class ProcurementInitiationController extends BaseController
         private readonly ProcurementStagePageService $stagePageService,
         private readonly ProcurementStageUploadService $stageUploadService,
         private readonly ProcurementStageCompletionService $stageCompletionService,
-        private readonly AuditLogger $auditLogger,
+        private readonly AuditLogService $AuditLogService,
     ) {}
 
     public function show(?string $id = null): Response
@@ -79,14 +79,14 @@ class ProcurementInitiationController extends BaseController
         }
 
         return Inertia::render('bac-secretariat/procurement-initiation', [
-            'categories' => collect(ProcurementCategoryEnums::cases())
+            'categories' => collect(ProcurementCategory::cases())
                 ->map(fn ($category) => [
                     'value' => $category->value,
                     'label' => $category->getDisplayName(),
                     'description' => $category->getDescription(),
                 ])
                 ->toArray(),
-            'procurementModes' => collect(ProcurementModeEnums::cases())
+            'procurementModes' => collect(ProcurementMode::cases())
                 ->map(fn ($case) => [
                     'value' => $case->value,
                     'label' => $case->getDisplayName(),
@@ -96,7 +96,7 @@ class ProcurementInitiationController extends BaseController
                     'requires_bac_resolution' => $case->requiresBACResolution(),
                 ])
                 ->values(),
-            'negotiatedProcurementTypes' => collect(ProcurementModeEnums::negotiatedProcurementSubTypes())
+            'negotiatedProcurementTypes' => collect(ProcurementMode::negotiatedProcurementSubTypes())
                 ->map(fn ($label, $value) => [
                     'value' => $value,
                     'label' => $label,
@@ -157,7 +157,7 @@ class ProcurementInitiationController extends BaseController
             'pr_number' => $prNumber,
         ], $jobId, $user->id);
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'procurement.initiated',
             'procurement',
             $prNumber,
@@ -185,7 +185,7 @@ class ProcurementInitiationController extends BaseController
         $user = $request->user();
 
         try {
-            $file = $request->file('document_file');
+            $File = $request->File('document_File');
             $documentTypeValue = $request->input('document_type');
             $documentType = DocumentTypeEnums::tryFrom($documentTypeValue);
 
@@ -196,14 +196,14 @@ class ProcurementInitiationController extends BaseController
             $response = $this->stageUploadService->queueDocumentUpload(
                 $pr_number,
                 $stage,
-                $file,
+                $File,
                 $documentType,
                 $request->input('description'),
                 $request->input('metadata', []),
                 $user,
             );
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'procurement.document_uploaded',
                 'procurement',
                 $pr_number,
@@ -276,7 +276,7 @@ class ProcurementInitiationController extends BaseController
         try {
             $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'procurement.stage_completed',
                 'procurement',
                 $pr_number,

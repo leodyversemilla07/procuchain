@@ -17,7 +17,7 @@ enum DocumentTypeEnums: string
     // Stage 1: Procurement Initiation (10 documents)
     case PURCHASE_REQUEST = 'purchase_request';
     case PPMP = 'ppmp';
-    case APP = 'app';
+    case ANNUAL_INVESTMENT_PLAN = 'app';
     case CERTIFICATE_OF_FUNDS = 'certificate_of_funds';
     case APPROVED_BUDGET_CONTRACT = 'approved_budget_contract';
     case TECHNICAL_SPECIFICATIONS = 'technical_specifications';
@@ -675,7 +675,7 @@ enum DocumentTypeEnums: string
     /**
      * Check if document is mandatory for specific procurement category
      */
-    public function isMandatoryForCategory(ProcurementCategoryEnums $category): bool
+    public function isMandatoryForCategory(ProcurementCategory $category): bool
     {
         return match ($this) {
             self::PURCHASE_REQUEST,
@@ -683,11 +683,11 @@ enum DocumentTypeEnums: string
             self::PPMP_ENTRY => true,
 
             self::TECHNICAL_SPECIFICATIONS => in_array($category, [
-                ProcurementCategoryEnums::GOODS,
-                ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS,
+                ProcurementCategory::GOODS,
+                ProcurementCategory::INFRASTRUCTURE_PROJECTS,
             ]),
 
-            self::TERMS_OF_REFERENCE => $category === ProcurementCategoryEnums::CONSULTING_SERVICES,
+            self::TERMS_OF_REFERENCE => $category === ProcurementCategory::CONSULTING_SERVICES,
 
             default => false,
         };
@@ -696,15 +696,15 @@ enum DocumentTypeEnums: string
     /**
      * Check if document is applicable for specific category
      */
-    public function isApplicableForCategory(ProcurementCategoryEnums $category): bool
+    public function isApplicableForCategory(ProcurementCategory $category): bool
     {
         return match ($this) {
             self::TECHNICAL_SPECIFICATIONS => in_array($category, [
-                ProcurementCategoryEnums::GOODS,
-                ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS,
+                ProcurementCategory::GOODS,
+                ProcurementCategory::INFRASTRUCTURE_PROJECTS,
             ]),
 
-            self::TERMS_OF_REFERENCE => $category === ProcurementCategoryEnums::CONSULTING_SERVICES,
+            self::TERMS_OF_REFERENCE => $category === ProcurementCategory::CONSULTING_SERVICES,
 
             // All other documents apply to all categories
             default => true,
@@ -716,7 +716,7 @@ enum DocumentTypeEnums: string
      *
      * @return array<self>
      */
-    public static function getMandatoryForCategory(ProcurementCategoryEnums $category): array
+    public static function getMandatoryForCategory(ProcurementCategory $category): array
     {
         return array_filter(
             self::cases(),
@@ -729,7 +729,7 @@ enum DocumentTypeEnums: string
      *
      * @return array<self>
      */
-    public static function getApplicableForCategory(ProcurementCategoryEnums $category): array
+    public static function getApplicableForCategory(ProcurementCategory $category): array
     {
         return array_filter(
             self::cases(),
@@ -773,7 +773,7 @@ enum DocumentTypeEnums: string
         }
 
         $categories = [];
-        foreach (ProcurementCategoryEnums::cases() as $category) {
+        foreach (ProcurementCategory::cases() as $category) {
             if ($this->isMandatoryForCategory($category)) {
                 $categories[] = $category->getDisplayName();
             }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Services\BlockchainMonitoringService;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\SeedsPermissions;
 
@@ -63,7 +63,7 @@ describe('Admin Dashboard Browser Flow', function () {
 
 function browserBindBlockchainExplorerMocks(): void
 {
-    $multichain = mock(Manager::class);
+    $multichain = mock(BlockchainRpcClient::class);
     $multichain->shouldReceive('getblockchaininfo')
         ->zeroOrMoreTimes()
         ->andReturn([
@@ -121,7 +121,7 @@ function browserBindBlockchainExplorerMocks(): void
             'checked_at' => now()->toIso8601String(),
         ]);
 
-    app()->instance(Manager::class, $multichain);
+    app()->instance(BlockchainRpcClient::class, $multichain);
     app()->instance(BlockchainMonitoringService::class, $healthService);
 }
 

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 
 return [
     // ===== Universal Actions (All Modes) =====
@@ -12,8 +12,8 @@ return [
         'condition' => [
             'stage' => StageEnums::PROCUREMENT_INITIATION,
             'status' => [
-                StatusEnums::PROCUREMENT_INITIATED,
-                StatusEnums::PROCUREMENT_SUBMITTED, // SVP mode entry status
+                ProcurementStatus::PROCUREMENT_INITIATED,
+                ProcurementStatus::PROCUREMENT_SUBMITTED, // SVP mode entry status
             ],
         ],
         'type' => 'upload',
@@ -29,7 +29,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
-            'status' => StatusEnums::PROCUREMENT_SUBMITTED,
+            'status' => ProcurementStatus::PROCUREMENT_SUBMITTED,
         ],
         'type' => 'dialog',
         'label' => 'Record Pre-Procurement Conference Decision',
@@ -42,7 +42,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
+            'status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD,
         ],
         'type' => 'upload',
         'label' => 'Upload Pre-Procurement Conference Documents',
@@ -55,7 +55,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+            'status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Bidding Documents',
@@ -68,7 +68,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BIDDING_DOCUMENTS,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,  // Entry status after stage transition
+            'status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED,  // Entry status after stage transition
         ],
         'type' => 'upload',
         'label' => 'Upload Bidding Documents',
@@ -81,7 +81,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PRE_BID_CONFERENCE,
-            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+            'status' => ProcurementStatus::BIDDING_DOCUMENTS_PUBLISHED,
         ],
         'type' => 'dialog',
         'label' => 'Record Pre-Bid Conference Decision',
@@ -92,7 +92,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PRE_BID_CONFERENCE,
-            'status' => StatusEnums::PRE_BID_CONFERENCE_HELD,
+            'status' => ProcurementStatus::PRE_BID_CONFERENCE_HELD,
         ],
         'type' => 'upload',
         'label' => 'Upload Pre-Bid Conference Documents',
@@ -106,8 +106,8 @@ return [
         'condition' => [
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
             'status' => [
-                StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
-                StatusEnums::PRE_BID_CONFERENCE_SKIPPED,
+                ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED,
+                ProcurementStatus::PRE_BID_CONFERENCE_SKIPPED,
             ],
         ],
         'type' => 'dialog',
@@ -119,7 +119,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
+            'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING,
         ],
         'type' => 'upload',
         'label' => 'Upload Supplemental Bid Bulletin Documents',
@@ -132,7 +132,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED,
         ],
         'type' => 'repeat',
         'label' => 'Issue Another Bulletin',
@@ -147,7 +147,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BID_OPENING,
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED,
         ],
         'type' => 'repeat',
         'label' => 'Issue Another Bulletin (Before Bid Opening)',
@@ -159,7 +159,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BID_OPENING,
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED,
         ],
         'type' => 'upload',
         'label' => 'Upload Bid Opening Documents',
@@ -172,7 +172,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BID_OPENING,
-            'status' => StatusEnums::BIDS_OPENED,
+            'status' => ProcurementStatus::BIDS_OPENED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Bid Evaluation',
@@ -185,7 +185,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BID_EVALUATION,
-            'status' => StatusEnums::BIDS_OPENED,
+            'status' => ProcurementStatus::BIDS_OPENED,
         ],
         'type' => 'upload',
         'label' => 'Upload Bid Evaluation Documents',
@@ -198,7 +198,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BID_EVALUATION,
-            'status' => StatusEnums::BIDS_EVALUATED,
+            'status' => ProcurementStatus::BIDS_EVALUATED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Post-Qualification',
@@ -211,7 +211,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::POST_QUALIFICATION,
-            'status' => StatusEnums::BIDS_EVALUATED,
+            'status' => ProcurementStatus::BIDS_EVALUATED,
         ],
         'type' => 'upload',
         'label' => 'Upload Post-Qualification Report',
@@ -224,7 +224,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::POST_QUALIFICATION,
-            'status' => StatusEnums::POST_QUALIFICATION_VERIFIED,
+            'status' => ProcurementStatus::POST_QUALIFICATION_VERIFIED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to BAC Resolution',
@@ -238,8 +238,8 @@ return [
         'condition' => [
             'stage' => StageEnums::BAC_RESOLUTION,
             'status' => [
-                StatusEnums::POST_QUALIFICATION_VERIFIED,  // Competitive Bidding
-                StatusEnums::ABSTRACT_PREPARED,            // SVP and alternative modes
+                ProcurementStatus::POST_QUALIFICATION_VERIFIED,  // Competitive Bidding
+                ProcurementStatus::ABSTRACT_PREPARED,            // SVP and alternative modes
             ],
         ],
         'type' => 'upload',
@@ -254,7 +254,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::BAC_RESOLUTION,
-            'status' => StatusEnums::RESOLUTION_RECORDED,
+            'status' => ProcurementStatus::RESOLUTION_RECORDED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Notice of Award',
@@ -271,8 +271,8 @@ return [
         'condition' => [
             'stage' => StageEnums::NOTICE_OF_AWARD,
             'status' => [
-                StatusEnums::RESOLUTION_RECORDED,
-                StatusEnums::PROCUREMENT_SUBMITTED,  // DC mode edge case
+                ProcurementStatus::RESOLUTION_RECORDED,
+                ProcurementStatus::PROCUREMENT_SUBMITTED,  // DC mode edge case
             ],
         ],
         'type' => 'upload',
@@ -286,7 +286,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::NOTICE_OF_AWARD,
-            'status' => StatusEnums::AWARDED,
+            'status' => ProcurementStatus::AWARDED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Performance Bond & Contract',
@@ -299,7 +299,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
-            'status' => StatusEnums::AWARDED,
+            'status' => ProcurementStatus::AWARDED,
         ],
         'type' => 'upload',
         'label' => 'Upload Performance Bond, Contract, and PO',
@@ -312,7 +312,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
-            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+            'status' => ProcurementStatus::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Notice to Proceed',
@@ -325,7 +325,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::NOTICE_TO_PROCEED,
-            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+            'status' => ProcurementStatus::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
         ],
         'type' => 'upload',
         'label' => 'Upload Notice to Proceed',
@@ -338,7 +338,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::NOTICE_TO_PROCEED,
-            'status' => StatusEnums::NTP_RECORDED,
+            'status' => ProcurementStatus::NTP_RECORDED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Monitoring',
@@ -351,7 +351,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::MONITORING,
-            'status' => StatusEnums::NTP_RECORDED,
+            'status' => ProcurementStatus::NTP_RECORDED,
         ],
         'type' => 'upload',
         'label' => 'Upload Monitoring Documents',
@@ -364,7 +364,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::MONITORING,
-            'status' => StatusEnums::MONITORING_COMPLETED,
+            'status' => ProcurementStatus::MONITORING_COMPLETED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Completion',
@@ -378,7 +378,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::COMPLETION,
-            'status' => StatusEnums::MONITORING_COMPLETED,  // Entry status from previous stage (MONITORING always precedes COMPLETION)
+            'status' => ProcurementStatus::MONITORING_COMPLETED,  // Entry status from previous stage (MONITORING always precedes COMPLETION)
         ],
         'type' => 'upload',
         'label' => 'Upload Certificate of Completion',
@@ -392,7 +392,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::REQUEST_FOR_QUOTATION,
-            'status' => StatusEnums::PROCUREMENT_SUBMITTED, // Entry status when transitioning to RFQ stage
+            'status' => ProcurementStatus::PROCUREMENT_SUBMITTED, // Entry status when transitioning to RFQ stage
         ],
         'type' => 'upload',
         'label' => 'Upload Request for Quotation',
@@ -405,7 +405,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::REQUEST_FOR_QUOTATION,
-            'status' => StatusEnums::QUOTATIONS_RECEIVED,
+            'status' => ProcurementStatus::QUOTATIONS_RECEIVED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to Abstract of Quotations',
@@ -418,7 +418,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS,
-            'status' => StatusEnums::QUOTATIONS_RECEIVED,
+            'status' => ProcurementStatus::QUOTATIONS_RECEIVED,
         ],
         'type' => 'upload',
         'label' => 'Upload Abstract of Quotations',
@@ -431,7 +431,7 @@ return [
     [
         'condition' => [
             'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS,
-            'status' => StatusEnums::ABSTRACT_PREPARED,
+            'status' => ProcurementStatus::ABSTRACT_PREPARED,
         ],
         'type' => 'proceed',
         'label' => 'Proceed to BAC Resolution',

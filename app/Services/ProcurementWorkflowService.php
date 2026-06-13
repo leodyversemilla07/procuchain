@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
 
@@ -23,7 +23,7 @@ class ProcurementWorkflowService
      *
      * @return array<StageEnums>
      */
-    public function getStagesForMode(ProcurementModeEnums $mode): array
+    public function getStagesForMode(ProcurementMode $mode): array
     {
         return $this->workflowDefinitionService->getStagesForMode($mode);
     }
@@ -33,7 +33,7 @@ class ProcurementWorkflowService
      *
      * @return array<StageEnums>
      */
-    public function getOptionalStagesForMode(ProcurementModeEnums $mode): array
+    public function getOptionalStagesForMode(ProcurementMode $mode): array
     {
         return $this->workflowDefinitionService->getOptionalStagesForMode($mode);
     }
@@ -41,7 +41,7 @@ class ProcurementWorkflowService
     /**
      * Check if a stage exists in the workflow for a mode.
      */
-    public function isStageInWorkflow(StageEnums $stage, ProcurementModeEnums $mode): bool
+    public function isStageInWorkflow(StageEnums $stage, ProcurementMode $mode): bool
     {
         return $this->workflowDefinitionService->isStageInWorkflow($stage, $mode);
     }
@@ -49,7 +49,7 @@ class ProcurementWorkflowService
     /**
      * Check if a stage is optional for a mode.
      */
-    public function isStageOptional(StageEnums $stage, ProcurementModeEnums $mode): bool
+    public function isStageOptional(StageEnums $stage, ProcurementMode $mode): bool
     {
         return $this->workflowDefinitionService->isStageOptional($stage, $mode);
     }
@@ -59,7 +59,7 @@ class ProcurementWorkflowService
      *
      * @return array<StageEnums>
      */
-    public function getNextStagesForMode(StageEnums $currentStage, ProcurementModeEnums $mode): array
+    public function getNextStagesForMode(StageEnums $currentStage, ProcurementMode $mode): array
     {
         $stages = $this->getStagesForMode($mode);
         $optionalStages = $this->getOptionalStagesForMode($mode);
@@ -90,7 +90,7 @@ class ProcurementWorkflowService
     /**
      * Get stage count for a specific mode.
      */
-    public function getStageCountForMode(ProcurementModeEnums $mode): int
+    public function getStageCountForMode(ProcurementMode $mode): int
     {
         return count($this->getStagesForMode($mode));
     }
@@ -98,7 +98,7 @@ class ProcurementWorkflowService
     /**
      * Get required stage count (excluding optional) for a mode.
      */
-    public function getRequiredStageCountForMode(ProcurementModeEnums $mode): int
+    public function getRequiredStageCountForMode(ProcurementMode $mode): int
     {
         $total = count($this->getStagesForMode($mode));
         $optional = count($this->getOptionalStagesForMode($mode));
@@ -109,7 +109,7 @@ class ProcurementWorkflowService
     /**
      * Get complete workflow configuration for a mode.
      */
-    public function getWorkflowConfig(ProcurementModeEnums $mode): array
+    public function getWorkflowConfig(ProcurementMode $mode): array
     {
         $stages = $this->getStagesForMode($mode);
         $optionalStages = $this->getOptionalStagesForMode($mode);
@@ -142,7 +142,7 @@ class ProcurementWorkflowService
     {
         $configs = [];
 
-        foreach (ProcurementModeEnums::cases() as $mode) {
+        foreach (ProcurementMode::cases() as $mode) {
             $configs[$mode->value] = $this->getWorkflowConfig($mode);
         }
 
@@ -152,7 +152,7 @@ class ProcurementWorkflowService
     /**
      * Clear cache for a specific mode or all modes.
      */
-    public function clearCache(?ProcurementModeEnums $mode = null): void
+    public function clearCache(?ProcurementMode $mode = null): void
     {
         $this->workflowDefinitionService->clearCache($mode);
     }
@@ -164,7 +164,7 @@ class ProcurementWorkflowService
      * @param  array<StageEnums|string>  $optionalStages
      */
     public function saveWorkflowConfig(
-        ProcurementModeEnums $mode,
+        ProcurementMode $mode,
         array $stages,
         array $optionalStages = [],
         ?int $updatedBy = null
@@ -195,7 +195,7 @@ class ProcurementWorkflowService
     /**
      * Reset workflow configuration to defaults for a mode.
      */
-    public function resetToDefaults(ProcurementModeEnums $mode, ?int $updatedBy = null): ProcurementWorkflowConfig
+    public function resetToDefaults(ProcurementMode $mode, ?int $updatedBy = null): ProcurementWorkflowConfig
     {
         // Get defaults from StageEnums
         $defaultStages = StageEnums::getStagesForMode($mode);

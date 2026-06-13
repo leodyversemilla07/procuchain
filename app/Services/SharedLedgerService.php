@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DataTransferObjects\LedgerEntryData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Libraries\MultiChain\Client;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -25,21 +25,21 @@ class SharedLedgerService
 {
     /** Streams to include in the shared ledger. */
     private const LEDGER_STREAMS = [
-        StreamEnums::METADATA->value,
-        StreamEnums::STATUS->value,
-        StreamEnums::DOCUMENTS->value,
-        StreamEnums::CORRECTIONS->value,
-        StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-        StreamEnums::ARCHIVE->value,
-        StreamEnums::EVENTS->value,
-        StreamEnums::FILE_METADATA->value,
+        Stream::METADATA->value,
+        Stream::STATUS->value,
+        Stream::DOCUMENTS->value,
+        Stream::CORRECTIONS->value,
+        Stream::PROCUREMENTS_CORRECTIONS->value,
+        Stream::ARCHIVE->value,
+        Stream::EVENTS->value,
+        Stream::FILE_METADATA->value,
     ];
 
     /**
      * Stream used for purge/resync detection (also included in LEDGER_STREAMS
-     * for full visibility — file upload metadata, node purge/resync events).
+     * for full visibility — File upload metadata, node purge/resync events).
      */
-    private const PURGE_CHECK_STREAM = StreamEnums::FILE_METADATA->value;
+    private const PURGE_CHECK_STREAM = Stream::FILE_METADATA->value;
 
     /** Items per page. */
     private const PER_PAGE = 50;
@@ -48,7 +48,7 @@ class SharedLedgerService
     public ?array $nodePurgeState = null;
 
     public function __construct(
-        private Manager $multichain,
+        private BlockchainRpcClient $multichain,
     ) {}
 
     /**
@@ -323,7 +323,7 @@ class SharedLedgerService
                 'connection_error_message' => null,
             ];
 
-            // Node operation events from file.metadata are now included via LEDGER_STREAMS
+            // Node operation events from File.metadata are now included via LEDGER_STREAMS
 
             Log::info('SharedLedger: Node data loaded', [
                 'node' => $nodeId,
@@ -357,7 +357,7 @@ class SharedLedgerService
      *
      * After a real SSM purge, the target node has 0 blocks and cannot
      * read on-chain events. The primary node still has all data.
-     * We check the file.metadata stream for purge/resync event keys.
+     * We check the File.metadata stream for purge/resync event keys.
      *
      * @return array{is_purged: bool, was_explicitly_purged: bool, partially_purged: bool, unsubscribed_streams: string[], purge_reason: string|null, purge_timestamp: int|null, connection_error: bool, connection_error_message: string|null}
      */
@@ -375,7 +375,7 @@ class SharedLedgerService
         ];
 
         try {
-            // Use the primary (default) Manager client — it always has data
+            // Use the primary (default) BlockchainRpcClient client — it always has data
             $purgeKey = 'node_'.$nodeId.'_full_purge';
             $purgeItems = $this->multichain->liststreamkeyitems(
                 self::PURGE_CHECK_STREAM,
@@ -500,7 +500,7 @@ class SharedLedgerService
     }
 
     /**
-     * Fetch entries using the default Manager (singleton) connection.
+     * Fetch entries using the default BlockchainRpcClient (singleton) connection.
      *
      * @return LedgerEntryData[]
      */
@@ -540,7 +540,7 @@ class SharedLedgerService
             }
         }
 
-        // Node operation events from file.metadata are now included via LEDGER_STREAMS
+        // Node operation events from File.metadata are now included via LEDGER_STREAMS
 
         return $entries;
     }
@@ -586,7 +586,7 @@ class SharedLedgerService
             }
         }
 
-        // Node operation events from file.metadata are now included via LEDGER_STREAMS
+        // Node operation events from File.metadata are now included via LEDGER_STREAMS
 
         return $entries;
     }
@@ -732,9 +732,9 @@ class SharedLedgerService
             'procurement.metadata.corrections' => 'Metadata Corrections',
             'procurement.archive' => 'Archive',
             'procurement.events' => 'Events',
-            'file.data' => 'File Data',
-            'file.metadata' => 'File Metadata',
-            'file.chunks' => 'File Chunks',
+            'File.data' => 'File Data',
+            'File.metadata' => 'File Metadata',
+            'File.chunks' => 'File Chunks',
             default => $stream,
         };
     }

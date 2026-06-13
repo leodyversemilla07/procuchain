@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdatePasswordRequest;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ use Inertia\Response;
 class PasswordController extends Controller
 {
     public function __construct(
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -58,7 +58,7 @@ class PasswordController extends Controller
             'user_id' => $user->id,
         ]);
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'settings.password_changed',
             'user',
             (string) $user->id,

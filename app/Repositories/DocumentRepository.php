@@ -6,9 +6,9 @@ namespace App\Repositories;
 
 use App\Contracts\DocumentRepositoryInterface;
 use App\DataTransferObjects\DocumentData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\ProcurementDocument;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 class DocumentRepository implements DocumentRepositoryInterface
 {
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {}
 
     /**
@@ -29,7 +29,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     {
         try {
             $txid = $this->multichain->publish(
-                StreamEnums::DOCUMENTS->value,
+                Stream::DOCUMENTS->value,
                 $data->prNumber,
                 ['json' => $data->toBlockchainArray()]
             );
@@ -139,9 +139,9 @@ class DocumentRepository implements DocumentRepositoryInterface
     }
 
     /**
-     * Find a document by file key from DB.
+     * Find a document by File key from DB.
      */
-    public function findByFileKey(string $fileKey): ?DocumentData
+    public function findByfileKey(string $fileKey): ?DocumentData
     {
         $doc = ProcurementDocument::with('procurement')->where('file_key', $fileKey)->first();
 

@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\User\AcceptInvitationRequest;
 use App\Models\User;
 use App\Models\UserInvitation;
-use App\Services\AuditLogger;
-use App\Services\Manager;
+use App\Services\AuditLogService;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +20,7 @@ use Inertia\Response;
 class AcceptInvitationController extends Controller
 {
     public function __construct(
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -58,7 +58,7 @@ class AcceptInvitationController extends Controller
     /**
      * Accept the invitation and create user account
      */
-    public function accept(AcceptInvitationRequest $request, Manager $multichain, string $token): RedirectResponse
+    public function accept(AcceptInvitationRequest $request, BlockchainRpcClient $multichain, string $token): RedirectResponse
     {
         $invitation = UserInvitation::where('token', $token)->firstOrFail();
 
@@ -109,7 +109,7 @@ class AcceptInvitationController extends Controller
                 'invited_by' => $invitation->invited_by,
             ]);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'auth.invitation_accepted',
                 'user',
                 (string) $user->id,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
@@ -32,7 +32,7 @@ class BlockchainRecordSyncService
      *
      * Called AFTER a successful blockchain publish.
      */
-    public function upstream(
+    public function syncToMirror(
         string $stream,
         string $key,
         string $txid,
@@ -104,7 +104,7 @@ class BlockchainRecordSyncService
             return $deleted;
         }
 
-        if (! $hasMetadataOnChain && $this->shouldRepairStream($stream, StreamEnums::METADATA)) {
+        if (! $hasMetadataOnChain && $this->shouldRepairStream($stream, Stream::METADATA)) {
             $deleted['documents'] += ProcurementDocument::withTrashed()
                 ->whereIn('procurement_id', $procurementIds)
                 ->forceDelete();
@@ -117,8 +117,8 @@ class BlockchainRecordSyncService
             return $deleted;
         }
 
-        if ($this->shouldRepairStream($stream, StreamEnums::STATUS)) {
-            $stageTxids = $this->getBlockchainTxidsForPr(StreamEnums::STATUS, $prNumber);
+        if ($this->shouldRepairStream($stream, Stream::STATUS)) {
+            $stageTxids = $this->getBlockchainTxidsForPr(Stream::STATUS, $prNumber);
             if ($stageTxids !== null) {
                 $deleted['stages'] = ProcurementStage::whereNotNull('txid')
                     ->whereIn('procurement_id', $procurementIds)
@@ -127,8 +127,8 @@ class BlockchainRecordSyncService
             }
         }
 
-        if ($this->shouldRepairStream($stream, StreamEnums::DOCUMENTS)) {
-            $documentTxids = $this->getBlockchainTxidsForPr(StreamEnums::DOCUMENTS, $prNumber);
+        if ($this->shouldRepairStream($stream, Stream::DOCUMENTS)) {
+            $documentTxids = $this->getBlockchainTxidsForPr(Stream::DOCUMENTS, $prNumber);
             if ($documentTxids !== null) {
                 $deleted['documents'] = ProcurementDocument::withTrashed()
                     ->whereNotNull('txid')
@@ -138,8 +138,8 @@ class BlockchainRecordSyncService
             }
         }
 
-        if ($this->shouldRepairStream($stream, StreamEnums::EVENTS)) {
-            $eventTxids = $this->getBlockchainTxidsForPr(StreamEnums::EVENTS, $prNumber);
+        if ($this->shouldRepairStream($stream, Stream::EVENTS)) {
+            $eventTxids = $this->getBlockchainTxidsForPr(Stream::EVENTS, $prNumber);
             if ($eventTxids !== null) {
                 $deleted['events'] = ProcurementEvent::whereNotNull('txid')
                     ->whereIn('procurement_id', $procurementIds)
@@ -154,7 +154,7 @@ class BlockchainRecordSyncService
     private function hasBlockchainMetadataForPr(string $prNumber): ?bool
     {
         try {
-            $items = app(Manager::class)->liststreamkeyitems(StreamEnums::METADATA->value, $prNumber, false, 10000);
+            $items = app(BlockchainRpcClient::class)->liststreamkeyitems(Stream::METADATA->value, $prNumber, false, 10000);
 
             return collect(is_array($items) ? $items : [])
                 ->contains(fn ($item) => ($item['data']['json']['pr_number'] ?? null) === $prNumber);
@@ -171,10 +171,10 @@ class BlockchainRecordSyncService
     /**
      * @return list<string>|null
      */
-    private function getBlockchainTxidsForPr(StreamEnums $stream, string $prNumber): ?array
+    private function getBlockchainTxidsForPr(Stream $stream, string $prNumber): ?array
     {
         try {
-            $items = app(Manager::class)->liststreamkeyitems($stream->value, $prNumber, false, 10000);
+            $items = app(BlockchainRpcClient::class)->liststreamkeyitems($stream->value, $prNumber, false, 10000);
 
             return collect(is_array($items) ? $items : [])
                 ->map(fn ($item) => $item['txid'] ?? null)
@@ -193,7 +193,7 @@ class BlockchainRecordSyncService
         }
     }
 
-    private function shouldRepairStream(?string $stream, StreamEnums $target): bool
+    private function shouldRepairStream(?string $stream, Stream $target): bool
     {
         return $stream === null || $stream === $target->value;
     }

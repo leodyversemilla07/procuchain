@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 
 describe('Mode-Aware Status Mapping', function () {
@@ -15,19 +15,19 @@ describe('Mode-Aware Status Mapping', function () {
 
     it('validates stage existence check works for different modes', function () {
         // Competitive Bidding should have BID_OPENING
-        expect(StageEnums::BID_OPENING->existsInModeWorkflow(ProcurementModeEnums::COMPETITIVE_BIDDING))
+        expect(StageEnums::BID_OPENING->existsInModeWorkflow(ProcurementMode::COMPETITIVE_BIDDING))
             ->toBeTrue();
 
         // SVP should NOT have BID_OPENING
-        expect(StageEnums::BID_OPENING->existsInModeWorkflow(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT))
+        expect(StageEnums::BID_OPENING->existsInModeWorkflow(ProcurementMode::SMALL_VALUE_PROCUREMENT))
             ->toBeFalse();
 
         // SVP should have REQUEST_FOR_QUOTATION
-        expect(StageEnums::REQUEST_FOR_QUOTATION->existsInModeWorkflow(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT))
+        expect(StageEnums::REQUEST_FOR_QUOTATION->existsInModeWorkflow(ProcurementMode::SMALL_VALUE_PROCUREMENT))
             ->toBeTrue();
 
         // Competitive Bidding should NOT have REQUEST_FOR_QUOTATION
-        expect(StageEnums::REQUEST_FOR_QUOTATION->existsInModeWorkflow(ProcurementModeEnums::COMPETITIVE_BIDDING))
+        expect(StageEnums::REQUEST_FOR_QUOTATION->existsInModeWorkflow(ProcurementMode::COMPETITIVE_BIDDING))
             ->toBeFalse();
     });
 
@@ -42,7 +42,7 @@ describe('Mode-Aware Status Mapping', function () {
             StageEnums::COMPLETED,
         ];
 
-        $modes = ProcurementModeEnums::cases();
+        $modes = ProcurementMode::cases();
 
         foreach ($modes as $mode) {
             foreach ($universalStages as $stage) {
@@ -65,7 +65,7 @@ describe('Mode-Aware Status Mapping', function () {
 
         // Should exist in Competitive Bidding
         foreach ($competitiveStages as $stage) {
-            expect($stage->existsInModeWorkflow(ProcurementModeEnums::COMPETITIVE_BIDDING))
+            expect($stage->existsInModeWorkflow(ProcurementMode::COMPETITIVE_BIDDING))
                 ->toBeTrue("{$stage->value} should exist in Competitive Bidding");
         }
 
@@ -74,7 +74,7 @@ describe('Mode-Aware Status Mapping', function () {
             if ($stage === StageEnums::PRE_PROCUREMENT_CONFERENCE) {
                 continue; // PRE_PROCUREMENT_CONFERENCE exists in some alternative modes
             }
-            expect($stage->existsInModeWorkflow(ProcurementModeEnums::DIRECT_ACQUISITION))
+            expect($stage->existsInModeWorkflow(ProcurementMode::DIRECT_ACQUISITION))
                 ->toBeFalse("{$stage->value} should NOT exist in Direct Acquisition");
         }
     });
@@ -87,19 +87,19 @@ describe('Mode-Aware Status Mapping', function () {
 
         // Should exist in SVP
         foreach ($alternativeStages as $stage) {
-            expect($stage->existsInModeWorkflow(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT))
+            expect($stage->existsInModeWorkflow(ProcurementMode::SMALL_VALUE_PROCUREMENT))
                 ->toBeTrue("{$stage->value} should exist in SVP");
         }
 
         // Should NOT exist in Competitive Bidding
         foreach ($alternativeStages as $stage) {
-            expect($stage->existsInModeWorkflow(ProcurementModeEnums::COMPETITIVE_BIDDING))
+            expect($stage->existsInModeWorkflow(ProcurementMode::COMPETITIVE_BIDDING))
                 ->toBeFalse("{$stage->value} should NOT exist in Competitive Bidding");
         }
     });
 
     it('validates Direct Acquisition has minimal stages', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_ACQUISITION);
+        $stages = StageEnums::getStagesForMode(ProcurementMode::DIRECT_ACQUISITION);
 
         // Direct Acquisition should have only 7 stages (simplest workflow)
         expect($stages)->toHaveCount(7);
@@ -120,7 +120,7 @@ describe('Mode-Aware Status Mapping', function () {
     });
 
     it('validates SVP has RFQ and Abstract stages', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
+        $stages = StageEnums::getStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT);
 
         // SVP should have 10 stages
         expect($stages)->toHaveCount(10);
@@ -138,7 +138,7 @@ describe('Mode-Aware Status Mapping', function () {
     });
 
     it('validates Competitive Bidding has full workflow', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $stages = StageEnums::getStagesForMode(ProcurementMode::COMPETITIVE_BIDDING);
 
         // Competitive Bidding should have 15 stages (full workflow)
         expect($stages)->toHaveCount(15);
@@ -159,7 +159,7 @@ describe('Mode-Aware Status Mapping', function () {
     });
 
     it('validates all modes have proper stage sequences', function () {
-        $modes = ProcurementModeEnums::cases();
+        $modes = ProcurementMode::cases();
 
         foreach ($modes as $mode) {
             $stages = StageEnums::getStagesForMode($mode);
@@ -174,19 +174,19 @@ describe('Mode-Aware Status Mapping', function () {
     it('validates next stage determination is mode-aware', function () {
         // Competitive Bidding: PROCUREMENT_INITIATION -> PRE_PROCUREMENT_CONFERENCE
         $cbNextStages = StageEnums::PROCUREMENT_INITIATION->getNextStagesForMode(
-            ProcurementModeEnums::COMPETITIVE_BIDDING
+            ProcurementMode::COMPETITIVE_BIDDING
         );
         expect($cbNextStages)->toContain(StageEnums::PRE_PROCUREMENT_CONFERENCE);
 
         // SVP: PROCUREMENT_INITIATION -> REQUEST_FOR_QUOTATION
         $svpNextStages = StageEnums::PROCUREMENT_INITIATION->getNextStagesForMode(
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+            ProcurementMode::SMALL_VALUE_PROCUREMENT
         );
         expect($svpNextStages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
 
         // Direct Acquisition: PROCUREMENT_INITIATION -> NOTICE_OF_AWARD (skips everything)
         $daNextStages = StageEnums::PROCUREMENT_INITIATION->getNextStagesForMode(
-            ProcurementModeEnums::DIRECT_ACQUISITION
+            ProcurementMode::DIRECT_ACQUISITION
         );
         expect($daNextStages)->toContain(StageEnums::NOTICE_OF_AWARD);
     });

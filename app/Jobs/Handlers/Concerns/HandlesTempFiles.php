@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Handles temp file reconstitution and cleanup for blockchain upload jobs.
+ * Handles temp File reconstitution and cleanup for blockchain upload jobs.
  */
 trait HandlesTempFiles
 {
@@ -19,7 +19,7 @@ trait HandlesTempFiles
         $fullPath = Storage::path($tempPath);
 
         if (! file_exists($fullPath)) {
-            Log::error('HandlesTempFiles: temp file missing', [
+            Log::error('HandlesTempFiles: temp File missing', [
                 'temp_path' => $tempPath,
                 'full_path' => $fullPath,
                 'disk_root' => Storage::path(''),
@@ -29,7 +29,7 @@ trait HandlesTempFiles
                     : 'directory does not exist',
             ]);
 
-            throw new Exception("Temp file not found: {$tempPath}");
+            throw new Exception("Temp File not found: {$tempPath}");
         }
 
         return new UploadedFile(
@@ -48,7 +48,7 @@ trait HandlesTempFiles
                 Storage::delete($tempPath);
             }
         } catch (Exception $e) {
-            Log::warning('HandlesTempFiles: Failed to cleanup temp file', [
+            Log::warning('HandlesTempFiles: Failed to cleanup temp File', [
                 'path' => $tempPath,
                 'error' => $e->getMessage(),
             ]);

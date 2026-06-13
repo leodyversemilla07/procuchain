@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 
 class ProcurementStageTransitionService
 {
@@ -87,7 +87,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
-            'status' => StatusEnums::PROCUREMENT_SUBMITTED->value,
+            'status' => ProcurementStatus::PROCUREMENT_SUBMITTED->value,
             'action' => 'Continue Procurement Processing',
             'routeTemplate' => '/bac-secretariat/procurements-list',
         ];
@@ -97,7 +97,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value,
+            'status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD->value,
             'action' => 'Upload Pre-Procurement Conference Documents',
             'routeTemplate' => '/bac-secretariat/pre-procurement-conference-upload/%s',
         ];
@@ -107,7 +107,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->value,
+            'status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED->value,
             'action' => 'Upload Bidding Documents',
             'routeTemplate' => '/bac-secretariat/bidding-documents-upload/%s',
         ];
@@ -118,8 +118,8 @@ class ProcurementStageTransitionService
         return [
             'stage' => StageEnums::BIDDING_DOCUMENTS->value,
             'status' => [
-                StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->value,
-                StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value,
+                ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED->value,
+                ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value,
             ],
             'action' => 'Upload Bidding Documents',
             'routeTemplate' => '/bac-secretariat/bidding-documents-upload/%s',
@@ -130,7 +130,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::PRE_BID_CONFERENCE->value,
-            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED->value,
+            'status' => ProcurementStatus::BIDDING_DOCUMENTS_PUBLISHED->value,
             'action' => 'Upload Pre-Bid Conference Documents',
             'routeTemplate' => '/bac-secretariat/pre-bid-conference-upload/%s',
         ];
@@ -140,7 +140,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
-            'status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
+            'status' => ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED->value,
             'action' => 'Upload Supplemental Bid Bulletin Documents',
             'routeTemplate' => '/bac-secretariat/supplemental-bid-bulletin-upload/%s',
         ];
@@ -150,7 +150,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::BID_OPENING->value,
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value,
+            'status' => ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED->value,
             'action' => 'Upload Bid Opening Documents',
             'routeTemplate' => '/bac-secretariat/bid-opening-upload/%s',
         ];
@@ -160,7 +160,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::BID_EVALUATION->value,
-            'status' => StatusEnums::BIDS_OPENED->value,
+            'status' => ProcurementStatus::BIDS_OPENED->value,
             'action' => 'Upload Bid Evaluation Documents',
             'routeTemplate' => '/bac-secretariat/bid-evaluation-upload/%s',
         ];
@@ -170,7 +170,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::POST_QUALIFICATION->value,
-            'status' => StatusEnums::BIDS_EVALUATED->value,
+            'status' => ProcurementStatus::BIDS_EVALUATED->value,
             'action' => 'Upload Post-Qualification Documents',
             'routeTemplate' => '/bac-secretariat/post-qualification-upload/%s',
         ];
@@ -180,7 +180,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::BAC_RESOLUTION->value,
-            'status' => StatusEnums::POST_QUALIFICATION_VERIFIED->value,
+            'status' => ProcurementStatus::POST_QUALIFICATION_VERIFIED->value,
             'action' => 'Record BAC Resolution Documents',
             'routeTemplate' => '/bac-secretariat/bac-resolution-upload/%s',
         ];
@@ -190,7 +190,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::NOTICE_OF_AWARD->value,
-            'status' => StatusEnums::RESOLUTION_RECORDED->value,
+            'status' => ProcurementStatus::RESOLUTION_RECORDED->value,
             'action' => 'Upload Notice of Award Documents',
             'routeTemplate' => '/bac-secretariat/noa-upload/%s',
         ];
@@ -200,7 +200,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->value,
-            'status' => StatusEnums::AWARDED->value,
+            'status' => ProcurementStatus::AWARDED->value,
             'action' => 'Upload Performance Bond, Contract, and PO Documents',
             'routeTemplate' => '/bac-secretariat/performance-bond-contract-po-upload/%s',
         ];
@@ -210,7 +210,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::NOTICE_TO_PROCEED->value,
-            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED->value,
+            'status' => ProcurementStatus::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED->value,
             'action' => 'Upload Notice to Proceed Documents',
             'routeTemplate' => '/bac-secretariat/ntp-upload/%s',
         ];
@@ -223,7 +223,7 @@ class ProcurementStageTransitionService
             'status' => null,
             'action' => 'Mark Procurement as Complete',
             'routeTemplate' => '/bac-secretariat/procurements-list',
-            'statusCheck' => fn ($status) => $status !== StatusEnums::COMPLETED->value,
+            'statusCheck' => fn ($status) => $status !== ProcurementStatus::COMPLETED->value,
         ];
     }
 
@@ -231,7 +231,7 @@ class ProcurementStageTransitionService
     {
         return [
             'stage' => StageEnums::COMPLETION->value,
-            'status' => StatusEnums::MONITORING_COMPLETED->value,
+            'status' => ProcurementStatus::MONITORING_COMPLETED->value,
             'action' => 'Upload Completion Documents',
             'routeTemplate' => '/bac-secretariat/completion-upload/%s',
         ];

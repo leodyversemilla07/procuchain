@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -60,9 +60,9 @@ class ProcurementWorkflowConfig extends Model
     /**
      * Scope to filter by procurement mode.
      */
-    public function scopeForMode(Builder $query, string|ProcurementModeEnums $mode): Builder
+    public function scopeForMode(Builder $query, string|ProcurementMode $mode): Builder
     {
-        $modeValue = $mode instanceof ProcurementModeEnums ? $mode->value : $mode;
+        $modeValue = $mode instanceof ProcurementMode ? $mode->value : $mode;
 
         return $query->where('procurement_mode', $modeValue);
     }
@@ -116,9 +116,9 @@ class ProcurementWorkflowConfig extends Model
     /**
      * Get procurement mode as enum.
      */
-    public function getProcurementModeEnum(): ?ProcurementModeEnums
+    public function getProcurementModeEnum(): ?ProcurementMode
     {
-        return ProcurementModeEnums::tryFrom($this->procurement_mode);
+        return ProcurementMode::tryFrom($this->procurement_mode);
     }
 
     /**

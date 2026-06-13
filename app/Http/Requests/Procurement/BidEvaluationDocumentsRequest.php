@@ -15,8 +15,8 @@ class BidEvaluationDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('summary_file'),
-            ...$this->documentRules('abstract_file'),
+            ...$this->documentRules('summary_File'),
+            ...$this->documentRules('abstract_File'),
             'evaluation_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'evaluators' => 'required|array|min:1',
             'evaluators.*.name' => 'required|string|min:1|max:255',
@@ -33,8 +33,8 @@ class BidEvaluationDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('summary_file', 'summary file'),
-            ...$this->documentMessages('abstract_file', 'abstract file'),
+            ...$this->documentMessages('summary_File', 'summary File'),
+            ...$this->documentMessages('abstract_File', 'abstract File'),
             'evaluators.required' => 'At least one evaluator is required.',
             'evaluators.array' => 'Evaluators must be provided as an array.',
             'evaluators.min' => 'At least one evaluator is required.',

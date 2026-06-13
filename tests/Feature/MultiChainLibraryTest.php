@@ -1,15 +1,15 @@
 <?php
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Libraries\MultiChain\Client;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Config;
 
 /**
  * MultiChain Library Integration Tests
  *
  * Tests for the official MultiChain PHP library integration.
- * Tests both the Client (direct RPC) and Manager (Laravel wrapper).
+ * Tests both the Client (direct RPC) and BlockchainRpcClient (Laravel wrapper).
  */
 beforeEach(function () {
     // Store original config
@@ -35,15 +35,15 @@ afterEach(function () {
 
 describe('Stream Enums', function () {
     it('has correct stream names', function () {
-        expect(StreamEnums::DOCUMENTS->value)->toBe('procurement.documents')
-            ->and(StreamEnums::METADATA->value)->toBe('procurement.metadata')
-            ->and(StreamEnums::STATUS->value)->toBe('procurement.status')
-            ->and(StreamEnums::EVENTS->value)->toBe('procurement.events')
-            ->and(StreamEnums::CORRECTIONS->value)->toBe('procurement.corrections');
+        expect(Stream::DOCUMENTS->value)->toBe('procurement.documents')
+            ->and(Stream::METADATA->value)->toBe('procurement.metadata')
+            ->and(Stream::STATUS->value)->toBe('procurement.status')
+            ->and(Stream::EVENTS->value)->toBe('procurement.events')
+            ->and(Stream::CORRECTIONS->value)->toBe('procurement.corrections');
     });
 
     it('can list all stream values', function () {
-        $streams = array_map(fn ($case) => $case->value, StreamEnums::cases());
+        $streams = array_map(fn ($case) => $case->value, Stream::cases());
 
         expect($streams)->toBeArray()
             ->toContain('procurement.documents')
@@ -109,23 +109,23 @@ describe('Client Initialization', function () {
     });
 });
 
-describe('Manager Initialization', function () {
-    it('can instantiate manager', function () {
-        $manager = app(Manager::class);
+describe('BlockchainRpcClient Initialization', function () {
+    it('can instantiate BlockchainRpcClient', function () {
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
-        expect($manager)->toBeInstanceOf(Manager::class);
+        expect($BlockchainRpcClient)->toBeInstanceOf(BlockchainRpcClient::class);
     });
 
     it('is registered as singleton', function () {
-        $manager1 = app(Manager::class);
-        $manager2 = app(Manager::class);
+        $BlockchainRpcClient1 = app(BlockchainRpcClient::class);
+        $BlockchainRpcClient2 = app(BlockchainRpcClient::class);
 
-        expect($manager1)->toBe($manager2);
+        expect($BlockchainRpcClient1)->toBe($BlockchainRpcClient2);
     });
 
     it('provides access to underlying client', function () {
-        $manager = app(Manager::class);
-        $client = $manager->getClient();
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $BlockchainRpcClient->getClient();
 
         expect($client)->toBeInstanceOf(Client::class);
     });
@@ -196,7 +196,7 @@ describe('Blockchain Permissions', function () {
 
 describe('Magic Method Calls', function () {
     it('forwards RPC methods through magic __call', function () {
-        $manager = app(Manager::class);
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
         // These method names should be recognized
         $methods = [
@@ -209,36 +209,36 @@ describe('Magic Method Calls', function () {
         ];
 
         foreach ($methods as $method) {
-            expect(method_exists($manager, '__call'))->toBeTrue();
+            expect(method_exists($BlockchainRpcClient, '__call'))->toBeTrue();
         }
     });
 });
 
 describe('Error Handling', function () {
     it('provides success status check', function () {
-        $manager = app(Manager::class);
-        $client = $manager->getClient();
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $BlockchainRpcClient->getClient();
 
         expect(method_exists($client, 'success'))->toBeTrue();
     });
 
     it('provides error retrieval', function () {
-        $manager = app(Manager::class);
-        $client = $manager->getClient();
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $BlockchainRpcClient->getClient();
 
         expect(method_exists($client, 'errormessage'))->toBeTrue();
     });
 
     it('provides error code retrieval', function () {
-        $manager = app(Manager::class);
-        $client = $manager->getClient();
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $BlockchainRpcClient->getClient();
 
         expect(method_exists($client, 'errorcode'))->toBeTrue();
     });
 
     it('provides error message retrieval', function () {
-        $manager = app(Manager::class);
-        $client = $manager->getClient();
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $BlockchainRpcClient->getClient();
 
         expect(method_exists($client, 'errormessage'))->toBeTrue();
     });
@@ -288,7 +288,7 @@ describe('Configuration', function () {
 
 describe('Stream Operations', function () {
     it('has stream enums defined', function () {
-        $streams = StreamEnums::cases();
+        $streams = Stream::cases();
 
         expect($streams)->toBeArray();
 
@@ -301,9 +301,9 @@ describe('Stream Operations', function () {
             ->toContain('procurement.corrections')
             ->toContain('procurement.metadata.corrections')
             ->toContain('procurement.archive')
-            ->toContain('file.data')
-            ->toContain('file.metadata')
-            ->toContain('file.chunks')
+            ->toContain('File.data')
+            ->toContain('File.metadata')
+            ->toContain('File.chunks')
             ->toContain('user.registrations')
             ->toContain('integrity.violations')
             ->toContain('audit.trail')
@@ -314,12 +314,12 @@ describe('Stream Operations', function () {
     });
 
     it('validates stream naming convention', function () {
-        $streams = StreamEnums::cases();
+        $streams = Stream::cases();
 
         foreach ($streams as $stream) {
             // Streams should follow a known namespace pattern
             $isProcurement = str_starts_with($stream->value, 'procurement.');
-            $isFile = str_starts_with($stream->value, 'file.');
+            $isFile = str_starts_with($stream->value, 'File.');
             $isUser = str_starts_with($stream->value, 'user.');
             $isIntegrity = str_starts_with($stream->value, 'integrity.');
             $isAudit = str_starts_with($stream->value, 'audit.');
@@ -332,7 +332,7 @@ describe('Stream Operations', function () {
             if ($isProcurement) {
                 expect($stream->value)->toMatch('/^procurement\.([a-z_]+\.?)+$/');
             } elseif ($isFile) {
-                expect($stream->value)->toMatch('/^file\.([a-z_]+\.?)+$/');
+                expect($stream->value)->toMatch('/^File\.([a-z_]+\.?)+$/');
             } elseif ($isUser) {
                 expect($stream->value)->toMatch('/^user\.([a-z_]+\.?)+$/');
             } elseif ($isIntegrity) {
@@ -348,7 +348,7 @@ describe('Stream Operations', function () {
     });
 
     it('has display names for all streams', function () {
-        $streams = StreamEnums::cases();
+        $streams = Stream::cases();
 
         foreach ($streams as $stream) {
             $displayName = $stream->getDisplayName();
@@ -359,7 +359,7 @@ describe('Stream Operations', function () {
     });
 
     it('has descriptions for all streams', function () {
-        $streams = StreamEnums::cases();
+        $streams = Stream::cases();
 
         foreach ($streams as $stream) {
             $description = $stream->getDescription();
@@ -370,154 +370,154 @@ describe('Stream Operations', function () {
     });
 
     it('correctly identifies procurement streams', function () {
-        expect(StreamEnums::METADATA->isProcurementStream())->toBeTrue()
-            ->and(StreamEnums::DOCUMENTS->isProcurementStream())->toBeTrue()
-            ->and(StreamEnums::STATUS->isProcurementStream())->toBeTrue()
-            ->and(StreamEnums::EVENTS->isProcurementStream())->toBeTrue()
-            ->and(StreamEnums::CORRECTIONS->isProcurementStream())->toBeTrue()
-            ->and(StreamEnums::PROCUREMENTS_CORRECTIONS->isProcurementStream())->toBeTrue();
+        expect(Stream::METADATA->isProcurementStream())->toBeTrue()
+            ->and(Stream::DOCUMENTS->isProcurementStream())->toBeTrue()
+            ->and(Stream::STATUS->isProcurementStream())->toBeTrue()
+            ->and(Stream::EVENTS->isProcurementStream())->toBeTrue()
+            ->and(Stream::CORRECTIONS->isProcurementStream())->toBeTrue()
+            ->and(Stream::PROCUREMENTS_CORRECTIONS->isProcurementStream())->toBeTrue();
     });
 
-    it('correctly identifies file streams', function () {
-        expect(StreamEnums::FILE_DATA->isFileStream())->toBeTrue()
-            ->and(StreamEnums::FILE_METADATA->isFileStream())->toBeTrue()
-            ->and(StreamEnums::FILE_CHUNKS->isFileStream())->toBeTrue();
+    it('correctly identifies File streams', function () {
+        expect(Stream::FILE_DATA->isBlockchainFileStream())->toBeTrue()
+            ->and(Stream::FILE_METADATA->isBlockchainFileStream())->toBeTrue()
+            ->and(Stream::FILE_CHUNKS->isBlockchainFileStream())->toBeTrue();
     });
 
-    it('correctly separates procurement and file streams', function () {
-        expect(StreamEnums::METADATA->isFileStream())->toBeFalse()
-            ->and(StreamEnums::DOCUMENTS->isFileStream())->toBeFalse()
-            ->and(StreamEnums::FILE_DATA->isProcurementStream())->toBeFalse()
-            ->and(StreamEnums::FILE_METADATA->isProcurementStream())->toBeFalse();
+    it('correctly separates procurement and File streams', function () {
+        expect(Stream::METADATA->isBlockchainFileStream())->toBeFalse()
+            ->and(Stream::DOCUMENTS->isBlockchainFileStream())->toBeFalse()
+            ->and(Stream::FILE_DATA->isProcurementStream())->toBeFalse()
+            ->and(Stream::FILE_METADATA->isProcurementStream())->toBeFalse();
     });
 
     it('provides static values method', function () {
-        $values = StreamEnums::values();
+        $values = Stream::values();
 
         expect($values)->toBeArray()
             ->toContain('procurement.metadata')
-            ->toContain('file.data')
+            ->toContain('File.data')
             ->toContain('user.registrations')
             ->toContain('audit.trail')
             ->toContain('config.workflows');
     });
 
     it('provides static options method', function () {
-        $options = StreamEnums::options();
+        $options = Stream::options();
 
         expect($options)->toBeArray()
             ->toHaveKey('procurement.metadata')
-            ->toHaveKey('file.data')
+            ->toHaveKey('File.data')
             ->toHaveKey('user.registrations')
             ->toHaveKey('audit.trail')
             ->toHaveKey('config.workflows');
 
         // Check that values are display names
         expect($options['procurement.metadata'])->toBe('Procurement Metadata')
-            ->and($options['file.data'])->toBe('File Data')
+            ->and($options['File.data'])->toBe('File Data')
             ->and($options['user.registrations'])->toBe('User Registrations');
     });
 });
 
 describe('Individual Stream Coverage', function () {
     it('tests METADATA stream', function () {
-        $stream = StreamEnums::METADATA;
+        $stream = Stream::METADATA;
 
         expect($stream->value)->toBe('procurement.metadata')
             ->and($stream->getDisplayName())->toBe('Procurement Metadata')
             ->and($stream->getDescription())->toContain('metadata')
             ->and($stream->isProcurementStream())->toBeTrue()
-            ->and($stream->isFileStream())->toBeFalse();
+            ->and($stream->isBlockchainFileStream())->toBeFalse();
     });
 
     it('tests DOCUMENTS stream', function () {
-        $stream = StreamEnums::DOCUMENTS;
+        $stream = Stream::DOCUMENTS;
 
         expect($stream->value)->toBe('procurement.documents')
             ->and($stream->getDisplayName())->toBe('Procurement Documents')
             ->and($stream->getDescription())->toContain('documents')
             ->and($stream->isProcurementStream())->toBeTrue()
-            ->and($stream->isFileStream())->toBeFalse();
+            ->and($stream->isBlockchainFileStream())->toBeFalse();
     });
 
     it('tests STATUS stream', function () {
-        $stream = StreamEnums::STATUS;
+        $stream = Stream::STATUS;
 
         expect($stream->value)->toBe('procurement.status')
             ->and($stream->getDisplayName())->toBe('Procurement Status')
             ->and($stream->getDescription())->toContain('status')
             ->and($stream->isProcurementStream())->toBeTrue()
-            ->and($stream->isFileStream())->toBeFalse();
+            ->and($stream->isBlockchainFileStream())->toBeFalse();
     });
 
     it('tests EVENTS stream', function () {
-        $stream = StreamEnums::EVENTS;
+        $stream = Stream::EVENTS;
 
         expect($stream->value)->toBe('procurement.events')
             ->and($stream->getDisplayName())->toBe('Procurement Events')
             ->and($stream->getDescription())->toContain('events')
             ->and($stream->isProcurementStream())->toBeTrue()
-            ->and($stream->isFileStream())->toBeFalse();
+            ->and($stream->isBlockchainFileStream())->toBeFalse();
     });
 
     it('tests CORRECTIONS stream', function () {
-        $stream = StreamEnums::CORRECTIONS;
+        $stream = Stream::CORRECTIONS;
 
         expect($stream->value)->toBe('procurement.corrections')
             ->and($stream->getDisplayName())->toBe('Procurement Corrections')
             ->and($stream->getDescription())->toContain('correction')
             ->and($stream->isProcurementStream())->toBeTrue()
-            ->and($stream->isFileStream())->toBeFalse();
+            ->and($stream->isBlockchainFileStream())->toBeFalse();
     });
 
     it('tests PROCUREMENTS_CORRECTIONS stream', function () {
-        $stream = StreamEnums::PROCUREMENTS_CORRECTIONS;
+        $stream = Stream::PROCUREMENTS_CORRECTIONS;
 
         expect($stream->value)->toBe('procurement.metadata.corrections')
             ->and($stream->getDisplayName())->toBe('Procurement Metadata Corrections')
             ->and($stream->getDescription())->toContain('correction')
             ->and($stream->isProcurementStream())->toBeTrue()
-            ->and($stream->isFileStream())->toBeFalse();
+            ->and($stream->isBlockchainFileStream())->toBeFalse();
     });
 
     it('tests FILE_DATA stream', function () {
-        $stream = StreamEnums::FILE_DATA;
+        $stream = Stream::FILE_DATA;
 
-        expect($stream->value)->toBe('file.data')
+        expect($stream->value)->toBe('File.data')
             ->and($stream->getDisplayName())->toBe('File Data')
-            ->and($stream->getDescription())->toContain('file data')
+            ->and($stream->getDescription())->toContain('File data')
             ->and($stream->isProcurementStream())->toBeFalse()
-            ->and($stream->isFileStream())->toBeTrue();
+            ->and($stream->isBlockchainFileStream())->toBeTrue();
     });
 
     it('tests FILE_METADATA stream', function () {
-        $stream = StreamEnums::FILE_METADATA;
+        $stream = Stream::FILE_METADATA;
 
-        expect($stream->value)->toBe('file.metadata')
+        expect($stream->value)->toBe('File.metadata')
             ->and($stream->getDisplayName())->toBe('File Metadata')
             ->and($stream->getDescription())->toContain('metadata')
             ->and($stream->isProcurementStream())->toBeFalse()
-            ->and($stream->isFileStream())->toBeTrue();
+            ->and($stream->isBlockchainFileStream())->toBeTrue();
     });
 
     it('tests FILE_CHUNKS stream', function () {
-        $stream = StreamEnums::FILE_CHUNKS;
+        $stream = Stream::FILE_CHUNKS;
 
-        expect($stream->value)->toBe('file.chunks')
+        expect($stream->value)->toBe('File.chunks')
             ->and($stream->getDisplayName())->toBe('File Chunks')
             ->and($stream->getDescription())->toContain('chunk')
             ->and($stream->isProcurementStream())->toBeFalse()
-            ->and($stream->isFileStream())->toBeTrue();
+            ->and($stream->isBlockchainFileStream())->toBeTrue();
     });
 
     it('validates all procurement streams have unique purposes', function () {
         $procurementStreams = [
-            StreamEnums::METADATA,
-            StreamEnums::DOCUMENTS,
-            StreamEnums::STATUS,
-            StreamEnums::EVENTS,
-            StreamEnums::CORRECTIONS,
-            StreamEnums::PROCUREMENTS_CORRECTIONS,
+            Stream::METADATA,
+            Stream::DOCUMENTS,
+            Stream::STATUS,
+            Stream::EVENTS,
+            Stream::CORRECTIONS,
+            Stream::PROCUREMENTS_CORRECTIONS,
         ];
 
         $descriptions = array_map(fn ($s) => $s->getDescription(), $procurementStreams);
@@ -526,35 +526,35 @@ describe('Individual Stream Coverage', function () {
         expect(count($descriptions))->toBe(count(array_unique($descriptions)));
     });
 
-    it('validates all file streams have unique purposes', function () {
-        $fileStreams = [
-            StreamEnums::FILE_DATA,
-            StreamEnums::FILE_METADATA,
-            StreamEnums::FILE_CHUNKS,
+    it('validates all File streams have unique purposes', function () {
+        $BlockchainFileStreams = [
+            Stream::FILE_DATA,
+            Stream::FILE_METADATA,
+            Stream::FILE_CHUNKS,
         ];
 
-        $descriptions = array_map(fn ($s) => $s->getDescription(), $fileStreams);
+        $descriptions = array_map(fn ($s) => $s->getDescription(), $BlockchainFileStreams);
 
         // All descriptions should be unique
         expect(count($descriptions))->toBe(count(array_unique($descriptions)));
     });
 
     it('can iterate through all streams programmatically', function () {
-        $allStreams = StreamEnums::cases();
+        $allStreams = Stream::cases();
         $procurementCount = 0;
-        $fileCount = 0;
+        $BlockchainFileCount = 0;
 
         foreach ($allStreams as $stream) {
             if ($stream->isProcurementStream()) {
                 $procurementCount++;
             }
-            if ($stream->isFileStream()) {
-                $fileCount++;
+            if ($stream->isBlockchainFileStream()) {
+                $BlockchainFileCount++;
             }
         }
 
         expect($procurementCount)->toBe(7)
-            ->and($fileCount)->toBe(3);
+            ->and($BlockchainFileCount)->toBe(3);
     });
 });
 
@@ -602,7 +602,7 @@ describe('Data Encoding', function () {
 
 describe('Integration Requirements', function () {
     it('has all required streams defined in enum', function () {
-        $enumValues = array_map(fn ($case) => $case->value, StreamEnums::cases());
+        $enumValues = array_map(fn ($case) => $case->value, Stream::cases());
 
         // Check that all expected streams exist
         $expectedStreams = [
@@ -612,9 +612,9 @@ describe('Integration Requirements', function () {
             'procurement.events',
             'procurement.corrections',
             'procurement.metadata.corrections',
-            'file.data',
-            'file.metadata',
-            'file.chunks',
+            'File.data',
+            'File.metadata',
+            'File.chunks',
         ];
 
         foreach ($expectedStreams as $stream) {
@@ -624,11 +624,11 @@ describe('Integration Requirements', function () {
 
     it('validates procurement stream names', function () {
         $streams = [
-            StreamEnums::DOCUMENTS,
-            StreamEnums::METADATA,
-            StreamEnums::STATUS,
-            StreamEnums::EVENTS,
-            StreamEnums::CORRECTIONS,
+            Stream::DOCUMENTS,
+            Stream::METADATA,
+            Stream::STATUS,
+            Stream::EVENTS,
+            Stream::CORRECTIONS,
         ];
 
         foreach ($streams as $stream) {
@@ -650,7 +650,7 @@ describe('Integration Requirements', function () {
     });
 });
 
-describe('Manager Features', function () {
+describe('BlockchainRpcClient Features', function () {
     it('uses different retry settings for console vs web', function () {
         $consoleRetries = config('multichain.max_retries');
         $webRetries = config('multichain.web_max_retries');
@@ -660,10 +660,10 @@ describe('Manager Features', function () {
     });
 
     it('provides context-aware timeouts', function () {
-        $manager = app(Manager::class);
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
-        // Manager should be able to handle different operation types
-        expect($manager)->toBeInstanceOf(Manager::class);
+        // BlockchainRpcClient should be able to handle different operation types
+        expect($BlockchainRpcClient)->toBeInstanceOf(BlockchainRpcClient::class);
 
         // Verify timeout configuration exists
         $timeout = config('multichain.connection_timeout');
@@ -675,7 +675,7 @@ describe('Manager Features', function () {
 });
 
 describe('Library Documentation', function () {
-    it('has README file in library directory', function () {
+    it('has README File in library directory', function () {
         $readmePath = base_path('app/Libraries/MultiChain/README.md');
 
         expect(file_exists($readmePath))->toBeTrue();

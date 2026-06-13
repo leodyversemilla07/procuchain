@@ -6,7 +6,7 @@ namespace App\Services\Procurement;
 
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\StatusData;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\Procurement;
 use App\Models\ProcurementArchive;
@@ -33,7 +33,7 @@ final class ProcurementListAggregatorService
     public function __construct(
         private readonly ProcurementFormatterService $formatter,
         private readonly ProcurementActionService $actionService,
-        private readonly UserNameResolverService $userNameResolver,
+        private readonly BlockchainAddressResolverService $userNameResolver,
     ) {}
 
     /**
@@ -352,7 +352,7 @@ final class ProcurementListAggregatorService
                 ];
 
                 $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
-                $modeEnum = isset($modeInfo['value']) ? ProcurementModeEnums::tryFrom($modeInfo['value']) : null;
+                $modeEnum = isset($modeInfo['value']) ? ProcurementMode::tryFrom($modeInfo['value']) : null;
 
                 $userRole = $this->getCurrentUserRole($authUser);
 

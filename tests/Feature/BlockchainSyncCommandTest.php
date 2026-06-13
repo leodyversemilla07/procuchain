@@ -14,7 +14,7 @@ it('syncs normalized read models with the legacy blockchain sync command name', 
             'corrections' => 0,
             'archives' => 0,
             'metadata_corrections' => 0,
-            'files' => 0,
+            'Files' => 0,
         ]);
 
     app()->instance(NormalizedTableSyncService::class, $syncService);

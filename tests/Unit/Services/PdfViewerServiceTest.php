@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Repositories\DocumentRepository;
 use App\Services\PdfViewerService;
 use App\Services\ProcurementDataService;
@@ -30,7 +30,7 @@ describe('PdfViewerService', function () {
             $request = Request::create('/pdf-viewer/'.$fileKey);
 
             $this->procurementDataService
-                ->shouldReceive('getDocumentDataByFileKey')
+                ->shouldReceive('getDocumentDataByfileKey')
                 ->with($fileKey)
                 ->once()
                 ->andReturn([
@@ -79,7 +79,7 @@ describe('PdfViewerService', function () {
             $request = Request::create('/pdf-viewer/'.$fileKey);
 
             $this->procurementDataService
-                ->shouldReceive('getDocumentDataByFileKey')
+                ->shouldReceive('getDocumentDataByfileKey')
                 ->once()
                 ->andReturn([
                     'pr_number' => 'PR-2025-001-0001',
@@ -107,13 +107,13 @@ describe('PdfViewerService', function () {
         });
     });
 
-    describe('getFileViewStats', function () {
+    describe('getBlockchainFileViewStats', function () {
         it('returns correct statistics structure', function () {
             $fileKey = 'PR-2025-001-0001/pre-procurement/stage-01/test.pdf';
 
             $user = createUserWithRole('bac_secretariat');
 
-            DocumentView::create([
+            DocumentViewLog::create([
                 'user_id' => $user->id,
                 'file_key' => $fileKey,
                 'pr_number' => 'PR-2025-001-0001',
@@ -125,7 +125,7 @@ describe('PdfViewerService', function () {
                 'user_agent' => 'Test Agent',
             ]);
 
-            $result = $this->service->getFileViewStats($fileKey);
+            $result = $this->service->getBlockchainFileViewStats($fileKey);
 
             expect($result)
                 ->toHaveKeys([
@@ -144,7 +144,7 @@ describe('PdfViewerService', function () {
         });
 
         it('returns zero counts when no views exist', function () {
-            $result = $this->service->getFileViewStats('nonexistent/file/key');
+            $result = $this->service->getBlockchainFileViewStats('nonexistent/File/key');
 
             expect($result['total_views'])->toBe(0)
                 ->and($result['unique_viewers'])->toBe(0)

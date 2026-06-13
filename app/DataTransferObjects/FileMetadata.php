@@ -9,7 +9,7 @@ use Carbon\Carbon;
 /**
  * File Metadata Transfer Object
  *
- * Represents immutable file metadata stored on blockchain (file.metadata stream)
+ * Represents immutable File metadata stored on blockchain (File.metadata stream)
  */
 final class FileMetadata
 {

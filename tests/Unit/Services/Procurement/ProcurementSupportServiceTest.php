@@ -1,14 +1,14 @@
 <?php
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\Procurement\ProcurementSupportService;
-use App\Services\Procurement\StageStatusMapper;
+use App\Services\Procurement\StageStatusMappingService;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
@@ -19,14 +19,14 @@ use Illuminate\Support\Facades\Log;
 beforeEach(function () {
     Log::spy();
 
-    $this->multichain = Mockery::mock(Manager::class);
+    $this->multichain = Mockery::mock(BlockchainRpcClient::class);
     $this->documentPublisher = Mockery::mock(DocumentPublisher::class);
     $this->statusPublisher = Mockery::mock(StatusPublisher::class);
     $this->eventPublisher = Mockery::mock(EventPublisher::class);
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
     $this->documentRepository = Mockery::mock(DocumentRepository::class);
     $this->workflowDefinitionService = Mockery::mock(WorkflowDefinitionService::class);
-    $this->stageStatusMapper = Mockery::mock(StageStatusMapper::class);
+    $this->StageStatusMappingService = Mockery::mock(StageStatusMappingService::class);
 
     $this->service = new ProcurementSupportService(
         $this->multichain,
@@ -36,12 +36,12 @@ beforeEach(function () {
         $this->procurementDataService,
         $this->documentRepository,
         $this->workflowDefinitionService,
-        $this->stageStatusMapper,
+        $this->StageStatusMappingService,
     );
 });
 
 // Helper to mock procurement repository for getProcurementMode
-function mockProcurementRepo(ProcurementModeEnums $mode, string $prNumber = 'PR-2025-001-0001'): void
+function mockProcurementRepo(ProcurementMode $mode, string $prNumber = 'PR-2025-001-0001'): void
 {
     $procurement = ProcurementData::fromBlockchainArray([
         'pr_number' => $prNumber,
@@ -68,55 +68,55 @@ function mockProcurementRepo(ProcurementModeEnums $mode, string $prNumber = 'PR-
 describe('ProcurementSupportService', function () {
     describe('getInitialStatusForStage', function () {
         it('returns correct status for procurement initiation', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
-            $this->stageStatusMapper
+            $this->StageStatusMappingService
                 ->shouldReceive('getInitialStatus')
-                ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
-                ->andReturn(StatusEnums::PROCUREMENT_INITIATED);
+                ->andReturn(ProcurementStatus::PROCUREMENT_INITIATED);
 
             $result = $this->service->getInitialStatusForStage('PR-2025-001-0001', StageEnums::PROCUREMENT_INITIATION);
 
-            expect($result)->toBe(StatusEnums::PROCUREMENT_INITIATED);
+            expect($result)->toBe(ProcurementStatus::PROCUREMENT_INITIATED);
         });
 
         it('returns mode-aware status for BAC resolution with SVP', function () {
-            mockProcurementRepo(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
+            mockProcurementRepo(ProcurementMode::SMALL_VALUE_PROCUREMENT);
 
-            $this->stageStatusMapper
+            $this->StageStatusMappingService
                 ->shouldReceive('getInitialStatus')
-                ->with(StageEnums::BAC_RESOLUTION, ProcurementModeEnums::SMALL_VALUE_PROCUREMENT)
+                ->with(StageEnums::BAC_RESOLUTION, ProcurementMode::SMALL_VALUE_PROCUREMENT)
                 ->once()
-                ->andReturn(StatusEnums::ABSTRACT_PREPARED);
+                ->andReturn(ProcurementStatus::ABSTRACT_PREPARED);
 
             $result = $this->service->getInitialStatusForStage('PR-2025-001-0001', StageEnums::BAC_RESOLUTION);
 
-            expect($result)->toBe(StatusEnums::ABSTRACT_PREPARED);
+            expect($result)->toBe(ProcurementStatus::ABSTRACT_PREPARED);
         });
 
         it('returns mode-aware status for BAC resolution with competitive bidding', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
-            $this->stageStatusMapper
+            $this->StageStatusMappingService
                 ->shouldReceive('getInitialStatus')
-                ->with(StageEnums::BAC_RESOLUTION, ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(StageEnums::BAC_RESOLUTION, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
-                ->andReturn(StatusEnums::POST_QUALIFICATION_VERIFIED);
+                ->andReturn(ProcurementStatus::POST_QUALIFICATION_VERIFIED);
 
             $result = $this->service->getInitialStatusForStage('PR-2025-001-0001', StageEnums::BAC_RESOLUTION);
 
-            expect($result)->toBe(StatusEnums::POST_QUALIFICATION_VERIFIED);
+            expect($result)->toBe(ProcurementStatus::POST_QUALIFICATION_VERIFIED);
         });
     });
 
     describe('getNextStageForProcurement', function () {
         it('returns correct next stage from workflow service', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
             $this->workflowDefinitionService
                 ->shouldReceive('getStagesForMode')
-                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn([
                     StageEnums::PROCUREMENT_INITIATION,
@@ -124,7 +124,7 @@ describe('ProcurementSupportService', function () {
                 ]);
             $this->workflowDefinitionService
                 ->shouldReceive('getOptionalStagesForMode')
-                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn([]);
 
@@ -134,11 +134,11 @@ describe('ProcurementSupportService', function () {
         });
 
         it('returns null when at end of workflow', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
             $this->workflowDefinitionService
                 ->shouldReceive('getStagesForMode')
-                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn([
                     StageEnums::PROCUREMENT_INITIATION,
@@ -146,7 +146,7 @@ describe('ProcurementSupportService', function () {
                 ]);
             $this->workflowDefinitionService
                 ->shouldReceive('getOptionalStagesForMode')
-                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn([]);
 
@@ -171,11 +171,11 @@ describe('ProcurementSupportService', function () {
 
     describe('stageExistsInWorkflow', function () {
         it('returns true when stage exists in workflow', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
             $this->workflowDefinitionService
                 ->shouldReceive('isStageInWorkflow')
-                ->with(StageEnums::BID_OPENING, ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(StageEnums::BID_OPENING, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn(true);
 
@@ -185,11 +185,11 @@ describe('ProcurementSupportService', function () {
         });
 
         it('returns false when stage does not exist in workflow', function () {
-            mockProcurementRepo(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
+            mockProcurementRepo(ProcurementMode::SMALL_VALUE_PROCUREMENT);
 
             $this->workflowDefinitionService
                 ->shouldReceive('isStageInWorkflow')
-                ->with(StageEnums::PRE_BID_CONFERENCE, ProcurementModeEnums::SMALL_VALUE_PROCUREMENT)
+                ->with(StageEnums::PRE_BID_CONFERENCE, ProcurementMode::SMALL_VALUE_PROCUREMENT)
                 ->once()
                 ->andReturn(false);
 
@@ -212,11 +212,11 @@ describe('ProcurementSupportService', function () {
 
     describe('isStageOptional', function () {
         it('returns true for optional stages', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
             $this->workflowDefinitionService
                 ->shouldReceive('isStageOptional')
-                ->with(StageEnums::PRE_BID_CONFERENCE, ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(StageEnums::PRE_BID_CONFERENCE, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn(true);
 
@@ -226,11 +226,11 @@ describe('ProcurementSupportService', function () {
         });
 
         it('returns false for required stages', function () {
-            mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
+            mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
             $this->workflowDefinitionService
                 ->shouldReceive('isStageOptional')
-                ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn(false);
 

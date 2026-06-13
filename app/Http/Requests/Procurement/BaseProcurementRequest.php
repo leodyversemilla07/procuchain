@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -20,7 +20,7 @@ abstract class BaseProcurementRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(UserRoleEnums::BAC_SECRETARIAT->value) ?? false;
+        return $this->user()?->hasRole(UserRole::BAC_SECRETARIAT->value) ?? false;
     }
 
     /**
@@ -37,7 +37,7 @@ abstract class BaseProcurementRequest extends FormRequest
     }
 
     /**
-     * Get validation rules for document file uploads (single file).
+     * Get validation rules for document File uploads (single File).
      *
      * @param  string  $fieldName  The field name for the document
      * @param  bool  $required  Whether the document is required
@@ -48,12 +48,12 @@ abstract class BaseProcurementRequest extends FormRequest
         $requiredRule = $required ? 'required' : 'nullable';
 
         return [
-            $fieldName => "{$requiredRule}|file|mimes:pdf|max:51200",
+            $fieldName => "{$requiredRule}|File|mimes:pdf|max:51200",
         ];
     }
 
     /**
-     * Get validation rules for multiple document uploads (array of files).
+     * Get validation rules for multiple document uploads (array of BlockchainFiles).
      *
      * @param  string  $fieldName  The field name for the documents array
      * @param  bool  $required  Whether documents are required
@@ -66,7 +66,7 @@ abstract class BaseProcurementRequest extends FormRequest
 
         return [
             $fieldName => "{$requiredRule}|array|min:{$minCount}",
-            "{$fieldName}.*" => 'required|file|mimes:pdf|max:51200',
+            "{$fieldName}.*" => 'required|File|mimes:pdf|max:51200',
         ];
     }
 
@@ -83,9 +83,9 @@ abstract class BaseProcurementRequest extends FormRequest
 
         return [
             "{$fieldName}.max" => "The {$label} must not exceed 50MB in size.",
-            "{$fieldName}.mimes" => 'Only PDF files are allowed.',
+            "{$fieldName}.mimes" => 'Only PDF BlockchainFiles are allowed.',
             "{$fieldName}.*.max" => "Each {$label} must not exceed 50MB in size.",
-            "{$fieldName}.*.mimes" => 'Only PDF files are allowed.',
+            "{$fieldName}.*.mimes" => 'Only PDF BlockchainFiles are allowed.',
         ];
     }
 

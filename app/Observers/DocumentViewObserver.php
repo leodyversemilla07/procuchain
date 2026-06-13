@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\StreamEnums;
-use App\Models\DocumentView;
+use App\Enums\Stream;
+use App\Models\DocumentViewLog;
 use App\Services\BlockchainSyncService;
 
 /**
@@ -17,21 +17,21 @@ use App\Services\BlockchainSyncService;
 class DocumentViewObserver
 {
     /**
-     * Handle the DocumentView "created" event.
+     * Handle the DocumentViewLog "created" event.
      */
-    public function created(DocumentView $documentView): void
+    public function created(DocumentViewLog $DocumentViewLog): void
     {
         if (app()->runningUnitTests()) {
             return;
         }
 
-        if ($documentView->txid !== null) {
+        if ($DocumentViewLog->txid !== null) {
             return;
         }
 
         // Use file_key as stream key for grouping
-        $key = $documentView->file_key.'-'.($documentView->user_id ?? 'anon').'-'.($documentView->viewed_at?->timestamp ?? time());
+        $key = $DocumentViewLog->file_key.'-'.($DocumentViewLog->user_id ?? 'anon').'-'.($DocumentViewLog->viewed_at?->timestamp ?? time());
 
-        BlockchainSyncService::publish($documentView, StreamEnums::DOCUMENT_ACCESS, $key);
+        BlockchainSyncService::publish($DocumentViewLog, Stream::DOCUMENT_ACCESS, $key);
     }
 }

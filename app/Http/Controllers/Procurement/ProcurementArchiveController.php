@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Procurement;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
 use App\Repositories\ProcurementArchiveRepository;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\ProcurementDataService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class ProcurementArchiveController extends Controller
     public function __construct(
         private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementDataService $procurementDataService,
-        private readonly AuditLogger $auditLogger,
+        private readonly AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -55,7 +55,7 @@ class ProcurementArchiveController extends Controller
                 $request->input('reason')
             );
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'procurement.archived',
                 'procurement',
                 $pr_number,
@@ -88,7 +88,7 @@ class ProcurementArchiveController extends Controller
                 (string) $request->user()->id
             );
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'procurement.restored',
                 'procurement',
                 $pr_number,

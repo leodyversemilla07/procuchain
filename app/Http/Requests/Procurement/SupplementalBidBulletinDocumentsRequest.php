@@ -15,7 +15,7 @@ class SupplementalBidBulletinDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('bulletin_file'),
+            ...$this->documentRules('bulletin_File'),
             'bulletin_number' => 'required|string|min:1|max:50',
             'bulletin_title' => 'required|string|min:5|max:255',
             'issue_date' => 'required|date_format:Y-m-d|before_or_equal:today',
@@ -31,7 +31,7 @@ class SupplementalBidBulletinDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('bulletin_file', 'bulletin file'),
+            ...$this->documentMessages('bulletin_File', 'bulletin File'),
         ];
     }
 }

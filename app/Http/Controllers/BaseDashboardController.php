@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller as BaseController;
 use App\Models\Procurement;
 use App\Models\ProcurementStage;
 use App\Repositories\ProcurementRepository;
-use App\Services\DashboardCacheKeys;
+use App\Services\BlockchainRpcClient;
+use App\Services\DashboardCacheService;
 use App\Services\DashboardService;
-use App\Services\Manager;
 use DateInterval;
 use DateTimeInterface;
 use Exception;
@@ -23,7 +23,7 @@ use Inertia\Response;
 abstract class BaseDashboardController extends BaseController
 {
     public function __construct(
-        protected Manager $multichain,
+        protected BlockchainRpcClient $multichain,
         protected DashboardService $dashboardService,
         protected CacheStrategyInterface $cacheStrategy,
         private ProcurementRepository $procurementRepository,
@@ -52,13 +52,13 @@ abstract class BaseDashboardController extends BaseController
 
             // Use database cache for large data to keep Redis usage low
             $recentActivities = $this->cacheStrategy->rememberLarge(
-                DashboardCacheKeys::recentActivities($roleName),
+                DashboardCacheService::recentActivities($roleName),
                 now()->addMinutes(config('dashboard.cache_ttl.activities')),
                 fn () => $this->dashboardService->getRecentActivities()
             );
 
             $stats = $this->cacheStrategy->rememberSmall(
-                DashboardCacheKeys::stats($roleName, $cacheUserId),
+                DashboardCacheService::stats($roleName, $cacheUserId),
                 now()->addMinutes(config('dashboard.cache_ttl.stats')),
                 function () use ($procurementsByKey, $roleLabel) {
                     Log::info("Cache miss: Recalculating {$roleLabel} Dashboard stats");
@@ -68,7 +68,7 @@ abstract class BaseDashboardController extends BaseController
             );
 
             $procurementDistribution = $this->cacheStrategy->rememberLarge(
-                DashboardCacheKeys::procurementDistribution($roleName, $cacheUserId),
+                DashboardCacheService::procurementDistribution($roleName, $cacheUserId),
                 now()->addMinutes(config('dashboard.cache_ttl.distribution')),
                 fn () => $this->dashboardService->getProcurementDistributionData($procurementsByKey)
             );
@@ -98,7 +98,7 @@ abstract class BaseDashboardController extends BaseController
                 'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
-            DashboardCacheKeys::clearAll($this->getRoleName());
+            DashboardCacheService::clearAll($this->getRoleName());
 
             return $this->renderErrorResponse($e);
         }
@@ -115,10 +115,10 @@ abstract class BaseDashboardController extends BaseController
     protected function getCachedProcurements(string $roleName, string $roleLabel): Collection
     {
         $user = request()->user();
-        $isBacSecretariat = $roleName === UserRoleEnums::BAC_SECRETARIAT->value;
+        $isBacSecretariat = $roleName === UserRole::BAC_SECRETARIAT->value;
         $cacheUserId = $this->getDashboardCacheUserId($roleName);
-        $cacheKey = DashboardCacheKeys::procurements($roleName, $cacheUserId);
-        $snapshotKey = DashboardCacheKeys::procurementsSnapshot($roleName, $cacheUserId);
+        $cacheKey = DashboardCacheService::procurements($roleName, $cacheUserId);
+        $snapshotKey = DashboardCacheService::procurementsSnapshot($roleName, $cacheUserId);
         $cacheTtl = now()->addMinutes(config('dashboard.cache_ttl.procurements'));
 
         $cachedProcurements = $this->getCachedProcurementCollection($cacheKey, $roleLabel, 'primary', $cacheTtl);
@@ -309,7 +309,7 @@ abstract class BaseDashboardController extends BaseController
             $cacheUserId = $this->getDashboardCacheUserId($roleName);
 
             $totalDocuments = $this->cacheStrategy->rememberSmall(
-                DashboardCacheKeys::totalDocuments($roleName, $cacheUserId),
+                DashboardCacheService::totalDocuments($roleName, $cacheUserId),
                 now()->addMinutes(config('dashboard.cache_ttl.stats')),
                 function () use ($procurementsByKey, $roleLabel) {
                     Log::info("Cache miss: Recalculating total documents for {$roleLabel} Dashboard stats");
@@ -322,7 +322,7 @@ abstract class BaseDashboardController extends BaseController
         } catch (Exception $e) {
             report($e);
             Log::error("Failed to calculate {$this->getRoleLabel()} Dashboard stats", ['error' => $e->getMessage()]);
-            Cache::forget(DashboardCacheKeys::totalDocuments($this->getRoleName(), $this->getDashboardCacheUserId($this->getRoleName())));
+            Cache::forget(DashboardCacheService::totalDocuments($this->getRoleName(), $this->getDashboardCacheUserId($this->getRoleName())));
 
             return $this->dashboardService->getEmptyStats();
         }
@@ -330,7 +330,7 @@ abstract class BaseDashboardController extends BaseController
 
     protected function getDashboardCacheUserId(string $roleName): ?string
     {
-        if ($roleName !== UserRoleEnums::BAC_SECRETARIAT->value) {
+        if ($roleName !== UserRole::BAC_SECRETARIAT->value) {
             return null;
         }
 

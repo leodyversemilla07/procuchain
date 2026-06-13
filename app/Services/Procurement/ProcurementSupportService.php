@@ -3,13 +3,13 @@
 namespace App\Services\Procurement;
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
@@ -20,14 +20,14 @@ use Illuminate\Support\Facades\Log;
 class ProcurementSupportService
 {
     public function __construct(
-        protected Manager $multichain,
+        protected BlockchainRpcClient $multichain,
         protected DocumentPublisher $documentPublisher,
         protected StatusPublisher $statusPublisher,
         protected EventPublisher $eventPublisher,
         protected ProcurementDataService $procurementDataService,
         protected DocumentRepository $documentRepository,
         protected WorkflowDefinitionService $workflowDefinitionService,
-        protected StageStatusMapper $stageStatusMapper
+        protected StageStatusMappingService $StageStatusMappingService
     ) {}
 
     /**
@@ -37,14 +37,14 @@ class ProcurementSupportService
      *
      * @param  string  $prNumber  The procurement reference number (to determine mode)
      * @param  StageEnums  $stage  The stage being entered
-     * @return StatusEnums The appropriate status for entering that stage
+     * @return ProcurementStatus The appropriate status for entering that stage
      */
-    public function getInitialStatusForStage(string $prNumber, StageEnums $stage): StatusEnums
+    public function getInitialStatusForStage(string $prNumber, StageEnums $stage): ProcurementStatus
     {
         // Get procurement mode for mode-aware status determination
         $mode = $this->getProcurementMode($prNumber);
 
-        return $this->stageStatusMapper->getInitialStatus($stage, $mode);
+        return $this->StageStatusMappingService->getInitialStatus($stage, $mode);
     }
 
     /**
@@ -105,7 +105,7 @@ class ProcurementSupportService
     /**
      * Get the procurement mode for a specific procurement.
      */
-    public function getProcurementMode(string $prNumber): ?ProcurementModeEnums
+    public function getProcurementMode(string $prNumber): ?ProcurementMode
     {
         $procurement = $this->getProcurementData($prNumber);
 
@@ -369,7 +369,7 @@ class ProcurementSupportService
             prNumber: $prNumber,
             procurementTitle: $procurement->title,
             stage: $stage,
-            currentStatus: StatusEnums::STAGE_SKIPPED,
+            currentStatus: ProcurementStatus::STAGE_SKIPPED,
             userAddress: $userAddress,
             previousStatus: null,
             metadata: [
@@ -453,7 +453,7 @@ class ProcurementSupportService
         }
 
         $currentStage = StageEnums::tryFrom($currentStageValue);
-        $currentStatus = StatusEnums::tryFrom($currentStatusValue);
+        $currentStatus = ProcurementStatus::tryFrom($currentStatusValue);
 
         if (! $currentStage || ! $currentStatus) {
             return;
@@ -499,7 +499,7 @@ class ProcurementSupportService
         array $procurement,
         StageEnums $fromStage,
         StageEnums $toStage,
-        StatusEnums $currentStatus,
+        ProcurementStatus $currentStatus,
         ?User $authUser = null
     ): void {
         try {
@@ -551,16 +551,16 @@ class ProcurementSupportService
     /**
      * Get the appropriate completion status for a given stage.
      */
-    public function getCompletionStatusForStage(StageEnums $stage): StatusEnums
+    public function getCompletionStatusForStage(StageEnums $stage): ProcurementStatus
     {
-        return $this->stageStatusMapper->getCompletionStatus($stage);
+        return $this->StageStatusMappingService->getCompletionStatus($stage);
     }
 
     /**
      * Get the ongoing status for a stage (used during document uploads).
      */
-    public function getOngoingStatusForStage(StageEnums $stage): StatusEnums
+    public function getOngoingStatusForStage(StageEnums $stage): ProcurementStatus
     {
-        return $this->stageStatusMapper->getOngoingStatus($stage);
+        return $this->StageStatusMappingService->getOngoingStatus($stage);
     }
 }

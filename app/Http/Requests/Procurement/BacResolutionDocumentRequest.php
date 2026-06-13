@@ -15,7 +15,7 @@ class BacResolutionDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('bac_resolution_file'),
+            ...$this->documentRules('bac_resolution_File'),
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'signatories' => 'required|array|min:1',
             'signatories.*.name' => 'required|string|min:1|max:255',
@@ -32,7 +32,7 @@ class BacResolutionDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('bac_resolution_file', 'BAC resolution file'),
+            ...$this->documentMessages('bac_resolution_File', 'BAC resolution File'),
             'issuance_date.date_format' => 'The issuance date must be in YYYY-MM-DD format.',
             'issuance_date.before_or_equal' => 'The issuance date cannot be in the future.',
             'signatories.required' => 'At least one signatory is required.',

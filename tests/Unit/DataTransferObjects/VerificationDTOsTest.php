@@ -18,11 +18,11 @@ afterEach(function () {
 
 describe('VerificationResult DTO', function () {
     it('creates a successful verification result', function () {
-        $result = VerificationResult::success('test-file-key', 'abc123hash', 'integrity');
+        $result = VerificationResult::success('test-File-key', 'abc123hash', 'integrity');
 
         expect($result->isValid)->toBeTrue();
         expect($result->verificationType)->toBe('integrity');
-        expect($result->fileKey)->toBe('test-file-key');
+        expect($result->fileKey)->toBe('test-File-key');
         expect($result->expectedHash)->toBe('abc123hash');
         expect($result->actualHash)->toBe('abc123hash');
         expect($result->hashesMatch())->toBeTrue();
@@ -32,7 +32,7 @@ describe('VerificationResult DTO', function () {
 
     it('creates a failed verification result', function () {
         $result = VerificationResult::failure(
-            fileKey: 'test-file-key',
+            fileKey: 'test-File-key',
             expectedHash: 'expected123',
             actualHash: 'actual456',
             errors: ['Hash mismatch detected'],
@@ -47,7 +47,7 @@ describe('VerificationResult DTO', function () {
     });
 
     it('converts to array correctly', function () {
-        $result = VerificationResult::success('test-file-key', 'abc123', 'integrity');
+        $result = VerificationResult::success('test-File-key', 'abc123', 'integrity');
         $array = $result->toArray();
 
         expect($array)->toHaveKeys([
@@ -67,7 +67,7 @@ describe('VerificationResult DTO', function () {
 
     it('handles null hashes correctly', function () {
         $result = VerificationResult::failure(
-            fileKey: 'test-file-key',
+            fileKey: 'test-File-key',
             expectedHash: null,
             actualHash: null,
             errors: ['Document not found'],

@@ -1,10 +1,10 @@
 <?php
 
-use App\Enums\BreachTypeEnums;
-use App\Enums\StreamEnums;
-use App\Models\IntegrityAuditLog;
+use App\Enums\BreachType;
+use App\Enums\Stream;
+use App\Models\IntegrityViolationLog;
 use App\Services\BlockchainAuditTrailService;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
@@ -17,20 +17,20 @@ beforeEach(function () {
 
 describe('BlockchainAuditTrailService — Publish Violation', function () {
     it('publishes a violation to the blockchain and attaches txid', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-001-0001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             txid: 'chain-txid-001',
             fieldDifferences: [['field' => 'amount', 'old_value' => 100, 'new_value' => 999]],
             publishToChain: false, // Don't publish yet — we'll test publishViolation directly
         );
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+                Stream::INTEGRITY_VIOLATIONS->value,
                 (string) $auditLog->id,
                 Mockery::on(fn ($data) => isset($data['json']['violation_type']) && $data['json']['violation_type'] === 'hash_mismatch')
             )
@@ -48,15 +48,15 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
     });
 
     it('returns null and logs error when blockchain publish fails', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-002-0001',
-            violationType: BreachTypeEnums::ROW_DELETED->value,
+            violationType: BreachType::ROW_DELETED->value,
             publishToChain: false,
         );
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andReturn(null);
 
@@ -67,15 +67,15 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
     });
 
     it('returns null when blockchain throws an exception', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-003-0001',
-            violationType: BreachTypeEnums::CONTENT_MISMATCH->value,
+            violationType: BreachType::CONTENT_MISMATCH->value,
             publishToChain: false,
         );
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andThrow(new Exception('Connection refused'));
 
@@ -86,10 +86,10 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
     });
 
     it('builds correct chain payload with all violation fields', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-004-0001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             txid: 'payload-test-txid',
             fieldDifferences: [['field' => 'title', 'old_value' => 'A', 'new_value' => 'B']],
             mirrorSnapshot: ['title' => 'B'],
@@ -103,11 +103,11 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
 
         $capturedPayload = null;
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+                Stream::INTEGRITY_VIOLATIONS->value,
                 (string) $auditLog->id,
                 Mockery::on(function ($data) use (&$capturedPayload) {
                     $capturedPayload = $data['json'];
@@ -143,21 +143,21 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
 
 describe('BlockchainAuditTrailService — Publish Recovery', function () {
     it('publishes a recovery event to the blockchain', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-010-0001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             publishToChain: false,
         );
         $auditLog->markRestored(['items_restored' => 1], publishToChain: false);
 
         $capturedPayload = null;
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
-                StreamEnums::INTEGRITY_VIOLATIONS->value,
+                Stream::INTEGRITY_VIOLATIONS->value,
                 'recovery-'.$auditLog->id,
                 Mockery::on(function ($data) use (&$capturedPayload) {
                     $capturedPayload = $data['json'];
@@ -179,16 +179,16 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
     });
 
     it('returns null when recovery publish fails', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-011-0001',
-            violationType: BreachTypeEnums::ROW_DELETED->value,
+            violationType: BreachType::ROW_DELETED->value,
             publishToChain: false,
         );
         $auditLog->markRestored([], publishToChain: false);
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andReturn(null);
 
@@ -234,10 +234,10 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
-            ->with(StreamEnums::INTEGRITY_VIOLATIONS->value, true, 10000)
+            ->with(Stream::INTEGRITY_VIOLATIONS->value, true, 10000)
             ->andReturn($chainEntries);
 
         $service = app(BlockchainAuditTrailService::class);
@@ -251,8 +251,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
     });
 
     it('returns empty array when no entries exist on chain', function () {
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn([]);
 
@@ -263,8 +263,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
     });
 
     it('returns empty array when blockchain throws exception', function () {
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andThrow(new Exception('Stream not found'));
 
@@ -299,8 +299,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -345,8 +345,8 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -357,7 +357,7 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
         expect($result['errors'])->toBe(0);
 
         // Verify the imported record exists in MySQL
-        $imported = IntegrityAuditLog::where('stream_key', 'PR-IMPORT-001')->first();
+        $imported = IntegrityViolationLog::where('stream_key', 'PR-IMPORT-001')->first();
         expect($imported)->not->toBeNull();
         expect($imported->violation_type)->toBe('hash_mismatch');
         expect($imported->severity)->toBe('critical');
@@ -367,14 +367,14 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
 
     it('skips duplicate records during restore', function () {
         // Create an existing record
-        IntegrityAuditLog::recordViolation(
+        IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-DUP-001',
             violationType: 'hash_mismatch',
             publishToChain: false,
         );
 
-        $existingCount = IntegrityAuditLog::count();
+        $existingCount = IntegrityViolationLog::count();
 
         $chainEntries = [
             [
@@ -382,7 +382,7 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
                 'txid' => 'dup-tx-1',
                 'data' => ['json' => [
                     'type' => 'violation',
-                    'violation_id' => IntegrityAuditLog::where('stream_key', 'PR-DUP-001')->first()->id,
+                    'violation_id' => IntegrityViolationLog::where('stream_key', 'PR-DUP-001')->first()->id,
                     'stream' => 'procurement.metadata',
                     'stream_key' => 'PR-DUP-001',
                     'violation_type' => 'hash_mismatch',
@@ -394,8 +394,8 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -403,7 +403,7 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
         $result = $service->restoreAuditLogsToMySQL();
 
         expect($result['skipped'])->toBeGreaterThanOrEqual(1);
-        expect(IntegrityAuditLog::count())->toBe($existingCount);
+        expect(IntegrityViolationLog::count())->toBe($existingCount);
     });
 
     it('skips recovery entries during restore (they update existing violations)', function () {
@@ -421,8 +421,8 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -435,10 +435,10 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// IntegrityAuditLog — Blockchain Publishing Integration
+// IntegrityViolationLog — Blockchain Publishing Integration
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('IntegrityAuditLog — Blockchain Publishing', function () {
+describe('IntegrityViolationLog — Blockchain Publishing', function () {
     beforeEach(function () {
         // Ensure BlockchainAuditTrailService is mocked for each test in this block
         $this->mock(BlockchainAuditTrailService::class, function ($mock) {
@@ -448,13 +448,13 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
     });
 
     it('skips automatic blockchain publish during unit tests', function () {
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
-        $log = IntegrityAuditLog::recordViolation(
+        $log = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-CHAIN-001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             publishToChain: true,
         );
 
@@ -462,13 +462,13 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
     });
 
     it('does NOT publish to blockchain when publishToChain=false', function () {
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
-        $log = IntegrityAuditLog::recordViolation(
+        $log = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-NOCHAIN-001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             publishToChain: false,
         );
 
@@ -476,15 +476,15 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
     });
 
     it('skips automatic recovery publish during unit tests', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-RECOVER-001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             publishToChain: false,
         );
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
         $auditLog->markRestored(['items_restored' => 1], publishToChain: true);
 
@@ -492,15 +492,15 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
     });
 
     it('does NOT publish recovery when publishToChain=false', function () {
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-NORECOVER-001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             publishToChain: false,
         );
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
         $auditLog->markRestored([], publishToChain: false);
 
@@ -508,10 +508,10 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
     });
 
     it('handles blockchain publish failure gracefully (does not throw)', function () {
-        $log = IntegrityAuditLog::recordViolation(
+        $log = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-GRACEFUL-001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             publishToChain: false,
         );
 
@@ -531,47 +531,47 @@ describe('IntegrityAuditLog — Blockchain Publishing', function () {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// StreamEnums — INTEGRITY_VIOLATIONS
+// Stream — INTEGRITY_VIOLATIONS
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('StreamEnums — INTEGRITY_VIOLATIONS', function () {
+describe('Stream — INTEGRITY_VIOLATIONS', function () {
     it('has the INTEGRITY_VIOLATIONS case', function () {
-        expect(StreamEnums::INTEGRITY_VIOLATIONS->value)->toBe('integrity.violations');
+        expect(Stream::INTEGRITY_VIOLATIONS->value)->toBe('integrity.violations');
     });
 
     it('provides display name for INTEGRITY_VIOLATIONS', function () {
-        expect(StreamEnums::INTEGRITY_VIOLATIONS->getDisplayName())->toBe('Integrity Violations');
+        expect(Stream::INTEGRITY_VIOLATIONS->getDisplayName())->toBe('Integrity Violations');
     });
 
     it('provides description for INTEGRITY_VIOLATIONS', function () {
-        $desc = StreamEnums::INTEGRITY_VIOLATIONS->getDescription();
+        $desc = Stream::INTEGRITY_VIOLATIONS->getDescription();
         expect($desc)->toBeString();
         expect($desc)->toContain('audit trail');
     });
 
     it('returns INTEGRITY_VIOLATIONS in integrityStreams()', function () {
-        $streams = StreamEnums::integrityStreams();
-        expect($streams)->toContain(StreamEnums::INTEGRITY_VIOLATIONS);
+        $streams = Stream::integrityStreams();
+        expect($streams)->toContain(Stream::INTEGRITY_VIOLATIONS);
     });
 
     it('is NOT classified as a procurement stream', function () {
-        expect(StreamEnums::INTEGRITY_VIOLATIONS->isProcurementStream())->toBeFalse();
+        expect(Stream::INTEGRITY_VIOLATIONS->isProcurementStream())->toBeFalse();
     });
 
     it('is NOT classified as a user stream', function () {
-        expect(StreamEnums::INTEGRITY_VIOLATIONS->isUserStream())->toBeFalse();
+        expect(Stream::INTEGRITY_VIOLATIONS->isUserStream())->toBeFalse();
     });
 
-    it('is NOT classified as a file stream', function () {
-        expect(StreamEnums::INTEGRITY_VIOLATIONS->isFileStream())->toBeFalse();
+    it('is NOT classified as a File stream', function () {
+        expect(Stream::INTEGRITY_VIOLATIONS->isBlockchainFileStream())->toBeFalse();
     });
 
     it('includes INTEGRITY_VIOLATIONS in all values', function () {
-        expect(StreamEnums::values())->toContain('integrity.violations');
+        expect(Stream::values())->toContain('integrity.violations');
     });
 
     it('includes INTEGRITY_VIOLATIONS in options', function () {
-        $options = StreamEnums::options();
+        $options = Stream::options();
         expect($options)->toHaveKey('integrity.violations');
         expect($options['integrity.violations'])->toBe('Integrity Violations');
     });

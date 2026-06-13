@@ -22,14 +22,14 @@ use Illuminate\Support\Facades\Log;
  *
  * Handles:
  * - Fetching status, documents, events, corrections for a specific procurement
- * - Document lookup by file key
+ * - Document lookup by File key
  * - Sorting raw blockchain data
  *
  * Bulk listing operations are handled by ProcurementListAggregatorService.
- * User name resolution is handled by UserNameResolverService.
+ * User name resolution is handled by BlockchainAddressResolverService.
  *
  * @see ProcurementListAggregatorService
- * @see UserNameResolverService
+ * @see BlockchainAddressResolverService
  */
 final class ProcurementFetcherService
 {
@@ -39,7 +39,7 @@ final class ProcurementFetcherService
         private readonly EventRepository $eventRepository,
         private readonly CorrectionRepositoryInterface $correctionRepository,
         private readonly ProcurementFormatterService $formatter,
-        private readonly UserNameResolverService $userNameResolver,
+        private readonly BlockchainAddressResolverService $userNameResolver,
     ) {}
 
     /**
@@ -119,7 +119,7 @@ final class ProcurementFetcherService
         return collect($documentDtos)
             ->map(function (DocumentData $doc) use ($correctionsByTxid) {
                 $fileKey = $doc->fileKey;
-                $fileUrl = ! empty($fileKey) ? route('files.download', ['fileKey' => $fileKey]) : '';
+                $BlockchainFileUrl = ! empty($fileKey) ? route('BlockchainFiles.download', ['fileKey' => $fileKey]) : '';
 
                 $stageMetadata = $doc->stageMetadata;
                 if ($stageMetadata && is_array($stageMetadata)) {
@@ -152,12 +152,12 @@ final class ProcurementFetcherService
                     'file_key' => $fileKey,
                     'document_type' => $doc->documentType,
                     'document_type_formatted' => $this->formatter->formatDocumentType($doc->documentType),
-                    'spaces_url' => $fileUrl,
+                    'spaces_url' => $BlockchainFileUrl,
                     'hash' => $doc->hash,
                     'hash_short' => $doc->getShortenedHash(),
                     'hash_medium' => $doc->getShortenedHash(6, 4),
                     'file_size' => $doc->fileSize,
-                    'file_size_formatted' => $doc->getFormattedFileSize(),
+                    'file_size_formatted' => $doc->getFormattedfileSize(),
                     'stage' => $doc->stage,
                     'stage_formatted' => $this->formatter->formatStageName($doc->stage),
                     'stage_metadata' => $stageMetadata,
@@ -216,12 +216,12 @@ final class ProcurementFetcherService
     }
 
     /**
-     * Get document data from blockchain by file key
+     * Get document data from blockchain by File key
      */
-    public function getDocumentByFileKey(string $fileKey): ?DocumentData
+    public function getDocumentByfileKey(string $fileKey): ?DocumentData
     {
         try {
-            $document = $this->documentRepository->findByFileKey($fileKey);
+            $document = $this->documentRepository->findByfileKey($fileKey);
 
             if (! $document) {
                 Log::info('No blockchain document found for file key', ['file_key' => $fileKey]);
@@ -247,7 +247,7 @@ final class ProcurementFetcherService
     }
 
     /**
-     * Get hash by procurement number and file key pattern matching
+     * Get hash by procurement number and File key pattern matching
      */
     public function getHashByPrNumber(string $prNumber, string $fileKey): ?string
     {
@@ -257,10 +257,10 @@ final class ProcurementFetcherService
             $document = collect($prDocuments)
                 ->first(function (DocumentData $doc) use ($fileKey) {
                     $fileKeyParts = explode('/', $fileKey);
-                    $docFileKeyParts = explode('/', $doc->fileKey);
+                    $docfileKeyParts = explode('/', $doc->fileKey);
 
-                    if (count($fileKeyParts) >= 1 && count($docFileKeyParts) >= 1) {
-                        return $fileKeyParts[0] === $docFileKeyParts[0];
+                    if (count($fileKeyParts) >= 1 && count($docfileKeyParts) >= 1) {
+                        return $fileKeyParts[0] === $docfileKeyParts[0];
                     }
 
                     return false;
@@ -289,12 +289,12 @@ final class ProcurementFetcherService
     }
 
     /**
-     * Validate that the file exists in document stream
+     * Validate that the File exists in document stream
      */
     public function validateDocumentExists(string $fileKey): ?DocumentData
     {
         try {
-            return $this->documentRepository->findByFileKey($fileKey);
+            return $this->documentRepository->findByfileKey($fileKey);
         } catch (\Exception $e) {
             Log::error('Blockchain validation failed', [
                 'file_key' => $fileKey,

@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,7 +14,7 @@ describe('InitiateProcurementRequest', function () {
     beforeEach(function () {
         Storage::fake('local');
         $this->user = User::factory()->create();
-        $this->user->assignRole(UserRoleEnums::BAC_SECRETARIAT->value);
+        $this->user->assignRole(UserRole::BAC_SECRETARIAT->value);
         $this->actingAs($this->user);
     });
 
@@ -61,7 +61,7 @@ describe('InitiateProcurementRequest', function () {
                 'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
                 'prepared_by' => 'John Doe',
-                'files' => [
+                'Files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
                 ],
                 'document_types' => [
@@ -203,8 +203,8 @@ describe('InitiateProcurementRequest', function () {
         });
     });
 
-    describe('files validation', function () {
-        test('it accepts valid PDF files', function () {
+    describe('BlockchainFiles validation', function () {
+        test('it accepts valid PDF BlockchainFiles', function () {
             $data = [
                 'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
@@ -216,7 +216,7 @@ describe('InitiateProcurementRequest', function () {
                 'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
                 'prepared_by' => 'John Doe',
-                'files' => [
+                'Files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
                     UploadedFile::fake()->create('document2.pdf', 1024, 'application/pdf'),
                     UploadedFile::fake()->create('document3.pdf', 1024, 'application/pdf'),
@@ -236,7 +236,7 @@ describe('InitiateProcurementRequest', function () {
             expect($validator->passes())->toBeTrue();
         });
 
-        test('it rejects non-PDF files', function () {
+        test('it rejects non-PDF BlockchainFiles', function () {
             $data = [
                 'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
@@ -248,7 +248,7 @@ describe('InitiateProcurementRequest', function () {
                 'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
                 'prepared_by' => 'John Doe',
-                'files' => [
+                'Files' => [
                     UploadedFile::fake()->create('document1.docx', 1024),
                 ],
                 'document_types' => [
@@ -260,10 +260,10 @@ describe('InitiateProcurementRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('files.0'))->toBeTrue();
+            expect($validator->errors()->has('BlockchainFiles.0'))->toBeTrue();
         });
 
-        test('it rejects files exceeding 50MB', function () {
+        test('it rejects BlockchainFiles exceeding 50MB', function () {
             $data = [
                 'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
@@ -275,7 +275,7 @@ describe('InitiateProcurementRequest', function () {
                 'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
                 'prepared_by' => 'John Doe',
-                'files' => [
+                'Files' => [
                     UploadedFile::fake()->create('document1.pdf', 51201, 'application/pdf'),
                 ],
                 'document_types' => [
@@ -287,7 +287,7 @@ describe('InitiateProcurementRequest', function () {
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('files.0'))->toBeTrue();
+            expect($validator->errors()->has('BlockchainFiles.0'))->toBeTrue();
         });
     });
 });

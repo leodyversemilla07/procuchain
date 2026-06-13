@@ -12,7 +12,7 @@ namespace App\Enums;
  * Note: Under NGPA, "General Support Services" are technically included under Goods (Section 5.n.ii),
  * but are separated here for practical procurement document requirements.
  */
-enum ProcurementCategoryEnums: string
+enum ProcurementCategory: string
 {
     case GOODS = 'goods';
     case SERVICES = 'services';

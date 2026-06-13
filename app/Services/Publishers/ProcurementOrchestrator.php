@@ -6,10 +6,10 @@ namespace App\Services\Publishers;
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -39,7 +39,7 @@ class ProcurementOrchestrator
      * Publishes: Document + Status Update + Event
      *
      * @param  array  $procurementData  Procurement metadata (pr_number, procurement_title, user_address)
-     * @param  UploadedFile  $file  File to upload
+     * @param  UploadedFile  $File  File to upload
      * @param  array  $documentData  Document-specific data
      * @param  array  $statusData  Status data
      * @param  array|null  $eventData  Optional event data
@@ -49,7 +49,7 @@ class ProcurementOrchestrator
      */
     public function publishDocumentWorkflow(
         array $procurementData,
-        UploadedFile $file,
+        UploadedFile $File,
         array $documentData,
         array $statusData,
         ?array $eventData = null
@@ -69,9 +69,9 @@ class ProcurementOrchestrator
             ? $documentData['document_type']
             : DocumentTypeEnums::fromString($documentData['document_type']);
 
-        $currentStatus = $statusData['current_status'] instanceof StatusEnums
+        $currentStatus = $statusData['current_status'] instanceof ProcurementStatus
             ? $statusData['current_status']
-            : StatusEnums::tryFrom($statusData['current_status']);
+            : ProcurementStatus::tryFrom($statusData['current_status']);
 
         if (! $stage || ! $documentType || ! $currentStatus) {
             throw new Exception('Invalid stage, document type, or status');
@@ -88,7 +88,7 @@ class ProcurementOrchestrator
                 stage: $stage,
                 status: $documentData['status'],
                 documentType: $documentType,
-                file: $file,
+                File: $File,
                 uploadedBy: $documentData['uploaded_by'] ?? 'System',
                 description: $documentData['description'] ?? null,
                 stageMetadata: $documentData['stage_metadata'] ?? null,
@@ -105,9 +105,9 @@ class ProcurementOrchestrator
 
             $previousStatus = null;
             if (isset($statusData['previous_status'])) {
-                $previousStatus = $statusData['previous_status'] instanceof StatusEnums
+                $previousStatus = $statusData['previous_status'] instanceof ProcurementStatus
                     ? $statusData['previous_status']
-                    : StatusEnums::tryFrom($statusData['previous_status']);
+                    : ProcurementStatus::tryFrom($statusData['previous_status']);
             }
 
             $statusResult = $this->statusPublisher->publish(
@@ -151,7 +151,7 @@ class ProcurementOrchestrator
                 'success' => true,
                 'pr_number' => $prNumber,
                 'transactions' => $this->publishedTransactions,
-                'file' => $documentResult['file'],
+                'File' => $documentResult['File'],
             ];
         } catch (Exception $e) {
             Log::error('Orchestrator: Failed', [
@@ -162,7 +162,7 @@ class ProcurementOrchestrator
 
             $this->errors[] = [
                 'message' => $e->getMessage(),
-                'file' => $e->getFile(),
+                'File' => $e->getFile(),
                 'line' => $e->getLine(),
             ];
 
@@ -183,7 +183,7 @@ class ProcurementOrchestrator
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
      * @param  StageEnums  $stage  Stage identifier
-     * @param  StatusEnums  $currentStatus  Current status
+     * @param  ProcurementStatus  $currentStatus  Current status
      * @param  string  $userAddress  User blockchain address
      * @param  array|null  $eventData  Optional event data
      * @return array Result with transaction IDs
@@ -192,7 +192,7 @@ class ProcurementOrchestrator
         string $prNumber,
         string $procurementTitle,
         StageEnums $stage,
-        StatusEnums $currentStatus,
+        ProcurementStatus $currentStatus,
         string $userAddress,
         ?array $eventData = null
     ): array {
@@ -254,10 +254,10 @@ class ProcurementOrchestrator
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
      * @param  StageEnums  $stage  Stage identifier
-     * @param  StatusEnums  $currentStatus  Current status
+     * @param  ProcurementStatus  $currentStatus  Current status
      * @param  string  $userAddress  User blockchain address
      * @param  array|null  $eventData  Optional event data
-     * @param  StatusEnums|null  $previousStatus  Previous status
+     * @param  ProcurementStatus|null  $previousStatus  Previous status
      * @param  array|null  $statusMetadata  Status metadata
      * @return array Result with single transaction ID
      *
@@ -267,10 +267,10 @@ class ProcurementOrchestrator
         string $prNumber,
         string $procurementTitle,
         StageEnums $stage,
-        StatusEnums $currentStatus,
+        ProcurementStatus $currentStatus,
         string $userAddress,
         ?array $eventData = null,
-        ?StatusEnums $previousStatus = null,
+        ?ProcurementStatus $previousStatus = null,
         ?array $statusMetadata = null
     ): array {
         $this->resetState();
@@ -329,7 +329,7 @@ class ProcurementOrchestrator
             }
 
             // Use publishmulti for atomic batch operation
-            $multichain = app(Manager::class);
+            $multichain = app(BlockchainRpcClient::class);
             $txid = $multichain->publishmulti('procurement.status', $items);
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
@@ -397,7 +397,7 @@ class ProcurementOrchestrator
      * Blockchain is the single source of truth - no local DB transaction needed
      *
      * @param  array  $procurementData  Complete procurement data
-     * @param  array  $files  Files to upload with document types
+     * @param  array  $BlockchainFiles  BlockchainFiles to upload with document types
      * @param  string  $userName  Current user's name
      * @return array Result with all transaction IDs
      *
@@ -405,7 +405,7 @@ class ProcurementOrchestrator
      */
     public function initiateProcurement(
         array $procurementData,
-        array $files,
+        array $BlockchainFiles,
         string $userName
     ): array {
         $this->resetState();
@@ -416,7 +416,7 @@ class ProcurementOrchestrator
 
         // Validate required enums
         $stage = StageEnums::PROCUREMENT_INITIATION;
-        $status = StatusEnums::PROCUREMENT_INITIATED;
+        $status = ProcurementStatus::PROCUREMENT_INITIATED;
 
         try {
             // Step 1: Create procurement metadata (CRITICAL)
@@ -454,13 +454,13 @@ class ProcurementOrchestrator
             $uploadedDocuments = [];
             $failedDocuments = [];
 
-            if (! empty($files)) {
+            if (! empty($BlockchainFiles)) {
                 Log::info('Orchestrator: Step 3 - Publishing documents', [
                     'pr_number' => $prNumber,
-                    'document_count' => count($files),
+                    'document_count' => count($BlockchainFiles),
                 ]);
 
-                foreach ($files as $fileData) {
+                foreach ($BlockchainFiles as $BlockchainFileData) {
                     try {
                         $documentResult = $this->documentPublisher->publish(
                             prNumber: $prNumber,
@@ -468,26 +468,26 @@ class ProcurementOrchestrator
                             userAddress: $userAddress,
                             stage: $stage,
                             status: $status->value,
-                            documentType: $fileData['document_type'],
-                            file: $fileData['file'],
+                            documentType: $BlockchainFileData['document_type'],
+                            File: $BlockchainFileData['File'],
                             uploadedBy: $userName,
-                            description: $fileData['description'] ?? null,
-                            stageMetadata: $fileData['metadata'] ?? null,
+                            description: $BlockchainFileData['description'] ?? null,
+                            stageMetadata: $BlockchainFileData['metadata'] ?? null,
                         );
 
                         $uploadedDocuments[] = [
-                            'filename' => $fileData['file']->getClientOriginalName(),
+                            'filename' => $BlockchainFileData['File']->getClientOriginalName(),
                             'txid' => $documentResult['txid'] ?? null,
                         ];
                     } catch (Exception $e) {
                         $failedDocuments[] = [
-                            'filename' => $fileData['file']->getClientOriginalName(),
+                            'filename' => $BlockchainFileData['File']->getClientOriginalName(),
                             'error' => $e->getMessage(),
                         ];
 
                         Log::error('Orchestrator: Document upload failed (non-critical)', [
                             'pr_number' => $prNumber,
-                            'filename' => $fileData['file']->getClientOriginalName(),
+                            'filename' => $BlockchainFileData['File']->getClientOriginalName(),
                             'error' => $e->getMessage(),
                         ]);
                     }
@@ -560,7 +560,7 @@ class ProcurementOrchestrator
 
             $this->errors[] = [
                 'message' => $e->getMessage(),
-                'file' => $e->getFile(),
+                'File' => $e->getFile(),
                 'line' => $e->getLine(),
             ];
 

@@ -6,18 +6,18 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
-test('profile page is displayed', function () {
+test('proFile page is displayed', function () {
     $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get('/settings/profile');
+        ->get('/settings/proFile');
 
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/profile')
+            ->component('settings/proFile')
             ->where('auth.role', null)
             ->where('auth.user.id', $user->id)
             ->where('auth.user.name', $user->name)
@@ -28,7 +28,7 @@ test('profile page is displayed', function () {
         );
 });
 
-test('profile page shares primary role and capabilities for role-based users', function () {
+test('proFile page shares primary role and capabilities for role-based users', function () {
     $user = createUserWithRole('bac_secretariat', [
         'name' => 'BAC Secretariat User',
         'email' => 'secretariat@example.com',
@@ -38,12 +38,12 @@ test('profile page shares primary role and capabilities for role-based users', f
     $response = $this
         ->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get('/settings/profile');
+        ->get('/settings/proFile');
 
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/profile')
+            ->component('settings/proFile')
             ->where('auth.role', 'bac_secretariat')
             ->where('auth.user.id', $user->id)
             ->where('auth.user.name', 'BAC Secretariat User')
@@ -55,7 +55,7 @@ test('profile page shares primary role and capabilities for role-based users', f
         );
 });
 
-test('profile information can be updated', function () {
+test('proFile information can be updated', function () {
     $user = User::factory()->create();
 
     $response = $this
@@ -64,7 +64,7 @@ test('profile information can be updated', function () {
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->patch('/settings/profile', [
+        ->patch('/settings/proFile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             '_token' => 'test-token',
@@ -72,7 +72,7 @@ test('profile information can be updated', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect('/settings/profile');
+        ->assertRedirect('/settings/proFile');
 
     $user->refresh();
 
@@ -90,7 +90,7 @@ test('email verification status is unchanged when the email address is unchanged
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->patch('/settings/profile', [
+        ->patch('/settings/proFile', [
             'name' => 'Test User',
             'email' => $user->email,
             '_token' => 'test-token',
@@ -98,7 +98,7 @@ test('email verification status is unchanged when the email address is unchanged
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect('/settings/profile');
+        ->assertRedirect('/settings/proFile');
 
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
@@ -112,7 +112,7 @@ test('user can delete their account', function () {
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->delete('/settings/profile', [
+        ->delete('/settings/proFile', [
             'password' => 'password',
             '_token' => 'test-token',
         ]);
@@ -130,19 +130,19 @@ test('correct password must be provided to delete account', function () {
 
     $response = $this
         ->actingAs($user)
-        ->from('/settings/profile')
+        ->from('/settings/proFile')
         ->withSession([
             '_token' => 'test-token',
             'auth.password_confirmed_at' => time(),
         ])
-        ->delete('/settings/profile', [
+        ->delete('/settings/proFile', [
             'password' => 'wrong-password',
             '_token' => 'test-token',
         ]);
 
     $response
         ->assertSessionHasErrors('password')
-        ->assertRedirect('/settings/profile');
+        ->assertRedirect('/settings/proFile');
 
     expect($user->fresh())->not->toBeNull();
 });

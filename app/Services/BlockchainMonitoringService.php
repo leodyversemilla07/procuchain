@@ -25,7 +25,7 @@ class BlockchainMonitoringService
     private int $healthCheckTtl;
 
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {
         // Load configuration values from config/blockchain.php
         $this->failureThreshold = config('blockchain.health_check.failure_threshold', 5);

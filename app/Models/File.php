@@ -11,13 +11,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * File Model
  *
  * File storage metadata synced FROM blockchain.
- * Source: file.metadata stream
+ * Source: File.metadata stream
  */
 class File extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'files';
+    protected $table = 'Files';
 
     protected $fillable = [
         'file_key',

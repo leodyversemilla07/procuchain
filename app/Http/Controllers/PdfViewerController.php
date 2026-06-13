@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller as BaseController;
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Services\PdfViewerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -26,8 +26,8 @@ class PdfViewerController extends BaseController
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 
         $documentData = $this->pdfViewerService->prepareDocumentData($fileKey, $request);
-        $viewStats = $this->pdfViewerService->getFileViewStats($fileKey);
-        $recentViews = DocumentView::getRecentViewsForFile($fileKey, 20);
+        $viewStats = $this->pdfViewerService->getBlockchainFileViewStats($fileKey);
+        $recentViews = DocumentViewLog::getRecentViewsForFile($fileKey, 20);
 
         Log::info('PDF Viewer Document Data', [
             'fileKey' => $fileKey,
@@ -40,7 +40,7 @@ class PdfViewerController extends BaseController
         return Inertia::render('documents/pdf-viewer', [
             'document' => $documentData,
             'fileKey' => $fileKey,
-            'pdfUrl' => route('files.download', ['fileKey' => $fileKey]),
+            'pdfUrl' => route('BlockchainFiles.download', ['fileKey' => $fileKey]),
             'viewStats' => $viewStats,
             'recentViews' => $recentViews->map(function ($view) {
                 return [

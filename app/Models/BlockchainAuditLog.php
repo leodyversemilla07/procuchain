@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * BlockchainAuditTrail Model
+ * BlockchainAuditLog Model
  *
  * Immutable audit trail synced FROM blockchain.
  * Source: audit.trail stream
  */
-class BlockchainAuditTrail extends Model
+class BlockchainAuditLog extends Model
 {
     protected $table = 'blockchain_audit_trail';
 

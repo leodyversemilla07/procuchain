@@ -9,7 +9,7 @@ use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\Procurement\ProcurementCorrectionService;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,19 +19,19 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 /**
- * Helper: build a ProcurementCorrectionService with Manager-backed final repos.
+ * Helper: build a ProcurementCorrectionService with BlockchainRpcClient-backed final repos.
  */
 function buildCorrectionService(
     ?object $procurementRepository = null,
-    ?Manager $correctionManager = null,
-    ?Manager $procCorrectionManager = null,
+    ?BlockchainRpcClient $correctionBlockchainRpcClient = null,
+    ?BlockchainRpcClient $procCorrectionBlockchainRpcClient = null,
     ?object $documentRepository = null,
     ?object $procurementDataService = null,
 ): ProcurementCorrectionService {
     return new ProcurementCorrectionService(
         $procurementRepository ?? Mockery::mock(ProcurementRepository::class),
-        new ProcurementCorrectionRepository($procCorrectionManager ?? Mockery::mock(Manager::class)),
-        new CorrectionRepository($correctionManager ?? Mockery::mock(Manager::class)),
+        new ProcurementCorrectionRepository($procCorrectionBlockchainRpcClient ?? Mockery::mock(BlockchainRpcClient::class)),
+        new CorrectionRepository($correctionBlockchainRpcClient ?? Mockery::mock(BlockchainRpcClient::class)),
         $documentRepository ?? Mockery::mock(DocumentRepository::class),
         $procurementDataService ?? Mockery::mock(ProcurementDataService::class),
     );
@@ -61,13 +61,13 @@ beforeEach(function () {
     $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
     $this->documentRepository = Mockery::mock(DocumentRepository::class);
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
-    $this->procCorrectionManager = Mockery::mock(Manager::class);
-    $this->correctionManager = Mockery::mock(Manager::class);
+    $this->procCorrectionBlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $this->correctionBlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
     $this->service = buildCorrectionService(
         procurementRepository: $this->procurementRepository,
-        correctionManager: $this->correctionManager,
-        procCorrectionManager: $this->procCorrectionManager,
+        correctionBlockchainRpcClient: $this->correctionBlockchainRpcClient,
+        procCorrectionBlockchainRpcClient: $this->procCorrectionBlockchainRpcClient,
         documentRepository: $this->documentRepository,
         procurementDataService: $this->procurementDataService,
     );

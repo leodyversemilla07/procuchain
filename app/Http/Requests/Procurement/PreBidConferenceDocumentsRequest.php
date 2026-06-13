@@ -31,7 +31,7 @@ class PreBidConferenceDocumentsRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->conferenceMessages('minutes file', 'attendance file'),
+            ...$this->conferenceMessages('minutes File', 'attendance File'),
         ];
     }
 }

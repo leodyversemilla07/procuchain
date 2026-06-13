@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\IntegrityAuditLog;
+use App\Models\IntegrityViolationLog;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
 use Illuminate\Bus\Queueable;
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Only sent to users who have 'integrity_breach' email preference enabled.
  */
-class IntegrityBreachDigest implements ShouldQueue
+class IntegrityBreachDigestJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -45,7 +45,7 @@ class IntegrityBreachDigest implements ShouldQueue
     public function handle(): void
     {
         if (! config('integrity.breach_notifications.digest_enabled', true)) {
-            Log::info('IntegrityBreachDigest: digest disabled via config, skipping');
+            Log::info('IntegrityBreachDigestJob: digest disabled via config, skipping');
 
             return;
         }
@@ -54,13 +54,13 @@ class IntegrityBreachDigest implements ShouldQueue
         $endOfDay = now()->parse($this->date)->endOfDay();
 
         // Get all violations recorded during this period
-        $violations = IntegrityAuditLog::whereBetween('created_at', [$startOfDay, $endOfDay])
+        $violations = IntegrityViolationLog::whereBetween('created_at', [$startOfDay, $endOfDay])
             ->orderBy('severity', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
 
         if ($violations->isEmpty()) {
-            Log::info('IntegrityBreachDigest: no violations for period, skipping', ['date' => $this->date]);
+            Log::info('IntegrityBreachDigestJob: no violations for period, skipping', ['date' => $this->date]);
 
             return;
         }
@@ -100,7 +100,7 @@ class IntegrityBreachDigest implements ShouldQueue
             ->filter(fn ($u) => $u->isNotificationEnabled('integrity_breach', 'email'));
 
         if ($recipients->isEmpty()) {
-            Log::info('IntegrityBreachDigest: no eligible recipients', ['date' => $this->date]);
+            Log::info('IntegrityBreachDigestJob: no eligible recipients', ['date' => $this->date]);
 
             return;
         }
@@ -122,13 +122,13 @@ class IntegrityBreachDigest implements ShouldQueue
                     summary: $summary,
                 ));
 
-                Log::info('IntegrityBreachDigest: sent to recipient', [
+                Log::info('IntegrityBreachDigestJob: sent to recipient', [
                     'date' => $this->date,
                     'recipient' => $recipient->email,
                     'total_violations' => $summary['total'],
                 ]);
             } catch (\Exception $e) {
-                Log::error('IntegrityBreachDigest: failed to send to recipient', [
+                Log::error('IntegrityBreachDigestJob: failed to send to recipient', [
                     'date' => $this->date,
                     'recipient' => $recipient->email,
                     'error' => $e->getMessage(),
@@ -136,7 +136,7 @@ class IntegrityBreachDigest implements ShouldQueue
             }
         }
 
-        Log::info('IntegrityBreachDigest: completed', [
+        Log::info('IntegrityBreachDigestJob: completed', [
             'date' => $this->date,
             'recipients_notified' => $recipients->count(),
             'total_violations' => $summary['total'],

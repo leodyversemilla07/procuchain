@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Services\WorkflowDefinitionService;
 use Inertia\Inertia;
@@ -22,7 +22,7 @@ class WorkflowController extends Controller
     {
         $this->authorize('view-workflow');
 
-        $workflows = collect(ProcurementModeEnums::cases())->map(function (ProcurementModeEnums $mode): array {
+        $workflows = collect(ProcurementMode::cases())->map(function (ProcurementMode $mode): array {
             $optionalStages = $this->workflowDefinitionService->getOptionalStagesForMode($mode);
             $stages = $this->workflowDefinitionService->getStagesForMode($mode);
 

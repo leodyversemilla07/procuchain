@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\ProcurementRepository;
-use App\Services\DashboardCacheKeys;
+use App\Services\BlockchainRpcClient;
+use App\Services\DashboardCacheService;
 use App\Services\DashboardService;
-use App\Services\Manager;
 use App\Services\ProcurementStageTransitionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -16,10 +16,10 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class BacSecretariatController extends BaseDashboardController
+class BacSecretariatDashboardController extends BaseDashboardController
 {
     public function __construct(
-        protected Manager $multichain,
+        protected BlockchainRpcClient $multichain,
         protected DashboardService $dashboardService,
         CacheStrategyInterface $cacheStrategy,
         ProcurementRepository $procurementRepository,
@@ -59,7 +59,7 @@ class BacSecretariatController extends BaseDashboardController
             'priorityActions' => Inertia::defer(function () use ($cacheUserId, $procurementsByKey, $roleName) {
                 // Use database cache for potentially large priority actions list
                 return Cache::store('database')->remember(
-                    DashboardCacheKeys::priorityActions($roleName, $cacheUserId),
+                    DashboardCacheService::priorityActions($roleName, $cacheUserId),
                     now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
                     function () use ($procurementsByKey) {
                         $allPriorityActions = $this->getPriorityActions($procurementsByKey);
@@ -84,7 +84,7 @@ class BacSecretariatController extends BaseDashboardController
 
         // Get all priority actions count - small data, can use default cache
         $allPriorityActionsCount = Cache::remember(
-            DashboardCacheKeys::priorityActionsCount($this->getRoleName(), $cacheUserId),
+            DashboardCacheService::priorityActionsCount($this->getRoleName(), $cacheUserId),
             now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
             function () use ($procurementsByKey) {
                 return count($this->getPriorityActions($procurementsByKey));
@@ -106,7 +106,7 @@ class BacSecretariatController extends BaseDashboardController
                 try {
                     // Convert enum values to display names for priority action matching
                     $stageEnum = StageEnums::tryFrom($procurement['stage']);
-                    $statusEnum = StatusEnums::tryFrom($procurement['status']);
+                    $statusEnum = ProcurementStatus::tryFrom($procurement['status']);
 
                     $displayStage = $stageEnum ? $stageEnum->getDisplayName() : $procurement['stage'];
                     $displayStatus = $statusEnum ? $statusEnum->getDisplayName() : $procurement['status'];

@@ -8,7 +8,7 @@ use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class AuditLogger
+class AuditLogService
 {
     /**
      * Action labels for human-readable audit descriptions organized by NGPA domain.
@@ -67,7 +67,7 @@ class AuditLogger
         'admin.stage_config_reset' => 'Stage document configuration reset to defaults',
 
         // Settings
-        'settings.profile_updated' => 'Profile updated',
+        'settings.profile_updated' => 'ProFile updated',
         'settings.password_changed' => 'Password changed',
         'settings.account_deleted' => 'Account deleted',
         'settings.two_factor_enabled' => 'Two-factor authentication enabled',
@@ -188,7 +188,7 @@ class AuditLogger
                 'user_agent' => $this->request->userAgent(),
             ]);
         } catch (\Exception $e) {
-            Log::error('AuditLogger: failed to write MySQL audit entry', [
+            Log::error('AuditLogService: failed to write MySQL audit entry', [
                 'action' => $action,
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
@@ -233,7 +233,7 @@ class AuditLogger
                 );
             } catch (\Exception $e) {
                 // Never let blockchain publishing break the primary request flow
-                Log::warning('AuditLogger: failed to publish to blockchain (non-critical)', [
+                Log::warning('AuditLogService: failed to publish to blockchain (non-critical)', [
                     'action' => $action,
                     'error' => $e->getMessage(),
                 ]);
@@ -294,7 +294,7 @@ class AuditLogger
                 timestamp: now()->toIso8601String(),
             );
         } catch (\Exception $e) {
-            Log::warning('AuditLogger: failed to send notification for critical action', [
+            Log::warning('AuditLogService: failed to send notification for critical action', [
                 'action' => $action,
                 'error' => $e->getMessage(),
             ]);

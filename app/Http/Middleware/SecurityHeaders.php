@@ -46,8 +46,8 @@ class SecurityHeaders
         // Referrer policy - send full URL on same-origin, origin only on cross-origin
         $response->headers->set('Referrer-Policy', 'no-referrer-when-downgrade');
 
-        $profile = $isProduction ? 'production' : 'development';
-        $cspConfig = (array) config("security.csp.{$profile}", []);
+        $proFile = $isProduction ? 'production' : 'development';
+        $cspConfig = (array) config("security.csp.{$proFile}", []);
         $directiveMap = [
             'script_src' => 'script-src',
             'style_src' => 'style-src',

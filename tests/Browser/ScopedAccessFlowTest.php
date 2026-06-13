@@ -175,7 +175,7 @@ function browserBindPdfViewerMocks(string $fileKey, string $prNumber, User $user
     $userAddress = $accessible ? $user->blockchain_address : 'different-address';
 
     $documentRepository = mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByFileKey')
+    $documentRepository->shouldReceive('findByfileKey')
         ->zeroOrMoreTimes()
         ->with($fileKey)
         ->andReturn(browserDocumentFixture(
@@ -239,7 +239,7 @@ function browserBindPdfViewerMocks(string $fileKey, string $prNumber, User $user
             'hash' => 'browser-hash',
             'blockchain_txid' => 'browser-data-txid',
         ]);
-    $pdfViewerService->shouldReceive('getFileViewStats')
+    $pdfViewerService->shouldReceive('getBlockchainFileViewStats')
         ->zeroOrMoreTimes()
         ->with($fileKey)
         ->andReturn([
@@ -332,7 +332,7 @@ function browserDocumentFixture(
         status: 'draft',
         documentType: 'request_for_quotation',
         fileKey: $fileKey,
-        fileName: $fileKey,
+        filename: $fileKey,
         fileSize: 1024,
         mimeType: 'application/pdf',
         hash: 'browser-hash',

@@ -1,15 +1,15 @@
 <?php
 
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 
-describe('SmartContractSetup Command', function () {
+describe('SmartFilterSetup Command', function () {
     beforeEach(function () {
-        $this->multichainManager = mock(Manager::class);
-        $this->app->instance(Manager::class, $this->multichainManager);
+        $this->multichainBlockchainRpcClient = mock(BlockchainRpcClient::class);
+        $this->app->instance(BlockchainRpcClient::class, $this->multichainBlockchainRpcClient);
     });
 
     it('checks multichain connection before any operation', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -17,7 +17,7 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('create')
             ->andReturn('txid-123');
 
@@ -27,7 +27,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('deploys by default when no option is provided', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -35,12 +35,12 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('create')
             ->with('streamfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-123');
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('create')
             ->with('txfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-456');
@@ -51,7 +51,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('checks deployment status with --check flag', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -59,7 +59,7 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('liststreamfilters')
             ->once()
             ->andReturn([
@@ -73,7 +73,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('shows warning when no filters deployed on --check', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -81,7 +81,7 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('liststreamfilters')
             ->once()
             ->andReturn([]);
@@ -91,7 +91,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('deploys all stream and transaction filters', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -99,12 +99,12 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('create')
             ->with('streamfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-123');
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('create')
             ->with('txfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-456');
@@ -117,7 +117,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('handles already existing filters gracefully during deploy', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -125,7 +125,7 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('create')
             ->andThrow(new Exception('Entity with this name already exists'));
 
@@ -134,7 +134,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('activates filters with --activate flag', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -142,12 +142,12 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getaddresses')
             ->once()
             ->andReturn(['1abc123def456']);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('liststreamfilters')
             ->once()
             ->andReturn([
@@ -155,12 +155,12 @@ describe('SmartContractSetup Command', function () {
                 ['name' => 'sf_status_validation'],
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('listtxfilters')
             ->once()
             ->andReturn([]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('approvefrom')
             ->andReturn(true);
 
@@ -170,7 +170,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('deactivates filters with --deactivate flag', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -178,24 +178,24 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getaddresses')
             ->once()
             ->andReturn(['1abc123def456']);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('liststreamfilters')
             ->once()
             ->andReturn([
                 ['name' => 'sf_document_validation'],
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('listtxfilters')
             ->once()
             ->andReturn([]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('approvefrom')
             ->andReturn(true);
 
@@ -205,7 +205,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('fails when no admin address available', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andReturn([
@@ -213,7 +213,7 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getaddresses')
             ->once()
             ->andReturn([]);
@@ -224,7 +224,7 @@ describe('SmartContractSetup Command', function () {
     });
 
     it('handles connection errors gracefully', function () {
-        $this->multichainManager
+        $this->multichainBlockchainRpcClient
             ->shouldReceive('getinfo')
             ->once()
             ->andThrow(new Exception('Connection refused'));
@@ -234,21 +234,21 @@ describe('SmartContractSetup Command', function () {
     });
 });
 
-describe('Smart Filter JavaScript Files', function () {
-    it('has documents filter file', function () {
+describe('Smart Filter JavaScript BlockchainFiles', function () {
+    it('has documents filter File', function () {
         expect(file_exists(resource_path('blockchain/filters/stream_document_validation.js')))->toBeTrue();
     });
 
-    it('has status filter file', function () {
+    it('has status filter File', function () {
         expect(file_exists(resource_path('blockchain/filters/stream_status_validation.js')))->toBeTrue();
     });
 
-    it('has event filter file', function () {
+    it('has event filter File', function () {
         expect(file_exists(resource_path('blockchain/filters/stream_event_validation.js')))->toBeTrue();
     });
 
-    it('has file metadata filter file', function () {
-        expect(file_exists(resource_path('blockchain/filters/stream_file_metadata_validation.js')))->toBeTrue();
+    it('has File metadata filter File', function () {
+        expect(file_exists(resource_path('blockchain/filters/stream_FILE_METADATA_validation.js')))->toBeTrue();
     });
 
     it('documents filter validates hash format', function () {

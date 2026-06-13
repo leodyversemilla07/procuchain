@@ -6,9 +6,9 @@ namespace App\Repositories;
 
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementCorrectionData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\ProcurementMetadataCorrection;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 final readonly class ProcurementCorrectionRepository implements ProcurementCorrectionRepositoryInterface
 {
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {}
 
     /**
@@ -28,7 +28,7 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
     {
         try {
             $txid = $this->multichain->publish(
-                StreamEnums::PROCUREMENTS_CORRECTIONS->value,
+                Stream::PROCUREMENTS_CORRECTIONS->value,
                 $data->prNumber,
                 ['json' => $data->toBlockchainArray()]
             );

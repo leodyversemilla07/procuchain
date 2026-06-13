@@ -5,7 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Mail\UserInvitationMail;
 use App\Models\User;
 use App\Models\UserInvitation;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -195,12 +195,12 @@ test('can accept valid invitation and create account', function () {
     // Create the role first
     Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
 
-    // Mock the Manager service - MUST be done before creating invitation
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('getnewaddress')
+    // Mock the BlockchainRpcClient service - MUST be done before creating invitation
+    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClientMock->shouldReceive('getnewaddress')
         ->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
 
-    $this->app->instance(Manager::class, $managerMock);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
 
     $invitation = UserInvitation::factory()->create([
         'email' => 'newuser@example.com',

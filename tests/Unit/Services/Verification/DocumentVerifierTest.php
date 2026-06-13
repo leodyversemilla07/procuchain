@@ -2,12 +2,12 @@
 
 use App\DataTransferObjects\DocumentData;
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\DocumentRepository;
 use App\Services\BlockchainStorageService;
 use App\Services\DocumentValidationService;
-use App\Services\StageDocumentRequirements;
+use App\Services\StageDocumentRequirementsService;
 use App\Services\Verification\DocumentCompletenessVerifier;
 use App\Services\Verification\DocumentComplianceVerifier;
 use App\Services\Verification\DocumentCrossReferenceVerifier;
@@ -25,10 +25,10 @@ function makeDocumentData(array $overrides = []): DocumentData
         'procurementTitle' => 'Test Procurement',
         'userAddress' => '0xTestAddress',
         'stage' => StageEnums::PROCUREMENT_INITIATION->value,
-        'status' => StatusEnums::PROCUREMENT_INITIATED->value,
+        'status' => ProcurementStatus::PROCUREMENT_INITIATED->value,
         'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
-        'fileKey' => 'test-file-key-'.uniqid(),
-        'fileName' => 'test-document.pdf',
+        'fileKey' => 'test-File-key-'.uniqid(),
+        'filename' => 'test-document.pdf',
         'fileSize' => 1024,
         'mimeType' => 'application/pdf',
         'hash' => hash('sha256', 'test-content'),
@@ -50,7 +50,7 @@ function makeDocumentData(array $overrides = []): DocumentData
         status: $merged['status'],
         documentType: $merged['documentType'],
         fileKey: $merged['fileKey'],
-        fileName: $merged['fileName'],
+        filename: $merged['filename'],
         fileSize: $merged['fileSize'],
         mimeType: $merged['mimeType'],
         hash: $merged['hash'],
@@ -79,16 +79,16 @@ describe('DocumentIntegrityVerifier', function () {
 
     describe('verify', function () {
         it('returns success when hashes match', function () {
-            $content = 'test-file-content';
+            $content = 'test-File-content';
             $hash = hash('sha256', $content);
 
             $this->blockchainStorage
                 ->shouldReceive('retrieveFile')
                 ->once()
-                ->with('file-key-1', 'txid-1')
+                ->with('File-key-1', 'txid-1')
                 ->andReturn(['hash' => $hash, 'content' => $content]);
 
-            $result = $this->verifier->verify('file-key-1', 'txid-1');
+            $result = $this->verifier->verify('File-key-1', 'txid-1');
 
             expect($result->isValid)->toBeTrue();
             expect($result->errors)->toBeEmpty();
@@ -99,10 +99,10 @@ describe('DocumentIntegrityVerifier', function () {
             $this->blockchainStorage
                 ->shouldReceive('retrieveFile')
                 ->once()
-                ->with('file-key-1', 'txid-1')
+                ->with('File-key-1', 'txid-1')
                 ->andReturn(['hash' => 'wrong_hash', 'content' => 'content']);
 
-            $result = $this->verifier->verify('file-key-1', 'txid-1');
+            $result = $this->verifier->verify('File-key-1', 'txid-1');
 
             expect($result->isValid)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
@@ -115,7 +115,7 @@ describe('DocumentIntegrityVerifier', function () {
                 ->once()
                 ->andThrow(new Exception('Blockchain unavailable'));
 
-            $result = $this->verifier->verify('file-key-1', 'txid-1');
+            $result = $this->verifier->verify('File-key-1', 'txid-1');
 
             expect($result->isValid)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
@@ -125,12 +125,12 @@ describe('DocumentIntegrityVerifier', function () {
 
     describe('verifySingle', function () {
         it('delegates to verify when document found', function () {
-            $content = 'file-content';
+            $content = 'File-content';
             $hash = hash('sha256', $content);
             $doc = makeDocumentData(['fileKey' => 'fk-1', 'dataTxid' => 'txid-1']);
 
             $this->documentRepository
-                ->shouldReceive('findByFileKey')
+                ->shouldReceive('findByfileKey')
                 ->once()
                 ->with('fk-1')
                 ->andReturn($doc);
@@ -148,7 +148,7 @@ describe('DocumentIntegrityVerifier', function () {
 
         it('returns failure when document not found', function () {
             $this->documentRepository
-                ->shouldReceive('findByFileKey')
+                ->shouldReceive('findByfileKey')
                 ->once()
                 ->with('nonexistent-key')
                 ->andReturn(null);
@@ -213,7 +213,7 @@ describe('DocumentCompletenessVerifier', function () {
         Log::spy();
         $this->documentRepository = Mockery::mock(DocumentRepository::class);
         $this->validationService = Mockery::mock(DocumentValidationService::class);
-        $this->requirements = Mockery::mock(StageDocumentRequirements::class);
+        $this->requirements = Mockery::mock(StageDocumentRequirementsService::class);
         $this->verifier = new DocumentCompletenessVerifier(
             $this->documentRepository,
             $this->validationService,
@@ -410,7 +410,7 @@ describe('DocumentComplianceVerifier', function () {
     beforeEach(function () {
         Log::spy();
         $this->documentRepository = Mockery::mock(DocumentRepository::class);
-        $this->requirements = Mockery::mock(StageDocumentRequirements::class);
+        $this->requirements = Mockery::mock(StageDocumentRequirementsService::class);
         $this->verifier = new DocumentComplianceVerifier(
             $this->documentRepository,
             $this->requirements,

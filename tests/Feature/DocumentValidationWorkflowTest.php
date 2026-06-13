@@ -2,10 +2,10 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
@@ -42,7 +42,7 @@ describe('Document Upload Validation Workflow', function () {
                 'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
-                'document_file' => UploadedFile::fake()->create('noa.pdf', 1000, 'application/pdf'),
+                'document_File' => UploadedFile::fake()->create('noa.pdf', 1000, 'application/pdf'),
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
                 'description' => 'Invalid document for this stage',
             ]);
@@ -68,7 +68,7 @@ describe('Document Upload Validation Workflow', function () {
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
-                'file' => UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf'),
+                'File' => UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf'),
             ]);
 
         $response->assertSuccessful();
@@ -141,7 +141,7 @@ describe('Progressive Upload Workflow', function () {
                 'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
-                'document_file' => UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf'),
+                'document_File' => UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf'),
                 'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
                 'description' => 'Meeting minutes for pre-procurement conference',
             ]);
@@ -201,8 +201,8 @@ describe('Progressive Upload Workflow', function () {
                 return array_merge([
                     'required_documents' => [],
                     'uploaded_documents' => [],
-                    'mode' => ProcurementModeEnums::COMPETITIVE_BIDDING->value,
-                    'mode_display_name' => ProcurementModeEnums::COMPETITIVE_BIDDING->getDisplayName(),
+                    'mode' => ProcurementMode::COMPETITIVE_BIDDING->value,
+                    'mode_display_name' => ProcurementMode::COMPETITIVE_BIDDING->getDisplayName(),
                     'is_alternative_mode' => false,
                 ], $case['completion']);
             }, $cases));
@@ -231,8 +231,8 @@ function buildDocumentWorkflowProcurement(User $user): ProcurementData
         description: 'Test Description',
         abcAmount: 1000000.00,
         fundingSource: 'General Fund',
-        category: ProcurementCategoryEnums::GOODS,
-        procurementMode: ProcurementModeEnums::COMPETITIVE_BIDDING,
+        category: ProcurementCategory::GOODS,
+        procurementMode: ProcurementMode::COMPETITIVE_BIDDING,
         office: 'Test Office',
         endUser: 'Test User',
         deliveryLocation: null,
@@ -281,7 +281,7 @@ function bindDocumentWorkflowSupportStubs(ProcurementData $procurementData): voi
         ->andReturn($procurementData->procurementMode);
     $support->shouldReceive('getOngoingStatusForStage')
         ->zeroOrMoreTimes()
-        ->andReturn(StatusEnums::PROCUREMENT_SUBMITTED);
+        ->andReturn(ProcurementStatus::PROCUREMENT_SUBMITTED);
     app()->instance(ProcurementSupportService::class, $support);
 }
 

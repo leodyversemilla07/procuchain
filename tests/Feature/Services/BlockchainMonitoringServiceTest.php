@@ -1,7 +1,7 @@
 <?php
 
 use App\Services\BlockchainMonitoringService;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -21,14 +21,14 @@ beforeEach(function () {
     Cache::flush();
     Log::spy();
 
-    $this->multichainManager = mock(Manager::class);
-    $this->service = new BlockchainMonitoringService($this->multichainManager);
+    $this->multichainBlockchainRpcClient = mock(BlockchainRpcClient::class);
+    $this->service = new BlockchainMonitoringService($this->multichainBlockchainRpcClient);
 });
 
 describe('BlockchainMonitoringService', function () {
     describe('isHealthy', function () {
         test('it returns true when blockchain is responsive', function () {
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn([
@@ -43,7 +43,7 @@ describe('BlockchainMonitoringService', function () {
         });
 
         test('it returns false when blockchain is unresponsive', function () {
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andThrow(new Exception('Connection refused'));
@@ -68,7 +68,7 @@ describe('BlockchainMonitoringService', function () {
         });
 
         test('it caches health check results', function () {
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once() // Should only be called once due to caching
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -83,7 +83,7 @@ describe('BlockchainMonitoringService', function () {
         });
 
         test('it returns false when getInfo response is malformed', function () {
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['chainname' => 'procuchain']); // Missing nodeaddress
@@ -128,7 +128,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // Mock successful recovery test
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -157,7 +157,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // Mock failed recovery test (no nodeaddress in response)
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['chainname' => 'procuchain']); // Missing nodeaddress
@@ -184,7 +184,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // Mock exception during recovery test
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andThrow(new Exception('Connection refused'));
@@ -212,7 +212,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // Mock failed recovery
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andThrow(new Exception('Connection refused'));
@@ -335,7 +335,7 @@ describe('BlockchainMonitoringService', function () {
 
     describe('getHealthStatus', function () {
         test('it returns comprehensive health data when healthy', function () {
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
 
@@ -422,7 +422,7 @@ describe('BlockchainMonitoringService', function () {
     describe('integration scenarios', function () {
         test('it handles complete failure and recovery cycle with half-open state', function () {
             // 1. Start healthy
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -450,7 +450,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // 5. Half-open state: test request during recovery attempt
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -460,7 +460,7 @@ describe('BlockchainMonitoringService', function () {
 
             // 7. Next health check should succeed
             Cache::forget('blockchain:health_check');
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -484,7 +484,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // 3. Half-open test fails
-            $this->multichainManager
+            $this->multichainBlockchainRpcClient
                 ->shouldReceive('getinfo')
                 ->once()
                 ->andThrow(new Exception('Still down'));

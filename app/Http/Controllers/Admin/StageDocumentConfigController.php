@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
 use App\Models\StageDocumentConfig;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\ProcurementWorkflowService;
 use App\Services\StageDocumentConfigService;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +20,7 @@ class StageDocumentConfigController extends Controller
     public function __construct(
         private readonly StageDocumentConfigService $documentConfigService,
         private readonly ProcurementWorkflowService $workflowService,
-        private readonly AuditLogger $auditLogger,
+        private readonly AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -30,8 +30,8 @@ class StageDocumentConfigController extends Controller
     {
         $this->authorize('manage-stage-document-config');
 
-        $selectedMode = $request->query('mode', ProcurementModeEnums::COMPETITIVE_BIDDING->value);
-        $modeEnum = ProcurementModeEnums::tryFrom($selectedMode) ?? ProcurementModeEnums::COMPETITIVE_BIDDING;
+        $selectedMode = $request->query('mode', ProcurementMode::COMPETITIVE_BIDDING->value);
+        $modeEnum = ProcurementMode::tryFrom($selectedMode) ?? ProcurementMode::COMPETITIVE_BIDDING;
 
         // Get stages for the selected mode from workflow service
         $workflowStages = $this->workflowService->getStagesForMode($modeEnum);
@@ -62,11 +62,11 @@ class StageDocumentConfigController extends Controller
         $postProcurement = array_filter($configs, fn ($c) => $c['phase'] === 'post_procurement');
 
         // Get all modes for dropdown
-        $modes = array_map(fn (ProcurementModeEnums $m) => [
+        $modes = array_map(fn (ProcurementMode $m) => [
             'value' => $m->value,
             'display_name' => $m->getDisplayName(),
             'is_alternative' => $m->isAlternativeMode(),
-        ], ProcurementModeEnums::cases());
+        ], ProcurementMode::cases());
 
         return Inertia::render('admin/stage-document-configs', [
             'selectedMode' => $modeEnum->value,
@@ -81,11 +81,11 @@ class StageDocumentConfigController extends Controller
     /**
      * Show the form for editing a stage document configuration.
      */
-    public function edit(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): Response
+    public function edit(Request $request, string|ProcurementMode $mode, string|StageEnums $stage): Response
     {
         $this->authorize('manage-stage-document-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
 
         if (! $modeEnum || ! $stageEnum) {
@@ -98,7 +98,7 @@ class StageDocumentConfigController extends Controller
         // Get all available document types
         $allDocuments = $this->documentConfigService->getAllDocumentTypes();
 
-        // Get default documents for comparison (from ModeAwareDocumentRequirements)
+        // Get default documents for comparison (from ModeAwareDocumentRequirementsService)
         $guide = $this->documentConfigService->getStageDocumentGuide($stageEnum, $modeEnum);
 
         return Inertia::render('admin/stage-document-config-edit', [
@@ -122,11 +122,11 @@ class StageDocumentConfigController extends Controller
     /**
      * Update the stage document configuration.
      */
-    public function update(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): RedirectResponse
+    public function update(Request $request, string|ProcurementMode $mode, string|StageEnums $stage): RedirectResponse
     {
         $this->authorize('manage-stage-document-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
 
         if (! $modeEnum || ! $stageEnum) {
@@ -171,7 +171,7 @@ class StageDocumentConfigController extends Controller
             $request->user()->id
         );
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'admin.stage_document_config_updated',
             'stage_document_config',
             "{$modeEnum->value}:{$stageEnum->value}",
@@ -187,11 +187,11 @@ class StageDocumentConfigController extends Controller
     /**
      * Reset stage document configuration to defaults.
      */
-    public function resetToDefaults(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): RedirectResponse
+    public function resetToDefaults(Request $request, string|ProcurementMode $mode, string|StageEnums $stage): RedirectResponse
     {
         $this->authorize('manage-stage-document-config');
 
-        $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
+        $modeEnum = $mode instanceof ProcurementMode ? $mode : ProcurementMode::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
 
         if (! $modeEnum || ! $stageEnum) {
@@ -200,7 +200,7 @@ class StageDocumentConfigController extends Controller
 
         $this->documentConfigService->resetToDefaults($stageEnum, $modeEnum, $request->user()->id);
 
-        $this->auditLogger->log(
+        $this->AuditLogService->log(
             'admin.stage_document_config_reset',
             'stage_document_config',
             "{$modeEnum->value}:{$stageEnum->value}",

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,7 +19,7 @@ class UpdateDeliveryDetailsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(UserRoleEnums::BAC_SECRETARIAT->value) ?? false;
+        return $this->user()?->hasRole(UserRole::BAC_SECRETARIAT->value) ?? false;
     }
 
     /**

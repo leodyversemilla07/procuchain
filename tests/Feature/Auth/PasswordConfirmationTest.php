@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -25,11 +25,11 @@ test('password confirmation requires authentication', function () {
 });
 
 test('password can be confirmed', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::BAC_SECRETARIAT->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::BAC_SECRETARIAT->value, 'guard_name' => 'web']);
     $user = User::factory()->create([
         'password' => bcrypt('password'),
     ]);
-    $user->assignRole(UserRoleEnums::BAC_SECRETARIAT->value);
+    $user->assignRole(UserRole::BAC_SECRETARIAT->value);
 
     $response = $this->withoutMiddleware(PreventRequestForgery::class)
         ->actingAs($user)
@@ -58,11 +58,11 @@ test('password confirmation fails with wrong password', function () {
 });
 
 test('password confirmation redirects to bac chairman dashboard', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::BAC_CHAIRMAN->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::BAC_CHAIRMAN->value, 'guard_name' => 'web']);
     $user = User::factory()->create([
         'password' => bcrypt('password'),
     ]);
-    $user->assignRole(UserRoleEnums::BAC_CHAIRMAN->value);
+    $user->assignRole(UserRole::BAC_CHAIRMAN->value);
 
     $response = $this->withoutMiddleware(PreventRequestForgery::class)
         ->actingAs($user)
@@ -74,11 +74,11 @@ test('password confirmation redirects to bac chairman dashboard', function () {
 });
 
 test('password confirmation redirects to hope dashboard', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::HOPE->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::HOPE->value, 'guard_name' => 'web']);
     $user = User::factory()->create([
         'password' => bcrypt('password'),
     ]);
-    $user->assignRole(UserRoleEnums::HOPE->value);
+    $user->assignRole(UserRole::HOPE->value);
 
     $response = $this->withoutMiddleware(PreventRequestForgery::class)
         ->actingAs($user)
@@ -90,11 +90,11 @@ test('password confirmation redirects to hope dashboard', function () {
 });
 
 test('password confirmation redirects to admin dashboard', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web']);
     $user = User::factory()->create([
         'password' => bcrypt('password'),
     ]);
-    $user->assignRole(UserRoleEnums::ADMIN->value);
+    $user->assignRole(UserRole::ADMIN->value);
 
     $response = $this->withoutMiddleware(PreventRequestForgery::class)
         ->actingAs($user)

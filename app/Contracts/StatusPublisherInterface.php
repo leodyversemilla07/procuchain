@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Exceptions\BlockchainException;
 
 /**
@@ -21,9 +21,9 @@ interface StatusPublisherInterface
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
      * @param  StageEnums  $stage  Stage identifier
-     * @param  StatusEnums  $currentStatus  Current status
+     * @param  ProcurementStatus  $currentStatus  Current status
      * @param  string  $userAddress  User blockchain address
-     * @param  StatusEnums|null  $previousStatus  Previous status
+     * @param  ProcurementStatus|null  $previousStatus  Previous status
      * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array{
      *     success: bool,
@@ -39,9 +39,9 @@ interface StatusPublisherInterface
         string $prNumber,
         string $procurementTitle,
         StageEnums $stage,
-        StatusEnums $currentStatus,
+        ProcurementStatus $currentStatus,
         string $userAddress,
-        ?StatusEnums $previousStatus = null,
+        ?ProcurementStatus $previousStatus = null,
         ?array $metadata = null
     ): array;
 

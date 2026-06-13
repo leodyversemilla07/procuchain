@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
@@ -20,11 +20,11 @@ it('returns the shared ledger page for authenticated users', function () {
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    // Mock the Manager to avoid actual blockchain calls
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('liststreamitems')
+    // Mock the BlockchainRpcClient to avoid actual blockchain calls
+    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
         ->andReturn([]);
-    $this->app->instance(Manager::class, $managerMock);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
 
     // Use node=default to avoid new Client() calls that bypass the container
     $this->actingAs($user)
@@ -90,13 +90,13 @@ it('filters ledger entries by pr_number', function () {
         ],
     ];
 
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('liststreamitems')
+    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
         ->with('procurement.metadata', true, 5000, 0, false)
         ->andReturn($mockData);
-    $managerMock->shouldReceive('liststreamitems')
+    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
         ->andReturn([]);
-    $this->app->instance(Manager::class, $managerMock);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
 
     $this->actingAs($user)
         ->get('/admin/shared-ledger?pr_number=PR-2025-001-0001&node=default')
@@ -112,11 +112,11 @@ it('handles blockchain unavailability gracefully', function () {
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    $managerMock = Mockery::mock(Manager::class);
+    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
     // Throw on first stream call to trigger exception handling
-    $managerMock->shouldReceive('liststreamitems')
+    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
         ->andThrow(new Exception('Connection refused'));
-    $this->app->instance(Manager::class, $managerMock);
+    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
 
     // Use node=default to avoid new Client() calls that bypass the container
     $this->actingAs($user)

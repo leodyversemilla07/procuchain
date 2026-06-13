@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\StageDocumentConfig;
 use App\Services\WorkflowDefinitionService;
@@ -10,10 +10,10 @@ uses(RefreshDatabase::class);
 
 it('materializes missing workflow and document default rows without creating duplicates', function () {
     $service = app(WorkflowDefinitionService::class);
-    $expectedWorkflowCount = count(ProcurementModeEnums::cases());
+    $expectedWorkflowCount = count(ProcurementMode::cases());
     $expectedDocumentCount = array_reduce(
-        ProcurementModeEnums::cases(),
-        fn (int $count, ProcurementModeEnums $mode): int => $count + count($service->getStagesForMode($mode)),
+        ProcurementMode::cases(),
+        fn (int $count, ProcurementMode $mode): int => $count + count($service->getStagesForMode($mode)),
         0,
     );
 

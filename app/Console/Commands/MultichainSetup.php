@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\StreamEnums;
-use App\Enums\UserRoleEnums;
+use App\Enums\Stream;
+use App\Enums\UserRole;
 use App\Libraries\MultiChain\Client;
 use App\Models\User;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
-use App\Services\Manager;
 use App\Services\UserRegistrationService;
 use Exception;
 use Illuminate\Console\Command;
@@ -25,7 +25,7 @@ class MultichainSetup extends Command
     protected $signature = 'multichain:setup 
         {--check : Only check connection to MultiChain node}
         {--reset : Reset and recreate all blockchain setup}
-        {--test-storage : Test the on-chain file storage after setup}';
+        {--test-storage : Test the on-chain File storage after setup}';
 
     protected $description = 'Setup MultiChain blockchain for procurement system (aligned with official MultiChain API)';
 
@@ -33,36 +33,36 @@ class MultichainSetup extends Command
      * Procurement streams to create
      */
     private const STREAMS = [
-        StreamEnums::METADATA->value,
-        StreamEnums::DOCUMENTS->value,
-        StreamEnums::STATUS->value,
-        StreamEnums::EVENTS->value,
-        StreamEnums::CORRECTIONS->value,
-        StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-        StreamEnums::ARCHIVE->value,
-        StreamEnums::INTEGRITY_VIOLATIONS->value,
-        StreamEnums::AUDIT_TRAIL->value,
-        StreamEnums::DOCUMENT_ACCESS->value,
-        StreamEnums::CONFIG_WORKFLOWS->value,
-        StreamEnums::CONFIG_STAGE_DOCS->value,
-        StreamEnums::USER_LOGIN_SESSIONS->value,
+        Stream::METADATA->value,
+        Stream::DOCUMENTS->value,
+        Stream::STATUS->value,
+        Stream::EVENTS->value,
+        Stream::CORRECTIONS->value,
+        Stream::PROCUREMENTS_CORRECTIONS->value,
+        Stream::ARCHIVE->value,
+        Stream::INTEGRITY_VIOLATIONS->value,
+        Stream::AUDIT_TRAIL->value,
+        Stream::DOCUMENT_ACCESS->value,
+        Stream::CONFIG_WORKFLOWS->value,
+        Stream::CONFIG_STAGE_DOCS->value,
+        Stream::USER_LOGIN_SESSIONS->value,
     ];
 
     /**
-     * File storage streams for on-chain file storage
+     * File storage streams for on-chain File storage
      * FILE_CHUNKS enables chunking of large files (>2MB) across multiple transactions
      */
     private const FILE_STORAGE_STREAMS = [
         [
-            'name' => StreamEnums::FILE_DATA->value,
+            'name' => Stream::FILE_DATA->value,
             'purpose' => 'on_chain_file_storage',
         ],
         [
-            'name' => StreamEnums::FILE_METADATA->value,
-            'purpose' => 'file_metadata_tracking',
+            'name' => Stream::FILE_METADATA->value,
+            'purpose' => 'FILE_METADATA_tracking',
         ],
         [
-            'name' => StreamEnums::FILE_CHUNKS->value,
+            'name' => Stream::FILE_CHUNKS->value,
             'purpose' => 'large_file_chunking',
         ],
     ];
@@ -71,20 +71,20 @@ class MultichainSetup extends Command
      * Roles that require blockchain addresses
      */
     private const ROLES = [
-        UserRoleEnums::BAC_SECRETARIAT->value,
-        UserRoleEnums::BAC_CHAIRMAN->value,
-        UserRoleEnums::HOPE->value,
-        UserRoleEnums::ADMIN->value,
+        UserRole::BAC_SECRETARIAT->value,
+        UserRole::BAC_CHAIRMAN->value,
+        UserRole::HOPE->value,
+        UserRole::ADMIN->value,
     ];
 
-    private Manager $multichainManager;
+    private BlockchainRpcClient $multichainBlockchainRpcClient;
 
     private array $generatedAddresses = [];
 
-    public function __construct(Manager $multichain)
+    public function __construct(BlockchainRpcClient $multichain)
     {
         parent::__construct();
-        $this->multichainManager = $multichain;
+        $this->multichainBlockchainRpcClient = $multichain;
     }
 
     public function handle(): int
@@ -116,9 +116,9 @@ class MultichainSetup extends Command
             // Uses: create command (type=stream) and subscribe command
             $this->createStreams();
 
-            // 4. Initialize file storage streams (always included in setup)
-            // Uses: create command for file storage streams
-            $this->initializeFileStorage();
+            // 4. Initialize File storage streams (always included in setup)
+            // Uses: create command for File storage streams
+            $this->initializeBlockchainFileStorage();
 
             // 5. Grant permissions (idempotent: handle already granted permissions)
             // Uses: grant command for global and per-stream permissions
@@ -134,9 +134,9 @@ class MultichainSetup extends Command
             $this->info('MultiChain setup completed successfully!');
             $this->displayAddresses($addresses, $addressResult['statuses']);
 
-            // Test file storage if requested
+            // Test File storage if requested
             if ($this->option('test-storage')) {
-                $this->testFileStorage();
+                $this->testBlockchainFileStorage();
             }
 
             return self::SUCCESS;
@@ -157,7 +157,7 @@ class MultichainSetup extends Command
     private function checkConnection(): int
     {
         try {
-            $info = $this->multichainManager->getinfo();
+            $info = $this->multichainBlockchainRpcClient->getinfo();
 
             $this->info('Connected to MultiChain node');
             $this->line('   Chain: '.($info['chainname'] ?? 'Unknown'));
@@ -171,7 +171,7 @@ class MultichainSetup extends Command
             $this->newLine();
             $this->warn('Please ensure:');
             $this->line('  1. MultiChain node is running (multichaind '.config('multichain.chain_name').' -daemon)');
-            $this->line('  2. RPC credentials are correct in .env file');
+            $this->line('  2. RPC credentials are correct in .env File');
             $this->line('  3. Node is accessible at '.config('multichain.rpc.host').':'.config('multichain.rpc.port'));
 
             return self::FAILURE;
@@ -199,7 +199,7 @@ class MultichainSetup extends Command
             }
 
             // Generate new address if none exists or invalid
-            $address = $this->multichainManager->getnewaddress();
+            $address = $this->multichainBlockchainRpcClient->getnewaddress();
             $addresses[$role] = $address;
             $statuses[$role] = 'Generated';
             $this->generatedAddresses[$role] = $address;
@@ -221,7 +221,7 @@ class MultichainSetup extends Command
 
         // Validate the address using MultiChain
         try {
-            $validation = $this->multichainManager->validateaddress($user->blockchain_address);
+            $validation = $this->multichainBlockchainRpcClient->validateaddress($user->blockchain_address);
 
             return $validation['isvalid'] ?? false ? $user->blockchain_address : null;
         } catch (Exception $e) {
@@ -238,18 +238,18 @@ class MultichainSetup extends Command
         $this->info('Creating procurement streams...');
 
         foreach (self::STREAMS as $stream) {
-            $streamEnum = StreamEnums::from($stream);
+            $streamEnum = Stream::from($stream);
             $displayName = $streamEnum->getDisplayName();
 
             try {
-                $this->multichainManager->getstreaminfo($stream);
+                $this->multichainBlockchainRpcClient->getstreaminfo($stream);
                 $this->line("Stream '{$displayName}' ({$stream}) already exists");
 
-                $this->multichainManager->subscribe($stream, true);
+                $this->multichainBlockchainRpcClient->subscribe($stream, true);
             } catch (Exception $e) {
                 $this->line("Creating stream '{$displayName}' ({$stream})...");
-                $this->multichainManager->create('stream', $stream, true);
-                $this->multichainManager->subscribe($stream, true);
+                $this->multichainBlockchainRpcClient->create('stream', $stream, true);
+                $this->multichainBlockchainRpcClient->subscribe($stream, true);
                 $this->line("Created and subscribed to stream '{$displayName}'");
             }
         }
@@ -274,7 +274,7 @@ class MultichainSetup extends Command
             // Grant global permissions
             foreach ($rolePerms['global'] ?? [] as $perm) {
                 try {
-                    $this->multichainManager->grant($address, $perm);
+                    $this->multichainBlockchainRpcClient->grant($address, $perm);
                     $this->line("Granted global permission '{$perm}' to {$role}");
                 } catch (Exception $e) {
                     if (! str_contains($e->getMessage(), 'already has')) {
@@ -289,7 +289,7 @@ class MultichainSetup extends Command
             foreach (self::STREAMS as $stream) {
                 foreach ($rolePerms['stream'] ?? [] as $perm) {
                     try {
-                        $this->multichainManager->grant($address, "{$stream}.{$perm}");
+                        $this->multichainBlockchainRpcClient->grant($address, "{$stream}.{$perm}");
                         $this->line("Granted stream permission '{$perm}' on {$stream} to {$role}");
                     } catch (Exception $e) {
                         if (! str_contains($e->getMessage(), 'already has')) {
@@ -371,26 +371,26 @@ class MultichainSetup extends Command
     }
 
     /**
-     * Initialize on-chain file storage streams (idempotent)
+     * Initialize on-chain File storage streams (idempotent)
      */
-    private function initializeFileStorage(): void
+    private function initializeBlockchainFileStorage(): void
     {
-        $this->info('Initializing on-chain file storage streams...');
+        $this->info('Initializing on-chain File storage streams...');
 
         $created = 0;
         $existing = 0;
         $subscribed = 0;
 
         foreach (self::FILE_STORAGE_STREAMS as $streamConfig) {
-            $streamEnum = StreamEnums::from($streamConfig['name']);
+            $streamEnum = Stream::from($streamConfig['name']);
             $displayName = $streamEnum->getDisplayName();
 
             try {
-                $this->multichainManager->getstreaminfo($streamConfig['name']);
+                $this->multichainBlockchainRpcClient->getstreaminfo($streamConfig['name']);
                 $this->line("Stream '{$displayName}' ({$streamConfig['name']}) already exists");
                 $existing++;
             } catch (Exception $e) {
-                $this->multichainManager->create('stream', $streamConfig['name'], true, [
+                $this->multichainBlockchainRpcClient->create('stream', $streamConfig['name'], true, [
                     'description' => $streamEnum->getDescription(),
                     'purpose' => $streamConfig['purpose'],
                 ]);
@@ -401,7 +401,7 @@ class MultichainSetup extends Command
 
             // Subscribe to the stream (idempotent - safe to call multiple times)
             try {
-                $this->multichainManager->subscribe($streamConfig['name'], true);
+                $this->multichainBlockchainRpcClient->subscribe($streamConfig['name'], true);
                 $this->line("Subscribed to stream '{$displayName}' ({$streamConfig['name']})");
                 $subscribed++;
             } catch (Exception $e) {
@@ -413,38 +413,38 @@ class MultichainSetup extends Command
 
         $this->newLine();
         if ($created > 0) {
-            $this->info("Created {$created} file storage stream(s)");
+            $this->info("Created {$created} File storage stream(s)");
         }
         if ($existing > 0) {
-            $this->info("Found {$existing} existing file storage stream(s)");
+            $this->info("Found {$existing} existing File storage stream(s)");
         }
         if ($subscribed > 0) {
-            $this->info("Subscribed to {$subscribed} file storage stream(s)");
+            $this->info("Subscribed to {$subscribed} File storage stream(s)");
         }
 
-        $this->line('Files stored directly on blockchain in file.data stream');
-        $this->line('Metadata tracked in file.metadata stream');
-        $this->line('Heroku-compatible (no ephemeral filesystem issues)');
+        $this->line('BlockchainFiles stored directly on blockchain in File.data stream');
+        $this->line('Metadata tracked in File.metadata stream');
+        $this->line('Heroku-compatible (no ephemeral Filesystem issues)');
         $this->line('Automatically replicated across all blockchain nodes');
     }
 
     /**
-     * Test the on-chain file storage functionality
+     * Test the on-chain File storage functionality
      */
-    private function testFileStorage(): void
+    private function testBlockchainFileStorage(): void
     {
         $this->newLine();
-        $this->info('Testing on-chain file storage...');
+        $this->info('Testing on-chain File storage...');
 
         try {
             $storage = app(BlockchainStorageService::class);
 
-            // Create a small test file (keep it small for testing)
+            // Create a small test File (keep it small for testing)
             $testContent = "This is a test document for on-chain storage.\n".str_repeat('Test data line. ', 50);
             $tempFile = tempnam(sys_get_temp_dir(), 'test_');
             file_put_contents($tempFile, $testContent);
 
-            $uploadedFile = new UploadedFile(
+            $UploadedFile = new UploadedFile(
                 $tempFile,
                 'test_document.pdf',
                 'application/pdf',
@@ -452,14 +452,14 @@ class MultichainSetup extends Command
                 true
             );
 
-            $this->line('  Max file size: '.$storage->getMaxFileSizeFormatted());
-            $this->line('  Test file size: '.round(strlen($testContent) / 1024, 2).' KB');
+            $this->line('  Max File size: '.$storage->getMaxfileSizeFormatted());
+            $this->line('  Test File size: '.round(strlen($testContent) / 1024, 2).' KB');
             $this->newLine();
 
-            // Store file on blockchain
-            $this->components->task('Storing test file on blockchain', function () use ($storage, $uploadedFile, &$result) {
+            // Store File on blockchain
+            $this->components->task('Storing test File on blockchain', function () use ($storage, $UploadedFile, &$result) {
                 $result = $storage->uploadFile(
-                    $uploadedFile,
+                    $UploadedFile,
                     'test/storage',
                     'test_'.now()->timestamp,
                     ['test' => true, 'purpose' => 'on_chain_initialization_test']
@@ -484,7 +484,7 @@ class MultichainSetup extends Command
 
             $this->info('Test passed! File stored on-chain, retrieved, and verified');
             $this->line('File content stored directly on blockchain (replicated across all nodes)');
-            $this->line('Works on Heroku (no ephemeral filesystem dependency)');
+            $this->line('Works on Heroku (no ephemeral Filesystem dependency)');
 
             // Cleanup
             @unlink($tempFile);
@@ -492,7 +492,7 @@ class MultichainSetup extends Command
             $this->error('Test failed: '.$e->getMessage());
 
             if (str_contains($e->getMessage(), 'exceeds maximum')) {
-                $this->warn('Tip: On-chain storage is best for files under 8 MB');
+                $this->warn('Tip: On-chain storage is best for BlockchainFiles under 8 MB');
             }
         }
     }

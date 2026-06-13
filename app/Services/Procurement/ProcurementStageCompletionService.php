@@ -3,8 +3,8 @@
 namespace App\Services\Procurement;
 
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
@@ -100,7 +100,7 @@ class ProcurementStageCompletionService
             ];
         }
 
-        $previousStatus = StatusEnums::tryFrom($procurement->status);
+        $previousStatus = ProcurementStatus::tryFrom($procurement->status);
         $completionStatus = $this->procurementSupport->getCompletionStatusForStage($stage);
 
         BlockchainWriteJob::dispatch('mark_stage_complete', [

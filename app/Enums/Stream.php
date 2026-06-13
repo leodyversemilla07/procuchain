@@ -8,7 +8,7 @@ namespace App\Enums;
  * Represents blockchain stream types used for organizing
  * different categories of procurement data on the blockchain.
  */
-enum StreamEnums: string
+enum Stream: string
 {
     case METADATA = 'procurement.metadata';
     case DOCUMENTS = 'procurement.documents';
@@ -16,9 +16,9 @@ enum StreamEnums: string
     case EVENTS = 'procurement.events';
     case CORRECTIONS = 'procurement.corrections';
     case PROCUREMENTS_CORRECTIONS = 'procurement.metadata.corrections';
-    case FILE_DATA = 'file.data';
-    case FILE_METADATA = 'file.metadata';
-    case FILE_CHUNKS = 'file.chunks';
+    case FILE_DATA = 'File.data';
+    case FILE_METADATA = 'File.metadata';
+    case FILE_CHUNKS = 'File.chunks';
     case ARCHIVE = 'procurement.archive';
     case USER_REGISTRATIONS = 'user.registrations';
     case INTEGRITY_VIOLATIONS = 'integrity.violations';
@@ -66,8 +66,8 @@ enum StreamEnums: string
             self::EVENTS => 'Records procurement events and activities',
             self::CORRECTIONS => 'Maintains correction records and amendments',
             self::PROCUREMENTS_CORRECTIONS => 'Maintains corrections to procurement metadata',
-            self::FILE_DATA => 'Stores raw file data and binary content',
-            self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
+            self::FILE_DATA => 'Stores raw File data and binary content',
+            self::FILE_METADATA => 'Stores File metadata, hashes, and storage information',
             self::FILE_CHUNKS => 'Stores chunked file data for large files',
             self::ARCHIVE => 'Tracks archived status of procurements',
             self::USER_REGISTRATIONS => 'Records user registration events on the blockchain',
@@ -107,9 +107,9 @@ enum StreamEnums: string
     }
 
     /**
-     * Check if the stream stores file content
+     * Check if the stream Stores file content
      */
-    public function isFileStream(): bool
+    public function isBlockchainFileStream(): bool
     {
         return in_array($this, [
             self::FILE_DATA,

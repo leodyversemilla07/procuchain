@@ -6,11 +6,11 @@ use App\Models\Procurement;
 use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Services\DashboardCacheKeys;
+use App\Services\DashboardCacheService;
+use App\Services\Procurement\BlockchainAddressResolverService;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
-use App\Services\Procurement\UserNameResolverService;
 use App\Services\UserService;
 use Spatie\Permission\Models\Role;
 
@@ -102,16 +102,16 @@ it('returns all procurements when no visibility filters are applied', function (
 });
 
 it('builds distinct dashboard cache keys for scoped and unscoped access', function () {
-    expect(DashboardCacheKeys::procurements('bac_secretariat', '1'))
+    expect(DashboardCacheService::procurements('bac_secretariat', '1'))
         ->toBe('dashboard:bac_secretariat:procurements_by_key:user:1');
 
-    expect(DashboardCacheKeys::stats('bac_secretariat', '1'))
+    expect(DashboardCacheService::stats('bac_secretariat', '1'))
         ->toBe('dashboard:bac_secretariat:stats:user:1');
 
-    expect(DashboardCacheKeys::procurements('admin'))
+    expect(DashboardCacheService::procurements('admin'))
         ->toBe('dashboard:admin:procurements_by_key');
 
-    expect(DashboardCacheKeys::stats('admin'))
+    expect(DashboardCacheService::stats('admin'))
         ->toBe('dashboard:admin:stats');
 });
 
@@ -138,7 +138,7 @@ function buildIsolationAggregator(array $repositoryFixtures = [], array $statusF
     return new ProcurementListAggregatorService(
         new ProcurementFormatterService,
         new ProcurementActionService($repository),
-        new UserNameResolverService(app(UserService::class)),
+        new BlockchainAddressResolverService(app(UserService::class)),
     );
 }
 

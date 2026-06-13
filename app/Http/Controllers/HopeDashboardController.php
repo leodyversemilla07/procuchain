@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Collection;
 
-class HopeController extends BaseDashboardController
+class HopeDashboardController extends BaseDashboardController
 {
     protected function getRoleName(): string
     {

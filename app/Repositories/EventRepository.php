@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\DataTransferObjects\EventData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\ProcurementEvent;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 final readonly class EventRepository
 {
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {}
 
     /**
@@ -29,7 +29,7 @@ final readonly class EventRepository
             $key = $data->prNumber.'_'.str_replace(' ', '_', strtolower($data->procurementTitle));
 
             $txid = $this->multichain->publish(
-                StreamEnums::EVENTS->value,
+                Stream::EVENTS->value,
                 $key,
                 ['json' => $data->toBlockchainArray()]
             );

@@ -8,7 +8,7 @@ namespace App\Enums;
  * Represents the types of integrity breaches that can be detected
  * when verifying procurement mirror data against the blockchain.
  */
-enum BreachTypeEnums: string
+enum BreachType: string
 {
     case HASH_MISMATCH = 'hash_mismatch';
     case CONTENT_MISMATCH = 'content_mismatch';

@@ -32,7 +32,7 @@ class BlockchainPayloadProjector
             'procurement_corrections' => $this->projectCorrection($data, $record),
             'procurement_archives' => $this->projectArchive($data, $record),
             'procurement_metadata_corrections' => $this->projectMetadataCorrection($data, $record),
-            'files' => $this->projectFile($data),
+            'Files' => $this->projectFile($data),
             default => null,
         };
 
@@ -117,7 +117,7 @@ class BlockchainPayloadProjector
      */
     private function projectFile(array &$data): void
     {
-        // file.metadata already publishes keys that mostly match the files table.
+        // File.metadata already publishes keys that mostly match the BlockchainFiles table.
     }
 
     /**

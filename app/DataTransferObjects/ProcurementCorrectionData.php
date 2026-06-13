@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\DataTransferObjects;
 
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use Carbon\Carbon;
 
 /**
@@ -32,8 +32,8 @@ final class ProcurementCorrectionData
         public readonly ?string $originalDescription,
         public readonly ?float $originalAbcAmount,
         public readonly ?string $originalFundingSource,
-        public readonly ?ProcurementCategoryEnums $originalCategory,
-        public readonly ?ProcurementModeEnums $originalProcurementMode,
+        public readonly ?ProcurementCategory $originalCategory,
+        public readonly ?ProcurementMode $originalProcurementMode,
         public readonly ?string $originalOffice,
         public readonly ?string $originalEndUser,
         public readonly ?string $originalPurpose,
@@ -52,8 +52,8 @@ final class ProcurementCorrectionData
         public readonly ?string $correctedDescription,
         public readonly ?float $correctedAbcAmount,
         public readonly ?string $correctedFundingSource,
-        public readonly ?ProcurementCategoryEnums $correctedCategory,
-        public readonly ?ProcurementModeEnums $correctedProcurementMode,
+        public readonly ?ProcurementCategory $correctedCategory,
+        public readonly ?ProcurementMode $correctedProcurementMode,
         public readonly ?string $correctedOffice,
         public readonly ?string $correctedEndUser,
         public readonly ?string $correctedPurpose,
@@ -144,8 +144,8 @@ final class ProcurementCorrectionData
             originalDescription: $data['original_description'] ?? null,
             originalAbcAmount: isset($data['original_abc_amount']) ? (float) $data['original_abc_amount'] : null,
             originalFundingSource: $data['original_funding_source'] ?? null,
-            originalCategory: isset($data['original_category']) ? ProcurementCategoryEnums::from($data['original_category']) : null,
-            originalProcurementMode: isset($data['original_procurement_mode']) ? ProcurementModeEnums::from($data['original_procurement_mode']) : null,
+            originalCategory: isset($data['original_category']) ? ProcurementCategory::from($data['original_category']) : null,
+            originalProcurementMode: isset($data['original_procurement_mode']) ? ProcurementMode::from($data['original_procurement_mode']) : null,
             originalOffice: $data['original_office'] ?? null,
             originalEndUser: $data['original_end_user'] ?? null,
             originalPurpose: $data['original_purpose'] ?? null,
@@ -164,8 +164,8 @@ final class ProcurementCorrectionData
             correctedDescription: $data['corrected_description'] ?? null,
             correctedAbcAmount: isset($data['corrected_abc_amount']) ? (float) $data['corrected_abc_amount'] : null,
             correctedFundingSource: $data['corrected_funding_source'] ?? null,
-            correctedCategory: isset($data['corrected_category']) ? ProcurementCategoryEnums::from($data['corrected_category']) : null,
-            correctedProcurementMode: isset($data['corrected_procurement_mode']) ? ProcurementModeEnums::from($data['corrected_procurement_mode']) : null,
+            correctedCategory: isset($data['corrected_category']) ? ProcurementCategory::from($data['corrected_category']) : null,
+            correctedProcurementMode: isset($data['corrected_procurement_mode']) ? ProcurementMode::from($data['corrected_procurement_mode']) : null,
             correctedOffice: $data['corrected_office'] ?? null,
             correctedEndUser: $data['corrected_end_user'] ?? null,
             correctedPurpose: $data['corrected_purpose'] ?? null,

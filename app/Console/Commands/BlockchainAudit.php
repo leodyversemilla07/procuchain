@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\BreachTypeEnums;
-use App\Models\IntegrityAuditLog;
+use App\Enums\BreachType;
+use App\Models\IntegrityViolationLog;
 use App\Services\IntegrityVerificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -94,9 +94,9 @@ class BlockchainAudit extends Command
         $this->warn('  Breaches detected:');
 
         foreach ($result['violations'] as $type => $count) {
-            $enum = BreachTypeEnums::tryFrom($type);
+            $enum = BreachType::tryFrom($type);
             $label = $enum ? $enum->getDisplayName() : $type;
-            $severity = IntegrityAuditLog::severityForType($type);
+            $severity = IntegrityViolationLog::severityForType($type);
             $color = match ($severity) {
                 'critical' => 'red',
                 'high' => 'yellow',
@@ -148,7 +148,7 @@ class BlockchainAudit extends Command
             $this->line('  By type:');
 
             foreach ($summary['by_type'] as $type => $count) {
-                $enum = BreachTypeEnums::tryFrom($type);
+                $enum = BreachType::tryFrom($type);
                 $label = $enum ? $enum->getDisplayName() : $type;
                 $this->line("    - {$label}: {$count}");
             }

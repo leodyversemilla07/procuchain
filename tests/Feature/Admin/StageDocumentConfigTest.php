@@ -3,7 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\StageDocumentConfig;
 use App\Models\User;
@@ -150,7 +150,7 @@ describe('StageDocumentConfigController', function () {
             // First, create a custom config
             StageDocumentConfig::create([
                 'stage' => StageEnums::PROCUREMENT_INITIATION->value,
-                'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+                'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
                 'stage_display_name' => 'Test',
                 'required_documents' => ['purchase_request'],
                 'optional_documents' => [],

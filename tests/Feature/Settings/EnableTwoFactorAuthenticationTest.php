@@ -1,13 +1,13 @@
 <?php
 
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 
 it('allows users to enable two factor authentication', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web', 'guard_name' => 'web']);
     $user = User::factory()->create();
-    $user->assignRole(UserRoleEnums::ADMIN->value);
+    $user->assignRole(UserRole::ADMIN->value);
 
     $response = $this->actingAs($user)->post('/settings/two-factor-authentication');
 
@@ -20,9 +20,9 @@ it('allows users to enable two factor authentication', function () {
 });
 
 it('allows two factor authentication to be disabled', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web', 'guard_name' => 'web']);
     $user = User::factory()->create();
-    $user->assignRole(UserRoleEnums::ADMIN->value);
+    $user->assignRole(UserRole::ADMIN->value);
 
     // Enable 2FA
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -49,9 +49,9 @@ it('requires authentication to enable two factor', function () {
 });
 
 it('allows qr code to be retrieved', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web']);
     $user = User::factory()->create();
-    $user->assignRole(UserRoleEnums::ADMIN->value);
+    $user->assignRole(UserRole::ADMIN->value);
 
     // Enable 2FA first
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -66,9 +66,9 @@ it('allows qr code to be retrieved', function () {
 });
 
 it('allows recovery codes to be retrieved', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web']);
     $user = User::factory()->create();
-    $user->assignRole(UserRoleEnums::ADMIN->value);
+    $user->assignRole(UserRole::ADMIN->value);
 
     // Enable 2FA first
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -83,9 +83,9 @@ it('allows recovery codes to be retrieved', function () {
 });
 
 it('allows recovery codes to be regenerated', function () {
-    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN->value, 'guard_name' => 'web']);
     $user = User::factory()->create();
-    $user->assignRole(UserRoleEnums::ADMIN->value);
+    $user->assignRole(UserRole::ADMIN->value);
 
     // Enable 2FA first
     $this->actingAs($user)->post('/settings/two-factor-authentication');

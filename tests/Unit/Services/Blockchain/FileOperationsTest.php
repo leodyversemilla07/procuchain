@@ -1,9 +1,9 @@
 <?php
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Services\Blockchain\FileRetriever;
 use App\Services\Blockchain\FileUploader;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,7 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     Log::spy();
-    $this->multichain = Mockery::mock(Manager::class);
+    $this->multichain = Mockery::mock(BlockchainRpcClient::class);
 });
 
 // Helper to create a FileUploader with configurable settings
@@ -30,7 +30,7 @@ function createUploader(object $multichain, array $overrides = []): FileUploader
 }
 
 // Helper to create an UploadedFile with actual content
-function createFileWithContent(string $name, string $content, string $mimeType = 'application/pdf'): UploadedFile
+function createBlockchainFileWithContent(string $name, string $content, string $mimeType = 'application/pdf'): UploadedFile
 {
     $tempPath = tempnam(sys_get_temp_dir(), 'test_');
     file_put_contents($tempPath, $content);
@@ -40,17 +40,17 @@ function createFileWithContent(string $name, string $content, string $mimeType =
 
 describe('FileUploader', function () {
     describe('uploadFile - single transaction', function () {
-        it('uploads small file in a single transaction', function () {
+        it('uploads small File in a single transaction', function () {
             $uploader = createUploader($this->multichain);
 
-            $file = createFileWithContent('document.pdf', str_repeat('A', 500));
+            $File = createBlockchainFileWithContent('document.pdf', str_repeat('A', 500));
 
             $this->multichain
                 ->shouldReceive('publishmulti')
                 ->once()
                 ->andReturn('txid_single_abc123');
 
-            $result = $uploader->uploadFile($file, 'PR-2025-001-0001', 1, 'Purchase Request');
+            $result = $uploader->uploadFile($File, 'PR-2025-001-0001', 1, 'Purchase Request');
 
             expect($result)
                 ->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'mime_type', 'hash', 'storage_method', 'chunked'])
@@ -62,14 +62,14 @@ describe('FileUploader', function () {
     });
 
     describe('uploadFile - chunked upload', function () {
-        it('uploads large file using chunked storage', function () {
+        it('uploads large File using chunked storage', function () {
             $uploader = createUploader($this->multichain, [
                 'chunkThreshold' => 100,
                 'chunkSize' => 50,
             ]);
 
-            // Create a file larger than chunk threshold (100 bytes)
-            $file = createFileWithContent('large-doc.pdf', str_repeat('X', 200));
+            // Create a File larger than chunk threshold (100 bytes)
+            $File = createBlockchainFileWithContent('large-doc.pdf', str_repeat('X', 200));
 
             // Mock chunk uploads (4 chunks of 50 bytes each for 200 bytes) and metadata publish
             $this->multichain
@@ -81,7 +81,7 @@ describe('FileUploader', function () {
                 ->once()
                 ->andReturn('metadata_txid_abc');
 
-            $result = $uploader->uploadFile($file, 'PR-2025-001-0001', 1, 'Purchase Request');
+            $result = $uploader->uploadFile($File, 'PR-2025-001-0001', 1, 'Purchase Request');
 
             expect($result)
                 ->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'mime_type', 'hash', 'storage_method', 'chunked', 'total_chunks', 'chunk_txids'])
@@ -91,12 +91,12 @@ describe('FileUploader', function () {
         });
     });
 
-    describe('generateFileKey', function () {
-        it('generates file key with correct format', function () {
+    describe('generatefileKey', function () {
+        it('generates File key with correct format', function () {
             $uploader = createUploader($this->multichain);
 
             // Use reflection to test the private method
-            $method = new ReflectionMethod(FileUploader::class, 'generateFileKey');
+            $method = new ReflectionMethod(FileUploader::class, 'generatefileKey');
             $method->setAccessible(true);
 
             $fileKey = $method->invoke(
@@ -133,11 +133,11 @@ describe('FileUploader', function () {
     });
 
     describe('uploadAndPrepare', function () {
-        it('orchestrates multiple file uploads', function () {
+        it('orchestrates multiple File uploads', function () {
             $uploader = createUploader($this->multichain);
 
-            $file1 = createFileWithContent('doc1.pdf', str_repeat('A', 500));
-            $file2 = createFileWithContent('doc2.pdf', str_repeat('B', 500));
+            $BlockchainFile1 = createBlockchainFileWithContent('doc1.pdf', str_repeat('A', 500));
+            $BlockchainFile2 = createBlockchainFileWithContent('doc2.pdf', str_repeat('B', 500));
 
             $metadata = [
                 ['document_type' => 'Purchase Request', 'description' => 'PR Document'],
@@ -152,7 +152,7 @@ describe('FileUploader', function () {
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
             $results = $uploader->uploadAndPrepare(
-                [$file1, $file2],
+                [$BlockchainFile1, $BlockchainFile2],
                 $metadata,
                 'PR-2025-001-0001',
                 1,
@@ -170,8 +170,8 @@ describe('FileUploader', function () {
 
 describe('FileRetriever', function () {
     describe('retrieveFile - single transaction', function () {
-        it('retrieves single-transaction file successfully', function () {
-            $multichain = Mockery::mock(Manager::class);
+        it('retrieves single-transaction File successfully', function () {
+            $multichain = Mockery::mock(BlockchainRpcClient::class);
             $retriever = new FileRetriever($multichain);
 
             $testContent = 'Hello World PDF Content';
@@ -180,7 +180,7 @@ describe('FileRetriever', function () {
 
             // Mock metadata retrieval
             $multichain->shouldReceive('liststreamkeyitems')
-                ->with(StreamEnums::FILE_METADATA->value, Mockery::any(), false, 1)
+                ->with(Stream::FILE_METADATA->value, Mockery::any(), false, 1)
                 ->once()
                 ->andReturn([
                     [
@@ -202,7 +202,7 @@ describe('FileRetriever', function () {
 
             // Mock data retrieval
             $multichain->shouldReceive('getstreamitem')
-                ->with(StreamEnums::FILE_DATA->value, 'data_tx_123', true)
+                ->with(Stream::FILE_DATA->value, 'data_tx_123', true)
                 ->once()
                 ->andReturn([
                     'data' => $testHex,
@@ -218,9 +218,9 @@ describe('FileRetriever', function () {
         });
     });
 
-    describe('retrieveFile - chunked file', function () {
-        it('retrieves and reassembles chunked file', function () {
-            $multichain = Mockery::mock(Manager::class);
+    describe('retrieveFile - chunked File', function () {
+        it('retrieves and reassembles chunked File', function () {
+            $multichain = Mockery::mock(BlockchainRpcClient::class);
             $retriever = new FileRetriever($multichain);
 
             $chunk1 = 'First chunk content';
@@ -230,7 +230,7 @@ describe('FileRetriever', function () {
 
             // Mock metadata retrieval indicating chunked storage
             $multichain->shouldReceive('liststreamkeyitems')
-                ->with(StreamEnums::FILE_METADATA->value, Mockery::any(), false, 1)
+                ->with(Stream::FILE_METADATA->value, Mockery::any(), false, 1)
                 ->once()
                 ->andReturn([
                     [
@@ -255,12 +255,12 @@ describe('FileRetriever', function () {
 
             // Mock chunk retrieval
             $multichain->shouldReceive('liststreamkeyitems')
-                ->with(StreamEnums::FILE_CHUNKS->value, Mockery::on(fn ($key) => str_contains($key, 'chunk_0')), false, 1)
+                ->with(Stream::FILE_CHUNKS->value, Mockery::on(fn ($key) => str_contains($key, 'chunk_0')), false, 1)
                 ->once()
                 ->andReturn([['data' => bin2hex($chunk1)]]);
 
             $multichain->shouldReceive('liststreamkeyitems')
-                ->with(StreamEnums::FILE_CHUNKS->value, Mockery::on(fn ($key) => str_contains($key, 'chunk_1')), false, 1)
+                ->with(Stream::FILE_CHUNKS->value, Mockery::on(fn ($key) => str_contains($key, 'chunk_1')), false, 1)
                 ->once()
                 ->andReturn([['data' => bin2hex($chunk2)]]);
 
@@ -274,15 +274,15 @@ describe('FileRetriever', function () {
     });
 
     describe('retrieveFile - hash verification', function () {
-        it('logs warning on hash mismatch for single file', function () {
-            $multichain = Mockery::mock(Manager::class);
+        it('logs warning on hash mismatch for single File', function () {
+            $multichain = Mockery::mock(BlockchainRpcClient::class);
             $retriever = new FileRetriever($multichain);
 
             $testContent = 'File content';
             $testHex = bin2hex($testContent);
 
             $multichain->shouldReceive('liststreamkeyitems')
-                ->with(StreamEnums::FILE_METADATA->value, Mockery::any(), false, 1)
+                ->with(Stream::FILE_METADATA->value, Mockery::any(), false, 1)
                 ->once()
                 ->andReturn([
                     [
@@ -308,7 +308,7 @@ describe('FileRetriever', function () {
 
             $result = $retriever->retrieveFile('PR-2025-001-0001/test.pdf');
 
-            // Should still return the file content despite hash mismatch
+            // Should still return the File content despite hash mismatch
             expect($result['content'])->toBe($testContent);
 
             Log::shouldHaveReceived('warning')

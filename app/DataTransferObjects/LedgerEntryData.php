@@ -42,7 +42,7 @@ final readonly class LedgerEntryData
         // Detect system-level purge/resync events (node_{id}_full_purge / node_{id}_resync)
         $isNodePurgeEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_full_purge');
         $isNodeResyncEvent = str_starts_with($key, 'node_') && str_ends_with($key, '_resync');
-        $isFileNodePurgeEvent = str_ends_with($key, '_node_purge') && ! $isNodePurgeEvent;
+        $isBlockchainFileNodePurgeEvent = str_ends_with($key, '_node_purge') && ! $isNodePurgeEvent;
 
         if ($isNodePurgeEvent) {
             $prNumber = 'system';
@@ -66,7 +66,7 @@ final readonly class LedgerEntryData
                 $data['items_purged'] ?? 0,
                 ! empty($data['reason']) ? ': '.$data['reason'] : ''
             );
-        } elseif ($isFileNodePurgeEvent) {
+        } elseif ($isBlockchainFileNodePurgeEvent) {
             // Extract PR number from file_key (e.g. "PR-2024-001-001/document.pdf" -> "PR-2024-001-001")
             $fileKey = $data['file_key'] ?? $key;
             $prNumber = str_contains($fileKey, '/') ? explode('/', $fileKey)[0] : 'system';
@@ -161,7 +161,7 @@ final readonly class LedgerEntryData
                 'Procurement %s',
                 ! empty($data['archived']) ? 'archived' : 'restored'
             ),
-            'file.metadata' => sprintf(
+            'File.metadata' => sprintf(
                 'File stored: %s — %s (%s)',
                 $data['pr_number'] ?? $key,
                 $data['file_name'] ?? $data['document_type'] ?? 'document',

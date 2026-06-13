@@ -23,9 +23,9 @@ final class DocumentIntegrityVerifier
     public function verify(string $fileKey, string $dataTxid): VerificationResult
     {
         try {
-            $fileData = $this->blockchainStorage->retrieveFile($fileKey, $dataTxid);
-            $storedHash = $fileData['hash'] ?? null;
-            $actualHash = hash('sha256', $fileData['content']);
+            $BlockchainFileData = $this->blockchainStorage->retrieveFile($fileKey, $dataTxid);
+            $storedHash = $BlockchainFileData['hash'] ?? null;
+            $actualHash = hash('sha256', $BlockchainFileData['content']);
             $isValid = $storedHash === $actualHash;
 
             Log::info('Document integrity verification completed', [
@@ -63,19 +63,19 @@ final class DocumentIntegrityVerifier
     }
 
     /**
-     * Verify a single document by file key.
+     * Verify a single document by File key.
      */
     public function verifySingle(string $fileKey): VerificationResult
     {
         try {
-            $document = $this->documentRepository->findByFileKey($fileKey);
+            $document = $this->documentRepository->findByfileKey($fileKey);
 
             if ($document === null) {
                 return VerificationResult::failure(
                     fileKey: $fileKey,
                     expectedHash: null,
                     actualHash: null,
-                    errors: ['Document not found with file key: '.$fileKey],
+                    errors: ['Document not found with File key: '.$fileKey],
                 );
             }
 

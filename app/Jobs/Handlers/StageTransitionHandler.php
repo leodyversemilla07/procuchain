@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Jobs\Handlers;
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\ProcurementRepository;
-use App\Services\Procurement\StageStatusMapper;
+use App\Services\Procurement\StageStatusMappingService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
 use Exception;
@@ -18,7 +18,7 @@ class StageTransitionHandler
         private readonly StatusPublisher $statusPublisher,
         private readonly EventPublisher $eventPublisher,
         private readonly ProcurementRepository $procurementRepository,
-        private readonly ?StageStatusMapper $stageStatusMapper = null,
+        private readonly ?StageStatusMappingService $StageStatusMappingService = null,
     ) {}
 
     public function executeSkip(array $data): array
@@ -37,7 +37,7 @@ class StageTransitionHandler
             prNumber: $prNumber,
             procurementTitle: $procurement->title,
             stage: $stage,
-            currentStatus: StatusEnums::STAGE_SKIPPED,
+            currentStatus: ProcurementStatus::STAGE_SKIPPED,
             userAddress: $userAddress,
             previousStatus: null,
             metadata: [
@@ -83,7 +83,7 @@ class StageTransitionHandler
             throw new Exception("Procurement not found: {$prNumber}");
         }
 
-        $ongoingStatus = ($this->stageStatusMapper ?? new StageStatusMapper)->getOngoingStatus($stage);
+        $ongoingStatus = ($this->StageStatusMappingService ?? new StageStatusMappingService)->getOngoingStatus($stage);
 
         $eventResult = $this->eventPublisher->publish(
             prNumber: $prNumber,

@@ -6,11 +6,11 @@ namespace App\Repositories;
 
 use App\Contracts\ProcurementRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\Procurement;
 use App\Models\ProcurementStage;
-use App\Services\DashboardCacheKeys;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
+use App\Services\DashboardCacheService;
 use Illuminate\Support\Collection;
 
 /**
@@ -22,13 +22,13 @@ use Illuminate\Support\Collection;
 class ProcurementRepository implements ProcurementRepositoryInterface
 {
     public function __construct(
-        private Manager $multichain
+        private BlockchainRpcClient $multichain
     ) {}
 
     public function create(ProcurementData $procurement): void
     {
         $txid = $this->multichain->publish(
-            StreamEnums::METADATA->value,
+            Stream::METADATA->value,
             $procurement->prNumber,
             ['json' => $procurement->toBlockchainArray()]
         );
@@ -37,7 +37,7 @@ class ProcurementRepository implements ProcurementRepositoryInterface
             throw new \RuntimeException('Blockchain procurement metadata publish did not return a transaction id.');
         }
 
-        DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheService::clearAllProcurementCaches();
     }
 
     public function findByProcurement(string $prNumber): ?ProcurementData

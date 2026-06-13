@@ -24,9 +24,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read User $user
  */
-class DocumentView extends Model
+class DocumentViewLog extends Model
 {
     use HasFactory;
+
+    protected $table = 'document_views';
 
     protected $fillable = [
         'user_id',
@@ -60,7 +62,7 @@ class DocumentView extends Model
     }
 
     /**
-     * Get recent views for a specific file
+     * Get recent views for a specific File
      */
     public static function getRecentViewsForFile(string $fileKey, int $limit = 10)
     {
@@ -92,7 +94,7 @@ class DocumentView extends Model
     }
 
     /**
-     * Check if user has viewed a specific file
+     * Check if user has viewed a specific File
      */
     public static function hasUserViewedFile(int $userId, string $fileKey): bool
     {
@@ -122,9 +124,9 @@ class DocumentView extends Model
     }
 
     /**
-     * Get detailed statistics for a file
+     * Get detailed statistics for a File
      */
-    public static function getFileStatistics(string $fileKey): array
+    public static function getBlockchainFileStatistics(string $fileKey): array
     {
         return [
             'total_views' => static::where('file_key', $fileKey)->count(),

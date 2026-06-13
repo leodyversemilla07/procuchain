@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\ProcurementRepository;
 use Illuminate\Support\Facades\Log;
 
@@ -23,7 +23,7 @@ final class ProcurementActionService
     /**
      * Cache for procurement modes to avoid repeated blockchain calls
      *
-     * @var array<string, ProcurementModeEnums|null>
+     * @var array<string, ProcurementMode|null>
      */
     private array $modeCache = [];
 
@@ -49,7 +49,7 @@ final class ProcurementActionService
         string $stage,
         string $status,
         string $userRole = 'bac_secretariat',
-        ?ProcurementModeEnums $mode = null
+        ?ProcurementMode $mode = null
     ): array {
         try {
             $actions = [];
@@ -60,7 +60,7 @@ final class ProcurementActionService
             }
 
             $stageEnum = StageEnums::tryFrom($stage);
-            $statusEnum = StatusEnums::tryFrom($status);
+            $statusEnum = ProcurementStatus::tryFrom($status);
 
             if (! $stageEnum || ! $statusEnum) {
                 return $actions;
@@ -98,7 +98,7 @@ final class ProcurementActionService
      * Get procurement mode with caching to avoid repeated blockchain calls.
      * This is critical for performance when displaying action buttons for multiple procurements.
      */
-    private function getProcurementMode(string $prNumber): ?ProcurementModeEnums
+    private function getProcurementMode(string $prNumber): ?ProcurementMode
     {
         // Check cache first
         if (array_key_exists($prNumber, $this->modeCache)) {
@@ -131,8 +131,8 @@ final class ProcurementActionService
     private function getWorkflowActions(
         string $prNumber,
         StageEnums $stage,
-        StatusEnums $status,
-        ?ProcurementModeEnums $mode
+        ProcurementStatus $status,
+        ?ProcurementMode $mode
     ): array {
         $actions = [];
 
@@ -169,7 +169,7 @@ final class ProcurementActionService
      *
      * @return array<int, array<string, mixed>>
      */
-    private function getActionRegistry(?ProcurementModeEnums $mode): array
+    private function getActionRegistry(?ProcurementMode $mode): array
     {
         // Get stages for the current mode (if known)
         $modeStages = $mode ? StageEnums::getStagesForMode($mode) : StageEnums::cases();
@@ -203,7 +203,7 @@ final class ProcurementActionService
      *
      * @param  array<string, mixed>  $condition
      */
-    private function matchesCondition(array $condition, StageEnums $stage, StatusEnums $status): bool
+    private function matchesCondition(array $condition, StageEnums $stage, ProcurementStatus $status): bool
     {
         // Check stage match
         if (isset($condition['stage'])) {
@@ -241,7 +241,7 @@ final class ProcurementActionService
     /**
      * Check if a stage is optional for the given mode.
      */
-    private function isStageOptional(StageEnums $stage, ProcurementModeEnums $mode): bool
+    private function isStageOptional(StageEnums $stage, ProcurementMode $mode): bool
     {
         $optionalStages = StageEnums::getOptionalStagesForMode($mode);
 
@@ -333,35 +333,35 @@ final class ProcurementActionService
      * Check if the stage is already in progress (work has started).
      * When a stage is in progress, it should not be skipped anymore.
      */
-    private function isStageInProgress(StatusEnums $status): bool
+    private function isStageInProgress(ProcurementStatus $status): bool
     {
         // Statuses that indicate work has started on a stage
         $inProgressStatuses = [
             // Pre-Procurement Conference - conference was held
-            StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
-            StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+            ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD,
+            ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
 
             // Pre-Bid Conference - conference was held
-            StatusEnums::PRE_BID_CONFERENCE_HELD,
-            StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
+            ProcurementStatus::PRE_BID_CONFERENCE_HELD,
+            ProcurementStatus::PRE_BID_CONFERENCE_COMPLETED,
 
             // Supplemental Bulletins - bulletins are ongoing or completed
-            StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
-            StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING,
+            ProcurementStatus::SUPPLEMENTAL_BULLETINS_COMPLETED,
 
             // Any completed status indicates the stage has been worked on
-            StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
-            StatusEnums::BIDDING_DOCUMENTS_SUBMITTED,
-            StatusEnums::BIDS_OPENED,
-            StatusEnums::BIDS_EVALUATED,
-            StatusEnums::POST_QUALIFICATION_VERIFIED,
-            StatusEnums::RESOLUTION_RECORDED,
-            StatusEnums::AWARDED,
-            StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
-            StatusEnums::NTP_RECORDED,
-            StatusEnums::MONITORING_COMPLETED,
-            StatusEnums::COMPLETION_DOCUMENTS_UPLOADED,
-            StatusEnums::COMPLETED,
+            ProcurementStatus::BIDDING_DOCUMENTS_PUBLISHED,
+            ProcurementStatus::BIDDING_DOCUMENTS_SUBMITTED,
+            ProcurementStatus::BIDS_OPENED,
+            ProcurementStatus::BIDS_EVALUATED,
+            ProcurementStatus::POST_QUALIFICATION_VERIFIED,
+            ProcurementStatus::RESOLUTION_RECORDED,
+            ProcurementStatus::AWARDED,
+            ProcurementStatus::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+            ProcurementStatus::NTP_RECORDED,
+            ProcurementStatus::MONITORING_COMPLETED,
+            ProcurementStatus::COMPLETION_DOCUMENTS_UPLOADED,
+            ProcurementStatus::COMPLETED,
         ];
 
         return in_array($status, $inProgressStatuses, true);

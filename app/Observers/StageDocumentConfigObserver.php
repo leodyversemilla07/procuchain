@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\StageDocumentConfig;
 use App\Services\BlockchainSyncService;
 
@@ -31,7 +31,7 @@ class StageDocumentConfigObserver
 
         $key = $config->stage.'-'.$config->procurement_mode.'-v'.$config->getKey();
 
-        BlockchainSyncService::publish($config, StreamEnums::CONFIG_STAGE_DOCS, $key);
+        BlockchainSyncService::publish($config, Stream::CONFIG_STAGE_DOCS, $key);
     }
 
     /**
@@ -46,7 +46,7 @@ class StageDocumentConfigObserver
         if ($config->wasChanged(['required_documents', 'optional_documents', 'is_active'])) {
             $key = $config->stage.'-'.$config->procurement_mode.'-v'.$config->getKey().'-'.time();
 
-            BlockchainSyncService::publish($config, StreamEnums::CONFIG_STAGE_DOCS, $key);
+            BlockchainSyncService::publish($config, Stream::CONFIG_STAGE_DOCS, $key);
         }
     }
 }

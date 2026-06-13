@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 /**
- * @phpstan-ignore-file
+ * @phpstan-ignore-File
  *
  * @psalm-suppress TooManyArguments
  *
@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
-use App\Enums\UserRoleEnums;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller as BaseController;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
@@ -257,7 +257,7 @@ class ProcurementListController extends BaseController
             $documents = array_map(function ($doc, $index) {
                 return [
                     'id' => $index + 1,
-                    'file_name' => $doc->fileName,
+                    'file_name' => $doc->filename,
                     'blockchain_status' => 'confirmed', // Documents on blockchain are always confirmed
                     'blockchain_error' => null,
                     'blockchain_txid' => $doc->metadataTxid,
@@ -322,7 +322,7 @@ class ProcurementListController extends BaseController
      */
     private function getVisibilityFilters($user): array
     {
-        if (! $user->hasRole(UserRoleEnums::BAC_SECRETARIAT->value)) {
+        if (! $user->hasRole(UserRole::BAC_SECRETARIAT->value)) {
             return [
                 'user_id' => null,
                 'user_address' => null,

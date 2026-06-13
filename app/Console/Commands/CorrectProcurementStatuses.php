@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
@@ -196,8 +196,8 @@ class CorrectProcurementStatuses extends Command
 
                 // Publish corrected status
                 $stage = StageEnums::from($correction['stage']);
-                $correctStatus = StatusEnums::from($correction['correct_status']);
-                $incorrectStatus = StatusEnums::from($correction['incorrect_status']);
+                $correctStatus = ProcurementStatus::from($correction['correct_status']);
+                $incorrectStatus = ProcurementStatus::from($correction['incorrect_status']);
 
                 // Get the original user's blockchain address from the procurement's userId
                 $user = User::find($procurement->userId);

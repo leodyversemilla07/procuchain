@@ -15,7 +15,7 @@ class NoticeOfAwardDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonRules(),
-            ...$this->documentRules('noa_file'),
+            ...$this->documentRules('noa_File'),
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'signatories' => 'required|array|min:1',
             'signatories.*.name' => 'required|string|min:1|max:255',
@@ -32,7 +32,7 @@ class NoticeOfAwardDocumentRequest extends BaseProcurementRequest
     {
         return [
             ...$this->commonMessages(),
-            ...$this->documentMessages('noa_file'),
+            ...$this->documentMessages('noa_File'),
             'signatories.required' => 'At least one signatory is required.',
             'signatories.array' => 'Signatories must be provided as an array.',
             'signatories.min' => 'At least one signatory is required.',

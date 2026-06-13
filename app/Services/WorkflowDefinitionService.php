@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\StageDocumentConfig;
@@ -18,14 +18,14 @@ class WorkflowDefinitionService
     private const DOCUMENT_CACHE_PREFIX = 'workflow.documents.';
 
     public function __construct(
-        private readonly StageDocumentRequirements $defaultRequirements,
-        private readonly ModeAwareDocumentRequirements $modeAwareRequirements,
+        private readonly StageDocumentRequirementsService $defaultRequirements,
+        private readonly ModeAwareDocumentRequirementsService $modeAwareRequirements,
     ) {}
 
     /**
      * @return array<StageEnums>
      */
-    public function getStagesForMode(ProcurementModeEnums $mode): array
+    public function getStagesForMode(ProcurementMode $mode): array
     {
         $cacheKey = self::WORKFLOW_CACHE_PREFIX."stages.{$mode->value}";
 
@@ -46,7 +46,7 @@ class WorkflowDefinitionService
     /**
      * @return array<StageEnums>
      */
-    public function getOptionalStagesForMode(ProcurementModeEnums $mode): array
+    public function getOptionalStagesForMode(ProcurementMode $mode): array
     {
         $cacheKey = self::WORKFLOW_CACHE_PREFIX."optional.{$mode->value}";
 
@@ -64,12 +64,12 @@ class WorkflowDefinitionService
         });
     }
 
-    public function isStageInWorkflow(StageEnums $stage, ProcurementModeEnums $mode): bool
+    public function isStageInWorkflow(StageEnums $stage, ProcurementMode $mode): bool
     {
         return in_array($stage, $this->getStagesForMode($mode), true);
     }
 
-    public function isStageOptional(StageEnums $stage, ProcurementModeEnums $mode): bool
+    public function isStageOptional(StageEnums $stage, ProcurementMode $mode): bool
     {
         return in_array($stage, $this->getOptionalStagesForMode($mode), true);
     }
@@ -77,7 +77,7 @@ class WorkflowDefinitionService
     /**
      * @return array<DocumentTypeEnums>
      */
-    public function getRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getRequiredDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         $cacheKey = self::DOCUMENT_CACHE_PREFIX."required.{$stage->value}.{$mode->value}";
 
@@ -99,7 +99,7 @@ class WorkflowDefinitionService
     /**
      * @return array<DocumentTypeEnums>
      */
-    public function getOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getOptionalDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         $cacheKey = self::DOCUMENT_CACHE_PREFIX."optional.{$stage->value}.{$mode->value}";
 
@@ -118,7 +118,7 @@ class WorkflowDefinitionService
         });
     }
 
-    public function getDocumentCounts(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getDocumentCounts(StageEnums $stage, ProcurementMode $mode): array
     {
         $required = $this->getRequiredDocuments($stage, $mode);
         $optional = $this->getOptionalDocuments($stage, $mode);
@@ -134,7 +134,7 @@ class WorkflowDefinitionService
      * @param  array<DocumentTypeEnums>  $uploadedTypes
      * @return array<DocumentTypeEnums>
      */
-    public function getMissingDocuments(StageEnums $stage, ProcurementModeEnums $mode, array $uploadedTypes): array
+    public function getMissingDocuments(StageEnums $stage, ProcurementMode $mode, array $uploadedTypes): array
     {
         $requiredDocuments = $this->getRequiredDocuments($stage, $mode);
         $missingDocuments = [];
@@ -148,7 +148,7 @@ class WorkflowDefinitionService
         return $missingDocuments;
     }
 
-    public function getStageDocumentGuide(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getStageDocumentGuide(StageEnums $stage, ProcurementMode $mode): array
     {
         $requiredDocuments = $this->getRequiredDocuments($stage, $mode);
         $optionalDocuments = $this->getOptionalDocuments($stage, $mode);
@@ -177,10 +177,10 @@ class WorkflowDefinitionService
         ];
     }
 
-    public function clearCache(?ProcurementModeEnums $mode = null, ?StageEnums $stage = null): void
+    public function clearCache(?ProcurementMode $mode = null, ?StageEnums $stage = null): void
     {
         if ($mode === null) {
-            foreach (ProcurementModeEnums::cases() as $modeCase) {
+            foreach (ProcurementMode::cases() as $modeCase) {
                 $this->clearCache($modeCase);
             }
 
@@ -206,7 +206,7 @@ class WorkflowDefinitionService
     /**
      * @return array<DocumentTypeEnums>
      */
-    public function getDefaultRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getDefaultRequiredDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         return $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
     }
@@ -214,7 +214,7 @@ class WorkflowDefinitionService
     /**
      * @return array<DocumentTypeEnums>
      */
-    public function getDefaultOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getDefaultOptionalDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         return $this->modeAwareRequirements->getOptionalDocuments($stage, $mode);
     }

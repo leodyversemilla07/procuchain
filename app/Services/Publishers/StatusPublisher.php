@@ -6,10 +6,10 @@ namespace App\Services\Publishers;
 
 use App\Contracts\StatusPublisherInterface;
 use App\DataTransferObjects\StatusData;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Repositories\StatusRepository;
-use App\Services\DashboardCacheKeys;
+use App\Services\DashboardCacheService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -33,9 +33,9 @@ class StatusPublisher implements StatusPublisherInterface
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
      * @param  StageEnums  $stage  Stage identifier
-     * @param  StatusEnums  $currentStatus  Current status
+     * @param  ProcurementStatus  $currentStatus  Current status
      * @param  string  $userAddress  User blockchain address
-     * @param  StatusEnums|null  $previousStatus  Previous status
+     * @param  ProcurementStatus|null  $previousStatus  Previous status
      * @param  array|null  $metadata  Additional metadata
      * @return array Status transaction information
      *
@@ -45,9 +45,9 @@ class StatusPublisher implements StatusPublisherInterface
         string $prNumber,
         string $procurementTitle,
         StageEnums $stage,
-        StatusEnums $currentStatus,
+        ProcurementStatus $currentStatus,
         string $userAddress,
-        ?StatusEnums $previousStatus = null,
+        ?ProcurementStatus $previousStatus = null,
         ?array $metadata = null
     ): array {
         try {
@@ -104,9 +104,9 @@ class StatusPublisher implements StatusPublisherInterface
      * @param  string  $procurementTitle  Procurement title
      * @param  StageEnums  $fromStage  Previous stage
      * @param  StageEnums  $toStage  New stage
-     * @param  StatusEnums  $currentStatus  Current status
+     * @param  ProcurementStatus  $currentStatus  Current status
      * @param  string  $userAddress  User blockchain address
-     * @param  StatusEnums|null  $previousStatus  Previous status
+     * @param  ProcurementStatus|null  $previousStatus  Previous status
      * @param  array|null  $metadata  Additional metadata
      * @return array Transition information
      *
@@ -117,9 +117,9 @@ class StatusPublisher implements StatusPublisherInterface
         string $procurementTitle,
         StageEnums $fromStage,
         StageEnums $toStage,
-        StatusEnums $currentStatus,
+        ProcurementStatus $currentStatus,
         string $userAddress,
-        ?StatusEnums $previousStatus = null,
+        ?ProcurementStatus $previousStatus = null,
         ?array $metadata = null
     ): array {
         try {
@@ -170,7 +170,7 @@ class StatusPublisher implements StatusPublisherInterface
             prNumber: $prNumber,
             procurementTitle: $procurementTitle,
             stage: $stage,
-            currentStatus: StatusEnums::COMPLETED,
+            currentStatus: ProcurementStatus::COMPLETED,
             userAddress: $userAddress,
             previousStatus: null,
             metadata: array_merge($metadata ?? [], [
@@ -185,7 +185,7 @@ class StatusPublisher implements StatusPublisherInterface
      */
     private function clearProcurementListCache(): void
     {
-        DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheService::clearAllProcurementCaches();
 
         Log::info('Cleared all procurement caches after status update');
     }

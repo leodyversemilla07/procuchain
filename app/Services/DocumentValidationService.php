@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 
 /**
@@ -14,7 +14,7 @@ use App\Enums\StageEnums;
 class DocumentValidationService
 {
     public function __construct(
-        private readonly StageDocumentRequirements $requirements,
+        private readonly StageDocumentRequirementsService $requirements,
         private readonly WorkflowDefinitionService $workflowDefinitionService,
     ) {}
 
@@ -25,7 +25,7 @@ class DocumentValidationService
         StageEnums $stage,
         DocumentTypeEnums $documentType,
         array $uploadedTypes,
-        ?ProcurementModeEnums $mode = null,
+        ?ProcurementMode $mode = null,
     ): array {
         $requiredDocs = $mode === null
             ? $this->requirements->getRequiredDocuments($stage)

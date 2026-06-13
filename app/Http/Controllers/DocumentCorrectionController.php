@@ -7,7 +7,7 @@ use App\Http\Requests\Document\CorrectDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +22,7 @@ class DocumentCorrectionController extends Controller
         protected DocumentRepository $documentRepository,
         protected CorrectionRepository $correctionRepository,
         protected CorrectionPublisher $correctionPublisher,
-        protected AuditLogger $auditLogger,
+        protected AuditLogService $AuditLogService,
     ) {}
 
     public function correctDocument(CorrectDocumentRequest $request, string $txid): RedirectResponse
@@ -54,7 +54,7 @@ class DocumentCorrectionController extends Controller
                 default => 'metadata_correction',
             };
 
-            // Store replacement file temporarily (if provided)
+            // Store replacement File temporarily (if provided)
             $jobData = [
                 'pr_number' => $pr_number,
                 'procurement_title' => $procurementTitle,
@@ -68,8 +68,8 @@ class DocumentCorrectionController extends Controller
                 'original_stage' => $originalDocument->stage ?? null,
             ];
 
-            if ($request->hasFile('corrected_file')) {
-                $corrFile = $request->file('corrected_file');
+            if ($request->hasFile('corrected_File')) {
+                $corrFile = $request->File('corrected_File');
                 $jobData['temp_file_path'] = $corrFile->store('temp/blockchain-uploads');
                 $jobData['original_filename'] = $corrFile->getClientOriginalName();
                 $jobData['mime_type'] = $corrFile->getMimeType() ?? 'application/octet-stream';
@@ -78,7 +78,7 @@ class DocumentCorrectionController extends Controller
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'document.corrected',
                 'document',
                 $txid,
@@ -122,7 +122,7 @@ class DocumentCorrectionController extends Controller
 
                     return [
                         $doc->fileKey => [
-                            'file_name' => $doc->fileName,
+                            'file_name' => $doc->filename,
                             'file_key' => $doc->fileKey,
                             'document_type' => $doc->documentType,
                             'document_type_display' => $documentTypeEnum?->getDisplayName() ?? $doc->documentType,

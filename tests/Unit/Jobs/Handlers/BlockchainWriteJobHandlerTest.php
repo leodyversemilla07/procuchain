@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Jobs\Handlers\CorrectionHandler;
 use App\Jobs\Handlers\DocumentUploadHandler;
@@ -48,7 +48,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
 
         app()->instance(DocumentUploadHandler::class, $mockHandler);
 
-        $data = ['pr_number' => 'PR-001', 'file' => 'test.pdf'];
+        $data = ['pr_number' => 'PR-001', 'File' => 'test.pdf'];
         $job = new BlockchainWriteJob('upload_document', $data, 'job-uuid-1');
         $job->handle();
 
@@ -294,20 +294,20 @@ describe('DocumentUploadHandler', function () {
         Storage::fake('local');
     });
 
-    it('reconstitutes temp file and calls publishDocumentWorkflow', function () {
-        // Create a temp file on the fake disk
+    it('reconstitutes temp File and calls publishDocumentWorkflow', function () {
+        // Create a temp File on the fake disk
         Storage::put('temp/test-doc.pdf', 'fake-pdf-content');
 
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
         $orchestrator->shouldReceive('publishDocumentWorkflow')
             ->once()
-            ->withArgs(function ($procurementData, $file, $documentData, $statusData, $eventData) {
+            ->withArgs(function ($procurementData, $File, $documentData, $statusData, $eventData) {
                 return $procurementData['pr_number'] === 'PR-2025-992-0005'
-                    && $file instanceof UploadedFile
+                    && $File instanceof UploadedFile
                     && $documentData['stage'] === StageEnums::BID_OPENING
                     && $documentData['document_type'] === DocumentTypeEnums::PURCHASE_REQUEST
                     && $statusData['stage'] === StageEnums::BID_OPENING
-                    && $statusData['current_status'] === StatusEnums::BIDS_OPENED
+                    && $statusData['current_status'] === ProcurementStatus::BIDS_OPENED
                     && $eventData['event_type'] === 'document_uploaded';
             })
             ->andReturn(['success' => true, 'doc_txid' => 'doc-tx-1']);
@@ -324,14 +324,14 @@ describe('DocumentUploadHandler', function () {
             'status' => 'bids_opened',
             'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
             'uploaded_by' => 'tester',
-            'current_status' => StatusEnums::BIDS_OPENED->value,
+            'current_status' => ProcurementStatus::BIDS_OPENED->value,
         ]);
 
         expect($result['success'])->toBeTrue()
             ->and($result['doc_txid'])->toBe('doc-tx-1');
     });
 
-    it('cleans up temp file after successful upload', function () {
+    it('cleans up temp File after successful upload', function () {
         Storage::put('temp/cleanup-test.pdf', 'content');
 
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
@@ -351,13 +351,13 @@ describe('DocumentUploadHandler', function () {
             'status' => 'procurement_initiated',
             'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
             'uploaded_by' => 'tester',
-            'current_status' => StatusEnums::PROCUREMENT_INITIATED->value,
+            'current_status' => ProcurementStatus::PROCUREMENT_INITIATED->value,
         ]);
 
         Storage::assertMissing('temp/cleanup-test.pdf');
     });
 
-    it('keeps temp file when orchestrator fails so the job can retry', function () {
+    it('keeps temp File when orchestrator fails so the job can retry', function () {
         Storage::put('temp/fail-cleanup.pdf', 'content');
 
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
@@ -379,7 +379,7 @@ describe('DocumentUploadHandler', function () {
                 'status' => 'procurement_initiated',
                 'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
                 'uploaded_by' => 'tester',
-                'current_status' => StatusEnums::PROCUREMENT_INITIATED->value,
+                'current_status' => ProcurementStatus::PROCUREMENT_INITIATED->value,
             ]);
         } catch (Exception) {
             // expected
@@ -388,7 +388,7 @@ describe('DocumentUploadHandler', function () {
         Storage::assertExists('temp/fail-cleanup.pdf');
     });
 
-    it('throws when temp file is missing', function () {
+    it('throws when temp File is missing', function () {
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
 
         $handler = new DocumentUploadHandler($orchestrator);
@@ -403,9 +403,9 @@ describe('DocumentUploadHandler', function () {
             'status' => 'procurement_initiated',
             'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
             'uploaded_by' => 'tester',
-            'current_status' => StatusEnums::PROCUREMENT_INITIATED->value,
+            'current_status' => ProcurementStatus::PROCUREMENT_INITIATED->value,
         ]);
-    })->throws(Exception::class, 'Temp file not found');
+    })->throws(Exception::class, 'Temp File not found');
 });
 
 // ============================================================================
@@ -429,14 +429,14 @@ describe('HandlesTempFiles trait', function () {
         $reflection = new ReflectionMethod($handler, 'reconstituteTempFile');
         $reflection->setAccessible(true);
 
-        $file = $reflection->invoke($handler, 'temp/trait-test.pdf', 'original.pdf', 'application/pdf');
+        $File = $reflection->invoke($handler, 'temp/trait-test.pdf', 'original.pdf', 'application/pdf');
 
-        expect($file)->toBeInstanceOf(UploadedFile::class)
-            ->and($file->getClientOriginalName())->toBe('original.pdf')
-            ->and($file->getClientMimeType())->toBe('application/pdf');
+        expect($File)->toBeInstanceOf(UploadedFile::class)
+            ->and($File->getClientOriginalName())->toBe('original.pdf')
+            ->and($File->getClientMimeType())->toBe('application/pdf');
     });
 
-    it('cleanupTempFile removes the file from storage', function () {
+    it('cleanupTempFile removes the File from storage', function () {
         Storage::put('temp/to-delete.pdf', 'delete-me');
 
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
@@ -450,7 +450,7 @@ describe('HandlesTempFiles trait', function () {
         Storage::assertMissing('temp/to-delete.pdf');
     });
 
-    it('cleanupTempFile does not throw when file is already missing', function () {
+    it('cleanupTempFile does not throw when File is already missing', function () {
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
         $handler = new DocumentUploadHandler($orchestrator);
 
@@ -477,8 +477,8 @@ describe('CorrectionHandler', function () {
 
     // CorrectionPublisher and ProcurementCorrectionPublisher are final classes.
     // bypass-finals is enabled to allow Mockery to mock them.
-    it('executeDocumentCorrection delegates to CorrectionPublisher with file', function () {
-        Storage::put('temp/correction-file.pdf', 'corrected-content');
+    it('executeDocumentCorrection delegates to CorrectionPublisher with File', function () {
+        Storage::put('temp/correction-File.pdf', 'corrected-content');
 
         $correctionPublisher = Mockery::mock(CorrectionPublisher::class);
         $correctionPublisher->shouldReceive('publish')
@@ -517,7 +517,7 @@ describe('CorrectionHandler', function () {
             'reason' => 'Incorrect amount',
             'corrected_by' => 'Admin',
             'user_address' => '0xCORR',
-            'temp_file_path' => 'temp/correction-file.pdf',
+            'temp_file_path' => 'temp/correction-File.pdf',
             'original_filename' => 'corrected.pdf',
             'mime_type' => 'application/pdf',
             'original_stage' => 'bid_opening',
@@ -526,7 +526,7 @@ describe('CorrectionHandler', function () {
         expect($result['correction_txid'])->toBe('corr-tx-1');
     });
 
-    it('executeDocumentCorrection works without a file (invalidation)', function () {
+    it('executeDocumentCorrection works without a File (invalidation)', function () {
         $correctionPublisher = Mockery::mock(CorrectionPublisher::class);
         $correctionPublisher->shouldReceive('publish')
             ->once()
@@ -632,12 +632,12 @@ describe('StageCompletionHandler', function () {
                 string $prNumber,
                 string $procurementTitle,
                 StageEnums $stage,
-                StatusEnums $currentStatus,
+                ProcurementStatus $currentStatus,
                 string $userAddress,
             ) {
                 return $prNumber === 'PR-2025-992-0012'
                     && $stage === StageEnums::BID_OPENING
-                    && $currentStatus === StatusEnums::BIDS_OPENED;
+                    && $currentStatus === ProcurementStatus::BIDS_OPENED;
             })
             ->andReturn(['status_txid' => 'status-tx-1']);
 
@@ -660,7 +660,7 @@ describe('StageCompletionHandler', function () {
             'pr_number' => 'PR-2025-992-0012',
             'procurement_title' => 'Stage Completion Test',
             'current_stage' => StageEnums::BID_OPENING->value,
-            'completion_status' => StatusEnums::BIDS_OPENED->value,
+            'completion_status' => ProcurementStatus::BIDS_OPENED->value,
             'user_address' => '0xSC',
             'document_count' => 3,
             'procurement_mode' => 'competitive_bidding',
@@ -684,7 +684,7 @@ describe('StageCompletionHandler', function () {
                 string $procurementTitle,
                 StageEnums $fromStage,
                 StageEnums $toStage,
-                StatusEnums $currentStatus,
+                ProcurementStatus $currentStatus,
             ) {
                 return $fromStage === StageEnums::BID_OPENING
                     && $toStage === StageEnums::BID_EVALUATION;
@@ -708,12 +708,12 @@ describe('StageCompletionHandler', function () {
             'pr_number' => 'PR-2025-992-0013',
             'procurement_title' => 'Transition Test',
             'current_stage' => StageEnums::BID_OPENING->value,
-            'completion_status' => StatusEnums::BIDS_OPENED->value,
+            'completion_status' => ProcurementStatus::BIDS_OPENED->value,
             'user_address' => '0xTRANS',
             'document_count' => 2,
             'procurement_mode' => 'competitive_bidding',
             'next_stage' => StageEnums::BID_EVALUATION->value,
-            'next_stage_status' => StatusEnums::BIDS_EVALUATED->value,
+            'next_stage_status' => ProcurementStatus::BIDS_EVALUATED->value,
         ]);
 
         expect($result['success'])->toBeTrue()
@@ -730,10 +730,10 @@ describe('StageCompletionHandler', function () {
                 string $prNumber,
                 string $procurementTitle,
                 StageEnums $stage,
-                StatusEnums $currentStatus,
+                ProcurementStatus $currentStatus,
             ) {
                 return $stage === StageEnums::PRE_PROCUREMENT_CONFERENCE
-                    && $currentStatus === StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD;
+                    && $currentStatus === ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD;
             })
             ->andReturn([]);
 
@@ -757,7 +757,7 @@ describe('StageCompletionHandler', function () {
             'procurement_title' => 'Initiation Complete Test',
             'current_stage' => StageEnums::PROCUREMENT_INITIATION->value,
             'next_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-            'next_stage_status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value,
+            'next_stage_status' => ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD->value,
             'user_address' => '0xINIT',
             'document_count' => 5,
         ]);
@@ -807,11 +807,11 @@ describe('StageTransitionHandler', function () {
                 string $prNumber,
                 string $procurementTitle,
                 StageEnums $stage,
-                StatusEnums $currentStatus,
+                ProcurementStatus $currentStatus,
             ) {
                 return $prNumber === 'PR-2025-992-0015'
                     && $stage === StageEnums::PRE_PROCUREMENT_CONFERENCE
-                    && $currentStatus === StatusEnums::STAGE_SKIPPED;
+                    && $currentStatus === ProcurementStatus::STAGE_SKIPPED;
             })
             ->andReturn(['status_txid' => 'skip-st-1']);
 
@@ -903,11 +903,11 @@ describe('StageTransitionHandler', function () {
                 string $prNumber,
                 string $procurementTitle,
                 StageEnums $stage,
-                StatusEnums $currentStatus,
+                ProcurementStatus $currentStatus,
             ) {
                 return $prNumber === 'PR-2025-992-0017'
                     && $stage === StageEnums::SUPPLEMENTAL_BID_BULLETIN
-                    && $currentStatus === StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING;
+                    && $currentStatus === ProcurementStatus::SUPPLEMENTAL_BULLETINS_ONGOING;
             })
             ->andReturn(['status_txid' => 'rep-st-1']);
 

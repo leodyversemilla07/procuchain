@@ -1,8 +1,8 @@
 <?php
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\User;
@@ -22,14 +22,14 @@ beforeEach(function () {
 
     $this->competitiveProcurementData = buildWorkflowProcurementData(
         $this->bacSecretariat,
-        ProcurementModeEnums::COMPETITIVE_BIDDING,
+        ProcurementMode::COMPETITIVE_BIDDING,
         'Test Procurement',
         1000000.00,
     );
 
     $this->svpProcurementData = buildWorkflowProcurementData(
         $this->bacSecretariat,
-        ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+        ProcurementMode::SMALL_VALUE_PROCUREMENT,
         'Test SVP Procurement',
         100000.00,
     );
@@ -44,10 +44,10 @@ describe('Public Workflow Page', function () {
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
             ->component('workflow')
-            ->has('workflows', count(ProcurementModeEnums::cases()))
-            ->where('workflows.0.mode', ProcurementModeEnums::COMPETITIVE_BIDDING->value)
-            ->where('workflows.0.name', ProcurementModeEnums::COMPETITIVE_BIDDING->getDisplayName())
-            ->has('workflows.0.stages', count(StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING)))
+            ->has('workflows', count(ProcurementMode::cases()))
+            ->where('workflows.0.mode', ProcurementMode::COMPETITIVE_BIDDING->value)
+            ->where('workflows.0.name', ProcurementMode::COMPETITIVE_BIDDING->getDisplayName())
+            ->has('workflows.0.stages', count(StageEnums::getStagesForMode(ProcurementMode::COMPETITIVE_BIDDING)))
             ->where('workflows.0.stages.0.id', StageEnums::PROCUREMENT_INITIATION->value)
         );
     });
@@ -162,9 +162,9 @@ describe('Mode-Specific Workflow Validation', function () {
     });
 
     it('returns the expected stage mappings for supported procurement modes', function () {
-        $svpStages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
-        $svpOptionalStages = StageEnums::getOptionalStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
-        $competitiveOptionalStages = StageEnums::getOptionalStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $svpStages = StageEnums::getStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT);
+        $svpOptionalStages = StageEnums::getOptionalStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT);
+        $competitiveOptionalStages = StageEnums::getOptionalStagesForMode(ProcurementMode::COMPETITIVE_BIDDING);
 
         expect($svpStages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
         expect($svpStages)->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
@@ -175,14 +175,14 @@ describe('Mode-Specific Workflow Validation', function () {
 
 describe('Workflow Progress Calculation', function () {
     it('calculates progress boundaries and stage counts correctly', function () {
-        $competitiveStages = StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $competitiveStages = StageEnums::getStagesForMode(ProcurementMode::COMPETITIVE_BIDDING);
         $totalStages = count($competitiveStages);
 
         expect($totalStages)->toBeGreaterThan(0);
         expect((int) round((0 / ($totalStages - 1)) * 100))->toBe(0);
         expect((int) round((($totalStages - 1) / ($totalStages - 1)) * 100))->toBe(100);
 
-        foreach (ProcurementModeEnums::cases() as $mode) {
+        foreach (ProcurementMode::cases() as $mode) {
             $stages = StageEnums::getStagesForMode($mode);
 
             expect($stages)->toBeArray();
@@ -211,7 +211,7 @@ describe('Access Control For Stage Pages', function () {
 
 function buildWorkflowProcurementData(
     User $user,
-    ProcurementModeEnums $mode,
+    ProcurementMode $mode,
     string $title,
     float $abcAmount,
     string $prNumber = 'PR-2024-001-0001',
@@ -223,7 +223,7 @@ function buildWorkflowProcurementData(
         description: 'Test Description',
         abcAmount: $abcAmount,
         fundingSource: 'General Fund',
-        category: ProcurementCategoryEnums::GOODS,
+        category: ProcurementCategory::GOODS,
         procurementMode: $mode,
         office: 'Test Office',
         endUser: 'Test User',

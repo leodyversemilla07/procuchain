@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Enums\BreachTypeEnums;
-use App\Models\IntegrityAuditLog;
+use App\Enums\BreachType;
+use App\Models\IntegrityViolationLog;
 use App\Models\Procurement;
+use App\Services\BlockchainRpcClient;
 use App\Services\IntegrityVerificationService;
-use App\Services\Manager;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -117,19 +117,19 @@ class IntegrityBreachSimulationTest extends TestCase
     public function test_generates_violation_report(): void
     {
         // Arrange: Create some violations
-        $runId = IntegrityAuditLog::newRunId();
+        $runId = IntegrityViolationLog::newRunId();
 
-        IntegrityAuditLog::recordViolation(
+        IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-003-0001',
-            violationType: BreachTypeEnums::HASH_MISMATCH->value,
+            violationType: BreachType::HASH_MISMATCH->value,
             runId: $runId,
         );
 
-        IntegrityAuditLog::recordViolation(
+        IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-004-0001',
-            violationType: BreachTypeEnums::ROW_DELETED->value,
+            violationType: BreachType::ROW_DELETED->value,
             runId: $runId,
         );
 
@@ -149,14 +149,14 @@ class IntegrityBreachSimulationTest extends TestCase
     public function test_restores_from_blockchain(): void
     {
         // Arrange: Create a violation
-        $auditLog = IntegrityAuditLog::recordViolation(
+        $auditLog = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
             streamKey: 'PR-2026-005-0001',
-            violationType: BreachTypeEnums::ROW_DELETED->value,
+            violationType: BreachType::ROW_DELETED->value,
         );
 
-        $manager = \Mockery::mock(Manager::class);
-        $manager->shouldReceive('liststreamitems')
+        $BlockchainRpcClient = \Mockery::mock(BlockchainRpcClient::class);
+        $BlockchainRpcClient->shouldReceive('liststreamitems')
             ->once()
             ->andReturn([]);
 
@@ -176,7 +176,7 @@ class IntegrityBreachSimulationTest extends TestCase
                 return ['procurements' => 1];
             });
 
-        $this->app->instance(Manager::class, $manager);
+        $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
         $this->app->instance(NormalizedTableSyncService::class, $syncService);
 
         // Act: Restore

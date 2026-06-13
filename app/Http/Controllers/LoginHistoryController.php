@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\BlockedIpService;
 use App\Services\LoginAnalyticsService;
 use App\Traits\AuditContext;
@@ -13,14 +13,14 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class LoginLogController extends Controller
+class LoginHistoryController extends Controller
 {
     use AuditContext;
 
     public function __construct(
         private LoginAnalyticsService $loginAnalytics,
         private BlockedIpService $blockedIpService,
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -172,7 +172,7 @@ class LoginLogController extends Controller
                 'expires_at' => $expiresAt?->toDateTimeString(),
             ]);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'security.ip_blocked',
                 'blocked_ip',
                 $validated['ip_address'],
@@ -214,7 +214,7 @@ class LoginLogController extends Controller
                 'unblocked_by' => $request->user()->id,
             ]);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'security.ip_unblocked',
                 'blocked_ip',
                 $validated['ip_address'],

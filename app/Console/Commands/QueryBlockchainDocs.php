@@ -31,7 +31,7 @@ class QueryBlockchainDocs extends Command
                 '  Stage: %-30s | Type: %-40s | File: %s (%d bytes) | Hash: %s',
                 $doc->stage,
                 $doc->documentType,
-                $doc->fileName,
+                $doc->filename,
                 $doc->fileSize,
                 substr($doc->hash, 0, 12).'...'
             ));
@@ -45,7 +45,7 @@ class QueryBlockchainDocs extends Command
             $this->line(sprintf(
                 '  Type: %-40s | File: %s (%d bytes)',
                 $doc->documentType,
-                $doc->fileName,
+                $doc->filename,
                 $doc->fileSize
             ));
         }

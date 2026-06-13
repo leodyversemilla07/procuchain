@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\ProcurementWorkflowConfig;
 use App\Services\BlockchainSyncService;
 
@@ -31,7 +31,7 @@ class ProcurementWorkflowConfigObserver
 
         $key = $config->procurement_mode.'-v'.$config->getKey();
 
-        BlockchainSyncService::publish($config, StreamEnums::CONFIG_WORKFLOWS, $key);
+        BlockchainSyncService::publish($config, Stream::CONFIG_WORKFLOWS, $key);
     }
 
     /**
@@ -47,7 +47,7 @@ class ProcurementWorkflowConfigObserver
         if ($config->wasChanged(['stages', 'optional_stages', 'is_active'])) {
             $key = $config->procurement_mode.'-v'.$config->getKey().'-'.time();
 
-            BlockchainSyncService::publish($config, StreamEnums::CONFIG_WORKFLOWS, $key);
+            BlockchainSyncService::publish($config, Stream::CONFIG_WORKFLOWS, $key);
         }
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs\Handlers;
 
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Services\NotificationService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
@@ -26,9 +26,9 @@ class StageCompletionHandler
         }
 
         $stage = StageEnums::from($data['current_stage']);
-        $completionStatus = StatusEnums::from($data['completion_status']);
+        $completionStatus = ProcurementStatus::from($data['completion_status']);
         $previousStatus = isset($data['previous_status'])
-            ? StatusEnums::tryFrom($data['previous_status'])
+            ? ProcurementStatus::tryFrom($data['previous_status'])
             : null;
 
         $statusResult = $this->statusPublisher->publish(
@@ -68,7 +68,7 @@ class StageCompletionHandler
 
         if (isset($data['next_stage'])) {
             $nextStage = StageEnums::from($data['next_stage']);
-            $nextStageStatus = StatusEnums::from($data['next_stage_status']);
+            $nextStageStatus = ProcurementStatus::from($data['next_stage_status']);
             $nextStageName = $nextStage->getDisplayName();
             $nextStageUrl = $this->buildNextStageUrl($data['pr_number'], $nextStage);
 
@@ -111,7 +111,7 @@ class StageCompletionHandler
     private function handleInitiationComplete(array $data): array
     {
         $nextStage = StageEnums::from($data['next_stage']);
-        $nextStageStatus = StatusEnums::from($data['next_stage_status']);
+        $nextStageStatus = ProcurementStatus::from($data['next_stage_status']);
         $currentStageEnum = StageEnums::from($data['current_stage']);
 
         $statusResult = $this->statusPublisher->publish(
@@ -180,7 +180,7 @@ class StageCompletionHandler
         };
     }
 
-    private function sendStageNotification(array $data, StageEnums $stage, StatusEnums $completionStatus, ?string $nextStageName): void
+    private function sendStageNotification(array $data, StageEnums $stage, ProcurementStatus $completionStatus, ?string $nextStageName): void
     {
         try {
             app(NotificationService::class)->notifyStageUpdate(

@@ -2,13 +2,13 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,12 +24,12 @@ beforeEach(function () {
     Storage::fake('local');
     Queue::fake();
 
-    // Mock MultiChain Manager for CI environment (no blockchain node available)
-    $mockMultichain = Mockery::mock(Manager::class);
+    // Mock MultiChain BlockchainRpcClient for CI environment (no blockchain node available)
+    $mockMultichain = Mockery::mock(BlockchainRpcClient::class);
     $mockMultichain->shouldReceive('publish')->andReturn('mock_txid_'.uniqid());
     $mockMultichain->shouldReceive('liststreamkeyitems')->andReturn([]);
     $mockMultichain->shouldReceive('getinfo')->andReturn(['version' => '2.3.3']);
-    $this->app->instance(Manager::class, $mockMultichain);
+    $this->app->instance(BlockchainRpcClient::class, $mockMultichain);
 
     // Create permissions (or get if exists)
     $managePermission = Permission::firstOrCreate(['name' => 'manage procurement initiation']);
@@ -72,8 +72,8 @@ test('bac secretariat can view procurement initiation form', function () {
  * Test: Complete procurement initiation with all required documents
  */
 test('can initiate procurement with all required documents for goods', function () {
-    // Create fake PDF files
-    $files = [
+    // Create fake PDF BlockchainFiles
+    $BlockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -93,8 +93,8 @@ test('can initiate procurement with all required documents for goods', function 
             'funding_source' => 'General Fund',
 
             // Classification
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
 
             // Office Information
             'office' => 'General Services Office',
@@ -104,7 +104,7 @@ test('can initiate procurement with all required documents for goods', function 
             'prepared_by' => 'Test BAC Secretariat',
 
             // Documents
-            'files' => $files,
+            'Files' => $BlockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -129,7 +129,7 @@ test('can initiate procurement with all required documents for goods', function 
  * Test: Consulting services requires TOR instead of tech specs
  */
 test('consulting services requires terms of reference not technical specifications', function () {
-    $files = [
+    $BlockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -144,12 +144,12 @@ test('consulting services requires terms of reference not technical specificatio
             'description' => 'Professional IT consulting services for system upgrade',
             'abc_amount' => '150000.00', // Within 4th class municipality SVP threshold (₱400,000)
             'funding_source' => 'Special Fund',
-            'category' => ProcurementCategoryEnums::CONSULTING_SERVICES->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::CONSULTING_SERVICES->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'IT Department',
             'end_user' => 'IT Department',
             'prepared_by' => 'Test BAC Secretariat',
-            'files' => $files,
+            'Files' => $BlockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -182,8 +182,8 @@ test('validation fails without pr number', function () {
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
         ]);
@@ -204,8 +204,8 @@ test('validation fails with invalid pr number format', function () {
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
         ]);
@@ -218,7 +218,7 @@ test('validation fails with invalid pr number format', function () {
  * Test: Validation - Missing mandatory documents fails
  */
 test('validation fails when mandatory documents are missing', function () {
-    $files = [
+    $BlockchainFiles = [
         // Only uploading 2 documents when 4 are required for Goods
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -232,11 +232,11 @@ test('validation fails when mandatory documents are missing', function () {
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
-            'files' => $files,
+            'Files' => $BlockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::PPMP_ENTRY->value,
@@ -256,7 +256,7 @@ test('validation fails when mandatory documents are missing', function () {
  * Test: Validation - ABC amount exceeds procurement mode threshold
  */
 test('validation fails when abc amount exceeds procurement mode threshold', function () {
-    $files = [
+    $BlockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -271,11 +271,11 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
             'description' => 'Large procurement exceeding SVP threshold',
             'abc_amount' => '500000.00', // ₱500K exceeds SVP threshold (₱400K for 4th class municipality)
             'funding_source' => 'General Fund',
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value, // Wrong mode
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value, // Wrong mode
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
-            'files' => $files,
+            'Files' => $BlockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -293,10 +293,10 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
 });
 
 /**
- * Test: Validation - Non-PDF files rejected
+ * Test: Validation - Non-PDF BlockchainFiles rejected
  */
-test('validation fails for non-pdf files', function () {
-    $files = [
+test('validation fails for non-pdf BlockchainFiles', function () {
+    $BlockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.docx', 1000, 'application/msword'), // Not PDF
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -311,11 +311,11 @@ test('validation fails for non-pdf files', function () {
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
-            'files' => $files,
+            'Files' => $BlockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -326,14 +326,14 @@ test('validation fails for non-pdf files', function () {
         ]);
 
     $response->assertRedirect()
-        ->assertSessionHasErrors(['files.0']);
+        ->assertSessionHasErrors(['BlockchainFiles.0']);
 });
 
 /**
  * Test: Can add optional documents
  */
 test('can add optional supporting documents', function () {
-    $files = [
+    $BlockchainFiles = [
         // Mandatory documents
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
@@ -352,12 +352,12 @@ test('can add optional supporting documents', function () {
             'description' => 'Purchase with market research and price survey',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
-            'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+            'category' => ProcurementCategory::GOODS->value,
+            'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'end_user' => 'All Departments',
             'prepared_by' => 'Test BAC Secretariat',
-            'files' => $files,
+            'Files' => $BlockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -450,8 +450,8 @@ test('can mark procurement initiation stage as complete when all documents uploa
             description: 'Test procurement for stage completion',
             abcAmount: 150000.00,
             fundingSource: 'General Fund',
-            category: ProcurementCategoryEnums::GOODS,
-            procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+            category: ProcurementCategory::GOODS,
+            procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
             office: 'Test Office',
             endUser: 'Test Department',
             // Delivery details are populated at Contract Implementation stage per NGPA IRR

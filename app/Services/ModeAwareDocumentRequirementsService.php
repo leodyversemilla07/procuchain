@@ -3,13 +3,13 @@
 namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 
 /**
  * Mode-Aware Stage Document Requirements Service
  *
- * Extends the base StageDocumentRequirements to provide mode-specific
+ * Extends the base StageDocumentRequirementsService to provide mode-specific
  * document requirements aligned with NGPA IRR (RA 12009).
  *
  * Optimized for Municipality of Gloria, Oriental Mindoro (4th Class Municipality):
@@ -18,10 +18,10 @@ use App\Enums\StageEnums;
  *
  * @see https://www.gppb.gov.ph/laws/irr.htm
  */
-class ModeAwareDocumentRequirements
+class ModeAwareDocumentRequirementsService
 {
     public function __construct(
-        private readonly StageDocumentRequirements $baseRequirements
+        private readonly StageDocumentRequirementsService $baseRequirements
     ) {}
 
     /**
@@ -29,7 +29,7 @@ class ModeAwareDocumentRequirements
      *
      * @return array<DocumentTypeEnums>
      */
-    public function getRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getRequiredDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         // First, check if this stage is valid for the mode
         if (! $stage->existsInModeWorkflow($mode)) {
@@ -39,25 +39,25 @@ class ModeAwareDocumentRequirements
         // Get base requirements, then adjust based on mode
         return match ($mode) {
             // Competitive modes - Full requirements
-            ProcurementModeEnums::COMPETITIVE_BIDDING,
-            ProcurementModeEnums::LIMITED_SOURCE_BIDDING => $this->baseRequirements->getRequiredDocuments($stage),
+            ProcurementMode::COMPETITIVE_BIDDING,
+            ProcurementMode::LIMITED_SOURCE_BIDDING => $this->baseRequirements->getRequiredDocuments($stage),
 
             // Competitive Dialogue - Full requirements with dialogue docs
-            ProcurementModeEnums::COMPETITIVE_DIALOGUE => $this->getCompetitiveDialogueRequirements($stage),
+            ProcurementMode::COMPETITIVE_DIALOGUE => $this->getCompetitiveDialogueRequirements($stage),
 
             // Unsolicited Offer - Requirements for bid matching
-            ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING => $this->getUnsolicitedOfferRequirements($stage),
+            ProcurementMode::UNSOLICITED_OFFER_WITH_BID_MATCHING => $this->getUnsolicitedOfferRequirements($stage),
 
             // Alternative modes - Simplified requirements
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
-            ProcurementModeEnums::DIRECT_CONTRACTING,
-            ProcurementModeEnums::DIRECT_ACQUISITION,
-            ProcurementModeEnums::REPEAT_ORDER,
-            ProcurementModeEnums::DIRECT_SALES,
-            ProcurementModeEnums::NEGOTIATED_PROCUREMENT => $this->getAlternativeModeRequirements($stage, $mode),
+            ProcurementMode::SMALL_VALUE_PROCUREMENT,
+            ProcurementMode::DIRECT_CONTRACTING,
+            ProcurementMode::DIRECT_ACQUISITION,
+            ProcurementMode::REPEAT_ORDER,
+            ProcurementMode::DIRECT_SALES,
+            ProcurementMode::NEGOTIATED_PROCUREMENT => $this->getAlternativeModeRequirements($stage, $mode),
 
             // Direct Procurement for STI - Special requirements
-            ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI => $this->getDirectProcurementSTIRequirements($stage),
+            ProcurementMode::DIRECT_PROCUREMENT_FOR_STI => $this->getDirectProcurementSTIRequirements($stage),
         };
     }
 
@@ -66,7 +66,7 @@ class ModeAwareDocumentRequirements
      *
      * @return array<DocumentTypeEnums>
      */
-    public function getOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getOptionalDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         // First, check if this stage is valid for the mode
         if (! $stage->existsInModeWorkflow($mode)) {
@@ -84,7 +84,7 @@ class ModeAwareDocumentRequirements
     /**
      * Get document counts for a specific stage and mode
      */
-    public function getDocumentCounts(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getDocumentCounts(StageEnums $stage, ProcurementMode $mode): array
     {
         $required = $this->getRequiredDocuments($stage, $mode);
         $optional = $this->getOptionalDocuments($stage, $mode);
@@ -101,7 +101,7 @@ class ModeAwareDocumentRequirements
      *
      * @return array<DocumentTypeEnums>
      */
-    public function getMissingDocuments(StageEnums $stage, ProcurementModeEnums $mode, array $uploadedTypes): array
+    public function getMissingDocuments(StageEnums $stage, ProcurementMode $mode, array $uploadedTypes): array
     {
         $required = $this->getRequiredDocuments($stage, $mode);
         $missing = [];
@@ -125,7 +125,7 @@ class ModeAwareDocumentRequirements
     /**
      * Check if minimum required documents are uploaded for stage and mode
      */
-    public function hasMinimumRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode, array $uploadedTypes): bool
+    public function hasMinimumRequiredDocuments(StageEnums $stage, ProcurementMode $mode, array $uploadedTypes): bool
     {
         return empty($this->getMissingDocuments($stage, $mode, $uploadedTypes));
     }
@@ -133,7 +133,7 @@ class ModeAwareDocumentRequirements
     /**
      * Get complete document guide for a stage and mode
      */
-    public function getStageDocumentGuide(StageEnums $stage, ProcurementModeEnums $mode): array
+    public function getStageDocumentGuide(StageEnums $stage, ProcurementMode $mode): array
     {
         $requiredDocs = $this->getRequiredDocuments($stage, $mode);
         $optionalDocs = $this->getOptionalDocuments($stage, $mode);
@@ -175,7 +175,7 @@ class ModeAwareDocumentRequirements
      */
     public function getAbcAwareRequiredDocuments(
         StageEnums $stage,
-        ProcurementModeEnums $mode,
+        ProcurementMode $mode,
         float $abcAmount,
         string $category = 'goods'
     ): array {
@@ -226,7 +226,7 @@ class ModeAwareDocumentRequirements
      */
     public function getAbcAwareOptionalDocuments(
         StageEnums $stage,
-        ProcurementModeEnums $mode,
+        ProcurementMode $mode,
         float $abcAmount,
         string $category = 'goods'
     ): array {
@@ -253,7 +253,7 @@ class ModeAwareDocumentRequirements
      */
     public function getAbcAwareStageDocumentGuide(
         StageEnums $stage,
-        ProcurementModeEnums $mode,
+        ProcurementMode $mode,
         float $abcAmount,
         string $category = 'goods'
     ): array {
@@ -351,7 +351,7 @@ class ModeAwareDocumentRequirements
      * - Negotiated Procurement (Sec. 35)
      * - Direct Sales (Sec. 36)
      */
-    private function getAlternativeModeRequirements(StageEnums $stage, ProcurementModeEnums $mode): array
+    private function getAlternativeModeRequirements(StageEnums $stage, ProcurementMode $mode): array
     {
         return match ($stage) {
             // Stage 1: Procurement Initiation - Same for all modes
@@ -399,41 +399,41 @@ class ModeAwareDocumentRequirements
      * Get RFQ requirements based on mode
      * Per Section 34.3 - SVP Procedure
      */
-    private function getRFQRequirements(ProcurementModeEnums $mode): array
+    private function getRFQRequirements(ProcurementMode $mode): array
     {
         return match ($mode) {
             // Direct Acquisition (≤₱200,000) - Simplified per Section 32
-            ProcurementModeEnums::DIRECT_ACQUISITION => [
+            ProcurementMode::DIRECT_ACQUISITION => [
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::PRICE_QUOTATION,
             ],
 
             // SVP - At least 3 quotations requested, 1 sufficient per Section 34.1
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+            ProcurementMode::SMALL_VALUE_PROCUREMENT => [
                 DocumentTypeEnums::NOTICE_OF_REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::PHILGEPS_BID_NOTICE_ABSTRACT,
             ],
 
             // Direct Contracting - Simplified per Section 31.3
-            ProcurementModeEnums::DIRECT_CONTRACTING => [
+            ProcurementMode::DIRECT_CONTRACTING => [
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
             ],
 
             // Repeat Order - Reference to original contract per Section 33
-            ProcurementModeEnums::REPEAT_ORDER => [
+            ProcurementMode::REPEAT_ORDER => [
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::PRICE_QUOTATION,
             ],
 
             // Negotiated Procurement - per Section 35
-            ProcurementModeEnums::NEGOTIATED_PROCUREMENT => [
+            ProcurementMode::NEGOTIATED_PROCUREMENT => [
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::PRICE_QUOTATION,
             ],
 
             // Direct Sales - per Section 36
-            ProcurementModeEnums::DIRECT_SALES => [
+            ProcurementMode::DIRECT_SALES => [
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::PRICE_QUOTATION,
             ],
@@ -448,16 +448,16 @@ class ModeAwareDocumentRequirements
     /**
      * Get contract requirements for alternative modes
      */
-    private function getAlternativeModeContractRequirements(ProcurementModeEnums $mode): array
+    private function getAlternativeModeContractRequirements(ProcurementMode $mode): array
     {
         return match ($mode) {
             // Direct Acquisition (≤₱200,000) - Minimal requirements per Section 32
-            ProcurementModeEnums::DIRECT_ACQUISITION => [
+            ProcurementMode::DIRECT_ACQUISITION => [
                 DocumentTypeEnums::PURCHASE_ORDER,
             ],
 
             // SVP - Simplified PO only per Section 34
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+            ProcurementMode::SMALL_VALUE_PROCUREMENT => [
                 DocumentTypeEnums::PURCHASE_ORDER,
             ],
 
@@ -472,16 +472,16 @@ class ModeAwareDocumentRequirements
     /**
      * Get monitoring requirements for alternative modes
      */
-    private function getAlternativeModeMonitoringRequirements(ProcurementModeEnums $mode): array
+    private function getAlternativeModeMonitoringRequirements(ProcurementMode $mode): array
     {
         return match ($mode) {
             // Direct Acquisition - Simplified monitoring
-            ProcurementModeEnums::DIRECT_ACQUISITION => [
+            ProcurementMode::DIRECT_ACQUISITION => [
                 DocumentTypeEnums::INSPECTION_ACCEPTANCE_REPORT,
             ],
 
             // SVP - Standard monitoring
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+            ProcurementMode::SMALL_VALUE_PROCUREMENT => [
                 DocumentTypeEnums::DELIVERY_RECEIPTS,
                 DocumentTypeEnums::INSPECTION_ACCEPTANCE_REPORT,
                 DocumentTypeEnums::PROGRESS_REPORTS,
@@ -499,18 +499,18 @@ class ModeAwareDocumentRequirements
     /**
      * Get completion requirements for alternative modes
      */
-    private function getAlternativeModeCompletionRequirements(ProcurementModeEnums $mode): array
+    private function getAlternativeModeCompletionRequirements(ProcurementMode $mode): array
     {
         return match ($mode) {
             // Direct Acquisition - Simplified completion
-            ProcurementModeEnums::DIRECT_ACQUISITION => [
+            ProcurementMode::DIRECT_ACQUISITION => [
                 DocumentTypeEnums::CERTIFICATE_OF_COMPLETION,
                 DocumentTypeEnums::FINAL_IAR,
                 DocumentTypeEnums::FINAL_DISBURSEMENT_VOUCHER,
             ],
 
             // SVP - Standard completion
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+            ProcurementMode::SMALL_VALUE_PROCUREMENT => [
                 DocumentTypeEnums::CERTIFICATE_OF_COMPLETION,
                 DocumentTypeEnums::FINAL_IAR,
                 DocumentTypeEnums::FINAL_DISBURSEMENT_VOUCHER,
@@ -552,7 +552,7 @@ class ModeAwareDocumentRequirements
     /**
      * Get optional documents for alternative modes
      */
-    private function getAlternativeModeOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
+    private function getAlternativeModeOptionalDocuments(StageEnums $stage, ProcurementMode $mode): array
     {
         return match ($stage) {
             StageEnums::REQUEST_FOR_QUOTATION => [],

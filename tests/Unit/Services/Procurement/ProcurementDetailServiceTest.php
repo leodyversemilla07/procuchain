@@ -7,12 +7,12 @@ use App\Models\ProcurementArchive;
 use App\Models\ProcurementStage;
 use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
+use App\Services\Procurement\BlockchainAddressResolverService;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
-use App\Services\Procurement\UserNameResolverService;
 use App\Services\ProcurementDataService;
 use App\Services\UserService;
 use Carbon\Carbon;
@@ -30,12 +30,12 @@ describe('ProcurementDetailService', function () {
     beforeEach(function () {
         $this->dataService = Mockery::mock(ProcurementDataService::class);
         $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
-        $this->procCorrectionManager = Mockery::mock(Manager::class);
+        $this->procCorrectionBlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
         $this->service = new ProcurementDetailService(
             $this->dataService,
             $this->procurementRepository,
-            new ProcurementCorrectionRepository($this->procCorrectionManager),
+            new ProcurementCorrectionRepository($this->procCorrectionBlockchainRpcClient),
         );
     });
 
@@ -160,8 +160,8 @@ describe('ProcurementDetailService', function () {
                 ->shouldReceive('findByProcurement')
                 ->andReturn($procurementDetails);
 
-            // Mock correction manager to return no corrections
-            $this->procCorrectionManager
+            // Mock correction BlockchainRpcClient to return no corrections
+            $this->procCorrectionBlockchainRpcClient
                 ->shouldReceive('liststreamitems')
                 ->andReturn([]);
 
@@ -183,7 +183,7 @@ describe('ProcurementListAggregatorService', function () {
         $this->aggregator = new ProcurementListAggregatorService(
             new ProcurementFormatterService,
             new ProcurementActionService($this->procurementRepository),
-            new UserNameResolverService($this->userService),
+            new BlockchainAddressResolverService($this->userService),
         );
     });
 

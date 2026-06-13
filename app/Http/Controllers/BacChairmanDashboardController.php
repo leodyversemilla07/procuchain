@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-class BacChairmanController extends BaseDashboardController
+class BacChairmanDashboardController extends BaseDashboardController
 {
     protected function getRoleName(): string
     {

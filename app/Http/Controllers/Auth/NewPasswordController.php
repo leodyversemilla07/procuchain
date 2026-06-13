@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,7 +20,7 @@ use Inertia\Response;
 class NewPasswordController extends Controller
 {
     public function __construct(
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -66,7 +66,7 @@ class NewPasswordController extends Controller
                     'user_id' => $user->id,
                 ]);
 
-                $this->auditLogger->log('auth.password_reset', 'user', (string) $user->id);
+                $this->AuditLogService->log('auth.password_reset', 'user', (string) $user->id);
 
                 event(new PasswordReset($user));
             }

@@ -1,12 +1,12 @@
 <?php
 
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 
 beforeEach(function () {
     config(['multichain.nodes' => []]);
 
-    $this->multichain = mock(Manager::class);
-    $this->app->instance(Manager::class, $this->multichain);
+    $this->multichain = mock(BlockchainRpcClient::class);
+    $this->app->instance(BlockchainRpcClient::class, $this->multichain);
 });
 
 it('checks connection with correct RPC method name', function () {

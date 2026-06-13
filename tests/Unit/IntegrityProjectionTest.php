@@ -1,9 +1,9 @@
 <?php
 
+use App\Services\BlockchainRpcClient;
 use App\Services\Integrity\BlockchainPayloadProjector;
 use App\Services\Integrity\BlockchainVerificationIndex;
 use App\Services\Integrity\IntegrityComparator;
-use App\Services\Manager;
 
 it('projects procurement metadata blockchain payloads to database mirror fields', function () {
     $projected = app(BlockchainPayloadProjector::class)->projectForTable([
@@ -46,8 +46,8 @@ it('projects status and event timestamps to their database mirror fields', funct
 });
 
 it('indexes blockchain stream items by txid and pr number', function () {
-    $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamitems')
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClient->shouldReceive('liststreamitems')
         ->once()
         ->with('procurement.events', false, 10000)
         ->andReturn([
@@ -63,7 +63,7 @@ it('indexes blockchain stream items by txid and pr number', function () {
             ],
         ]);
 
-    $index = new BlockchainVerificationIndex($manager);
+    $index = new BlockchainVerificationIndex($BlockchainRpcClient);
     $index->loadStream('procurement.events');
 
     expect($index->txids('procurement.events'))->toBe(['tx-1', 'tx-2'])

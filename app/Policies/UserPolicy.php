@@ -19,7 +19,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        // Users can view their own profile, or admins can view any user
+        // Users can view their own proFile, or admins can view any user
         return $user->id === $model->id || $user->hasPermissionTo('manage users');
     }
 
@@ -36,7 +36,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        // Users can update their own profile (name, email, password)
+        // Users can update their own proFile (name, email, password)
         // Only admins can update other users or change roles
         if ($user->id === $model->id) {
             return true;

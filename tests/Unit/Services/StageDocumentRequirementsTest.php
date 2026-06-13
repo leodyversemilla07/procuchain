@@ -2,13 +2,13 @@
 
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
-use App\Services\StageDocumentRequirements;
+use App\Services\StageDocumentRequirementsService;
 
 beforeEach(function () {
-    $this->service = new StageDocumentRequirements;
+    $this->service = new StageDocumentRequirementsService;
 });
 
-describe('StageDocumentRequirements', function () {
+describe('StageDocumentRequirementsService', function () {
     describe('getRequiredDocuments', function () {
         it('returns required documents for procurement initiation', function () {
             $required = $this->service->getRequiredDocuments(StageEnums::PROCUREMENT_INITIATION);

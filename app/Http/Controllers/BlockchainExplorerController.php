@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BlockchainMonitoringService;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ use Inertia\Response;
 class BlockchainExplorerController extends Controller
 {
     public function __construct(
-        private Manager $multichain,
+        private BlockchainRpcClient $multichain,
         private BlockchainMonitoringService $healthService
     ) {}
 

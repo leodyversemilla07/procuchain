@@ -1,12 +1,12 @@
 <?php
 
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
-use App\Services\Manager;
 use Illuminate\Http\UploadedFile;
 
 beforeEach(function () {
-    // Mock Manager for on-chain storage
-    $this->multichainMock = Mockery::mock(Manager::class);
+    // Mock BlockchainRpcClient for on-chain storage
+    $this->multichainMock = Mockery::mock(BlockchainRpcClient::class);
     $this->multichainMock->shouldReceive('publish')
         ->byDefault()
         ->andReturn('mock_txid_'.uniqid());
@@ -21,14 +21,14 @@ beforeEach(function () {
 });
 
 /**
- * Helper: Mock the isFileDeleted check that FileRetriever calls
+ * Helper: Mock the isBlockchainFileDeleted check that FileRetriever calls
  * before every liststreamkeyitems metadata mock in retrieveFile tests.
  *
- * FileRetriever::retrieveFile() calls isFileDeleted() first,
+ * FileRetriever::retrieveFile() calls isBlockchainFileDeleted() first,
  * which calls liststreamkeyitems with a "{dataKey}_deleted" key.
  * We mock it to return [] (not deleted) by default.
  */
-function mockFileNotDeleted($mockService): void
+function mockBlockchainFileNotDeleted($mockService): void
 {
     $mockService->shouldReceive('liststreamkeyitems')
         ->once()
@@ -36,28 +36,28 @@ function mockFileNotDeleted($mockService): void
             // Match deletion key pattern: "{dataKey}_deleted"
             return str_ends_with($key, '_deleted');
         })
-        ->andReturn([]); // Empty = file not deleted
+        ->andReturn([]); // Empty = File not deleted
 }
 
 describe('BlockchainStorageService - On-Chain Storage', function () {
     describe('uploadFile', function () {
-        it('uploads file successfully to blockchain with hex encoding', function () {
-            $mockService = Mockery::mock(Manager::class);
+        it('uploads File successfully to blockchain with hex encoding', function () {
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             // Mock publishmulti for batch upload (data + metadata)
             $mockService->shouldReceive('publishmulti')
                 ->once()
-                ->with('file.data', Mockery::type('array'))
+                ->with('File.data', Mockery::type('array'))
                 ->andReturn('batch_txid_123');
 
             $service = new BlockchainStorageService($mockService);
-            // Use createWithContent to ensure file has readable content
-            $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
+            // Use createWithContent to ensure File has readable content
+            $File = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
             $prNumber = 'PROC-001';
             $stageId = 1;
             $documentType = 'bid_document';
 
-            $result = $service->uploadFile($file, $prNumber, $stageId, $documentType, ['pr_number' => 'PROC-001']);
+            $result = $service->uploadFile($File, $prNumber, $stageId, $documentType, ['pr_number' => 'PROC-001']);
 
             expect($result)->toBeArray();
             expect($result)->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'hash']);
@@ -68,85 +68,85 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         });
 
         it('calculates sha256 hash correctly', function () {
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
             $mockService->shouldReceive('publishmulti')->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
-            // Use createWithContent to ensure file has readable content
-            $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
-            $result = $service->uploadFile($file, 'TEST', 1, 'doc', ['pr_number' => 'TEST']);
+            // Use createWithContent to ensure File has readable content
+            $File = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
+            $result = $service->uploadFile($File, 'TEST', 1, 'doc', ['pr_number' => 'TEST']);
 
             expect($result['hash'])->toBeString();
             expect($result['hash'])->toHaveLength(64); // SHA-256 hex length
         });
 
-        it('converts file to hex for on-chain storage', function () {
-            $fileContent = 'test content';
-            $expectedHex = bin2hex($fileContent);
+        it('converts File to hex for on-chain storage', function () {
+            $BlockchainFileContent = 'test content';
+            $expectedHex = bin2hex($BlockchainFileContent);
 
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             // Verify hex is in batch items
             $mockService->shouldReceive('publishmulti')
                 ->once()
-                ->with('file.data', Mockery::on(function ($items) use ($expectedHex) {
+                ->with('File.data', Mockery::on(function ($items) use ($expectedHex) {
                     return count($items) === 2 && // data + metadata
                         $items[0]['data'] === $expectedHex &&
-                        $items[0]['for'] === 'file.data';
+                        $items[0]['for'] === 'File.data';
                 }))
                 ->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
-            $file = UploadedFile::fake()->createWithContent('test.txt', $fileContent);
+            $File = UploadedFile::fake()->createWithContent('test.txt', $BlockchainFileContent);
 
-            $result = $service->uploadFile($file, 'test', 1, 'file', []);
+            $result = $service->uploadFile($File, 'test', 1, 'File', []);
 
             expect($result['data_txid'])->toBe('batch_txid');
         });
 
         it('includes storage_method as on_chain in metadata', function () {
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             $mockService->shouldReceive('publishmulti')
                 ->once()
                 ->with(
-                    'file.data',
+                    'File.data',
                     Mockery::on(function ($items) {
                         return count($items) === 2 &&
-                            $items[1]['for'] === 'file.metadata' &&
+                            $items[1]['for'] === 'File.metadata' &&
                             $items[1]['data']['json']['storage_method'] === 'on_chain';
                     })
                 )
                 ->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
-            // Use createWithContent to ensure file has readable content
-            $file = UploadedFile::fake()->createWithContent('doc.pdf', str_repeat('x', 100));
+            // Use createWithContent to ensure File has readable content
+            $File = UploadedFile::fake()->createWithContent('doc.pdf', str_repeat('x', 100));
 
-            $result = $service->uploadFile($file, 'test', 1, 'file', []);
+            $result = $service->uploadFile($File, 'test', 1, 'File', []);
 
             expect($result['metadata_txid'])->toBe('batch_txid');
         });
 
-        it('throws exception for files exceeding max size', function () {
+        it('throws exception for BlockchainFiles exceeding max size', function () {
             $service = new BlockchainStorageService($this->multichainMock);
 
-            // Create file larger than 50MB with actual content
+            // Create File larger than 50MB with actual content
             // We need to create content that exceeds the limit
             $largeContent = str_repeat('x', 52428801); // Just over 50MB limit
             $largeFile = UploadedFile::fake()->createWithContent('large.pdf', $largeContent);
 
-            expect(fn () => $service->uploadFile($largeFile, 'test', 1, 'file', []))
+            expect(fn () => $service->uploadFile($largeFile, 'test', 1, 'File', []))
                 ->toThrow(Exception::class, 'exceeds maximum');
         });
 
         it('includes context in blockchain metadata', function () {
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             $mockService->shouldReceive('publishmulti')
                 ->once()
                 ->with(
-                    'file.data',
+                    'File.data',
                     Mockery::on(function ($items) {
                         return count($items) === 2 &&
                             $items[1]['data']['json']['pr_number'] === 'PROC-123' &&
@@ -156,10 +156,10 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->andReturn('batch_txid_with_context');
 
             $service = new BlockchainStorageService($mockService);
-            // Use createWithContent to ensure file has readable content
-            $file = UploadedFile::fake()->createWithContent('bid.pdf', str_repeat('x', 100));
+            // Use createWithContent to ensure File has readable content
+            $File = UploadedFile::fake()->createWithContent('bid.pdf', str_repeat('x', 100));
             $result = $service->uploadFile(
-                $file,
+                $File,
                 'PROC-123',
                 1,
                 'bid',
@@ -171,82 +171,82 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
     });
 
     describe('retrieveFile', function () {
-        it('retrieves file from blockchain and converts hex to binary', function () {
-            $fileContent = 'test file content';
-            $fileHex = bin2hex($fileContent);
+        it('retrieves File from blockchain and converts hex to binary', function () {
+            $BlockchainFileContent = 'test File content';
+            $BlockchainFileHex = bin2hex($BlockchainFileContent);
 
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             // Mock deletion check (FileRetriever calls this first)
-            mockFileNotDeleted($mockService);
+            mockBlockchainFileNotDeleted($mockService);
 
             // Mock metadata retrieval (returns empty)
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
-                ->with('file.metadata', 'test_file.pdf', false, 1)
+                ->with('File.metadata', 'test_File.pdf', false, 1)
                 ->andReturn([]);
 
             // Mock retrieval from blockchain
             $mockService->shouldReceive('getstreamitem')
                 ->once()
-                ->with('file.data', 'data_txid_123', true)
+                ->with('File.data', 'data_txid_123', true)
                 ->andReturn([
                     'txid' => 'data_txid_123',
-                    'data' => $fileHex,
+                    'data' => $BlockchainFileHex,
                 ]);
 
             $service = new BlockchainStorageService($mockService);
 
-            $retrieved = $service->retrieveFile('test/file.pdf', 'data_txid_123');
+            $retrieved = $service->retrieveFile('test/File.pdf', 'data_txid_123');
 
             expect($retrieved)->toBeArray();
-            expect($retrieved['content'])->toBe($fileContent);
-            expect($retrieved['hash'])->toBe(hash('sha256', $fileContent));
+            expect($retrieved['content'])->toBe($BlockchainFileContent);
+            expect($retrieved['hash'])->toBe(hash('sha256', $BlockchainFileContent));
         });
 
-        it('retrieves file by key when no txid provided', function () {
-            $fileContent = 'test content';
-            $fileHex = bin2hex($fileContent);
+        it('retrieves File by key when no txid provided', function () {
+            $BlockchainFileContent = 'test content';
+            $BlockchainFileHex = bin2hex($BlockchainFileContent);
 
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             // Mock deletion check (FileRetriever calls this first)
-            mockFileNotDeleted($mockService);
+            mockBlockchainFileNotDeleted($mockService);
 
             // Mock metadata retrieval (returns empty)
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
-                ->with('file.metadata', 'test_file.pdf', false, 1)
+                ->with('File.metadata', 'test_File.pdf', false, 1)
                 ->andReturn([]);
 
-            // Mock listStreamKeyItems to find the file
+            // Mock listStreamKeyItems to find the File
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
-                ->with('file.data', 'test_file.pdf', false, 1)
+                ->with('File.data', 'test_File.pdf', false, 1)
                 ->andReturn([[
                     'txid' => 'found_txid',
-                    'data' => $fileHex,
+                    'data' => $BlockchainFileHex,
                 ]]);
 
             $service = new BlockchainStorageService($mockService);
 
-            $retrieved = $service->retrieveFile('test/file.pdf');
+            $retrieved = $service->retrieveFile('test/File.pdf');
 
-            expect($retrieved['content'])->toBe($fileContent);
+            expect($retrieved['content'])->toBe($BlockchainFileContent);
             expect($retrieved['storage_method'])->toBe('on_chain');
-            expect($retrieved['hash'])->toBe(hash('sha256', $fileContent));
+            expect($retrieved['hash'])->toBe(hash('sha256', $BlockchainFileContent));
         });
 
-        it('throws exception for non-existent file', function () {
-            $mockService = Mockery::mock(Manager::class);
+        it('throws exception for non-existent File', function () {
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             // Mock deletion check (FileRetriever calls this first)
-            mockFileNotDeleted($mockService);
+            mockBlockchainFileNotDeleted($mockService);
 
             // Mock metadata retrieval (returns empty)
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
-                ->with('file.metadata', 'non_existent_file.pdf', false, 1)
+                ->with('File.metadata', 'non_existent_File.pdf', false, 1)
                 ->andReturn([]);
 
             $mockService->shouldReceive('liststreamkeyitems')
@@ -255,23 +255,23 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $service = new BlockchainStorageService($mockService);
 
-            expect(fn () => $service->retrieveFile('non/existent/file.pdf'))
+            expect(fn () => $service->retrieveFile('non/existent/File.pdf'))
                 ->toThrow(Exception::class, 'File not found on blockchain');
         });
     });
 
     describe('verifyFileIntegrity', function () {
-        it('verifies file integrity against blockchain metadata', function () {
-            $fileContent = 'test file content for integrity verification';
-            $expectedHash = hash('sha256', $fileContent);
-            $fileHex = bin2hex($fileContent);
+        it('verifies File integrity against blockchain metadata', function () {
+            $BlockchainFileContent = 'test File content for integrity verification';
+            $expectedHash = hash('sha256', $BlockchainFileContent);
+            $BlockchainFileHex = bin2hex($BlockchainFileContent);
 
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             // Mock metadata retrieval for verifyFileIntegrity
             $mockService->shouldReceive('getstreamitem')
                 ->once()
-                ->with('file.metadata', 'metadata_txid', true)
+                ->with('File.metadata', 'metadata_txid', true)
                 ->andReturn([
                     'data' => ['json' => [
                         'hash' => $expectedHash,
@@ -280,41 +280,41 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ]);
 
             // Mock deletion check (FileRetriever calls this first)
-            mockFileNotDeleted($mockService);
+            mockBlockchainFileNotDeleted($mockService);
 
             // Mock metadata list for retrieveFile (returns empty since txid provided)
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
-                ->with('file.metadata', 'test_file.pdf', false, 1)
+                ->with('File.metadata', 'test_File.pdf', false, 1)
                 ->andReturn([]);
 
-            // Mock file data retrieval
+            // Mock File data retrieval
             $mockService->shouldReceive('getstreamitem')
                 ->once()
-                ->with('file.data', 'data_txid_123', true)
+                ->with('File.data', 'data_txid_123', true)
                 ->andReturn([
                     'txid' => 'data_txid_123',
-                    'data' => $fileHex,
+                    'data' => $BlockchainFileHex,
                 ]);
 
             $service = new BlockchainStorageService($mockService);
 
-            $isValid = $service->verifyFileIntegrity('test/file.pdf', 'metadata_txid');
+            $isValid = $service->verifyFileIntegrity('test/File.pdf', 'metadata_txid');
 
             expect($isValid)->toBeTrue();
         });
 
-        it('returns false for corrupted file', function () {
-            $fileContent = 'original content';
+        it('returns false for corrupted File', function () {
+            $BlockchainFileContent = 'original content';
             $corruptedContent = 'tampered content';
-            $originalHash = hash('sha256', $fileContent);
+            $originalHash = hash('sha256', $BlockchainFileContent);
             $corruptedHex = bin2hex($corruptedContent);
 
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             $mockService->shouldReceive('getstreamitem')
                 ->once()
-                ->with('file.metadata', 'metadata_txid', true)
+                ->with('File.metadata', 'metadata_txid', true)
                 ->andReturn([
                     'data' => ['json' => [
                         'hash' => $originalHash,
@@ -323,17 +323,17 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ]);
 
             // Mock deletion check (FileRetriever calls this first)
-            mockFileNotDeleted($mockService);
+            mockBlockchainFileNotDeleted($mockService);
 
             // Mock metadata list for retrieveFile
             $mockService->shouldReceive('liststreamkeyitems')
                 ->once()
-                ->with('file.metadata', 'test_file.pdf', false, 1)
+                ->with('File.metadata', 'test_File.pdf', false, 1)
                 ->andReturn([]);
 
             $mockService->shouldReceive('getstreamitem')
                 ->once()
-                ->with('file.data', 'data_txid', true)
+                ->with('File.data', 'data_txid', true)
                 ->andReturn([
                     'txid' => 'data_txid',
                     'data' => $corruptedHex,
@@ -341,7 +341,7 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $service = new BlockchainStorageService($mockService);
 
-            $isValid = $service->verifyFileIntegrity('test/file.pdf', 'metadata_txid');
+            $isValid = $service->verifyFileIntegrity('test/File.pdf', 'metadata_txid');
 
             expect($isValid)->toBeFalse();
         });
@@ -349,10 +349,10 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
     describe('getFileMetadata', function () {
         it('retrieves metadata from blockchain', function () {
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
             $mockService->shouldReceive('getstreamitem')
                 ->once()
-                ->with('file.metadata', 'test_txid', true)
+                ->with('File.metadata', 'test_txid', true)
                 ->andReturn([
                     'data' => ['json' => [
                         'filename' => 'test.pdf',
@@ -372,13 +372,13 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
     });
 
     describe('deleteFile', function () {
-        it('marks file as deleted on blockchain', function () {
-            $mockService = Mockery::mock(Manager::class);
+        it('marks File as deleted on blockchain', function () {
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             $mockService->shouldReceive('publish')
                 ->once()
                 ->with(
-                    'file.metadata',
+                    'File.metadata',
                     Mockery::type('string'),
                     Mockery::on(function ($data) {
                         return $data['json']['action'] === 'deleted' &&
@@ -397,12 +397,12 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         });
 
         it('includes reason in deletion record', function () {
-            $mockService = Mockery::mock(Manager::class);
+            $mockService = Mockery::mock(BlockchainRpcClient::class);
 
             $mockService->shouldReceive('publish')
                 ->once()
                 ->with(
-                    'file.metadata',
+                    'File.metadata',
                     Mockery::any(),
                     Mockery::on(function ($data) {
                         return $data['json']['reason'] === 'Compliance violation';
@@ -418,17 +418,17 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         });
     });
 
-    describe('getMaxFileSize', function () {
-        it('returns maximum file size in bytes', function () {
+    describe('getMaxfileSize', function () {
+        it('returns maximum File size in bytes', function () {
             $service = new BlockchainStorageService($this->multichainMock);
-            $maxSize = $service->getMaxFileSize();
+            $maxSize = $service->getMaxfileSize();
 
             expect($maxSize)->toBe(52428800); // 50MB in bytes
         });
 
-        it('returns formatted max file size', function () {
+        it('returns formatted max File size', function () {
             $service = new BlockchainStorageService($this->multichainMock);
-            $formatted = $service->getMaxFileSizeFormatted();
+            $formatted = $service->getMaxfileSizeFormatted();
 
             expect($formatted)->toBe('50 MB');
         });

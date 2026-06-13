@@ -1,12 +1,12 @@
 <?php
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\AuditLog;
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Models\User;
 use App\Models\UserLoginLog;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainSyncService;
-use App\Services\Manager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,44 +15,44 @@ beforeEach(function () {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// StreamEnums — New Audit Streams
+// Stream — New Audit Streams
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('StreamEnums — New Audit Streams', function () {
+describe('Stream — New Audit Streams', function () {
     it('has AUDIT_TRAIL stream', function () {
-        expect(StreamEnums::AUDIT_TRAIL->value)->toBe('audit.trail');
-        expect(StreamEnums::AUDIT_TRAIL->getDisplayName())->toBe('Audit Trail');
+        expect(Stream::AUDIT_TRAIL->value)->toBe('audit.trail');
+        expect(Stream::AUDIT_TRAIL->getDisplayName())->toBe('Audit Trail');
     });
 
     it('has DOCUMENT_ACCESS stream', function () {
-        expect(StreamEnums::DOCUMENT_ACCESS->value)->toBe('document.access');
-        expect(StreamEnums::DOCUMENT_ACCESS->getDisplayName())->toBe('Document Access');
+        expect(Stream::DOCUMENT_ACCESS->value)->toBe('document.access');
+        expect(Stream::DOCUMENT_ACCESS->getDisplayName())->toBe('Document Access');
     });
 
     it('has CONFIG_WORKFLOWS stream', function () {
-        expect(StreamEnums::CONFIG_WORKFLOWS->value)->toBe('config.workflows');
-        expect(StreamEnums::CONFIG_WORKFLOWS->getDisplayName())->toBe('Workflow Configurations');
+        expect(Stream::CONFIG_WORKFLOWS->value)->toBe('config.workflows');
+        expect(Stream::CONFIG_WORKFLOWS->getDisplayName())->toBe('Workflow Configurations');
     });
 
     it('has CONFIG_STAGE_DOCS stream', function () {
-        expect(StreamEnums::CONFIG_STAGE_DOCS->value)->toBe('config.stage_docs');
-        expect(StreamEnums::CONFIG_STAGE_DOCS->getDisplayName())->toBe('Stage Document Configurations');
+        expect(Stream::CONFIG_STAGE_DOCS->value)->toBe('config.stage_docs');
+        expect(Stream::CONFIG_STAGE_DOCS->getDisplayName())->toBe('Stage Document Configurations');
     });
 
     it('has USER_LOGIN_SESSIONS stream', function () {
-        expect(StreamEnums::USER_LOGIN_SESSIONS->value)->toBe('user.login_sessions');
-        expect(StreamEnums::USER_LOGIN_SESSIONS->getDisplayName())->toBe('User Login Sessions');
+        expect(Stream::USER_LOGIN_SESSIONS->value)->toBe('user.login_sessions');
+        expect(Stream::USER_LOGIN_SESSIONS->getDisplayName())->toBe('User Login Sessions');
     });
 
     it('returns all audit streams', function () {
-        $streams = StreamEnums::auditStreams();
+        $streams = Stream::auditStreams();
 
         expect($streams)->toHaveCount(5);
-        expect($streams)->toContain(StreamEnums::AUDIT_TRAIL);
-        expect($streams)->toContain(StreamEnums::DOCUMENT_ACCESS);
-        expect($streams)->toContain(StreamEnums::CONFIG_WORKFLOWS);
-        expect($streams)->toContain(StreamEnums::CONFIG_STAGE_DOCS);
-        expect($streams)->toContain(StreamEnums::USER_LOGIN_SESSIONS);
+        expect($streams)->toContain(Stream::AUDIT_TRAIL);
+        expect($streams)->toContain(Stream::DOCUMENT_ACCESS);
+        expect($streams)->toContain(Stream::CONFIG_WORKFLOWS);
+        expect($streams)->toContain(Stream::CONFIG_STAGE_DOCS);
+        expect($streams)->toContain(Stream::USER_LOGIN_SESSIONS);
     });
 });
 
@@ -69,17 +69,17 @@ describe('BlockchainSyncService — Publish', function () {
             'subject_id' => '1',
         ]);
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
-                StreamEnums::AUDIT_TRAIL->value,
+                Stream::AUDIT_TRAIL->value,
                 (string) $auditLog->id,
                 Mockery::on(fn ($data) => isset($data['json']['action']) && $data['json']['action'] === 'test.action')
             )
             ->andReturn('test-chain-txid-123');
 
-        $txid = BlockchainSyncService::publish($auditLog, StreamEnums::AUDIT_TRAIL);
+        $txid = BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
 
         expect($txid)->toBe('test-chain-txid-123');
 
@@ -95,12 +95,12 @@ describe('BlockchainSyncService — Publish', function () {
             'action' => 'test.fail',
         ]);
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andReturn(null);
 
-        $txid = BlockchainSyncService::publish($auditLog, StreamEnums::AUDIT_TRAIL);
+        $txid = BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
 
         expect($txid)->toBeNull();
     });
@@ -115,11 +115,11 @@ describe('BlockchainSyncService — Publish', function () {
 
         $capturedPayload = null;
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
-                StreamEnums::AUDIT_TRAIL->value,
+                Stream::AUDIT_TRAIL->value,
                 Mockery::type('string'),
                 Mockery::on(function ($data) use (&$capturedPayload) {
                     $capturedPayload = $data['json'];
@@ -129,7 +129,7 @@ describe('BlockchainSyncService — Publish', function () {
             )
             ->andReturn('payload-txid');
 
-        BlockchainSyncService::publish($auditLog, StreamEnums::AUDIT_TRAIL);
+        BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL);
 
         expect($capturedPayload)->not->toBeNull();
         expect($capturedPayload)->not->toHaveKey('txid');
@@ -144,17 +144,17 @@ describe('BlockchainSyncService — Publish', function () {
             'action' => 'test.custom_key',
         ]);
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('publish')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
-                StreamEnums::AUDIT_TRAIL->value,
+                Stream::AUDIT_TRAIL->value,
                 'custom-key-123',
                 Mockery::type('array')
             )
             ->andReturn('custom-txid');
 
-        $txid = BlockchainSyncService::publish($auditLog, StreamEnums::AUDIT_TRAIL, 'custom-key-123');
+        $txid = BlockchainSyncService::publish($auditLog, Stream::AUDIT_TRAIL, 'custom-key-123');
 
         expect($txid)->toBe('custom-txid');
     });
@@ -177,7 +177,7 @@ describe('BlockchainSyncService — Verify', function () {
         $hash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $auditLog->updateQuietly(['data_hash' => $hash]);
 
-        $result = BlockchainSyncService::verify($auditLog, StreamEnums::AUDIT_TRAIL);
+        $result = BlockchainSyncService::verify($auditLog, Stream::AUDIT_TRAIL);
 
         expect($result['valid'])->toBeTrue();
         expect($result['computed_hash'])->toBe($hash);
@@ -192,7 +192,7 @@ describe('BlockchainSyncService — Verify', function () {
 
         $auditLog->updateQuietly(['data_hash' => 'fake_hash_that_does_not_match']);
 
-        $result = BlockchainSyncService::verify($auditLog, StreamEnums::AUDIT_TRAIL);
+        $result = BlockchainSyncService::verify($auditLog, Stream::AUDIT_TRAIL);
 
         expect($result['valid'])->toBeFalse();
     });
@@ -223,15 +223,15 @@ describe('BlockchainSyncService — Restore', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
-            ->with(StreamEnums::AUDIT_TRAIL->value, true, 100000)
+            ->with(Stream::AUDIT_TRAIL->value, true, 100000)
             ->andReturn($chainItems);
 
         $result = BlockchainSyncService::restoreTable(
             'audit_logs',
-            StreamEnums::AUDIT_TRAIL,
+            Stream::AUDIT_TRAIL,
             AuditLog::class,
         );
 
@@ -265,14 +265,14 @@ describe('BlockchainSyncService — Restore', function () {
             ],
         ];
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldReceive('liststreamitems')
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainItems);
 
         $result = BlockchainSyncService::restoreTable(
             'audit_logs',
-            StreamEnums::AUDIT_TRAIL,
+            Stream::AUDIT_TRAIL,
             AuditLog::class,
         );
 
@@ -287,8 +287,8 @@ describe('BlockchainSyncService — Restore', function () {
 
 describe('Observer Integration — AuditLog', function () {
     it('skips automatic publish during unit tests when AuditLog is created', function () {
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
         $log = AuditLog::create([
             'user_id' => null,
@@ -299,8 +299,8 @@ describe('Observer Integration — AuditLog', function () {
     });
 
     it('skips publish if txid already set', function () {
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
         AuditLog::create([
             'user_id' => null,
@@ -313,19 +313,19 @@ describe('Observer Integration — AuditLog', function () {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// Observer Integration — DocumentView
+// Observer Integration — DocumentViewLog
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('Observer Integration — DocumentView', function () {
-    it('skips automatic publish during unit tests when DocumentView is created', function () {
+describe('Observer Integration — DocumentViewLog', function () {
+    it('skips automatic publish during unit tests when DocumentViewLog is created', function () {
         $user = User::factory()->create();
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
-        $view = DocumentView::create([
+        $view = DocumentViewLog::create([
             'user_id' => $user->id,
-            'file_key' => 'test-file-key',
+            'file_key' => 'test-File-key',
             'pr_number' => 'PR-TEST-001',
             'ip_address' => '127.0.0.1',
             'viewed_at' => now(),
@@ -343,8 +343,8 @@ describe('Observer Integration — UserLoginLog', function () {
     it('skips automatic publish during unit tests when UserLoginLog is created', function () {
         $user = User::factory()->create();
 
-        $managerMock = $this->mock(Manager::class);
-        $managerMock->shouldNotReceive('publish');
+        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $BlockchainRpcClientMock->shouldNotReceive('publish');
 
         $log = UserLoginLog::create([
             'user_id' => $user->id,

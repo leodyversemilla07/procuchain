@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Procurement\CorrectProcurementRequest;
 use App\Jobs\BlockchainWriteJob;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Services\Procurement\ProcurementCorrectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +18,7 @@ class ProcurementCorrectionController extends Controller
 {
     public function __construct(
         private readonly ProcurementCorrectionService $correctionService,
-        private readonly AuditLogger $auditLogger,
+        private readonly AuditLogService $AuditLogService,
     ) {}
 
     public function correctProcurement(CorrectProcurementRequest $request, string $prNumber): RedirectResponse
@@ -41,7 +41,7 @@ class ProcurementCorrectionController extends Controller
                 'pr_number' => $prNumber,
             ], $jobId, $request->user()->id);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'procurement.corrected',
                 'procurement',
                 $prNumber,

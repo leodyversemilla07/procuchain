@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\UserLoginLog;
 use App\Services\BlockchainSyncService;
 
@@ -31,6 +31,6 @@ class UserLoginLogObserver
 
         $key = ($loginLog->user_id ?? 'unknown').'-'.($loginLog->login_at?->timestamp ?? time());
 
-        BlockchainSyncService::publish($loginLog, StreamEnums::USER_LOGIN_SESSIONS, $key);
+        BlockchainSyncService::publish($loginLog, Stream::USER_LOGIN_SESSIONS, $key);
     }
 }

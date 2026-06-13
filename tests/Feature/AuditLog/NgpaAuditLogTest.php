@@ -3,7 +3,7 @@
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\UserInvitation;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -19,10 +19,10 @@ beforeEach(function () {
     $this->admin->assignRole('admin');
 });
 
-// ─── AuditLogger: NGPA action labels completeness ────────────────────────────
+// ─── AuditLogService: NGPA action labels completeness ────────────────────────────
 
-it('AuditLogger has human-readable labels for all controller action types', function () {
-    $logger = $this->app->make(AuditLogger::class);
+it('AuditLogService has human-readable labels for all controller action types', function () {
+    $logger = $this->app->make(AuditLogService::class);
 
     $controllerActions = [
         // Procurement
@@ -74,10 +74,10 @@ it('AuditLogger has human-readable labels for all controller action types', func
     }
 });
 
-// ─── AuditLogger: NGPA critical action classification ────────────────────────
+// ─── AuditLogService: NGPA critical action classification ────────────────────────
 
-it('AuditLogger correctly classifies NGPA-critical actions', function () {
-    $logger = $this->app->make(AuditLogger::class);
+it('AuditLogService correctly classifies NGPA-critical actions', function () {
+    $logger = $this->app->make(AuditLogService::class);
 
     $criticalActions = [
         'procurement.initiated',
@@ -108,8 +108,8 @@ it('AuditLogger correctly classifies NGPA-critical actions', function () {
     }
 });
 
-it('AuditLogger correctly classifies non-critical actions', function () {
-    $logger = $this->app->make(AuditLogger::class);
+it('AuditLogService correctly classifies non-critical actions', function () {
+    $logger = $this->app->make(AuditLogService::class);
 
     $nonCriticalActions = [
         'auth.login',
@@ -211,9 +211,9 @@ it('revoking an invitation writes an admin.invitation_revoked audit log entry', 
 
 // ─── Settings audit logging ─────────────────────────────────────────────────
 
-it('updating profile writes a settings.profile_updated audit log entry', function () {
+it('updating proFile writes a settings.profile_updated audit log entry', function () {
     $this->actingAs($this->admin)
-        ->patch('/settings/profile', [
+        ->patch('/settings/proFile', [
             'name' => 'Updated Admin',
             'email' => $this->admin->email,
         ]);
@@ -241,7 +241,7 @@ it('changing password writes a settings.password_changed audit log entry', funct
 // ─── 2FA Fortify event hooks audit logging ──────────────────────────────────
 
 it('2FA enabled event writes a settings.two_factor_enabled audit log entry', function () {
-    $logger = $this->app->make(AuditLogger::class);
+    $logger = $this->app->make(AuditLogService::class);
 
     // Simulate the event listener from AppServiceProvider
     $logger->log('settings.two_factor_enabled', 'user', (string) $this->admin->id);
@@ -253,7 +253,7 @@ it('2FA enabled event writes a settings.two_factor_enabled audit log entry', fun
 });
 
 it('2FA disabled event writes a settings.two_factor_disabled audit log entry', function () {
-    $logger = $this->app->make(AuditLogger::class);
+    $logger = $this->app->make(AuditLogService::class);
 
     $logger->log('settings.two_factor_disabled', 'user', (string) $this->admin->id);
 
@@ -264,7 +264,7 @@ it('2FA disabled event writes a settings.two_factor_disabled audit log entry', f
 });
 
 it('2FA confirmed event writes a settings.two_factor_confirmed audit log entry', function () {
-    $logger = $this->app->make(AuditLogger::class);
+    $logger = $this->app->make(AuditLogService::class);
 
     $logger->log('settings.two_factor_confirmed', 'user', (string) $this->admin->id);
 
@@ -313,10 +313,10 @@ it('unblocking an IP writes a security.ip_unblocked audit log entry', function (
     )->toBeTrue();
 });
 
-// ─── AuditLogger write failure resilience ───────────────────────────────────
+// ─── AuditLogService write failure resilience ───────────────────────────────────
 
-it('AuditLogger does not throw on write failure for NGPA actions', function () {
-    $logger = $this->app->make(AuditLogger::class);
+it('AuditLogService does not throw on write failure for NGPA actions', function () {
+    $logger = $this->app->make(AuditLogService::class);
 
     Schema::drop('audit_logs');
 

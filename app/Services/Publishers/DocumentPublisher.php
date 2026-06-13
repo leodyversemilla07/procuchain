@@ -10,7 +10,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\DocumentRepository;
 use App\Services\BlockchainStorageService;
-use App\Services\DashboardCacheKeys;
+use App\Services\DashboardCacheService;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -20,19 +20,19 @@ use Illuminate\Support\Facades\Log;
  * Document Publisher Service
  *
  * Publishes documents to the blockchain
- * - Handles file upload and validation
+ * - Handles File upload and validation
  * - Publishes to procurement.documents stream
  * - Returns transaction ID for tracking
  */
 class DocumentPublisher implements DocumentPublisherInterface
 {
     public function __construct(
-        private BlockchainStorageService $fileStorage,
+        private BlockchainStorageService $BlockchainFileStorage,
         private DocumentRepository $documents
     ) {}
 
     /**
-     * Publish a document with file to blockchain
+     * Publish a document with File to blockchain
      *
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
@@ -40,7 +40,7 @@ class DocumentPublisher implements DocumentPublisherInterface
      * @param  StageEnums  $stage  Stage identifier
      * @param  string  $status  Current status
      * @param  DocumentTypeEnums  $documentType  Document type
-     * @param  UploadedFile  $file  File to upload
+     * @param  UploadedFile  $File  File to upload
      * @param  string  $uploadedBy  Who uploaded the document
      * @param  string|null  $description  Optional description
      * @param  array|null  $stageMetadata  Optional stage-specific metadata
@@ -55,22 +55,22 @@ class DocumentPublisher implements DocumentPublisherInterface
         StageEnums $stage,
         string $status,
         DocumentTypeEnums $documentType,
-        UploadedFile $file,
+        UploadedFile $File,
         string $uploadedBy,
         ?string $description = null,
         ?array $stageMetadata = null
     ): array {
         try {
-            // Step 1: Upload file to blockchain
-            Log::info('DocumentPublisher: Uploading file', [
+            // Step 1: Upload File to blockchain
+            Log::info('DocumentPublisher: Uploading File', [
                 'pr_number' => $prNumber,
-                'filename' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
+                'filename' => $File->getClientOriginalName(),
+                'size' => $File->getSize(),
                 'stage' => $stage->value,
             ]);
 
-            $fileResult = $this->fileStorage->uploadFile(
-                $file,
+            $BlockchainFileResult = $this->BlockchainFileStorage->uploadFile(
+                $File,
                 $prNumber,
                 $stage->getId(),
                 $documentType->value,
@@ -85,7 +85,7 @@ class DocumentPublisher implements DocumentPublisherInterface
             // Step 2: Publish document metadata
             Log::info('DocumentPublisher: Publishing metadata', [
                 'pr_number' => $prNumber,
-                'file_key' => $fileResult['file_key'],
+                'file_key' => $BlockchainFileResult['file_key'],
             ]);
 
             $document = new DocumentData(
@@ -95,13 +95,13 @@ class DocumentPublisher implements DocumentPublisherInterface
                 stage: $stage->value,
                 status: $status,
                 documentType: $documentType->value,
-                fileKey: $fileResult['file_key'],
-                fileName: $fileResult['filename'],
-                fileSize: $fileResult['size'],
-                mimeType: $fileResult['mime_type'],
-                hash: $fileResult['hash'],
-                dataTxid: $fileResult['data_txid'],
-                metadataTxid: $fileResult['metadata_txid'],
+                fileKey: $BlockchainFileResult['file_key'],
+                filename: $BlockchainFileResult['filename'],
+                fileSize: $BlockchainFileResult['size'],
+                mimeType: $BlockchainFileResult['mime_type'],
+                hash: $BlockchainFileResult['hash'],
+                dataTxid: $BlockchainFileResult['data_txid'],
+                metadataTxid: $BlockchainFileResult['metadata_txid'],
                 uploadedBy: $uploadedBy,
                 timestamp: now(),
                 description: $description,
@@ -121,13 +121,13 @@ class DocumentPublisher implements DocumentPublisherInterface
             return [
                 'success' => true,
                 'document_txid' => $txid,
-                'file' => [
-                    'file_key' => $fileResult['file_key'],
-                    'filename' => $fileResult['filename'],
-                    'size' => $fileResult['size'],
-                    'hash' => $fileResult['hash'],
-                    'data_txid' => $fileResult['data_txid'],
-                    'metadata_txid' => $fileResult['metadata_txid'],
+                'File' => [
+                    'file_key' => $BlockchainFileResult['file_key'],
+                    'filename' => $BlockchainFileResult['filename'],
+                    'size' => $BlockchainFileResult['size'],
+                    'hash' => $BlockchainFileResult['hash'],
+                    'data_txid' => $BlockchainFileResult['data_txid'],
+                    'metadata_txid' => $BlockchainFileResult['metadata_txid'],
                 ],
             ];
         } catch (Exception $e) {
@@ -143,7 +143,7 @@ class DocumentPublisher implements DocumentPublisherInterface
     /**
      * Publish multiple documents at once
      *
-     * @param  array  $documents  Array of document data with files
+     * @param  array  $documents  Array of document data with BlockchainFiles
      * @return array Results for each document
      */
     public function publishBatch(array $documents): array
@@ -160,7 +160,7 @@ class DocumentPublisher implements DocumentPublisherInterface
                     stage: $docData['stage'],
                     status: $docData['status'],
                     documentType: $docData['document_type'],
-                    file: $docData['file'],
+                    File: $docData['File'],
                     uploadedBy: $docData['uploaded_by'],
                     description: $docData['description'] ?? null,
                     stageMetadata: $docData['stage_metadata'] ?? null,
@@ -186,9 +186,9 @@ class DocumentPublisher implements DocumentPublisherInterface
     }
 
     /**
-     * Publish document metadata without file
+     * Publish document metadata without File
      *
-     * Used for external documents or references that don't require file upload
+     * Used for external documents or references that don't require File upload
      */
     public function publishMetadataOnly(
         string $prNumber,
@@ -216,7 +216,7 @@ class DocumentPublisher implements DocumentPublisherInterface
                 status: $status,
                 documentType: $documentType->value,
                 fileKey: null,
-                fileName: null,
+                filename: null,
                 fileSize: 0,
                 mimeType: null,
                 hash: null,
@@ -258,7 +258,7 @@ class DocumentPublisher implements DocumentPublisherInterface
      */
     private function clearProcurementListCache(): void
     {
-        DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheService::clearAllProcurementCaches();
 
         Log::info('Cleared all procurement caches after document upload');
     }

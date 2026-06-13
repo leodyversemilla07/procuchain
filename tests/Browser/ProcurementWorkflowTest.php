@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
@@ -213,8 +213,8 @@ function mockSmallValueProcurement(User $user, string $prNumber = 'PR-2024-001-0
             description: 'Test Description',
             abcAmount: 100000.00,
             fundingSource: 'General Fund',
-            category: ProcurementCategoryEnums::GOODS,
-            procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+            category: ProcurementCategory::GOODS,
+            procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
             office: 'Test Office',
             endUser: 'Test User',
             deliveryLocation: null,

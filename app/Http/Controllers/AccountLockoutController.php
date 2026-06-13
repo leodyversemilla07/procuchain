@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AccountLockoutService;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use App\Traits\AuditContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class AccountLockoutController extends Controller
 
     public function __construct(
         private AccountLockoutService $accountLockout,
-        private AuditLogger $auditLogger
+        private AuditLogService $AuditLogService
     ) {}
 
     /**
@@ -88,7 +88,7 @@ class AccountLockoutController extends Controller
                     'reason' => $validated['reason'] ?? 'Manually unlocked by admin',
                 ]);
 
-                $this->auditLogger->log(
+                $this->AuditLogService->log(
                     action: 'account.unlocked',
                     subjectType: 'user',
                     subjectId: (string) $user->id,
@@ -140,7 +140,7 @@ class AccountLockoutController extends Controller
                     'duration_hours' => $durationHours,
                 ]);
 
-                $this->auditLogger->log(
+                $this->AuditLogService->log(
                     action: 'account.locked',
                     subjectType: 'user',
                     subjectId: (string) $user->id,
@@ -179,7 +179,7 @@ class AccountLockoutController extends Controller
                     'user_email' => $user->email,
                 ]);
 
-                $this->auditLogger->log(
+                $this->AuditLogService->log(
                     action: 'account.attempts_reset',
                     subjectType: 'user',
                     subjectId: (string) $user->id,
@@ -245,7 +245,7 @@ class AccountLockoutController extends Controller
             ]);
 
             if ($successCount > 0) {
-                $this->auditLogger->log(
+                $this->AuditLogService->log(
                     action: 'account.bulk_unlocked',
                     subjectType: 'user',
                     newValues: ['account_ids' => $accountIds, 'success_count' => $successCount]
@@ -308,7 +308,7 @@ class AccountLockoutController extends Controller
             ]);
 
             if ($successCount > 0) {
-                $this->auditLogger->log(
+                $this->AuditLogService->log(
                     action: 'account.bulk_attempts_reset',
                     subjectType: 'user',
                     newValues: ['account_ids' => $accountIds, 'success_count' => $successCount]

@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
  * Extracted from ProcurementFetcherService to follow SRP.
  * Handles batch preloading for performance and single lookups with cache fallback.
  */
-final class UserNameResolverService
+final class BlockchainAddressResolverService
 {
     /**
      * @var array<string, string>

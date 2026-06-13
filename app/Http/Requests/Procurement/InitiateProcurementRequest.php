@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Procurement;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,9 +31,9 @@ class InitiateProcurementRequest extends FormRequest
             'funding_source' => ['required', 'string', 'max:255'],
 
             // Classification
-            'category' => ['required', Rule::enum(ProcurementCategoryEnums::class)],
-            'procurement_mode' => ['required', Rule::enum(ProcurementModeEnums::class)],
-            'negotiated_procurement_type' => ['nullable', 'string', 'in:'.implode(',', array_keys(ProcurementModeEnums::negotiatedProcurementSubTypes()))],
+            'category' => ['required', Rule::enum(ProcurementCategory::class)],
+            'procurement_mode' => ['required', Rule::enum(ProcurementMode::class)],
+            'negotiated_procurement_type' => ['nullable', 'string', 'in:'.implode(',', array_keys(ProcurementMode::negotiatedProcurementSubTypes()))],
 
             // Municipal Office Information
             'office' => ['required', 'string', 'max:255'],
@@ -48,10 +48,10 @@ class InitiateProcurementRequest extends FormRequest
             'prepared_by' => ['required', 'string', 'max:255'],
 
             // Documents - Optional to support progressive upload (can upload after initiation)
-            'files' => ['nullable', 'array'],
-            'files.*' => ['mimes:pdf', 'max:51200'], // 50MB max
+            'Files' => ['nullable', 'array'],
+            'BlockchainFiles.*' => ['mimes:pdf', 'max:51200'], // 50MB max
             'document_types' => ['nullable', 'array'],
-            'document_types.*' => ['required_with:files.*', Rule::enum(DocumentTypeEnums::class)],
+            'document_types.*' => ['required_with:BlockchainFiles.*', Rule::enum(DocumentTypeEnums::class)],
             'document_descriptions' => ['nullable', 'array'],
             'document_descriptions.*' => ['nullable', 'string', 'max:500'],
         ];
@@ -63,9 +63,9 @@ class InitiateProcurementRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // Only validate documents if files are being uploaded with this request
+            // Only validate documents if BlockchainFiles are being uploaded with this request
             // Documents can be uploaded progressively after procurement creation
-            if ($this->hasFile('files') || ! empty($this->input('files'))) {
+            if ($this->hasFile('Files') || ! empty($this->input('Files'))) {
                 $this->validateMandatoryDocuments($validator);
             }
             $this->validateAbcAgainstMode($validator);
@@ -75,14 +75,14 @@ class InitiateProcurementRequest extends FormRequest
 
     /**
      * Validate that all mandatory documents are provided per RA 12009 (NGPA)
-     * Note: Only validates if files are provided (supports progressive upload)
+     * Note: Only validates if BlockchainFiles are provided (supports progressive upload)
      */
     protected function validateMandatoryDocuments($validator): void
     {
         $documentTypes = $this->input('document_types', []);
-        $files = $this->input('files', []);
+        $BlockchainFiles = $this->input('Files', []);
 
-        $category = ProcurementCategoryEnums::tryFrom($this->input('category'));
+        $category = ProcurementCategory::tryFrom($this->input('category'));
 
         if (! $category) {
             return; // Category validation will catch this
@@ -117,7 +117,7 @@ class InitiateProcurementRequest extends FormRequest
      */
     protected function validateAbcAgainstMode($validator): void
     {
-        $mode = ProcurementModeEnums::tryFrom($this->input('procurement_mode'));
+        $mode = ProcurementMode::tryFrom($this->input('procurement_mode'));
         $abc = (float) $this->input('abc_amount', 0);
 
         if (! $mode || $abc <= 0) {
@@ -126,7 +126,7 @@ class InitiateProcurementRequest extends FormRequest
 
         // Use the new isValidAmount method from enum
         if (! $mode->isValidAmount($abc)) {
-            $suggestedMode = ProcurementModeEnums::suggestModeForAmount($abc);
+            $suggestedMode = ProcurementMode::suggestModeForAmount($abc);
             $threshold = $mode->thresholdAmount();
 
             $validator->errors()->add(
@@ -151,14 +151,14 @@ class InitiateProcurementRequest extends FormRequest
         $mode = $this->input('procurement_mode');
         $negotiatedType = $this->input('negotiated_procurement_type');
 
-        if ($mode === ProcurementModeEnums::NEGOTIATED_PROCUREMENT->value && empty($negotiatedType)) {
+        if ($mode === ProcurementMode::NEGOTIATED_PROCUREMENT->value && empty($negotiatedType)) {
             $validator->errors()->add(
                 'negotiated_procurement_type',
                 'The negotiated procurement type is required when procurement mode is Negotiated Procurement per RA 12009 Section 35.'
             );
         }
 
-        if ($mode !== ProcurementModeEnums::NEGOTIATED_PROCUREMENT->value && ! empty($negotiatedType)) {
+        if ($mode !== ProcurementMode::NEGOTIATED_PROCUREMENT->value && ! empty($negotiatedType)) {
             $validator->errors()->add(
                 'negotiated_procurement_type',
                 'The negotiated procurement type should only be specified when procurement mode is Negotiated Procurement.'
@@ -181,9 +181,9 @@ class InitiateProcurementRequest extends FormRequest
             'other_description.required_if' => 'Please specify the description when selecting "Other".',
             'other_funding_source.required_if' => 'Please specify the funding source when selecting "Other Sources".',
             'other_end_user.required_if' => 'Please specify the end user when selecting "Other".',
-            'files.*.required' => 'All required documents must be uploaded per RA 12009 (NGPA) IRR.',
-            'files.*.mimes' => 'All documents must be in PDF format for blockchain storage.',
-            'document_types.*.required' => 'Document type must be specified for each uploaded file.',
+            'BlockchainFiles.*.required' => 'All required documents must be uploaded per RA 12009 (NGPA) IRR.',
+            'BlockchainFiles.*.mimes' => 'All documents must be in PDF format for blockchain storage.',
+            'document_types.*.required' => 'Document type must be specified for each uploaded File.',
             'document_types.*.enum' => 'Invalid document type. Please select from the provided list of RA 12009 compliant document types.',
         ];
     }

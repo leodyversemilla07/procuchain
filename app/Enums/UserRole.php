@@ -8,7 +8,7 @@ namespace App\Enums;
  * Represents all available user roles in the procurement system.
  * Each role has specific permissions and responsibilities.
  */
-enum UserRoleEnums: string
+enum UserRole: string
 {
     case BAC_SECRETARIAT = 'bac_secretariat';
     case BAC_CHAIRMAN = 'bac_chairman';

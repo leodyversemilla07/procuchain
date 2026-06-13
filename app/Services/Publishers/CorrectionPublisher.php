@@ -22,7 +22,7 @@ class CorrectionPublisher
 {
     public function __construct(
         private CorrectionRepositoryInterface $corrections,
-        private BlockchainStorageService $fileStorage
+        private BlockchainStorageService $BlockchainFileStorage
     ) {}
 
     /**
@@ -37,7 +37,7 @@ class CorrectionPublisher
      * @param  string  $reason  Reason for correction
      * @param  string  $correctedBy  Who made the correction
      * @param  string  $userAddress  User blockchain address
-     * @param  UploadedFile|null  $correctedFile  New file (for replacements)
+     * @param  UploadedFile|null  $correctedFile  New File (for replacements)
      * @param  string|null  $originalStage  Original document stage (to preserve stage context)
      * @return array Correction transaction information
      *
@@ -65,13 +65,13 @@ class CorrectionPublisher
 
             $correctedMetadata = null;
 
-            // If replacing, upload the new file
+            // If replacing, upload the new File
             if ($action === 'replace' && $correctedFile !== null) {
                 // Use original document's stage if provided, otherwise default to 1
                 // This prevents stage/status confusion when correcting documents
                 $stageId = $originalStage ? (int) $originalStage : 1;
 
-                $fileResult = $this->fileStorage->uploadFile(
+                $BlockchainFileResult = $this->BlockchainFileStorage->uploadFile(
                     $correctedFile,
                     $prNumber,
                     $stageId,
@@ -86,13 +86,13 @@ class CorrectionPublisher
                 );
 
                 $correctedMetadata = [
-                    'file_name' => $fileResult['filename'],
-                    'file_size' => $fileResult['size'],
-                    'mime_type' => $fileResult['mime_type'],
-                    'file_key' => $fileResult['file_key'],
-                    'hash' => $fileResult['hash'],
-                    'data_txid' => $fileResult['data_txid'],
-                    'metadata_txid' => $fileResult['metadata_txid'],
+                    'file_name' => $BlockchainFileResult['filename'],
+                    'file_size' => $BlockchainFileResult['size'],
+                    'mime_type' => $BlockchainFileResult['mime_type'],
+                    'file_key' => $BlockchainFileResult['file_key'],
+                    'hash' => $BlockchainFileResult['hash'],
+                    'data_txid' => $BlockchainFileResult['data_txid'],
+                    'metadata_txid' => $BlockchainFileResult['metadata_txid'],
                 ];
             }
 
@@ -123,7 +123,7 @@ class CorrectionPublisher
                 'success' => true,
                 'correction_txid' => $txid,
                 'action' => $action,
-                'corrected_file' => $correctedMetadata,
+                'corrected_File' => $correctedMetadata,
             ];
         } catch (Exception $e) {
             Log::error('CorrectionPublisher: Failed', [
@@ -136,7 +136,7 @@ class CorrectionPublisher
     }
 
     /**
-     * Publish a replacement correction (new file replaces old)
+     * Publish a replacement correction (new File replaces old)
      *
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
@@ -146,7 +146,7 @@ class CorrectionPublisher
      * @param  string  $reason  Reason for replacement
      * @param  string  $correctedBy  Who made the correction
      * @param  string  $userAddress  User blockchain address
-     * @param  UploadedFile  $correctedFile  New file
+     * @param  UploadedFile  $correctedFile  New File
      * @param  string|null  $originalStage  Original document stage
      * @return array Correction transaction information
      */

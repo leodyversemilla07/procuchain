@@ -8,7 +8,7 @@ namespace App\Enums;
  * Represents all possible statuses for procurement processes.
  * Each status corresponds to a specific state within a procurement stage.
  */
-enum StatusEnums: string
+enum ProcurementStatus: string
 {
     case PROCUREMENT_INITIATED = 'procurement_initiated';
     case PROCUREMENT_SUBMITTED = 'procurement_submitted';
@@ -87,7 +87,7 @@ enum StatusEnums: string
     }
 
     /**
-     * Get the storage path segment for file organization
+     * Get the storage path segment for File organization
      */
     public function getStoragePathSegment(): string
     {

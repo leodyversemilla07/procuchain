@@ -9,7 +9,7 @@ use App\DataTransferObjects\Verification\ComplianceResult;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\DocumentRepository;
-use App\Services\StageDocumentRequirements;
+use App\Services\StageDocumentRequirementsService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +17,7 @@ final class DocumentComplianceVerifier
 {
     public function __construct(
         private readonly DocumentRepository $documentRepository,
-        private readonly StageDocumentRequirements $requirements,
+        private readonly StageDocumentRequirementsService $requirements,
     ) {}
 
     /**
@@ -67,7 +67,7 @@ final class DocumentComplianceVerifier
             foreach ($stageDocuments as $doc) {
                 if ($doc->mimeType !== 'application/pdf') {
                     $errors[] = sprintf(
-                        'Document %s has invalid format: %s. Only PDF files are allowed per RA 12009 (NGPA).',
+                        'Document %s has invalid format: %s. Only PDF BlockchainFiles are allowed per RA 12009 (NGPA).',
                         $doc->documentType,
                         $doc->mimeType
                     );

@@ -1,7 +1,7 @@
 <?php
 
 use App\DataTransferObjects\ProcurementData;
-use App\Models\DocumentView;
+use App\Models\DocumentViewLog;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
@@ -38,7 +38,7 @@ it('can view documents through the application', function () {
     actingAs($user);
 
     // Create a document view record for testing data
-    DocumentView::factory()->create([
+    DocumentViewLog::factory()->create([
         'user_id' => $user->id,
         'file_key' => 'test-document',
         'document_type' => 'Test Document',
@@ -75,7 +75,7 @@ it('requires proper role for PDF viewer access', function () {
     $user->assignRole('hope'); // Valid role but let's test middleware
     actingAs($user);
 
-    DocumentView::factory()->create([
+    DocumentViewLog::factory()->create([
         'user_id' => $user->id,
         'file_key' => 'test-document',
         'document_type' => 'Test Document',
@@ -102,7 +102,7 @@ it('formats stage enum to display name correctly', function () {
     $user->forceFill(['blockchain_address' => 'test-address'])->save();
     actingAs($user);
 
-    DocumentView::factory()->create([
+    DocumentViewLog::factory()->create([
         'user_id' => $user->id,
         'file_key' => 'test-stage-format',
         'document_type' => 'procurement_initiation',
@@ -137,7 +137,7 @@ it('forbids bac secretariat from viewing inaccessible procurement documents', fu
     $user->assignRole('bac_secretariat');
 
     $dataService = Mockery::mock(ProcurementDataService::class);
-    $dataService->shouldReceive('getDocumentDataByFileKey')
+    $dataService->shouldReceive('getDocumentDataByfileKey')
         ->once()
         ->with('locked-document')
         ->andReturn([

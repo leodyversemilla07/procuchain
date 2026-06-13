@@ -55,7 +55,7 @@ enum StageEnums: string
     }
 
     /**
-     * Get the storage path segment for file organization
+     * Get the storage path segment for File organization
      */
     public function getStoragePathSegment(): string
     {
@@ -483,7 +483,7 @@ enum StageEnums: string
      *
      * @return array<self>
      */
-    public static function getStagesForMode(ProcurementModeEnums $mode): array
+    public static function getStagesForMode(ProcurementMode $mode): array
     {
         return match ($mode) {
             // ═══════════════════════════════════════════════════════════════
@@ -491,7 +491,7 @@ enum StageEnums: string
             // ═══════════════════════════════════════════════════════════════
 
             // Competitive Bidding: Full 15-stage workflow per Section 27
-            ProcurementModeEnums::COMPETITIVE_BIDDING => [
+            ProcurementMode::COMPETITIVE_BIDDING => [
                 self::PROCUREMENT_INITIATION,
                 self::PRE_PROCUREMENT_CONFERENCE,
                 self::BIDDING_DOCUMENTS,
@@ -511,7 +511,7 @@ enum StageEnums: string
 
             // Limited Source Bidding: Same as Competitive Bidding per Section 28.5
             // "observe the procedure for Competitive Bidding"
-            ProcurementModeEnums::LIMITED_SOURCE_BIDDING => [
+            ProcurementMode::LIMITED_SOURCE_BIDDING => [
                 self::PROCUREMENT_INITIATION,
                 self::PRE_PROCUREMENT_CONFERENCE,
                 self::BIDDING_DOCUMENTS,
@@ -530,7 +530,7 @@ enum StageEnums: string
             ],
 
             // Competitive Dialogue: Two-stage process per Section 29
-            ProcurementModeEnums::COMPETITIVE_DIALOGUE => [
+            ProcurementMode::COMPETITIVE_DIALOGUE => [
                 self::PROCUREMENT_INITIATION,
                 self::PRE_PROCUREMENT_CONFERENCE,
                 self::BIDDING_DOCUMENTS,           // First stage: initial proposals
@@ -549,7 +549,7 @@ enum StageEnums: string
             ],
 
             // Unsolicited Offer with Bid Matching per Section 30
-            ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING => [
+            ProcurementMode::UNSOLICITED_OFFER_WITH_BID_MATCHING => [
                 self::PROCUREMENT_INITIATION,      // Evaluate unsolicited offer
                 self::PRE_PROCUREMENT_CONFERENCE,  // Negotiation with original offeror
                 self::BIDDING_DOCUMENTS,           // Publication for bid matching
@@ -571,7 +571,7 @@ enum StageEnums: string
             // ═══════════════════════════════════════════════════════════════
 
             // Direct Contracting per Section 31: RFQ-based, no elaborate bidding
-            ProcurementModeEnums::DIRECT_CONTRACTING => [
+            ProcurementMode::DIRECT_CONTRACTING => [
                 self::PROCUREMENT_INITIATION,
                 self::REQUEST_FOR_QUOTATION,       // BAC prepares RFQ per Section 31.3
                 self::BAC_RESOLUTION,              // BAC recommends award
@@ -584,7 +584,7 @@ enum StageEnums: string
             ],
 
             // Direct Acquisition per Section 32: Very simple (≤₱200,000)
-            ProcurementModeEnums::DIRECT_ACQUISITION => [
+            ProcurementMode::DIRECT_ACQUISITION => [
                 self::PROCUREMENT_INITIATION,
                 self::NOTICE_OF_AWARD,             // Direct purchase
                 self::PERFORMANCE_BOND_CONTRACT_AND_PO,
@@ -595,7 +595,7 @@ enum StageEnums: string
             ],
 
             // Repeat Order per Section 33: Purchase from previous winning bidder
-            ProcurementModeEnums::REPEAT_ORDER => [
+            ProcurementMode::REPEAT_ORDER => [
                 self::PROCUREMENT_INITIATION,
                 self::REQUEST_FOR_QUOTATION,       // RFQ to previous winning bidder
                 self::BAC_RESOLUTION,              // Verify conditions met
@@ -608,7 +608,7 @@ enum StageEnums: string
             ],
 
             // Small Value Procurement per Section 34: RFQ with 3 quotations
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+            ProcurementMode::SMALL_VALUE_PROCUREMENT => [
                 self::PROCUREMENT_INITIATION,
                 self::REQUEST_FOR_QUOTATION,       // RFQ to at least 3 suppliers per Section 34.3(c)
                 self::ABSTRACT_OF_QUOTATIONS,      // Abstract of Quotations per Section 34.3(e)
@@ -622,7 +622,7 @@ enum StageEnums: string
             ],
 
             // Negotiated Procurement per Section 35
-            ProcurementModeEnums::NEGOTIATED_PROCUREMENT => [
+            ProcurementMode::NEGOTIATED_PROCUREMENT => [
                 self::PROCUREMENT_INITIATION,
                 self::PRE_PROCUREMENT_CONFERENCE,  // Negotiation phase
                 self::BAC_RESOLUTION,              // Recommend award
@@ -635,7 +635,7 @@ enum StageEnums: string
             ],
 
             // Direct Sales per Section 36: From supplier with completed contract
-            ProcurementModeEnums::DIRECT_SALES => [
+            ProcurementMode::DIRECT_SALES => [
                 self::PROCUREMENT_INITIATION,
                 self::REQUEST_FOR_QUOTATION,       // RFQ to qualified supplier
                 self::BAC_RESOLUTION,              // Verify conditions met
@@ -648,7 +648,7 @@ enum StageEnums: string
             ],
 
             // Direct Procurement for STI per Section 37
-            ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI => [
+            ProcurementMode::DIRECT_PROCUREMENT_FOR_STI => [
                 self::PROCUREMENT_INITIATION,
                 self::REQUEST_FOR_QUOTATION,       // RFQ to R&D suppliers
                 self::BAC_RESOLUTION,
@@ -668,20 +668,20 @@ enum StageEnums: string
      *
      * @return array<self>
      */
-    public static function getOptionalStagesForMode(ProcurementModeEnums $mode): array
+    public static function getOptionalStagesForMode(ProcurementMode $mode): array
     {
         return match ($mode) {
             // Competitive modes: Pre-procurement conference and supplemental bulletin optional
-            ProcurementModeEnums::COMPETITIVE_BIDDING,
-            ProcurementModeEnums::LIMITED_SOURCE_BIDDING,
-            ProcurementModeEnums::COMPETITIVE_DIALOGUE,
-            ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING => [
+            ProcurementMode::COMPETITIVE_BIDDING,
+            ProcurementMode::LIMITED_SOURCE_BIDDING,
+            ProcurementMode::COMPETITIVE_DIALOGUE,
+            ProcurementMode::UNSOLICITED_OFFER_WITH_BID_MATCHING => [
                 self::PRE_PROCUREMENT_CONFERENCE,
                 self::SUPPLEMENTAL_BID_BULLETIN,
             ],
 
             // SVP: Pre-bid conference optional per Section 34.3(d)
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+            ProcurementMode::SMALL_VALUE_PROCUREMENT => [
                 self::PRE_BID_CONFERENCE,
             ],
 
@@ -696,7 +696,7 @@ enum StageEnums: string
      *
      * @return array<self>
      */
-    public function getNextStagesForMode(ProcurementModeEnums $mode): array
+    public function getNextStagesForMode(ProcurementMode $mode): array
     {
         $modeStages = self::getStagesForMode($mode);
         $optionalStages = self::getOptionalStagesForMode($mode);
@@ -727,7 +727,7 @@ enum StageEnums: string
     /**
      * Check if a stage is required for a specific mode
      */
-    public function isRequiredForMode(ProcurementModeEnums $mode): bool
+    public function isRequiredForMode(ProcurementMode $mode): bool
     {
         $modeStages = self::getStagesForMode($mode);
         $optionalStages = self::getOptionalStagesForMode($mode);
@@ -738,7 +738,7 @@ enum StageEnums: string
     /**
      * Check if a stage exists in a mode's workflow
      */
-    public function existsInModeWorkflow(ProcurementModeEnums $mode): bool
+    public function existsInModeWorkflow(ProcurementMode $mode): bool
     {
         return in_array($this, self::getStagesForMode($mode), true);
     }
@@ -746,7 +746,7 @@ enum StageEnums: string
     /**
      * Get stage count for a specific mode
      */
-    public static function getStageCountForMode(ProcurementModeEnums $mode): int
+    public static function getStageCountForMode(ProcurementMode $mode): int
     {
         return count(self::getStagesForMode($mode));
     }
@@ -754,7 +754,7 @@ enum StageEnums: string
     /**
      * Get required stage count for a mode (excluding optional stages)
      */
-    public static function getRequiredStageCountForMode(ProcurementModeEnums $mode): int
+    public static function getRequiredStageCountForMode(ProcurementMode $mode): int
     {
         $total = count(self::getStagesForMode($mode));
         $optional = count(self::getOptionalStagesForMode($mode));
@@ -768,36 +768,36 @@ enum StageEnums: string
      *
      * @return array{video_recording_threshold: ?float, timeline_days: ?int, special_requirements: array<string>}
      */
-    public function getCategoryRequirements(ProcurementCategoryEnums $category): array
+    public function getCategoryRequirements(ProcurementCategory $category): array
     {
         // Video recording thresholds per Section 38.3
         $videoThreshold = match ($category) {
-            ProcurementCategoryEnums::GOODS => 10000000.00,
-            ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => 20000000.00,
-            ProcurementCategoryEnums::CONSULTING_SERVICES => 5000000.00,
-            ProcurementCategoryEnums::SERVICES => null, // Not specified in NGPA
+            ProcurementCategory::GOODS => 10000000.00,
+            ProcurementCategory::INFRASTRUCTURE_PROJECTS => 20000000.00,
+            ProcurementCategory::CONSULTING_SERVICES => 5000000.00,
+            ProcurementCategory::SERVICES => null, // Not specified in NGPA
         };
 
         // Competitive Dialogue timelines per Section 29.4.1
         $timelineDays = match (true) {
-            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategoryEnums::GOODS => 45,
-            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => 65,
-            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategoryEnums::CONSULTING_SERVICES => 75,
+            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategory::GOODS => 45,
+            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategory::INFRASTRUCTURE_PROJECTS => 65,
+            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategory::CONSULTING_SERVICES => 75,
             default => null,
         };
 
         // Category-specific requirements
         $specialRequirements = match (true) {
-            $this === self::POST_QUALIFICATION && $category === ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => [
+            $this === self::POST_QUALIFICATION && $category === ProcurementCategory::INFRASTRUCTURE_PROJECTS => [
                 'Site inspection verification',
                 'Equipment verification',
                 'PCAB license verification',
             ],
-            $this === self::POST_QUALIFICATION && $category === ProcurementCategoryEnums::CONSULTING_SERVICES => [
+            $this === self::POST_QUALIFICATION && $category === ProcurementCategory::CONSULTING_SERVICES => [
                 'Personnel qualification verification',
                 'Previous project experience verification',
             ],
-            $this === self::MONITORING && $category === ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => [
+            $this === self::MONITORING && $category === ProcurementCategory::INFRASTRUCTURE_PROJECTS => [
                 'Progress billing review',
                 'Work accomplishment inspection',
                 'Variation order monitoring',
@@ -817,7 +817,7 @@ enum StageEnums: string
      *
      * @return array{mode: string, total_stages: int, required_stages: int, optional_stages: int, stages: array<array{stage: string, display_name: string, required: bool, phase: string}>}
      */
-    public static function getWorkflowSummaryForMode(ProcurementModeEnums $mode): array
+    public static function getWorkflowSummaryForMode(ProcurementMode $mode): array
     {
         $stages = self::getStagesForMode($mode);
         $optionalStages = self::getOptionalStagesForMode($mode);

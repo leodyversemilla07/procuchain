@@ -1,12 +1,12 @@
 <?php
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementStage;
 use App\Services\BlockchainRecordSyncService;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -40,7 +40,7 @@ it('repairs only the requested PR and preserves unrelated normalized records', f
         'document_type' => 'purchase_request',
         'stage' => 'procurement_initiation',
         'filename' => 'target.pdf',
-        'file_key' => 'target-file-key',
+        'file_key' => 'target-File-key',
         'hash' => 'target-hash',
         'uploaded_by' => 'tester',
         'uploaded_at' => now(),
@@ -69,7 +69,7 @@ it('repairs only the requested PR and preserves unrelated normalized records', f
         'document_type' => 'purchase_request',
         'stage' => 'procurement_initiation',
         'filename' => 'unrelated.pdf',
-        'file_key' => 'unrelated-file-key',
+        'file_key' => 'unrelated-File-key',
         'hash' => 'unrelated-hash',
         'uploaded_by' => 'tester',
         'uploaded_at' => now(),
@@ -86,26 +86,26 @@ it('repairs only the requested PR and preserves unrelated normalized records', f
         'txid' => 'unrelated-event-stale',
     ]);
 
-    $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamkeyitems')
-        ->with(StreamEnums::METADATA->value, 'PR-2026-100-0001', false, 10000)
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClient->shouldReceive('liststreamkeyitems')
+        ->with(Stream::METADATA->value, 'PR-2026-100-0001', false, 10000)
         ->once()
         ->andReturn([
             ['txid' => 'target-metadata', 'data' => ['json' => ['pr_number' => 'PR-2026-100-0001']]],
         ]);
-    $manager->shouldReceive('liststreamkeyitems')
-        ->with(StreamEnums::STATUS->value, 'PR-2026-100-0001', false, 10000)
+    $BlockchainRpcClient->shouldReceive('liststreamkeyitems')
+        ->with(Stream::STATUS->value, 'PR-2026-100-0001', false, 10000)
         ->once()
         ->andReturn([]);
-    $manager->shouldReceive('liststreamkeyitems')
-        ->with(StreamEnums::DOCUMENTS->value, 'PR-2026-100-0001', false, 10000)
+    $BlockchainRpcClient->shouldReceive('liststreamkeyitems')
+        ->with(Stream::DOCUMENTS->value, 'PR-2026-100-0001', false, 10000)
         ->once()
         ->andReturn([]);
-    $manager->shouldReceive('liststreamkeyitems')
-        ->with(StreamEnums::EVENTS->value, 'PR-2026-100-0001', false, 10000)
+    $BlockchainRpcClient->shouldReceive('liststreamkeyitems')
+        ->with(Stream::EVENTS->value, 'PR-2026-100-0001', false, 10000)
         ->once()
         ->andReturn([]);
-    app()->instance(Manager::class, $manager);
+    app()->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
 
     $sync = Mockery::mock(NormalizedTableSyncService::class);
     $sync->shouldReceive('syncPr')
@@ -131,12 +131,12 @@ it('removes only the requested procurement when that PR is absent from chain', f
     createRepairTestProcurement('PR-2026-300-0001');
     createRepairTestProcurement('PR-2026-400-0001');
 
-    $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamkeyitems')
-        ->with(StreamEnums::METADATA->value, 'PR-2026-300-0001', false, 10000)
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClient->shouldReceive('liststreamkeyitems')
+        ->with(Stream::METADATA->value, 'PR-2026-300-0001', false, 10000)
         ->once()
         ->andReturn([]);
-    app()->instance(Manager::class, $manager);
+    app()->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
 
     $sync = Mockery::mock(NormalizedTableSyncService::class);
     $sync->shouldReceive('syncPr')
@@ -155,12 +155,12 @@ it('removes only the requested procurement when that PR is absent from chain', f
 it('does not delete records when blockchain metadata cannot be read', function () {
     createRepairTestProcurement('PR-2026-500-0001');
 
-    $manager = Mockery::mock(Manager::class);
-    $manager->shouldReceive('liststreamkeyitems')
-        ->with(StreamEnums::METADATA->value, 'PR-2026-500-0001', false, 10000)
+    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $BlockchainRpcClient->shouldReceive('liststreamkeyitems')
+        ->with(Stream::METADATA->value, 'PR-2026-500-0001', false, 10000)
         ->once()
         ->andThrow(new RuntimeException('RPC unavailable'));
-    app()->instance(Manager::class, $manager);
+    app()->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
 
     $sync = Mockery::mock(NormalizedTableSyncService::class);
     $sync->shouldReceive('syncPr')

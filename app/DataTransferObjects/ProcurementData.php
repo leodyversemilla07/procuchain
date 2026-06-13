@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\DataTransferObjects;
 
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use Carbon\Carbon;
 
@@ -33,8 +33,8 @@ final class ProcurementData
         public readonly string $description,
         public readonly float $abcAmount,
         public readonly string $fundingSource,
-        public readonly ProcurementCategoryEnums $category,
-        public readonly ProcurementModeEnums $procurementMode,
+        public readonly ProcurementCategory $category,
+        public readonly ProcurementMode $procurementMode,
         public readonly string $office,
         public readonly ?string $endUser,
         // Note: Delivery details are populated at Contract Implementation stage per NGPA IRR Section 71
@@ -162,8 +162,8 @@ final class ProcurementData
             description: $data['description'] ?? '',
             abcAmount: (float) ($data['abc_amount'] ?? 0),
             fundingSource: $data['funding_source'] ?? '',
-            category: ProcurementCategoryEnums::from($data['category'] ?? 'goods'),
-            procurementMode: ProcurementModeEnums::from($data['procurement_mode'] ?? 'competitive_bidding'),
+            category: ProcurementCategory::from($data['category'] ?? 'goods'),
+            procurementMode: ProcurementMode::from($data['procurement_mode'] ?? 'competitive_bidding'),
             office: $data['office'] ?? '',
             endUser: $data['end_user'] ?? null,
             deliveryLocation: $data['delivery_location'] ?? null,

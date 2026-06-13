@@ -13,12 +13,12 @@ use Illuminate\Http\UploadedFile;
 /**
  * Interface for publishing documents to blockchain storage
  *
- * Implementations handle file upload, hash generation, and blockchain recording
+ * Implementations handle File upload, hash generation, and blockchain recording
  */
 interface DocumentPublisherInterface
 {
     /**
-     * Publish a document with file to blockchain
+     * Publish a document with File to blockchain
      *
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
@@ -26,7 +26,7 @@ interface DocumentPublisherInterface
      * @param  StageEnums  $stage  Stage identifier
      * @param  string  $status  Current status
      * @param  DocumentTypeEnums  $documentType  Document type
-     * @param  UploadedFile  $file  File to upload
+     * @param  UploadedFile  $File  File to upload
      * @param  string  $uploadedBy  Who uploaded the document
      * @param  string|null  $description  Optional description
      * @param  array<string, mixed>|null  $stageMetadata  Optional stage-specific metadata
@@ -53,14 +53,14 @@ interface DocumentPublisherInterface
         StageEnums $stage,
         string $status,
         DocumentTypeEnums $documentType,
-        UploadedFile $file,
+        UploadedFile $File,
         string $uploadedBy,
         ?string $description = null,
         ?array $stageMetadata = null
     ): array;
 
     /**
-     * Publish document metadata without file
+     * Publish document metadata without File
      *
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title

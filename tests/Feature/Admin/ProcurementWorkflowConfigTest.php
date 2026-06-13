@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\User;
@@ -126,7 +126,7 @@ describe('ProcurementWorkflowConfigController', function () {
         it('admin can reset workflow config to defaults', function () {
             // First, create a custom config
             ProcurementWorkflowConfig::create([
-                'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+                'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
                 'display_name' => 'Test',
                 'stages' => ['procurement_initiation'],
                 'optional_stages' => [],
@@ -141,7 +141,7 @@ describe('ProcurementWorkflowConfigController', function () {
 
             // Verify it was reset to defaults
             $config = ProcurementWorkflowConfig::forMode('small_value_procurement')->first();
-            $defaultStages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
+            $defaultStages = StageEnums::getStagesForMode(ProcurementMode::SMALL_VALUE_PROCUREMENT);
 
             expect(count($config->stages))->toBe(count($defaultStages));
         });

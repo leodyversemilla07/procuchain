@@ -6,7 +6,7 @@ use App\Events\UserInvited;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\SendInvitationRequest;
 use App\Models\UserInvitation;
-use App\Services\AuditLogger;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +16,7 @@ use Inertia\Response;
 class UserInvitationController extends Controller
 {
     public function __construct(
-        private AuditLogger $auditLogger,
+        private AuditLogService $AuditLogService,
     ) {}
 
     /**
@@ -100,7 +100,7 @@ class UserInvitationController extends Controller
                 'role' => $invitation->role,
             ]);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'admin.invitation_sent',
                 'invitation',
                 (string) $invitation->id,
@@ -150,7 +150,7 @@ class UserInvitationController extends Controller
                 'invitee_email' => $invitation->email,
             ]);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'admin.invitation_resent',
                 'invitation',
                 (string) $invitation->id,
@@ -192,7 +192,7 @@ class UserInvitationController extends Controller
                 'invitee_email' => $invitation->email,
             ]);
 
-            $this->auditLogger->log(
+            $this->AuditLogService->log(
                 'admin.invitation_revoked',
                 'invitation',
                 (string) $invitation->id,

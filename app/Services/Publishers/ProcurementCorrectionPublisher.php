@@ -7,8 +7,8 @@ namespace App\Services\Publishers;
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementCorrectionData;
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -86,8 +86,8 @@ class ProcurementCorrectionPublisher
                 correctedDescription: $correctedData['description'] ?? $originalProcurement->description,
                 correctedAbcAmount: $correctedData['abc_amount'] ?? $originalProcurement->abcAmount,
                 correctedFundingSource: $correctedData['funding_source'] ?? $originalProcurement->fundingSource,
-                correctedCategory: isset($correctedData['category']) ? ProcurementCategoryEnums::from($correctedData['category']) : $originalProcurement->category,
-                correctedProcurementMode: isset($correctedData['procurement_mode']) ? ProcurementModeEnums::from($correctedData['procurement_mode']) : $originalProcurement->procurementMode,
+                correctedCategory: isset($correctedData['category']) ? ProcurementCategory::from($correctedData['category']) : $originalProcurement->category,
+                correctedProcurementMode: isset($correctedData['procurement_mode']) ? ProcurementMode::from($correctedData['procurement_mode']) : $originalProcurement->procurementMode,
                 correctedOffice: $correctedData['office'] ?? $originalProcurement->office,
                 correctedEndUser: $correctedData['end_user'] ?? $originalProcurement->endUser,
                 correctedPurpose: $correctedData['purpose'] ?? $originalProcurement->purpose,

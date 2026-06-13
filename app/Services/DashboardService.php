@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
-use App\Enums\ProcurementModeEnums;
+use App\Enums\ProcurementMode;
+use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
@@ -41,7 +41,7 @@ class DashboardService
     ];
 
     public function __construct(
-        private Manager $multichain,
+        private BlockchainRpcClient $multichain,
         private ProcurementRepository $procurementRepository,
         private StatisticsCalculator $statisticsCalculator,
         private ModeAnalyzerService $modeAnalyzer,
@@ -145,7 +145,7 @@ class DashboardService
             ->values()
             ->map(function ($item) {
                 $stageEnum = StageEnums::tryFrom($item['stage']);
-                $statusEnum = StatusEnums::tryFrom($item['status']);
+                $statusEnum = ProcurementStatus::tryFrom($item['status']);
 
                 return [
                     'id' => $item['id'],
@@ -172,7 +172,7 @@ class DashboardService
             ->values()
             ->map(function ($item) {
                 $stageEnum = StageEnums::tryFrom($item['stage']);
-                $statusEnum = StatusEnums::tryFrom($item['status']);
+                $statusEnum = ProcurementStatus::tryFrom($item['status']);
 
                 return [
                     'id' => $item['id'],
@@ -436,7 +436,7 @@ class DashboardService
                 $procurement = $procurements[$prNumber] ?? null;
 
                 if ($procurement) {
-                    $mode = ProcurementModeEnums::tryFrom((string) $procurement->procurement_mode);
+                    $mode = ProcurementMode::tryFrom((string) $procurement->procurement_mode);
 
                     $modeMap[$prNumber] = [
                         'value' => $procurement->procurement_mode ?? '',

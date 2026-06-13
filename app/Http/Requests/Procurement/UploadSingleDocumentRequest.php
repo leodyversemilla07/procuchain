@@ -22,9 +22,9 @@ class UploadSingleDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'document_file' => [
+            'document_File' => [
                 'required',
-                'file',
+                'File',
                 'mimes:pdf',
                 'max:51200', // 50MB for combined procurement initiation document
             ],
@@ -51,10 +51,10 @@ class UploadSingleDocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'document_file.required' => 'Please select a file to upload.',
-            'document_file.file' => 'The uploaded item must be a valid file.',
-            'document_file.mimes' => 'Only PDF files are allowed.',
-            'document_file.max' => 'File size must not exceed 50MB.',
+            'document_File.required' => 'Please select a File to upload.',
+            'document_File.File' => 'The uploaded item must be a valid File.',
+            'document_File.mimes' => 'Only PDF BlockchainFiles are allowed.',
+            'document_File.max' => 'File size must not exceed 50MB.',
             'document_type.required' => 'Document type is required.',
             'document_type.in' => 'Invalid document type selected.',
             'description.max' => 'Description must not exceed 500 characters.',
@@ -67,7 +67,7 @@ class UploadSingleDocumentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'document_file' => 'document file',
+            'document_File' => 'document File',
             'document_type' => 'document type',
         ];
     }

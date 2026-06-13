@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\StreamEnums;
+use App\Enums\Stream;
 use App\Libraries\MultiChain\Client;
-use App\Services\Manager;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -35,13 +35,13 @@ class MultichainNodeHealthCheck extends Command
             return self::SUCCESS;
         }
 
-        $streams = collect(StreamEnums::cases())->map->value->toArray();
+        $streams = collect(Stream::cases())->map->value->toArray();
         $rpcUser = config('multichain.rpc.username', 'multichainrpc');
         $rpcPass = config('multichain.rpc.password');
         $chainName = config('multichain.chain_name');
 
-        /** @var Manager $manager */
-        $manager = app(Manager::class);
+        /** @var BlockchainRpcClient $BlockchainRpcClient */
+        $BlockchainRpcClient = app(BlockchainRpcClient::class);
 
         $healthyNodes = 0;
         $repairedNodes = 0;
@@ -94,7 +94,7 @@ class MultichainNodeHealthCheck extends Command
                 // Node has unsubscribed streams — check if this was an intentional
                 // demo purge before auto-repairing. If a full_node_purge event exists
                 // on-chain (and no newer resync event), skip this node entirely.
-                if ($this->isNodePurged($manager, $nodeId)) {
+                if ($this->isNodePurged($BlockchainRpcClient, $nodeId)) {
                     $skippedPurgedNodes++;
                     $this->line(" {$nodeName} -- intentionally purged, skipping auto-repair");
 
@@ -163,17 +163,17 @@ class MultichainNodeHealthCheck extends Command
      * This prevents the health check from auto-repairing (re-subscribing)
      * a node that was intentionally purged via the demo purge page.
      */
-    private function isNodePurged(Manager $manager, string $nodeId): bool
+    private function isNodePurged(BlockchainRpcClient $BlockchainRpcClient, string $nodeId): bool
     {
         if (empty($nodeId)) {
             return false;
         }
 
-        $purgeCheckStream = StreamEnums::FILE_METADATA->value;
+        $purgeCheckStream = Stream::FILE_METADATA->value;
 
         try {
             $purgeKey = 'node_'.$nodeId.'_full_purge';
-            $purgeItems = $manager->liststreamkeyitems(
+            $purgeItems = $BlockchainRpcClient->liststreamkeyitems(
                 $purgeCheckStream,
                 $purgeKey,
                 false,
@@ -182,10 +182,10 @@ class MultichainNodeHealthCheck extends Command
                 false
             );
 
-            if ($manager->success() && is_array($purgeItems) && count($purgeItems) > 0) {
+            if ($BlockchainRpcClient->success() && is_array($purgeItems) && count($purgeItems) > 0) {
                 // Check for a newer resync event
                 $resyncKey = 'node_'.$nodeId.'_resync';
-                $resyncItems = $manager->liststreamkeyitems(
+                $resyncItems = $BlockchainRpcClient->liststreamkeyitems(
                     $purgeCheckStream,
                     $resyncKey,
                     false,
@@ -194,7 +194,7 @@ class MultichainNodeHealthCheck extends Command
                     false
                 );
 
-                if ($manager->success() && is_array($resyncItems) && count($resyncItems) > 0) {
+                if ($BlockchainRpcClient->success() && is_array($resyncItems) && count($resyncItems) > 0) {
                     $purgeBlock = $purgeItems[0]['blocktime'] ?? 0;
                     $resyncBlock = $resyncItems[0]['blocktime'] ?? 0;
 
