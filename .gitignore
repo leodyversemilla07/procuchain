@@ -40,6 +40,9 @@ yarn-error.log
 /terraform/secrets.tfvars
 /terraform/main2.bak
 
+# Auto-generated documentation
+/docs/PROCUCHAIN_SOURCE_DOCS*
+
 # Binary document files
 *.docx
 
