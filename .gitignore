@@ -40,6 +40,9 @@ yarn-error.log
 /terraform/secrets.tfvars
 /terraform/main2.bak
 
+# Binary document files
+*.docx
+
 # Test results
 /test-results/
 
