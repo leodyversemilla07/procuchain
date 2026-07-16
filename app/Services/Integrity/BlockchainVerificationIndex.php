@@ -31,7 +31,7 @@ class BlockchainVerificationIndex
     /** @var array<string, string> */
     private array $failedStreams = [];
 
-    public function __construct(private BlockchainRpcClient $BlockchainRpcClient) {}
+    public function __construct(private BlockchainRpcClient $blockchainRpcClient) {}
 
     /**
      * @param  iterable<Stream|string>  $streams
@@ -50,7 +50,7 @@ class BlockchainVerificationIndex
         }
 
         try {
-            $items = $this->BlockchainRpcClient->liststreamitems($stream, false, 10000);
+            $items = $this->blockchainRpcClient->liststreamitems($stream, false, 10000);
             $items = is_array($items) ? $items : [];
         } catch (\Throwable $e) {
             Log::warning('BlockchainVerificationIndex: failed to load stream', [

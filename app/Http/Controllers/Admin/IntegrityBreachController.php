@@ -107,8 +107,8 @@ class IntegrityBreachController extends Controller
         // Get blockchain data for comparison
         $blockchainData = null;
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $BlockchainRpcClient->liststreamkeyitems($log->stream, $log->stream_key);
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $blockchainRpcClient->liststreamkeyitems($log->stream, $log->stream_key);
             if (is_array($items) && ! empty($items)) {
                 foreach ($items as $item) {
                     if (($item['txid'] ?? null) === $log->txid) {

@@ -22,12 +22,12 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Log::spy();
 
-    $this->BlockchainRpcClient = mock(BlockchainRpcClient::class);
+    $this->blockchainRpcClient = mock(BlockchainRpcClient::class);
     $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
     $this->procurementRepository = mock(ProcurementRepository::class);
 
     $this->service = new DashboardService(
-        $this->BlockchainRpcClient,
+        $this->blockchainRpcClient,
         $this->procurementRepository,
         new StatisticsCalculator,
         new ModeAnalyzer,

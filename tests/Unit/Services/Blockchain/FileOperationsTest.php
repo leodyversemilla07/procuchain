@@ -43,14 +43,14 @@ describe('FileUploader', function () {
         it('uploads small File in a single transaction', function () {
             $uploader = createUploader($this->multichain);
 
-            $File = createBlockchainFileWithContent('document.pdf', str_repeat('A', 500));
+            $file = createBlockchainFileWithContent('document.pdf', str_repeat('A', 500));
 
             $this->multichain
                 ->shouldReceive('publishmulti')
                 ->once()
                 ->andReturn('txid_single_abc123');
 
-            $result = $uploader->uploadFile($File, 'PR-2025-001-0001', 1, 'Purchase Request');
+            $result = $uploader->uploadFile($file, 'PR-2025-001-0001', 1, 'Purchase Request');
 
             expect($result)
                 ->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'mime_type', 'hash', 'storage_method', 'chunked'])
@@ -69,7 +69,7 @@ describe('FileUploader', function () {
             ]);
 
             // Create a File larger than chunk threshold (100 bytes)
-            $File = createBlockchainFileWithContent('large-doc.pdf', str_repeat('X', 200));
+            $file = createBlockchainFileWithContent('large-doc.pdf', str_repeat('X', 200));
 
             // Mock chunk uploads (4 chunks of 50 bytes each for 200 bytes) and metadata publish
             $this->multichain
@@ -81,7 +81,7 @@ describe('FileUploader', function () {
                 ->once()
                 ->andReturn('metadata_txid_abc');
 
-            $result = $uploader->uploadFile($File, 'PR-2025-001-0001', 1, 'Purchase Request');
+            $result = $uploader->uploadFile($file, 'PR-2025-001-0001', 1, 'Purchase Request');
 
             expect($result)
                 ->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'mime_type', 'hash', 'storage_method', 'chunked', 'total_chunks', 'chunk_txids'])
@@ -136,8 +136,8 @@ describe('FileUploader', function () {
         it('orchestrates multiple File uploads', function () {
             $uploader = createUploader($this->multichain);
 
-            $BlockchainFile1 = createBlockchainFileWithContent('doc1.pdf', str_repeat('A', 500));
-            $BlockchainFile2 = createBlockchainFileWithContent('doc2.pdf', str_repeat('B', 500));
+            $blockchainFile1 = createBlockchainFileWithContent('doc1.pdf', str_repeat('A', 500));
+            $blockchainFile2 = createBlockchainFileWithContent('doc2.pdf', str_repeat('B', 500));
 
             $metadata = [
                 ['document_type' => 'Purchase Request', 'description' => 'PR Document'],
@@ -152,7 +152,7 @@ describe('FileUploader', function () {
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
             $results = $uploader->uploadAndPrepare(
-                [$BlockchainFile1, $BlockchainFile2],
+                [$blockchainFile1, $blockchainFile2],
                 $metadata,
                 'PR-2025-001-0001',
                 1,

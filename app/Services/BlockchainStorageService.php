@@ -58,14 +58,14 @@ class BlockchainStorageService implements BlockchainStorageInterface
 
     // ── Upload ──────────────────────────────────────────────
 
-    public function uploadFile(UploadedFile $File, string $prNumber, int $stageId, string $documentType, array $metadata = []): array
+    public function uploadFile(UploadedFile $file, string $prNumber, int $stageId, string $documentType, array $metadata = []): array
     {
-        return $this->uploader->uploadFile($File, $prNumber, $stageId, $documentType, $metadata);
+        return $this->uploader->uploadFile($file, $prNumber, $stageId, $documentType, $metadata);
     }
 
-    public function uploadAndPrepare(array $BlockchainFiles, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
+    public function uploadAndPrepare(array $blockchainFiles, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
     {
-        return $this->uploader->uploadAndPrepare($BlockchainFiles, $metadata, $prNumber, $stageId, $procurementTitle, $authUser);
+        return $this->uploader->uploadAndPrepare($blockchainFiles, $metadata, $prNumber, $stageId, $procurementTitle, $authUser);
     }
 
     // ── Retrieval ───────────────────────────────────────────
@@ -96,9 +96,9 @@ class BlockchainStorageService implements BlockchainStorageInterface
                 return false;
             }
 
-            $BlockchainFileData = $this->retrieveFile($fileKey, $dataTxid);
+            $blockchainFileData = $this->retrieveFile($fileKey, $dataTxid);
 
-            return $BlockchainFileData['hash'] === $blockchainHash;
+            return $blockchainFileData['hash'] === $blockchainHash;
         } catch (Exception $e) {
             Log::error('File integrity verification failed', [
                 'file_key' => $fileKey,

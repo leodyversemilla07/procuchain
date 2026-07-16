@@ -16,8 +16,8 @@ class DocumentDownloadController extends BaseController
 {
     public function __construct(
         private ProcurementDataService $procurementDataService,
-        private BlockchainStorageService $BlockchainFileStorageService,
-        private AuditLogService $AuditLogService,
+        private BlockchainStorageService $blockchainFileStorageService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -50,11 +50,11 @@ class DocumentDownloadController extends BaseController
 
             // Retrieve File from blockchain using data_txid
             try {
-                $BlockchainFileData = $this->BlockchainFileStorageService->retrieveFile($fileKey, $dataTxid);
+                $blockchainFileData = $this->blockchainFileStorageService->retrieveFile($fileKey, $dataTxid);
 
                 $this->recordDocumentViewLog($request, $fileKey, $documentData);
 
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     'document.downloaded',
                     'document',
                     $fileKey,
@@ -70,7 +70,7 @@ class DocumentDownloadController extends BaseController
                     'ip' => $request->ip(),
                 ]);
 
-                return response($BlockchainFileData['content'])
+                return response($blockchainFileData['content'])
                     ->header('Content-Type', 'application/pdf')
                     ->header('Content-Disposition', 'inline; filename="'.$filename.'"')
                     ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
@@ -122,9 +122,9 @@ class DocumentDownloadController extends BaseController
                 return $blockchainData;
             }
 
-            $DocumentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
+            $documentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
 
-            if ($DocumentViewLog) {
+            if ($documentViewLog) {
                 $parts = explode('/', $fileKey);
 
                 return [
@@ -144,9 +144,9 @@ class DocumentDownloadController extends BaseController
                 'error' => 'An error occurred downloading the document.',
             ]);
 
-            $DocumentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
+            $documentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
 
-            if ($DocumentViewLog) {
+            if ($documentViewLog) {
                 $parts = explode('/', $fileKey);
 
                 return [

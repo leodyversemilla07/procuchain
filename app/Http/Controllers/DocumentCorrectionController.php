@@ -22,7 +22,7 @@ class DocumentCorrectionController extends Controller
         protected DocumentRepository $documentRepository,
         protected CorrectionRepository $correctionRepository,
         protected CorrectionPublisher $correctionPublisher,
-        protected AuditLogService $AuditLogService,
+        protected AuditLogService $auditLogService,
     ) {}
 
     public function correctDocument(CorrectDocumentRequest $request, string $txid): RedirectResponse
@@ -69,7 +69,7 @@ class DocumentCorrectionController extends Controller
             ];
 
             if ($request->hasFile('corrected_File')) {
-                $corrFile = $request->File('corrected_File');
+                $corrFile = $request->file('corrected_File');
                 $jobData['temp_file_path'] = $corrFile->store('temp/blockchain-uploads');
                 $jobData['original_filename'] = $corrFile->getClientOriginalName();
                 $jobData['mime_type'] = $corrFile->getMimeType() ?? 'application/octet-stream';
@@ -78,7 +78,7 @@ class DocumentCorrectionController extends Controller
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'document.corrected',
                 'document',
                 $txid,

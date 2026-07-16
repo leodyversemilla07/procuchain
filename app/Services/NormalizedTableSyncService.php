@@ -33,11 +33,11 @@ class NormalizedTableSyncService
 {
     use HashesData;
 
-    private BlockchainRpcClient $BlockchainRpcClient;
+    private BlockchainRpcClient $blockchainRpcClient;
 
     public function __construct()
     {
-        $this->BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $this->blockchainRpcClient = app(BlockchainRpcClient::class);
     }
 
     // ----------------------------------------------------------------
@@ -782,7 +782,7 @@ class NormalizedTableSyncService
     private function getStreamItems(string $stream): array
     {
         try {
-            $items = $this->BlockchainRpcClient->liststreamitems($stream, false, 10000);
+            $items = $this->blockchainRpcClient->liststreamitems($stream, false, 10000);
 
             return is_array($items) ? $items : [];
         } catch (\Exception $e) {
@@ -801,7 +801,7 @@ class NormalizedTableSyncService
     private function getStreamItemsForKey(string $stream, string $key): array
     {
         try {
-            $items = $this->BlockchainRpcClient->liststreamkeyitems($stream, $key, false, 1000);
+            $items = $this->blockchainRpcClient->liststreamkeyitems($stream, $key, false, 1000);
 
             return is_array($items) ? $items : [];
         } catch (\Exception $e) {

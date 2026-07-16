@@ -301,9 +301,9 @@ describe('DocumentUploadHandler', function () {
         $orchestrator = Mockery::mock(ProcurementOrchestrator::class);
         $orchestrator->shouldReceive('publishDocumentWorkflow')
             ->once()
-            ->withArgs(function ($procurementData, $File, $documentData, $statusData, $eventData) {
+            ->withArgs(function ($procurementData, $file, $documentData, $statusData, $eventData) {
                 return $procurementData['pr_number'] === 'PR-2025-992-0005'
-                    && $File instanceof UploadedFile
+                    && $file instanceof UploadedFile
                     && $documentData['stage'] === StageEnums::BID_OPENING
                     && $documentData['document_type'] === DocumentTypeEnums::PURCHASE_REQUEST
                     && $statusData['stage'] === StageEnums::BID_OPENING
@@ -429,11 +429,11 @@ describe('HandlesTempFiles trait', function () {
         $reflection = new ReflectionMethod($handler, 'reconstituteTempFile');
         $reflection->setAccessible(true);
 
-        $File = $reflection->invoke($handler, 'temp/trait-test.pdf', 'original.pdf', 'application/pdf');
+        $file = $reflection->invoke($handler, 'temp/trait-test.pdf', 'original.pdf', 'application/pdf');
 
-        expect($File)->toBeInstanceOf(UploadedFile::class)
-            ->and($File->getClientOriginalName())->toBe('original.pdf')
-            ->and($File->getClientMimeType())->toBe('application/pdf');
+        expect($file)->toBeInstanceOf(UploadedFile::class)
+            ->and($file->getClientOriginalName())->toBe('original.pdf')
+            ->and($file->getClientMimeType())->toBe('application/pdf');
     });
 
     it('cleanupTempFile removes the File from storage', function () {

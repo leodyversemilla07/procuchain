@@ -89,17 +89,17 @@ class DocumentUploadException extends Exception
      * Create exception for File validation failure
      */
     public static function validationFailed(
-        UploadedFile $File,
+        UploadedFile $file,
         string $reason,
         ?string $procurementId = null
     ): self {
         return new self(
             message: "File validation failed: {$reason}",
-            filename: $File->getClientOriginalName(),
+            filename: $file->getClientOriginalName(),
             procurementId: $procurementId,
             context: [
-                'size' => $File->getSize(),
-                'mime_type' => $File->getMimeType(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
                 'reason' => $reason,
             ]
         );

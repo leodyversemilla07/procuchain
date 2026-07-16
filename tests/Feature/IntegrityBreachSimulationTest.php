@@ -155,8 +155,8 @@ class IntegrityBreachSimulationTest extends TestCase
             violationType: BreachType::ROW_DELETED->value,
         );
 
-        $BlockchainRpcClient = \Mockery::mock(BlockchainRpcClient::class);
-        $BlockchainRpcClient->shouldReceive('liststreamitems')
+        $blockchainRpcClient = \Mockery::mock(BlockchainRpcClient::class);
+        $blockchainRpcClient->shouldReceive('liststreamitems')
             ->once()
             ->andReturn([]);
 
@@ -176,7 +176,7 @@ class IntegrityBreachSimulationTest extends TestCase
                 return ['procurements' => 1];
             });
 
-        $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
+        $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
         $this->app->instance(NormalizedTableSyncService::class, $syncService);
 
         // Act: Restore

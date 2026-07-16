@@ -20,7 +20,7 @@ class LoginHistoryController extends Controller
     public function __construct(
         private LoginAnalyticsService $loginAnalytics,
         private BlockedIpService $blockedIpService,
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -172,7 +172,7 @@ class LoginHistoryController extends Controller
                 'expires_at' => $expiresAt?->toDateTimeString(),
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'security.ip_blocked',
                 'blocked_ip',
                 $validated['ip_address'],
@@ -214,7 +214,7 @@ class LoginHistoryController extends Controller
                 'unblocked_by' => $request->user()->id,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'security.ip_unblocked',
                 'blocked_ip',
                 $validated['ip_address'],

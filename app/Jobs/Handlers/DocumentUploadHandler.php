@@ -21,7 +21,7 @@ class DocumentUploadHandler
 
     public function execute(array $data): array
     {
-        $File = $this->reconstituteTempFile(
+        $file = $this->reconstituteTempFile(
             $data['temp_file_path'],
             $data['original_filename'],
             $data['mime_type'],
@@ -33,7 +33,7 @@ class DocumentUploadHandler
                 'procurement_title' => $data['procurement_title'],
                 'user_address' => $data['user_address'],
             ],
-            File: $File,
+            file: $file,
             documentData: [
                 'stage' => StageEnums::from($data['stage']),
                 'status' => $data['status'],

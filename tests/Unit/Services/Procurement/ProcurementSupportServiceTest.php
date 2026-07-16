@@ -26,7 +26,7 @@ beforeEach(function () {
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
     $this->documentRepository = Mockery::mock(DocumentRepository::class);
     $this->workflowDefinitionService = Mockery::mock(WorkflowDefinitionService::class);
-    $this->StageStatusMappingService = Mockery::mock(StageStatusMappingService::class);
+    $this->stageStatusMappingService = Mockery::mock(StageStatusMappingService::class);
 
     $this->service = new ProcurementSupportService(
         $this->multichain,
@@ -36,7 +36,7 @@ beforeEach(function () {
         $this->procurementDataService,
         $this->documentRepository,
         $this->workflowDefinitionService,
-        $this->StageStatusMappingService,
+        $this->stageStatusMappingService,
     );
 });
 
@@ -70,7 +70,7 @@ describe('ProcurementSupportService', function () {
         it('returns correct status for procurement initiation', function () {
             mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
-            $this->StageStatusMappingService
+            $this->stageStatusMappingService
                 ->shouldReceive('getInitialStatus')
                 ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()
@@ -84,7 +84,7 @@ describe('ProcurementSupportService', function () {
         it('returns mode-aware status for BAC resolution with SVP', function () {
             mockProcurementRepo(ProcurementMode::SMALL_VALUE_PROCUREMENT);
 
-            $this->StageStatusMappingService
+            $this->stageStatusMappingService
                 ->shouldReceive('getInitialStatus')
                 ->with(StageEnums::BAC_RESOLUTION, ProcurementMode::SMALL_VALUE_PROCUREMENT)
                 ->once()
@@ -98,7 +98,7 @@ describe('ProcurementSupportService', function () {
         it('returns mode-aware status for BAC resolution with competitive bidding', function () {
             mockProcurementRepo(ProcurementMode::COMPETITIVE_BIDDING);
 
-            $this->StageStatusMappingService
+            $this->stageStatusMappingService
                 ->shouldReceive('getInitialStatus')
                 ->with(StageEnums::BAC_RESOLUTION, ProcurementMode::COMPETITIVE_BIDDING)
                 ->once()

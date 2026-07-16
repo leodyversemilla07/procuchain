@@ -60,55 +60,55 @@ beforeEach(function () {
 // ─── Failover Detection ─────────────────────────────────────────────
 
 it('detects connection errors as failover-eligible', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $method = $ref->getMethod('isConnectionError');
     $method->setAccessible(true);
 
-    expect($method->invoke($BlockchainRpcClient, 'Connection refused'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Connection timed out'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Could not connect to host'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Failed to connect'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Network is unreachable'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Operation timed out'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Connection reset by peer'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, 'Unable to connect'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Connection refused'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Connection timed out'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Could not connect to host'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Failed to connect'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Network is unreachable'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Operation timed out'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Connection reset by peer'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, 'Unable to connect'))->toBeTrue();
 });
 
 it('does not treat non-connection errors as connection errors', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $method = $ref->getMethod('isConnectionError');
     $method->setAccessible(true);
 
-    expect($method->invoke($BlockchainRpcClient, 'Invalid parameter'))->toBeFalse();
-    expect($method->invoke($BlockchainRpcClient, 'Stream not found'))->toBeFalse();
-    expect($method->invoke($BlockchainRpcClient, 'Permission denied'))->toBeFalse();
+    expect($method->invoke($blockchainRpcClient, 'Invalid parameter'))->toBeFalse();
+    expect($method->invoke($blockchainRpcClient, 'Stream not found'))->toBeFalse();
+    expect($method->invoke($blockchainRpcClient, 'Permission denied'))->toBeFalse();
 });
 
 it('detects RPC -703 as failover-eligible (node purged/unsubscribed)', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $method = $ref->getMethod('isFailoverEligibleError');
     $method->setAccessible(true);
 
-    expect($method->invoke($BlockchainRpcClient, -703, 'Not subscribed'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, -701, 'Invalid parameter'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, -1, 'Connection refused'))->toBeTrue();
-    expect($method->invoke($BlockchainRpcClient, -32600, 'Parse error'))->toBeFalse();
+    expect($method->invoke($blockchainRpcClient, -703, 'Not subscribed'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, -701, 'Invalid parameter'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, -1, 'Connection refused'))->toBeTrue();
+    expect($method->invoke($blockchainRpcClient, -32600, 'Parse error'))->toBeFalse();
 });
 
 // ─── Fallback Node Selection ────────────────────────────────────────
 
 it('excludes the active node from fallback candidates', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $method = $ref->getMethod('getFallbackNodes');
     $method->setAccessible(true);
 
     // The primary node (admin at 10.0.1.10:6834) should be excluded
     // since the BlockchainRpcClient connects to it on construction
-    $fallbacks = $method->invoke($BlockchainRpcClient);
+    $fallbacks = $method->invoke($blockchainRpcClient);
 
     $fallbackIps = array_map(fn ($n) => $n['private_ip'], $fallbacks);
 
@@ -121,12 +121,12 @@ it('excludes the active node from fallback candidates', function () {
 it('returns empty array when no fallback nodes are configured', function () {
     config(['multichain.nodes' => []]);
 
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $method = $ref->getMethod('getFallbackNodes');
     $method->setAccessible(true);
 
-    $fallbacks = $method->invoke($BlockchainRpcClient);
+    $fallbacks = $method->invoke($blockchainRpcClient);
 
     expect($fallbacks)->toBeEmpty();
 });
@@ -134,72 +134,72 @@ it('returns empty array when no fallback nodes are configured', function () {
 // ─── Active Node Tracking ───────────────────────────────────────────
 
 it('starts with primary as the active node', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
+    $blockchainRpcClient = new BlockchainRpcClient;
 
-    expect($BlockchainRpcClient->getActiveNodeId())->toBe('primary');
-    expect($BlockchainRpcClient->isFailedOver())->toBeFalse();
+    expect($blockchainRpcClient->getActiveNodeId())->toBe('primary');
+    expect($blockchainRpcClient->isFailedOver())->toBeFalse();
 });
 
 it('reports failed-over state after switching to a peer', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
+    $blockchainRpcClient = new BlockchainRpcClient;
 
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $ref = new ReflectionClass($blockchainRpcClient);
 
     $nodeIdProp = $ref->getProperty('activeNodeId');
     $nodeIdProp->setAccessible(true);
-    $nodeIdProp->setValue($BlockchainRpcClient, 'bac-secretariat');
+    $nodeIdProp->setValue($blockchainRpcClient, 'bac-secretariat');
 
     $failedOverProp = $ref->getProperty('failedOver');
     $failedOverProp->setAccessible(true);
-    $failedOverProp->setValue($BlockchainRpcClient, true);
+    $failedOverProp->setValue($blockchainRpcClient, true);
 
-    expect($BlockchainRpcClient->getActiveNodeId())->toBe('bac-secretariat');
-    expect($BlockchainRpcClient->isFailedOver())->toBeTrue();
+    expect($blockchainRpcClient->getActiveNodeId())->toBe('bac-secretariat');
+    expect($blockchainRpcClient->isFailedOver())->toBeTrue();
 });
 
 // ─── Primary Recheck ────────────────────────────────────────────────
 
 it('skips primary recheck when not failed over', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
+    $blockchainRpcClient = new BlockchainRpcClient;
 
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $ref = new ReflectionClass($blockchainRpcClient);
     $method = $ref->getMethod('tryPromotePrimaryBack');
     $method->setAccessible(true);
 
     // Should not throw or change state
-    $method->invoke($BlockchainRpcClient);
+    $method->invoke($blockchainRpcClient);
 
-    expect($BlockchainRpcClient->getActiveNodeId())->toBe('primary');
-    expect($BlockchainRpcClient->isFailedOver())->toBeFalse();
+    expect($blockchainRpcClient->getActiveNodeId())->toBe('primary');
+    expect($blockchainRpcClient->isFailedOver())->toBeFalse();
 });
 
 it('throttles primary recheck based on interval', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
+    $blockchainRpcClient = new BlockchainRpcClient;
 
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $ref = new ReflectionClass($blockchainRpcClient);
 
     // Simulate failed-over state
     $failedOverProp = $ref->getProperty('failedOver');
     $failedOverProp->setAccessible(true);
-    $failedOverProp->setValue($BlockchainRpcClient, true);
+    $failedOverProp->setValue($blockchainRpcClient, true);
 
     $nodeIdProp = $ref->getProperty('activeNodeId');
     $nodeIdProp->setAccessible(true);
-    $nodeIdProp->setValue($BlockchainRpcClient, 'bac-secretariat');
+    $nodeIdProp->setValue($blockchainRpcClient, 'bac-secretariat');
 
     // Set verifiedAt to "just now" so recheck is throttled
     $verifiedAtProp = $ref->getProperty('activeNodeVerifiedAt');
     $verifiedAtProp->setAccessible(true);
-    $verifiedAtProp->setValue($BlockchainRpcClient, time());
+    $verifiedAtProp->setValue($blockchainRpcClient, time());
 
     $method = $ref->getMethod('tryPromotePrimaryBack');
     $method->setAccessible(true);
 
     // Should not switch back because interval hasn't elapsed
-    $method->invoke($BlockchainRpcClient);
+    $method->invoke($blockchainRpcClient);
 
-    expect($BlockchainRpcClient->getActiveNodeId())->toBe('bac-secretariat');
-    expect($BlockchainRpcClient->isFailedOver())->toBeTrue();
+    expect($blockchainRpcClient->getActiveNodeId())->toBe('bac-secretariat');
+    expect($blockchainRpcClient->isFailedOver())->toBeTrue();
 });
 
 // ─── End-to-End Failover Scenarios ──────────────────────────────────
@@ -219,33 +219,33 @@ it('throws exception when all nodes are down', function () {
         ],
     ]]);
 
-    $BlockchainRpcClient = new BlockchainRpcClient;
+    $blockchainRpcClient = new BlockchainRpcClient;
 
     $this->expectException(Exception::class);
 
-    $BlockchainRpcClient->getinfo();
+    $blockchainRpcClient->getinfo();
 });
 
 it('excludes the currently-active node when building fallback list after failover', function () {
-    $BlockchainRpcClient = new BlockchainRpcClient;
+    $blockchainRpcClient = new BlockchainRpcClient;
 
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $ref = new ReflectionClass($blockchainRpcClient);
 
     // Simulate that we've failed over to bac-secretariat
     $failedOverProp = $ref->getProperty('failedOver');
     $failedOverProp->setAccessible(true);
-    $failedOverProp->setValue($BlockchainRpcClient, true);
+    $failedOverProp->setValue($blockchainRpcClient, true);
 
     $nodeIdProp = $ref->getProperty('activeNodeId');
     $nodeIdProp->setAccessible(true);
-    $nodeIdProp->setValue($BlockchainRpcClient, 'bac-secretariat');
+    $nodeIdProp->setValue($blockchainRpcClient, 'bac-secretariat');
 
     // getFallbackNodes uses getActiveHost/getActivePort which look up from
     // config based on activeNodeId, so they'll resolve to 10.0.1.20
     $method = $ref->getMethod('getFallbackNodes');
     $method->setAccessible(true);
 
-    $fallbacks = $method->invoke($BlockchainRpcClient);
+    $fallbacks = $method->invoke($blockchainRpcClient);
     $fallbackIps = array_map(fn ($n) => $n['private_ip'] ?? '', $fallbacks);
 
     // bac-secretariat (10.0.1.20) should be excluded since it's the active node
@@ -260,22 +260,22 @@ it('excludes the currently-active node when building fallback list after failove
 it('reads primary_recheck_interval from config', function () {
     config(['multichain.primary_recheck_interval' => 120]);
 
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $prop = $ref->getProperty('primaryRecheckInterval');
     $prop->setAccessible(true);
 
-    expect($prop->getValue($BlockchainRpcClient))->toBe(120);
+    expect($prop->getValue($blockchainRpcClient))->toBe(120);
 });
 
 it('defaults primary_recheck_interval to 60 seconds when config is null', function () {
     config(['multichain.primary_recheck_interval' => null]);
 
-    $BlockchainRpcClient = new BlockchainRpcClient;
-    $ref = new ReflectionClass($BlockchainRpcClient);
+    $blockchainRpcClient = new BlockchainRpcClient;
+    $ref = new ReflectionClass($blockchainRpcClient);
     $prop = $ref->getProperty('primaryRecheckInterval');
     $prop->setAccessible(true);
 
     // null ?? 60 = 60, then (int)60 = 60
-    expect($prop->getValue($BlockchainRpcClient))->toBe(60);
+    expect($prop->getValue($blockchainRpcClient))->toBe(60);
 });

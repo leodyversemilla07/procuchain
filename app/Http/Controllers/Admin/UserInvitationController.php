@@ -17,7 +17,7 @@ use Inertia\Response;
 class UserInvitationController extends Controller
 {
     public function __construct(
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -101,7 +101,7 @@ class UserInvitationController extends Controller
                 'role' => $invitation->role,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'admin.invitation_sent',
                 'invitation',
                 (string) $invitation->id,
@@ -151,7 +151,7 @@ class UserInvitationController extends Controller
                 'invitee_email' => $invitation->email,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'admin.invitation_resent',
                 'invitation',
                 (string) $invitation->id,
@@ -193,7 +193,7 @@ class UserInvitationController extends Controller
                 'invitee_email' => $invitation->email,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'admin.invitation_revoked',
                 'invitation',
                 (string) $invitation->id,

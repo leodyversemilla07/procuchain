@@ -26,7 +26,7 @@ interface DocumentPublisherInterface
      * @param  StageEnums  $stage  Stage identifier
      * @param  string  $status  Current status
      * @param  DocumentTypeEnums  $documentType  Document type
-     * @param  UploadedFile  $File  File to upload
+     * @param  UploadedFile  $file  File to upload
      * @param  string  $uploadedBy  Who uploaded the document
      * @param  string|null  $description  Optional description
      * @param  array<string, mixed>|null  $stageMetadata  Optional stage-specific metadata
@@ -53,7 +53,7 @@ interface DocumentPublisherInterface
         StageEnums $stage,
         string $status,
         DocumentTypeEnums $documentType,
-        UploadedFile $File,
+        UploadedFile $file,
         string $uploadedBy,
         ?string $description = null,
         ?array $stageMetadata = null

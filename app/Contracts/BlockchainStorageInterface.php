@@ -16,7 +16,7 @@ interface BlockchainStorageInterface
     /**
      * Upload a File directly to blockchain (on-chain storage)
      *
-     * @param  UploadedFile  $File  The File to upload
+     * @param  UploadedFile  $file  The File to upload
      * @param  string  $prNumber  PR Number (e.g., PR-2025-001)
      * @param  int  $stageId  Stage ID (1-15)
      * @param  string  $documentType  Document type (e.g., "Purchase Request")
@@ -34,7 +34,7 @@ interface BlockchainStorageInterface
      * @throws \Exception If storage fails
      */
     public function uploadFile(
-        UploadedFile $File,
+        UploadedFile $file,
         string $prNumber,
         int $stageId,
         string $documentType,

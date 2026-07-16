@@ -73,7 +73,7 @@ test('bac secretariat can view procurement initiation form', function () {
  */
 test('can initiate procurement with all required documents for goods', function () {
     // Create fake PDF BlockchainFiles
-    $BlockchainFiles = [
+    $blockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -104,7 +104,7 @@ test('can initiate procurement with all required documents for goods', function 
             'prepared_by' => 'Test BAC Secretariat',
 
             // Documents
-            'Files' => $BlockchainFiles,
+            'Files' => $blockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -129,7 +129,7 @@ test('can initiate procurement with all required documents for goods', function 
  * Test: Consulting services requires TOR instead of tech specs
  */
 test('consulting services requires terms of reference not technical specifications', function () {
-    $BlockchainFiles = [
+    $blockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -149,7 +149,7 @@ test('consulting services requires terms of reference not technical specificatio
             'office' => 'IT Department',
             'end_user' => 'IT Department',
             'prepared_by' => 'Test BAC Secretariat',
-            'Files' => $BlockchainFiles,
+            'Files' => $blockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -218,7 +218,7 @@ test('validation fails with invalid pr number format', function () {
  * Test: Validation - Missing mandatory documents fails
  */
 test('validation fails when mandatory documents are missing', function () {
-    $BlockchainFiles = [
+    $blockchainFiles = [
         // Only uploading 2 documents when 4 are required for Goods
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -236,7 +236,7 @@ test('validation fails when mandatory documents are missing', function () {
             'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
-            'Files' => $BlockchainFiles,
+            'Files' => $blockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::PPMP_ENTRY->value,
@@ -256,7 +256,7 @@ test('validation fails when mandatory documents are missing', function () {
  * Test: Validation - ABC amount exceeds procurement mode threshold
  */
 test('validation fails when abc amount exceeds procurement mode threshold', function () {
-    $BlockchainFiles = [
+    $blockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -275,7 +275,7 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
             'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value, // Wrong mode
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
-            'Files' => $BlockchainFiles,
+            'Files' => $blockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -296,7 +296,7 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
  * Test: Validation - Non-PDF BlockchainFiles rejected
  */
 test('validation fails for non-pdf BlockchainFiles', function () {
-    $BlockchainFiles = [
+    $blockchainFiles = [
         UploadedFile::fake()->create('Purchase_Request.docx', 1000, 'application/msword'), // Not PDF
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('PPMP_Entry.pdf', 1000, 'application/pdf'),
@@ -315,7 +315,7 @@ test('validation fails for non-pdf BlockchainFiles', function () {
             'procurement_mode' => ProcurementMode::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'prepared_by' => 'Test BAC Secretariat',
-            'Files' => $BlockchainFiles,
+            'Files' => $blockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
@@ -333,7 +333,7 @@ test('validation fails for non-pdf BlockchainFiles', function () {
  * Test: Can add optional documents
  */
 test('can add optional supporting documents', function () {
-    $BlockchainFiles = [
+    $blockchainFiles = [
         // Mandatory documents
         UploadedFile::fake()->create('Purchase_Request.pdf', 1000, 'application/pdf'),
         UploadedFile::fake()->create('Certificate_of_Funds.pdf', 1000, 'application/pdf'),
@@ -357,7 +357,7 @@ test('can add optional supporting documents', function () {
             'office' => 'General Services Office',
             'end_user' => 'All Departments',
             'prepared_by' => 'Test BAC Secretariat',
-            'Files' => $BlockchainFiles,
+            'Files' => $blockchainFiles,
             'document_types' => [
                 DocumentTypeEnums::PURCHASE_REQUEST->value,
                 DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,

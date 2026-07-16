@@ -27,7 +27,7 @@ class ProcurementSupportService
         protected ProcurementDataService $procurementDataService,
         protected DocumentRepository $documentRepository,
         protected WorkflowDefinitionService $workflowDefinitionService,
-        protected StageStatusMappingService $StageStatusMappingService
+        protected StageStatusMappingService $stageStatusMappingService
     ) {}
 
     /**
@@ -44,7 +44,7 @@ class ProcurementSupportService
         // Get procurement mode for mode-aware status determination
         $mode = $this->getProcurementMode($prNumber);
 
-        return $this->StageStatusMappingService->getInitialStatus($stage, $mode);
+        return $this->stageStatusMappingService->getInitialStatus($stage, $mode);
     }
 
     /**
@@ -553,7 +553,7 @@ class ProcurementSupportService
      */
     public function getCompletionStatusForStage(StageEnums $stage): ProcurementStatus
     {
-        return $this->StageStatusMappingService->getCompletionStatus($stage);
+        return $this->stageStatusMappingService->getCompletionStatus($stage);
     }
 
     /**
@@ -561,6 +561,6 @@ class ProcurementSupportService
      */
     public function getOngoingStatusForStage(StageEnums $stage): ProcurementStatus
     {
-        return $this->StageStatusMappingService->getOngoingStatus($stage);
+        return $this->stageStatusMappingService->getOngoingStatus($stage);
     }
 }

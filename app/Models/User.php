@@ -49,7 +49,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, UserInvitation> $invitations
  * @property-read Collection<int, UserInvitation> $acceptedInvitations
  * @property-read Collection<int, UserInvitation> $revokedInvitations
- * @property-read Collection<int, DocumentViewLog> $DocumentViewLogs
+ * @property-read Collection<int, DocumentViewLog> $documentViewLogs
  * @property-read Collection<int, ProcurementWorkflowConfig> $updatedWorkflowConfigs
  * @property-read Collection<int, StageDocumentConfig> $updatedStageDocumentConfigs
  * @property-read Collection<int, Role> $roles

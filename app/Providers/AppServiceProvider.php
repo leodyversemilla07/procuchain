@@ -223,7 +223,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-stage-document-config', [SettingsPolicy::class, 'manageStageDocumentConfig']);
         Gate::define('manage-user-invitations', [SettingsPolicy::class, 'manageUserInvitations']);
         Gate::define('view-workflow', [SettingsPolicy::class, 'viewWorkflow']);
-        Gate::define('manage-recoverable-data', [SettingsPolicy::class, 'BlockchainRpcClientecoverableData']);
 
         // Register custom rate limiter for blockchain writes (Issue #20: use config)
         RateLimiter::for('blockchain_writes', function ($request) {

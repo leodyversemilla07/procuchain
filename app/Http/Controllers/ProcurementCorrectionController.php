@@ -18,7 +18,7 @@ class ProcurementCorrectionController extends Controller
 {
     public function __construct(
         private readonly ProcurementCorrectionService $correctionService,
-        private readonly AuditLogService $AuditLogService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     public function correctProcurement(CorrectProcurementRequest $request, string $prNumber): RedirectResponse
@@ -41,7 +41,7 @@ class ProcurementCorrectionController extends Controller
                 'pr_number' => $prNumber,
             ], $jobId, $request->user()->id);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.corrected',
                 'procurement',
                 $prNumber,

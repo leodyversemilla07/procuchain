@@ -51,7 +51,7 @@ class IntegrityVerificationService
     private IntegrityVerificationRunState $state;
 
     public function __construct(
-        private readonly BlockchainRpcClient $BlockchainRpcClient,
+        private readonly BlockchainRpcClient $blockchainRpcClient,
         private readonly NormalizedTableSyncService $syncService,
         private readonly BlockchainPayloadProjector $payloadProjector,
         private readonly IntegrityComparator $comparator,
@@ -264,7 +264,7 @@ class IntegrityVerificationService
             blockchainIndex: $this->blockchainIndex,
             payloadProjector: $this->payloadProjector,
             comparator: $this->comparator,
-            rpcClient: $this->BlockchainRpcClient,
+            rpcClient: $this->blockchainRpcClient,
         );
     }
 

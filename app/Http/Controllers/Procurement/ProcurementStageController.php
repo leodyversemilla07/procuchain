@@ -38,7 +38,7 @@ class ProcurementStageController extends BaseController
         protected ProcurementStageUploadService $stageUploadService,
         protected ProcurementStageCompletionService $stageCompletionService,
         protected ProcurementStageMutationService $stageMutationService,
-        protected AuditLogService $AuditLogService,
+        protected AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -74,14 +74,14 @@ class ProcurementStageController extends BaseController
             $response = $this->stageUploadService->queueDocumentUpload(
                 $pr_number,
                 $stage,
-                $request->File('document_File'),
+                $request->file('document_File'),
                 $documentType,
                 $request->input('description'),
                 $request->input('metadata', []),
                 $user,
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.document_uploaded',
                 'procurement',
                 $pr_number,
@@ -126,7 +126,7 @@ class ProcurementStageController extends BaseController
             $user = $request->user();
             $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $user);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.stage_completed',
                 'procurement',
                 $pr_number,
@@ -164,7 +164,7 @@ class ProcurementStageController extends BaseController
                 $request->user(),
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.stage_skipped',
                 'procurement',
                 $pr_number,
@@ -205,7 +205,7 @@ class ProcurementStageController extends BaseController
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         $documentTypeValue = $request->input('document_type');
-        $File = $request->File('File');
+        $file = $request->file('File');
 
         $documentType = DocumentTypeEnums::tryFrom($documentTypeValue);
         if (! $documentType) {
@@ -312,7 +312,7 @@ class ProcurementStageController extends BaseController
                 $request->user(),
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.stage_repeated',
                 'procurement',
                 $pr_number,
@@ -358,7 +358,7 @@ class ProcurementStageController extends BaseController
                 $request->user(),
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.delivery_updated',
                 'procurement',
                 $pr_number,
@@ -405,7 +405,7 @@ class ProcurementStageController extends BaseController
                 $request->user(),
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 $auditAction,
                 'procurement',
                 $prNumber,

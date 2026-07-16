@@ -113,8 +113,8 @@ class SyncBlockchainTables extends Command
 
         // Count blockchain records
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $BlockchainRpcClient->liststreamitems($stream->value, true, 100000);
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $blockchainRpcClient->liststreamitems($stream->value, true, 100000);
             $chainCount = is_array($items) ? count($items) : 0;
         } catch (\Exception $e) {
             $this->error("  Failed to read from blockchain: {$e->getMessage()}");

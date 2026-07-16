@@ -35,7 +35,7 @@ class UserRegistrationService
         }
 
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
 
             $data = [
                 'user_id' => $user->id,
@@ -46,7 +46,7 @@ class UserRegistrationService
                 'registered_at' => now()->toIso8601String(),
             ];
 
-            $txid = $BlockchainRpcClient->publish(
+            $txid = $blockchainRpcClient->publish(
                 Stream::USER_REGISTRATIONS->value,
                 (string) $user->id,
                 ['json' => $data]
@@ -100,7 +100,7 @@ class UserRegistrationService
         }
 
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
 
             $data = [
                 'user_id' => $user->id,
@@ -113,7 +113,7 @@ class UserRegistrationService
                 'change_type' => 'address_change',
             ];
 
-            $txid = $BlockchainRpcClient->publish(
+            $txid = $blockchainRpcClient->publish(
                 Stream::USER_REGISTRATIONS->value,
                 (string) $user->id,
                 ['json' => $data]

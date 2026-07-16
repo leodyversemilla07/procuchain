@@ -298,9 +298,9 @@ class BlockchainRpcClient
      * Magic method - forwards all RPC calls to the client with retry + failover logic
      *
      * Examples:
-     * $BlockchainRpcClient->getinfo()
-     * $BlockchainRpcClient->liststreamitems('stream1', true, 100)
-     * $BlockchainRpcClient->publish('stream1', 'key1', ['json' => $data])
+     * $blockchainRpcClient->getinfo()
+     * $blockchainRpcClient->liststreamitems('stream1', true, 100)
+     * $blockchainRpcClient->publish('stream1', 'key1', ['json' => $data])
      */
     public function __call(string $method, array $params): mixed
     {

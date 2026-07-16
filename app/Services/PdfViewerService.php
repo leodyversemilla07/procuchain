@@ -68,7 +68,7 @@ class PdfViewerService
         if (! $documentData) {
             Log::info('Blockchain data not found, creating fallback data', ['file_key' => $fileKey]);
 
-            $DocumentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
+            $documentViewLog = DocumentViewLog::where('file_key', $fileKey)->first();
 
             $parts = explode('/', $fileKey);
             $pr_number = 'Unknown';
@@ -86,8 +86,8 @@ class PdfViewerService
 
             $alternativeHash = $this->procurementDataService->getHashBypr_number($pr_number, $fileKey);
 
-            if (! $DocumentViewLog) {
-                $DocumentViewLog = DocumentViewLog::create([
+            if (! $documentViewLog) {
+                $documentViewLog = DocumentViewLog::create([
                     'user_id' => $this->request->user()?->id,
                     'file_key' => $fileKey,
                     'pr_number' => $pr_number,
@@ -126,12 +126,12 @@ class PdfViewerService
             $documentData = [
                 'pr_number' => $pr_number,
                 'procurement_title' => $procurementTitle,
-                'document_type' => $DocumentViewLog->document_type ?? pathinfo($fileKey, PATHINFO_filename),
-                'document_type_display' => $this->formatDocumentType($DocumentViewLog->document_type ?? pathinfo($fileKey, PATHINFO_filename)),
-                'stage' => $DocumentViewLog->stage ?? ($parts[1] ?? 'Unknown'),
-                'stage_display' => $this->formatStage($DocumentViewLog->stage ?? ($parts[1] ?? 'Unknown')),
+                'document_type' => $documentViewLog->document_type ?? pathinfo($fileKey, PATHINFO_filename),
+                'document_type_display' => $this->formatDocumentType($documentViewLog->document_type ?? pathinfo($fileKey, PATHINFO_filename)),
+                'stage' => $documentViewLog->stage ?? ($parts[1] ?? 'Unknown'),
+                'stage_display' => $this->formatStage($documentViewLog->stage ?? ($parts[1] ?? 'Unknown')),
                 'file_size' => $this->getfileSize($fileKey),
-                'timestamp' => $DocumentViewLog->created_at->toISOString(),
+                'timestamp' => $documentViewLog->created_at->toISOString(),
                 'hash' => $alternativeHash ?: '',
                 'user_address' => $request->user()->blockchain_address ?? 'no-blockchain-address',
             ];

@@ -35,38 +35,38 @@ class FileRetriever
 
         // Retrieve File metadata first to check storage method
         $metadataItems = $this->multichain->liststreamkeyitems(Stream::FILE_METADATA->value, $dataKey, false, 1);
-        $FileMetadata = null;
+        $fileMetadata = null;
         $metadataJson = null;
 
         if (! empty($metadataItems)) {
             $metadataJson = $metadataItems[0]['data']['json'] ?? null;
             if ($metadataJson) {
-                $FileMetadata = FileMetadata::fromBlockchainArray($metadataJson);
+                $fileMetadata = FileMetadata::fromBlockchainArray($metadataJson);
             }
         }
 
         // Check if this is a chunked File
         $isChunked = $metadataJson['chunked'] ?? false;
-        $storageMethod = $metadataJson['storage_method'] ?? $FileMetadata?->storageMethod ?? 'on_chain';
+        $storageMethod = $metadataJson['storage_method'] ?? $fileMetadata?->storageMethod ?? 'on_chain';
 
         if ($isChunked || $storageMethod === 'on_chain_chunked') {
-            return $this->retrieveChunkedFile($fileKey, $dataKey, $metadataJson, $FileMetadata);
+            return $this->retrieveChunkedFile($fileKey, $dataKey, $metadataJson, $fileMetadata);
         }
 
-        return $this->retrieveSingleFile($fileKey, $dataKey, $dataTxid, $FileMetadata);
+        return $this->retrieveSingleFile($fileKey, $dataKey, $dataTxid, $fileMetadata);
     }
 
     /**
      * Retrieve a single-transaction File from blockchain
      */
-    private function retrieveSingleFile(string $fileKey, string $dataKey, ?string $dataTxid, ?FileMetadata $FileMetadata): array
+    private function retrieveSingleFile(string $fileKey, string $dataKey, ?string $dataTxid, ?FileMetadata $fileMetadata): array
     {
         // If dataTxid provided, retrieve directly
         if ($dataTxid) {
             $dataItem = $this->multichain->getstreamitem(Stream::FILE_DATA->value, $dataTxid, true);
-        } elseif ($FileMetadata) {
+        } elseif ($fileMetadata) {
             // Use data_txid from metadata
-            $dataItem = $this->multichain->getstreamitem(Stream::FILE_DATA->value, $FileMetadata->dataTxid, true);
+            $dataItem = $this->multichain->getstreamitem(Stream::FILE_DATA->value, $fileMetadata->dataTxid, true);
         } else {
             // Otherwise, find by key
             $items = $this->multichain->liststreamkeyitems(Stream::FILE_DATA->value, $dataKey, false, 1);
@@ -77,49 +77,49 @@ class FileRetriever
         }
 
         // Get hex data from blockchain
-        $BlockchainFileHex = $this->extractHexFromDataItem($dataItem);
+        $blockchainFileHex = $this->extractHexFromDataItem($dataItem);
 
-        if (! $BlockchainFileHex) {
+        if (! $blockchainFileHex) {
             throw new Exception('File data not found in blockchain item');
         }
 
         // Convert hex back to binary
-        $BlockchainFileContent = hex2bin($BlockchainFileHex);
-        if ($BlockchainFileContent === false) {
+        $blockchainFileContent = hex2bin($blockchainFileHex);
+        if ($blockchainFileContent === false) {
             throw new Exception('Failed to decode File data from blockchain');
         }
 
-        $BlockchainFileHash = hash('sha256', $BlockchainFileContent);
+        $blockchainFileHash = hash('sha256', $blockchainFileContent);
 
         // Verify integrity if metadata available
-        if ($FileMetadata && $FileMetadata->hash !== $BlockchainFileHash) {
+        if ($fileMetadata && $fileMetadata->hash !== $blockchainFileHash) {
             Log::warning('File hash mismatch during retrieval', [
                 'file_key' => $fileKey,
-                'expected_hash' => $FileMetadata->hash,
-                'actual_hash' => $BlockchainFileHash,
+                'expected_hash' => $fileMetadata->hash,
+                'actual_hash' => $blockchainFileHash,
             ]);
         }
 
         return [
-            'content' => $BlockchainFileContent,
-            'filename' => $FileMetadata?->filename ?? basename($fileKey),
-            'mime_type' => $FileMetadata?->mimeType ?? 'application/octet-stream',
-            'size' => strlen($BlockchainFileContent),
-            'hash' => $BlockchainFileHash,
+            'content' => $blockchainFileContent,
+            'filename' => $fileMetadata?->filename ?? basename($fileKey),
+            'mime_type' => $fileMetadata?->mimeType ?? 'application/octet-stream',
+            'size' => strlen($blockchainFileContent),
+            'hash' => $blockchainFileHash,
             'file_key' => $fileKey,
             'storage_method' => 'on_chain',
-            'metadata' => $FileMetadata,
+            'metadata' => $fileMetadata,
         ];
     }
 
     /**
      * Retrieve a chunked File from blockchain and reassemble
      */
-    private function retrieveChunkedFile(string $fileKey, string $dataKey, ?array $metadataJson, ?FileMetadata $FileMetadata): array
+    private function retrieveChunkedFile(string $fileKey, string $dataKey, ?array $metadataJson, ?FileMetadata $fileMetadata): array
     {
         $totalChunks = $metadataJson['total_chunks'] ?? $metadataJson['additional_metadata']['total_chunks'] ?? 0;
         $chunkTxids = $metadataJson['chunk_txids'] ?? $metadataJson['additional_metadata']['chunk_txids'] ?? [];
-        $expectedHash = $metadataJson['hash'] ?? $FileMetadata?->hash ?? null;
+        $expectedHash = $metadataJson['hash'] ?? $fileMetadata?->hash ?? null;
 
         if ($totalChunks === 0) {
             throw new Exception('Chunked File metadata is missing chunk information');
@@ -130,7 +130,7 @@ class FileRetriever
             'total_chunks' => $totalChunks,
         ]);
 
-        $BlockchainFileContent = '';
+        $blockchainFileContent = '';
 
         // Retrieve each chunk in order
         for ($i = 0; $i < $totalChunks; $i++) {
@@ -154,37 +154,37 @@ class FileRetriever
                 throw new Exception("Failed to decode chunk {$i} for File {$fileKey}");
             }
 
-            $BlockchainFileContent .= $chunkContent;
+            $blockchainFileContent .= $chunkContent;
         }
 
-        $BlockchainFileHash = hash('sha256', $BlockchainFileContent);
+        $blockchainFileHash = hash('sha256', $blockchainFileContent);
 
         // Verify integrity
-        if ($expectedHash && $expectedHash !== $BlockchainFileHash) {
+        if ($expectedHash && $expectedHash !== $blockchainFileHash) {
             Log::warning('Chunked File hash mismatch during retrieval', [
                 'file_key' => $fileKey,
                 'expected_hash' => $expectedHash,
-                'actual_hash' => $BlockchainFileHash,
+                'actual_hash' => $blockchainFileHash,
             ]);
         }
 
         Log::info('Chunked File retrieved and reassembled', [
             'file_key' => $fileKey,
             'total_chunks' => $totalChunks,
-            'final_size' => strlen($BlockchainFileContent),
-            'hash_verified' => $expectedHash === $BlockchainFileHash,
+            'final_size' => strlen($blockchainFileContent),
+            'hash_verified' => $expectedHash === $blockchainFileHash,
         ]);
 
         return [
-            'content' => $BlockchainFileContent,
-            'filename' => $FileMetadata?->filename ?? basename($fileKey),
-            'mime_type' => $FileMetadata?->mimeType ?? 'application/octet-stream',
-            'size' => strlen($BlockchainFileContent),
-            'hash' => $BlockchainFileHash,
+            'content' => $blockchainFileContent,
+            'filename' => $fileMetadata?->filename ?? basename($fileKey),
+            'mime_type' => $fileMetadata?->mimeType ?? 'application/octet-stream',
+            'size' => strlen($blockchainFileContent),
+            'hash' => $blockchainFileHash,
             'file_key' => $fileKey,
             'storage_method' => 'on_chain_chunked',
             'total_chunks' => $totalChunks,
-            'metadata' => $FileMetadata,
+            'metadata' => $fileMetadata,
         ];
     }
 

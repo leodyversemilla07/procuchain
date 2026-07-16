@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Log;
 class DocumentPublisher implements DocumentPublisherInterface
 {
     public function __construct(
-        private BlockchainStorageService $BlockchainFileStorage,
+        private BlockchainStorageService $blockchainFileStorage,
         private DocumentRepository $documents
     ) {}
 
@@ -40,7 +40,7 @@ class DocumentPublisher implements DocumentPublisherInterface
      * @param  StageEnums  $stage  Stage identifier
      * @param  string  $status  Current status
      * @param  DocumentTypeEnums  $documentType  Document type
-     * @param  UploadedFile  $File  File to upload
+     * @param  UploadedFile  $file  File to upload
      * @param  string  $uploadedBy  Who uploaded the document
      * @param  string|null  $description  Optional description
      * @param  array|null  $stageMetadata  Optional stage-specific metadata
@@ -55,7 +55,7 @@ class DocumentPublisher implements DocumentPublisherInterface
         StageEnums $stage,
         string $status,
         DocumentTypeEnums $documentType,
-        UploadedFile $File,
+        UploadedFile $file,
         string $uploadedBy,
         ?string $description = null,
         ?array $stageMetadata = null
@@ -64,13 +64,13 @@ class DocumentPublisher implements DocumentPublisherInterface
             // Step 1: Upload File to blockchain
             Log::info('DocumentPublisher: Uploading File', [
                 'pr_number' => $prNumber,
-                'filename' => $File->getClientOriginalName(),
-                'size' => $File->getSize(),
+                'filename' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
                 'stage' => $stage->value,
             ]);
 
-            $BlockchainFileResult = $this->BlockchainFileStorage->uploadFile(
-                $File,
+            $blockchainFileResult = $this->blockchainFileStorage->uploadFile(
+                $file,
                 $prNumber,
                 $stage->getId(),
                 $documentType->value,
@@ -85,7 +85,7 @@ class DocumentPublisher implements DocumentPublisherInterface
             // Step 2: Publish document metadata
             Log::info('DocumentPublisher: Publishing metadata', [
                 'pr_number' => $prNumber,
-                'file_key' => $BlockchainFileResult['file_key'],
+                'file_key' => $blockchainFileResult['file_key'],
             ]);
 
             $document = new DocumentData(
@@ -95,13 +95,13 @@ class DocumentPublisher implements DocumentPublisherInterface
                 stage: $stage->value,
                 status: $status,
                 documentType: $documentType->value,
-                fileKey: $BlockchainFileResult['file_key'],
-                filename: $BlockchainFileResult['filename'],
-                fileSize: $BlockchainFileResult['size'],
-                mimeType: $BlockchainFileResult['mime_type'],
-                hash: $BlockchainFileResult['hash'],
-                dataTxid: $BlockchainFileResult['data_txid'],
-                metadataTxid: $BlockchainFileResult['metadata_txid'],
+                fileKey: $blockchainFileResult['file_key'],
+                filename: $blockchainFileResult['filename'],
+                fileSize: $blockchainFileResult['size'],
+                mimeType: $blockchainFileResult['mime_type'],
+                hash: $blockchainFileResult['hash'],
+                dataTxid: $blockchainFileResult['data_txid'],
+                metadataTxid: $blockchainFileResult['metadata_txid'],
                 uploadedBy: $uploadedBy,
                 timestamp: now(),
                 description: $description,
@@ -122,12 +122,12 @@ class DocumentPublisher implements DocumentPublisherInterface
                 'success' => true,
                 'document_txid' => $txid,
                 'File' => [
-                    'file_key' => $BlockchainFileResult['file_key'],
-                    'filename' => $BlockchainFileResult['filename'],
-                    'size' => $BlockchainFileResult['size'],
-                    'hash' => $BlockchainFileResult['hash'],
-                    'data_txid' => $BlockchainFileResult['data_txid'],
-                    'metadata_txid' => $BlockchainFileResult['metadata_txid'],
+                    'file_key' => $blockchainFileResult['file_key'],
+                    'filename' => $blockchainFileResult['filename'],
+                    'size' => $blockchainFileResult['size'],
+                    'hash' => $blockchainFileResult['hash'],
+                    'data_txid' => $blockchainFileResult['data_txid'],
+                    'metadata_txid' => $blockchainFileResult['metadata_txid'],
                 ],
             ];
         } catch (Exception $e) {
@@ -160,7 +160,7 @@ class DocumentPublisher implements DocumentPublisherInterface
                     stage: $docData['stage'],
                     status: $docData['status'],
                     documentType: $docData['document_type'],
-                    File: $docData['File'],
+                    file: $docData['File'],
                     uploadedBy: $docData['uploaded_by'],
                     description: $docData['description'] ?? null,
                     stageMetadata: $docData['stage_metadata'] ?? null,

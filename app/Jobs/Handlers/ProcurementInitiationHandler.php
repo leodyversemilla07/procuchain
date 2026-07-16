@@ -17,7 +17,7 @@ class ProcurementInitiationHandler
     {
         $result = $this->orchestrator->initiateProcurement(
             procurementData: $data['procurement_data'],
-            BlockchainFiles: [],
+            blockchainFiles: [],
             userName: $data['user_name'],
         );
 

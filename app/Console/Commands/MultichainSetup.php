@@ -444,7 +444,7 @@ class MultichainSetup extends Command
             $tempFile = tempnam(sys_get_temp_dir(), 'test_');
             file_put_contents($tempFile, $testContent);
 
-            $UploadedFile = new UploadedFile(
+            $uploadedFile = new UploadedFile(
                 $tempFile,
                 'test_document.pdf',
                 'application/pdf',
@@ -457,9 +457,9 @@ class MultichainSetup extends Command
             $this->newLine();
 
             // Store File on blockchain
-            $this->components->task('Storing test File on blockchain', function () use ($storage, $UploadedFile, &$result) {
+            $this->components->task('Storing test File on blockchain', function () use ($storage, $uploadedFile, &$result) {
                 $result = $storage->uploadFile(
-                    $UploadedFile,
+                    $uploadedFile,
                     'test/storage',
                     'test_'.now()->timestamp,
                     ['test' => true, 'purpose' => 'on_chain_initialization_test']

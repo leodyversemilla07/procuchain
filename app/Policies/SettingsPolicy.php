@@ -36,9 +36,4 @@ class SettingsPolicy
     {
         return true;
     }
-
-    public function recoverableData(User $user): bool
-    {
-        return $user->can(Permission::MANAGE_SETTINGS->value);
-    }
 }

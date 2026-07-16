@@ -196,11 +196,11 @@ test('can accept valid invitation and create account', function () {
     Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
 
     // Mock the BlockchainRpcClient service - MUST be done before creating invitation
-    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClientMock->shouldReceive('getnewaddress')
+    $blockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClientMock->shouldReceive('getnewaddress')
         ->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
 
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClientMock);
 
     $invitation = UserInvitation::factory()->create([
         'email' => 'newuser@example.com',

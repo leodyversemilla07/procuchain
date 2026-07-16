@@ -23,9 +23,9 @@ final class DocumentIntegrityVerifier
     public function verify(string $fileKey, string $dataTxid): VerificationResult
     {
         try {
-            $BlockchainFileData = $this->blockchainStorage->retrieveFile($fileKey, $dataTxid);
-            $storedHash = $BlockchainFileData['hash'] ?? null;
-            $actualHash = hash('sha256', $BlockchainFileData['content']);
+            $blockchainFileData = $this->blockchainStorage->retrieveFile($fileKey, $dataTxid);
+            $storedHash = $blockchainFileData['hash'] ?? null;
+            $actualHash = hash('sha256', $blockchainFileData['content']);
             $isValid = $storedHash === $actualHash;
 
             Log::info('Document integrity verification completed', [

@@ -20,7 +20,7 @@ class StageDocumentConfigController extends Controller
     public function __construct(
         private readonly StageDocumentConfigService $documentConfigService,
         private readonly ProcurementWorkflowService $workflowService,
-        private readonly AuditLogService $AuditLogService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -171,7 +171,7 @@ class StageDocumentConfigController extends Controller
             $request->user()->id
         );
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'admin.stage_document_config_updated',
             'stage_document_config',
             "{$modeEnum->value}:{$stageEnum->value}",
@@ -200,7 +200,7 @@ class StageDocumentConfigController extends Controller
 
         $this->documentConfigService->resetToDefaults($stageEnum, $modeEnum, $request->user()->id);
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'admin.stage_document_config_reset',
             'stage_document_config',
             "{$modeEnum->value}:{$stageEnum->value}",

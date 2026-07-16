@@ -52,12 +52,12 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure File has readable content
-            $File = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
+            $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
             $prNumber = 'PROC-001';
             $stageId = 1;
             $documentType = 'bid_document';
 
-            $result = $service->uploadFile($File, $prNumber, $stageId, $documentType, ['pr_number' => 'PROC-001']);
+            $result = $service->uploadFile($file, $prNumber, $stageId, $documentType, ['pr_number' => 'PROC-001']);
 
             expect($result)->toBeArray();
             expect($result)->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'hash']);
@@ -73,16 +73,16 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure File has readable content
-            $File = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
-            $result = $service->uploadFile($File, 'TEST', 1, 'doc', ['pr_number' => 'TEST']);
+            $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
+            $result = $service->uploadFile($file, 'TEST', 1, 'doc', ['pr_number' => 'TEST']);
 
             expect($result['hash'])->toBeString();
             expect($result['hash'])->toHaveLength(64); // SHA-256 hex length
         });
 
         it('converts File to hex for on-chain storage', function () {
-            $BlockchainFileContent = 'test content';
-            $expectedHex = bin2hex($BlockchainFileContent);
+            $blockchainFileContent = 'test content';
+            $expectedHex = bin2hex($blockchainFileContent);
 
             $mockService = Mockery::mock(BlockchainRpcClient::class);
 
@@ -97,9 +97,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
-            $File = UploadedFile::fake()->createWithContent('test.txt', $BlockchainFileContent);
+            $file = UploadedFile::fake()->createWithContent('test.txt', $blockchainFileContent);
 
-            $result = $service->uploadFile($File, 'test', 1, 'File', []);
+            $result = $service->uploadFile($file, 'test', 1, 'File', []);
 
             expect($result['data_txid'])->toBe('batch_txid');
         });
@@ -121,9 +121,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure File has readable content
-            $File = UploadedFile::fake()->createWithContent('doc.pdf', str_repeat('x', 100));
+            $file = UploadedFile::fake()->createWithContent('doc.pdf', str_repeat('x', 100));
 
-            $result = $service->uploadFile($File, 'test', 1, 'File', []);
+            $result = $service->uploadFile($file, 'test', 1, 'File', []);
 
             expect($result['metadata_txid'])->toBe('batch_txid');
         });
@@ -157,9 +157,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure File has readable content
-            $File = UploadedFile::fake()->createWithContent('bid.pdf', str_repeat('x', 100));
+            $file = UploadedFile::fake()->createWithContent('bid.pdf', str_repeat('x', 100));
             $result = $service->uploadFile(
-                $File,
+                $file,
                 'PROC-123',
                 1,
                 'bid',
@@ -172,8 +172,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
     describe('retrieveFile', function () {
         it('retrieves File from blockchain and converts hex to binary', function () {
-            $BlockchainFileContent = 'test File content';
-            $BlockchainFileHex = bin2hex($BlockchainFileContent);
+            $blockchainFileContent = 'test File content';
+            $blockchainFileHex = bin2hex($blockchainFileContent);
 
             $mockService = Mockery::mock(BlockchainRpcClient::class);
 
@@ -192,7 +192,7 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->with('File.data', 'data_txid_123', true)
                 ->andReturn([
                     'txid' => 'data_txid_123',
-                    'data' => $BlockchainFileHex,
+                    'data' => $blockchainFileHex,
                 ]);
 
             $service = new BlockchainStorageService($mockService);
@@ -200,13 +200,13 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
             $retrieved = $service->retrieveFile('test/File.pdf', 'data_txid_123');
 
             expect($retrieved)->toBeArray();
-            expect($retrieved['content'])->toBe($BlockchainFileContent);
-            expect($retrieved['hash'])->toBe(hash('sha256', $BlockchainFileContent));
+            expect($retrieved['content'])->toBe($blockchainFileContent);
+            expect($retrieved['hash'])->toBe(hash('sha256', $blockchainFileContent));
         });
 
         it('retrieves File by key when no txid provided', function () {
-            $BlockchainFileContent = 'test content';
-            $BlockchainFileHex = bin2hex($BlockchainFileContent);
+            $blockchainFileContent = 'test content';
+            $blockchainFileHex = bin2hex($blockchainFileContent);
 
             $mockService = Mockery::mock(BlockchainRpcClient::class);
 
@@ -225,16 +225,16 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->with('File.data', 'test_File.pdf', false, 1)
                 ->andReturn([[
                     'txid' => 'found_txid',
-                    'data' => $BlockchainFileHex,
+                    'data' => $blockchainFileHex,
                 ]]);
 
             $service = new BlockchainStorageService($mockService);
 
             $retrieved = $service->retrieveFile('test/File.pdf');
 
-            expect($retrieved['content'])->toBe($BlockchainFileContent);
+            expect($retrieved['content'])->toBe($blockchainFileContent);
             expect($retrieved['storage_method'])->toBe('on_chain');
-            expect($retrieved['hash'])->toBe(hash('sha256', $BlockchainFileContent));
+            expect($retrieved['hash'])->toBe(hash('sha256', $blockchainFileContent));
         });
 
         it('throws exception for non-existent File', function () {
@@ -262,9 +262,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
     describe('verifyFileIntegrity', function () {
         it('verifies File integrity against blockchain metadata', function () {
-            $BlockchainFileContent = 'test File content for integrity verification';
-            $expectedHash = hash('sha256', $BlockchainFileContent);
-            $BlockchainFileHex = bin2hex($BlockchainFileContent);
+            $blockchainFileContent = 'test File content for integrity verification';
+            $expectedHash = hash('sha256', $blockchainFileContent);
+            $blockchainFileHex = bin2hex($blockchainFileContent);
 
             $mockService = Mockery::mock(BlockchainRpcClient::class);
 
@@ -294,7 +294,7 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->with('File.data', 'data_txid_123', true)
                 ->andReturn([
                     'txid' => 'data_txid_123',
-                    'data' => $BlockchainFileHex,
+                    'data' => $blockchainFileHex,
                 ]);
 
             $service = new BlockchainStorageService($mockService);
@@ -305,9 +305,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         });
 
         it('returns false for corrupted File', function () {
-            $BlockchainFileContent = 'original content';
+            $blockchainFileContent = 'original content';
             $corruptedContent = 'tampered content';
-            $originalHash = hash('sha256', $BlockchainFileContent);
+            $originalHash = hash('sha256', $blockchainFileContent);
             $corruptedHex = bin2hex($corruptedContent);
 
             $mockService = Mockery::mock(BlockchainRpcClient::class);

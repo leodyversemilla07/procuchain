@@ -16,7 +16,7 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     public function __construct(
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -49,7 +49,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'settings.profile_updated',
             'user',
             (string) $user->id,
@@ -70,7 +70,7 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'settings.account_deleted',
             'user',
             (string) $user->id,

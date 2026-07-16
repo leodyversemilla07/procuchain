@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function () {
-    $this->BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
-    $this->BlockchainRpcClientMock->shouldReceive('success')->andReturn(true);
-    $this->service = new SharedLedgerService($this->BlockchainRpcClientMock);
+    $this->blockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $this->blockchainRpcClientMock->shouldReceive('success')->andReturn(true);
+    $this->service = new SharedLedgerService($this->blockchainRpcClientMock);
 
     // Set up node config so getNodes() works — matches production config/multichain.php
     config()->set('multichain.nodes', [
@@ -38,11 +38,11 @@ it('returns empty entries when viewing a purged node', function () {
     $purgeBlocktime = 1779754000;
 
     // Primary node detects the purge for bac-secretariat
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'testing']]]]);
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_resync')
         ->andReturn([]);
 
@@ -67,11 +67,11 @@ it('returns data for a previously purged but resynced node', function () {
     $purgeBlocktime = 1779753638;
     $resyncBlocktime = 1779754000; // resync AFTER purge → node recovered
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'old-purge']]]]);
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_resync')
         ->andReturn([['blocktime' => $resyncBlocktime]]);
 
@@ -88,7 +88,7 @@ it('returns data for a previously purged but resynced node', function () {
 it('returns empty entries with purge state when viewing purged node via getLedgerPage', function () {
     $purgeBlocktime = 1779754000;
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => [
             'reason' => 'testing',
@@ -97,14 +97,14 @@ it('returns empty entries with purge state when viewing purged node via getLedge
             'items_purged' => 2746,
         ]]]]);
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_resync')
         ->andReturn([]);
 
     // getLedgerPage also calls buildAvailableNodesList → checkPurgeStateFromPrimary for ALL nodes
     // Set up default "no purge" for other nodes
     foreach (['admin', 'bac-chairman', 'hope'] as $nodeId) {
-        $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+        $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
             ->withArgs(fn (string $stream, string $key) => $key === "node_{$nodeId}_full_purge")
             ->andReturn([]);
     }
@@ -123,17 +123,17 @@ it('returns empty entries with purge state when viewing purged node via getLedge
 it('never returns primary node data when fetching a purged node', function () {
     $purgeBlocktime = 1779754000;
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_full_purge')
         ->andReturn([['blocktime' => $purgeBlocktime, 'data' => ['json' => ['reason' => 'purge']]]]);
 
-    $this->BlockchainRpcClientMock->shouldReceive('liststreamkeyitems')
+    $this->blockchainRpcClientMock->shouldReceive('liststreamkeyitems')
         ->withArgs(fn (string $stream, string $key) => $key === 'node_bac-secretariat_resync')
         ->andReturn([]);
 
     // The primary BlockchainRpcClient should NOT receive liststreamitems calls
     // (which would indicate it fell back to fetchFromDefaultClient)
-    $this->BlockchainRpcClientMock->shouldNotReceive('liststreamitems');
+    $this->blockchainRpcClientMock->shouldNotReceive('liststreamitems');
 
     $method = new ReflectionMethod(SharedLedgerService::class, 'fetchFromNode');
     $method->setAccessible(true);

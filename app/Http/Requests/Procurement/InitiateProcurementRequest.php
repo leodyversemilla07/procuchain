@@ -81,7 +81,7 @@ class InitiateProcurementRequest extends FormRequest
     protected function validateMandatoryDocuments($validator): void
     {
         $documentTypes = $this->input('document_types', []);
-        $BlockchainFiles = $this->input('Files', []);
+        $blockchainFiles = $this->input('Files', []);
 
         $category = ProcurementCategory::tryFrom($this->input('category'));
 

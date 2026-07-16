@@ -41,10 +41,10 @@ class CleanupTempFiles extends Command
         $deleted = 0;
         $failed = 0;
 
-        foreach (File::BlockchainFiles($tempDir) as $File) {
-            if ($File->getMTime() < $cutoff) {
+        foreach (File::BlockchainFiles($tempDir) as $file) {
+            if ($file->getMTime() < $cutoff) {
                 if ($dryRun) {
-                    $this->line("[DRY-RUN] Would delete: {$File->getfilename()}");
+                    $this->line("[DRY-RUN] Would delete: {$file->getfilename()}");
 
                     $deleted++;
 
@@ -52,12 +52,12 @@ class CleanupTempFiles extends Command
                 }
 
                 try {
-                    File::delete($File->getPathname());
+                    File::delete($file->getPathname());
                     $deleted++;
                 } catch (\Throwable $e) {
                     $failed++;
                     Log::warning('temp:cleanup — failed to delete File', [
-                        'File' => $File->getfilename(),
+                        'File' => $file->getfilename(),
                         'error' => $e->getMessage(),
                     ]);
                 }

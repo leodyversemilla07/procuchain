@@ -18,7 +18,7 @@ class StageTransitionHandler
         private readonly StatusPublisher $statusPublisher,
         private readonly EventPublisher $eventPublisher,
         private readonly ProcurementRepository $procurementRepository,
-        private readonly ?StageStatusMappingService $StageStatusMappingService = null,
+        private readonly ?StageStatusMappingService $stageStatusMappingService = null,
     ) {}
 
     public function executeSkip(array $data): array
@@ -83,7 +83,7 @@ class StageTransitionHandler
             throw new Exception("Procurement not found: {$prNumber}");
         }
 
-        $ongoingStatus = ($this->StageStatusMappingService ?? new StageStatusMappingService)->getOngoingStatus($stage);
+        $ongoingStatus = ($this->stageStatusMappingService ?? new StageStatusMappingService)->getOngoingStatus($stage);
 
         $eventResult = $this->eventPublisher->publish(
             prNumber: $prNumber,

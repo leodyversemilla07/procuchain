@@ -17,7 +17,7 @@ use Inertia\Response;
 class PasswordController extends Controller
 {
     public function __construct(
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -58,7 +58,7 @@ class PasswordController extends Controller
             'user_id' => $user->id,
         ]);
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'settings.password_changed',
             'user',
             (string) $user->id,

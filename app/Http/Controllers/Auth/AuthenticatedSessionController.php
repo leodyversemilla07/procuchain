@@ -18,7 +18,7 @@ class AuthenticatedSessionController extends Controller
 {
     public function __construct(
         private LoginLoggerService $loginLogger,
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -55,7 +55,7 @@ class AuthenticatedSessionController extends Controller
         // Log successful login
         $this->loginLogger->logLogin($user, $request);
 
-        $this->AuditLogService->log('auth.login', 'user', (string) $user->id);
+        $this->auditLogService->log('auth.login', 'user', (string) $user->id);
 
         // Redirect to appropriate dashboard based on user role
         $targetUrl = $this->redirectToDashboard($request, $user);
@@ -76,7 +76,7 @@ class AuthenticatedSessionController extends Controller
         // Log logout before destroying session
         if ($user) {
             $this->loginLogger->logLogout($user);
-            $this->AuditLogService->log('auth.logout', 'user', (string) $user->id);
+            $this->auditLogService->log('auth.logout', 'user', (string) $user->id);
         }
 
         Auth::guard('web')->logout();

@@ -75,12 +75,12 @@ class DocumentPolicy
             return $document->prNumber;
         }
 
-        $DocumentViewLog = DocumentViewLog::query()
+        $documentViewLog = DocumentViewLog::query()
             ->where('file_key', $fileKey)
             ->first();
 
-        if ($DocumentViewLog !== null && ! empty($DocumentViewLog->pr_number)) {
-            return $DocumentViewLog->pr_number;
+        if ($documentViewLog !== null && ! empty($documentViewLog->pr_number)) {
+            return $documentViewLog->pr_number;
         }
 
         $documentData = $this->procurementDataService->getDocumentDataByfileKey($fileKey)

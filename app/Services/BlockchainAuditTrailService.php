@@ -27,14 +27,14 @@ class BlockchainAuditTrailService
     public function publishViolation(IntegrityViolationLog $auditLog, array $extraData = []): ?string
     {
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
 
             $chainPayload = $this->buildChainPayload($auditLog, $extraData);
 
             // Key: violation ID for unique lookup, also indexable by stream_key
             $key = (string) $auditLog->id;
 
-            $result = $BlockchainRpcClient->publish(
+            $result = $blockchainRpcClient->publish(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 $key,
                 ['json' => $chainPayload],
@@ -43,7 +43,7 @@ class BlockchainAuditTrailService
             if ($result === null || $result === false) {
                 Log::error('BlockchainAuditLog: failed to publish violation', [
                     'audit_log_id' => $auditLog->id,
-                    'error' => $BlockchainRpcClient->getClient()->errormessage(),
+                    'error' => $blockchainRpcClient->getClient()->errormessage(),
                 ]);
 
                 return null;
@@ -89,7 +89,7 @@ class BlockchainAuditTrailService
     public function publishRecovery(IntegrityViolationLog $auditLog, array $recoveryResult = []): ?string
     {
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
 
             $chainPayload = [
                 'type' => 'recovery',
@@ -111,7 +111,7 @@ class BlockchainAuditTrailService
             // Key: recovery-<violation_id> for unique lookup
             $key = 'recovery-'.$auditLog->id;
 
-            $result = $BlockchainRpcClient->publish(
+            $result = $blockchainRpcClient->publish(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 $key,
                 ['json' => $chainPayload],
@@ -120,7 +120,7 @@ class BlockchainAuditTrailService
             if ($result === null || $result === false) {
                 Log::error('BlockchainAuditLog: failed to publish recovery', [
                     'audit_log_id' => $auditLog->id,
-                    'error' => $BlockchainRpcClient->getClient()->errormessage(),
+                    'error' => $blockchainRpcClient->getClient()->errormessage(),
                 ]);
 
                 return null;
@@ -156,8 +156,8 @@ class BlockchainAuditTrailService
     public function recoverAuditTrail(int $limit = 10000): array
     {
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $BlockchainRpcClient->liststreamitems(
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $blockchainRpcClient->liststreamitems(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 true,
                 $limit,
@@ -203,8 +203,8 @@ class BlockchainAuditTrailService
     public function recoverAuditTrailForKey(string $streamKey): array
     {
         try {
-            $BlockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $BlockchainRpcClient->liststreamitems(
+            $blockchainRpcClient = app(BlockchainRpcClient::class);
+            $items = $blockchainRpcClient->liststreamitems(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 true,
                 10000,

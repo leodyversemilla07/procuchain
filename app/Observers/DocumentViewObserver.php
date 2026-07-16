@@ -14,18 +14,18 @@ class DocumentViewObserver
         private readonly BlockchainSyncService $sync,
     ) {}
 
-    public function created(DocumentViewLog $DocumentViewLog): void
+    public function created(DocumentViewLog $documentViewLog): void
     {
         if (app()->runningUnitTests()) {
             return;
         }
 
-        if ($DocumentViewLog->txid !== null) {
+        if ($documentViewLog->txid !== null) {
             return;
         }
 
-        $key = $DocumentViewLog->file_key.'-'.($DocumentViewLog->user_id ?? 'anon').'-'.($DocumentViewLog->viewed_at?->timestamp ?? time());
+        $key = $documentViewLog->file_key.'-'.($documentViewLog->user_id ?? 'anon').'-'.($documentViewLog->viewed_at?->timestamp ?? time());
 
-        $this->sync->publish($DocumentViewLog, Stream::DOCUMENT_ACCESS, $key);
+        $this->sync->publish($documentViewLog, Stream::DOCUMENT_ACCESS, $key);
     }
 }

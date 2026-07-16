@@ -119,7 +119,7 @@ final class ProcurementFetcherService
         return collect($documentDtos)
             ->map(function (DocumentData $doc) use ($correctionsByTxid) {
                 $fileKey = $doc->fileKey;
-                $BlockchainFileUrl = ! empty($fileKey) ? route('files.download', ['fileKey' => $fileKey]) : '';
+                $blockchainFileUrl = ! empty($fileKey) ? route('files.download', ['fileKey' => $fileKey]) : '';
 
                 $stageMetadata = $doc->stageMetadata;
                 if ($stageMetadata && is_array($stageMetadata)) {
@@ -152,7 +152,7 @@ final class ProcurementFetcherService
                     'file_key' => $fileKey,
                     'document_type' => $doc->documentType,
                     'document_type_formatted' => $this->formatter->formatDocumentType($doc->documentType),
-                    'spaces_url' => $BlockchainFileUrl,
+                    'spaces_url' => $blockchainFileUrl,
                     'hash' => $doc->hash,
                     'hash_short' => $doc->getShortenedHash(),
                     'hash_medium' => $doc->getShortenedHash(6, 4),

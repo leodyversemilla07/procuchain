@@ -20,7 +20,7 @@ use Inertia\Response;
 class AcceptInvitationController extends Controller
 {
     public function __construct(
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -109,7 +109,7 @@ class AcceptInvitationController extends Controller
                 'invited_by' => $invitation->invited_by,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'auth.invitation_accepted',
                 'user',
                 (string) $user->id,

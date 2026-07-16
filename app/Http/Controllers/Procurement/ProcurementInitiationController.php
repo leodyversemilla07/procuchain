@@ -35,7 +35,7 @@ class ProcurementInitiationController extends BaseController
         private readonly ProcurementStagePageService $stagePageService,
         private readonly ProcurementStageUploadService $stageUploadService,
         private readonly ProcurementStageCompletionService $stageCompletionService,
-        private readonly AuditLogService $AuditLogService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     public function show(?string $id = null): Response
@@ -157,7 +157,7 @@ class ProcurementInitiationController extends BaseController
             'pr_number' => $prNumber,
         ], $jobId, $user->id);
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'procurement.initiated',
             'procurement',
             $prNumber,
@@ -185,7 +185,7 @@ class ProcurementInitiationController extends BaseController
         $user = $request->user();
 
         try {
-            $File = $request->File('document_File');
+            $file = $request->file('document_File');
             $documentTypeValue = $request->input('document_type');
             $documentType = DocumentTypeEnums::tryFrom($documentTypeValue);
 
@@ -196,14 +196,14 @@ class ProcurementInitiationController extends BaseController
             $response = $this->stageUploadService->queueDocumentUpload(
                 $pr_number,
                 $stage,
-                $File,
+                $file,
                 $documentType,
                 $request->input('description'),
                 $request->input('metadata', []),
                 $user,
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.document_uploaded',
                 'procurement',
                 $pr_number,
@@ -276,7 +276,7 @@ class ProcurementInitiationController extends BaseController
         try {
             $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.stage_completed',
                 'procurement',
                 $pr_number,

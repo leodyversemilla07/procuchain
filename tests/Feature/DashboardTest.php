@@ -143,7 +143,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             && $collection->keys()->all() === ['PR-2025-001-0001'];
     };
 
-    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getProcurementsByKey')
@@ -218,7 +218,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
@@ -246,7 +246,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
     ]);
     $secretariatUser->assignRole('bac_secretariat');
 
-    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
@@ -333,7 +333,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
@@ -376,8 +376,8 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         now()->addMinutes(config('dashboard.cache_ttl.procurements'))
     );
 
-    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClient->shouldReceive('liststreamitems')->never();
+    $blockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClient->shouldReceive('liststreamitems')->never();
 
     $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
@@ -451,7 +451,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
@@ -465,8 +465,8 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
 
 function bindDashboardDependencies(): void
 {
-    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClient->shouldReceive('liststreamitems')
+    $blockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClient->shouldReceive('liststreamitems')
         ->zeroOrMoreTimes()
         ->andReturn([]);
 
@@ -535,7 +535,7 @@ function bindDashboardDependencies(): void
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    app()->instance(BlockchainRpcClient::class, $BlockchainRpcClient);
+    app()->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     app()->instance(DashboardService::class, $dashboardService);
     app()->instance(CacheStrategyInterface::class, $cacheStrategy);
     app()->instance(ProcurementRepository::class, $procurementRepository);

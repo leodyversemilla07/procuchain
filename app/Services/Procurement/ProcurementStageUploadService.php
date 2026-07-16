@@ -32,7 +32,7 @@ class ProcurementStageUploadService
     public function queueDocumentUpload(
         string $prNumber,
         StageEnums $stage,
-        UploadedFile $File,
+        UploadedFile $file,
         DocumentTypeEnums $documentType,
         ?string $description,
         array $metadata,
@@ -68,7 +68,7 @@ class ProcurementStageUploadService
             ];
         }
 
-        $tempPath = $File->store('temp/blockchain-uploads');
+        $tempPath = $file->store('temp/blockchain-uploads');
         $jobId = Str::uuid()->toString();
 
         BlockchainWriteJob::dispatch('upload_document', [
@@ -83,8 +83,8 @@ class ProcurementStageUploadService
             'description' => $description,
             'stage_metadata' => $metadata,
             'temp_file_path' => $tempPath,
-            'original_filename' => $File->getClientOriginalName(),
-            'mime_type' => $File->getMimeType() ?? 'application/octet-stream',
+            'original_filename' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
         ], $jobId, $user->id);
 
         return [

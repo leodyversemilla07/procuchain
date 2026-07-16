@@ -52,10 +52,10 @@ it('non-admin is forbidden from viewing the audit log', function () {
 // ─── UserManagementController writes audit entries ───────────────────────────
 
 it('creating a user writes a user.created audit log entry', function () {
-    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClientMock->shouldReceive('getNewAddress')->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
-    $BlockchainRpcClientMock->shouldReceive('validateAddress')->andReturn(['isvalid' => true]);
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
+    $blockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClientMock->shouldReceive('getNewAddress')->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
+    $blockchainRpcClientMock->shouldReceive('validateAddress')->andReturn(['isvalid' => true]);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClientMock);
 
     $this->actingAs($this->admin)
         ->post('/admin/users', [

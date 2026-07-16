@@ -25,8 +25,8 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             fieldDifferences: [['field' => 'amount', 'old_value' => 100, 'new_value' => 999]],
         );
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
                 Stream::INTEGRITY_VIOLATIONS->value,
@@ -53,8 +53,8 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             violationType: BreachType::ROW_DELETED->value,
         );
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andReturn(null);
 
@@ -71,8 +71,8 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
             violationType: BreachType::CONTENT_MISMATCH->value,
         );
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andThrow(new Exception('Connection refused'));
 
@@ -99,8 +99,8 @@ describe('BlockchainAuditTrailService — Publish Violation', function () {
 
         $capturedPayload = null;
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
                 Stream::INTEGRITY_VIOLATIONS->value,
@@ -148,8 +148,8 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
 
         $capturedPayload = null;
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->with(
                 Stream::INTEGRITY_VIOLATIONS->value,
@@ -181,8 +181,8 @@ describe('BlockchainAuditTrailService — Publish Recovery', function () {
         );
         $auditLog->markRestored([]);
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('publish')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('publish')
             ->once()
             ->andReturn(null);
 
@@ -228,8 +228,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->with(Stream::INTEGRITY_VIOLATIONS->value, true, 10000)
             ->andReturn($chainEntries);
@@ -245,8 +245,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
     });
 
     it('returns empty array when no entries exist on chain', function () {
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn([]);
 
@@ -257,8 +257,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
     });
 
     it('returns empty array when blockchain throws exception', function () {
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andThrow(new Exception('Stream not found'));
 
@@ -293,8 +293,8 @@ describe('BlockchainAuditTrailService — Recover Audit Trail', function () {
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -339,8 +339,8 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -387,8 +387,8 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -414,8 +414,8 @@ describe('BlockchainAuditTrailService — Restore to MySQL', function () {
             ],
         ];
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldReceive('liststreamitems')
             ->once()
             ->andReturn($chainEntries);
 
@@ -441,8 +441,8 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
     });
 
     it('skips automatic blockchain publish during unit tests', function () {
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldNotReceive('publish');
 
         $log = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
@@ -454,8 +454,8 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
     });
 
     it('does NOT publish to blockchain when recordViolation is called (publish removed)', function () {
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldNotReceive('publish');
 
         $log = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',
@@ -473,8 +473,8 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
             violationType: BreachType::HASH_MISMATCH->value,
         );
 
-        $BlockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $BlockchainRpcClientMock->shouldNotReceive('publish');
+        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
+        $blockchainRpcClientMock->shouldNotReceive('publish');
 
         $auditLog->markRestored(['items_restored' => 1]);
 

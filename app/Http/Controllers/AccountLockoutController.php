@@ -18,7 +18,7 @@ class AccountLockoutController extends Controller
 
     public function __construct(
         private AccountLockoutService $accountLockout,
-        private AuditLogService $AuditLogService
+        private AuditLogService $auditLogService
     ) {}
 
     /**
@@ -88,7 +88,7 @@ class AccountLockoutController extends Controller
                     'reason' => $validated['reason'] ?? 'Manually unlocked by admin',
                 ]);
 
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     action: 'account.unlocked',
                     subjectType: 'user',
                     subjectId: (string) $user->id,
@@ -140,7 +140,7 @@ class AccountLockoutController extends Controller
                     'duration_hours' => $durationHours,
                 ]);
 
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     action: 'account.locked',
                     subjectType: 'user',
                     subjectId: (string) $user->id,
@@ -179,7 +179,7 @@ class AccountLockoutController extends Controller
                     'user_email' => $user->email,
                 ]);
 
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     action: 'account.attempts_reset',
                     subjectType: 'user',
                     subjectId: (string) $user->id,
@@ -245,7 +245,7 @@ class AccountLockoutController extends Controller
             ]);
 
             if ($successCount > 0) {
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     action: 'account.bulk_unlocked',
                     subjectType: 'user',
                     newValues: ['account_ids' => $accountIds, 'success_count' => $successCount]
@@ -308,7 +308,7 @@ class AccountLockoutController extends Controller
             ]);
 
             if ($successCount > 0) {
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     action: 'account.bulk_attempts_reset',
                     subjectType: 'user',
                     newValues: ['account_ids' => $accountIds, 'success_count' => $successCount]

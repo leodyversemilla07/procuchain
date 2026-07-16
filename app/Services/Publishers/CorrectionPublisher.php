@@ -22,7 +22,7 @@ class CorrectionPublisher
 {
     public function __construct(
         private CorrectionRepositoryInterface $corrections,
-        private BlockchainStorageService $BlockchainFileStorage
+        private BlockchainStorageService $blockchainFileStorage
     ) {}
 
     /**
@@ -71,7 +71,7 @@ class CorrectionPublisher
                 // This prevents stage/status confusion when correcting documents
                 $stageId = $originalStage ? (int) $originalStage : 1;
 
-                $BlockchainFileResult = $this->BlockchainFileStorage->uploadFile(
+                $blockchainFileResult = $this->blockchainFileStorage->uploadFile(
                     $correctedFile,
                     $prNumber,
                     $stageId,
@@ -86,13 +86,13 @@ class CorrectionPublisher
                 );
 
                 $correctedMetadata = [
-                    'file_name' => $BlockchainFileResult['filename'],
-                    'file_size' => $BlockchainFileResult['size'],
-                    'mime_type' => $BlockchainFileResult['mime_type'],
-                    'file_key' => $BlockchainFileResult['file_key'],
-                    'hash' => $BlockchainFileResult['hash'],
-                    'data_txid' => $BlockchainFileResult['data_txid'],
-                    'metadata_txid' => $BlockchainFileResult['metadata_txid'],
+                    'file_name' => $blockchainFileResult['filename'],
+                    'file_size' => $blockchainFileResult['size'],
+                    'mime_type' => $blockchainFileResult['mime_type'],
+                    'file_key' => $blockchainFileResult['file_key'],
+                    'hash' => $blockchainFileResult['hash'],
+                    'data_txid' => $blockchainFileResult['data_txid'],
+                    'metadata_txid' => $blockchainFileResult['metadata_txid'],
                 ];
             }
 

@@ -46,8 +46,8 @@ it('projects status and event timestamps to their database mirror fields', funct
 });
 
 it('indexes blockchain stream items by txid and pr number', function () {
-    $BlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClient->shouldReceive('liststreamitems')
+    $blockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClient->shouldReceive('liststreamitems')
         ->once()
         ->with('procurement.events', false, 10000)
         ->andReturn([
@@ -63,7 +63,7 @@ it('indexes blockchain stream items by txid and pr number', function () {
             ],
         ]);
 
-    $index = new BlockchainVerificationIndex($BlockchainRpcClient);
+    $index = new BlockchainVerificationIndex($blockchainRpcClient);
     $index->loadStream('procurement.events');
 
     expect($index->txids('procurement.events'))->toBe(['tx-1', 'tx-2'])

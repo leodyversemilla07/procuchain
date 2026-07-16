@@ -18,7 +18,7 @@ class ProcurementArchiveController extends Controller
     public function __construct(
         private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementDataService $procurementDataService,
-        private readonly AuditLogService $AuditLogService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -55,7 +55,7 @@ class ProcurementArchiveController extends Controller
                 $request->input('reason')
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.archived',
                 'procurement',
                 $pr_number,
@@ -88,7 +88,7 @@ class ProcurementArchiveController extends Controller
                 (string) $request->user()->id
             );
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'procurement.restored',
                 'procurement',
                 $pr_number,

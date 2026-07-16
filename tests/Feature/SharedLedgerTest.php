@@ -21,10 +21,10 @@ it('returns the shared ledger page for authenticated users', function () {
     $user->assignRole('admin');
 
     // Mock the BlockchainRpcClient to avoid actual blockchain calls
-    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+    $blockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClientMock->shouldReceive('liststreamitems')
         ->andReturn([]);
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClientMock);
 
     // Use node=default to avoid new Client() calls that bypass the container
     $this->actingAs($user)
@@ -90,13 +90,13 @@ it('filters ledger entries by pr_number', function () {
         ],
     ];
 
-    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
-    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+    $blockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClientMock->shouldReceive('liststreamitems')
         ->with('procurement.metadata', true, 5000, 0, false)
         ->andReturn($mockData);
-    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+    $blockchainRpcClientMock->shouldReceive('liststreamitems')
         ->andReturn([]);
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClientMock);
 
     $this->actingAs($user)
         ->get('/admin/shared-ledger?pr_number=PR-2025-001-0001&node=default')
@@ -112,11 +112,11 @@ it('handles blockchain unavailability gracefully', function () {
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    $BlockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
+    $blockchainRpcClientMock = Mockery::mock(BlockchainRpcClient::class);
     // Throw on first stream call to trigger exception handling
-    $BlockchainRpcClientMock->shouldReceive('liststreamitems')
+    $blockchainRpcClientMock->shouldReceive('liststreamitems')
         ->andThrow(new Exception('Connection refused'));
-    $this->app->instance(BlockchainRpcClient::class, $BlockchainRpcClientMock);
+    $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClientMock);
 
     // Use node=default to avoid new Client() calls that bypass the container
     $this->actingAs($user)

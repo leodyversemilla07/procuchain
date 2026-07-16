@@ -39,7 +39,7 @@ class ProcurementOrchestrator
      * Publishes: Document + Status Update + Event
      *
      * @param  array  $procurementData  Procurement metadata (pr_number, procurement_title, user_address)
-     * @param  UploadedFile  $File  File to upload
+     * @param  UploadedFile  $file  File to upload
      * @param  array  $documentData  Document-specific data
      * @param  array  $statusData  Status data
      * @param  array|null  $eventData  Optional event data
@@ -49,7 +49,7 @@ class ProcurementOrchestrator
      */
     public function publishDocumentWorkflow(
         array $procurementData,
-        UploadedFile $File,
+        UploadedFile $file,
         array $documentData,
         array $statusData,
         ?array $eventData = null
@@ -88,7 +88,7 @@ class ProcurementOrchestrator
                 stage: $stage,
                 status: $documentData['status'],
                 documentType: $documentType,
-                File: $File,
+                file: $file,
                 uploadedBy: $documentData['uploaded_by'] ?? 'System',
                 description: $documentData['description'] ?? null,
                 stageMetadata: $documentData['stage_metadata'] ?? null,
@@ -397,7 +397,7 @@ class ProcurementOrchestrator
      * Blockchain is the single source of truth - no local DB transaction needed
      *
      * @param  array  $procurementData  Complete procurement data
-     * @param  array  $BlockchainFiles  BlockchainFiles to upload with document types
+     * @param  array  $blockchainFiles  BlockchainFiles to upload with document types
      * @param  string  $userName  Current user's name
      * @return array Result with all transaction IDs
      *
@@ -405,7 +405,7 @@ class ProcurementOrchestrator
      */
     public function initiateProcurement(
         array $procurementData,
-        array $BlockchainFiles,
+        array $blockchainFiles,
         string $userName
     ): array {
         $this->resetState();
@@ -454,13 +454,13 @@ class ProcurementOrchestrator
             $uploadedDocuments = [];
             $failedDocuments = [];
 
-            if (! empty($BlockchainFiles)) {
+            if (! empty($blockchainFiles)) {
                 Log::info('Orchestrator: Step 3 - Publishing documents', [
                     'pr_number' => $prNumber,
-                    'document_count' => count($BlockchainFiles),
+                    'document_count' => count($blockchainFiles),
                 ]);
 
-                foreach ($BlockchainFiles as $BlockchainFileData) {
+                foreach ($blockchainFiles as $blockchainFileData) {
                     try {
                         $documentResult = $this->documentPublisher->publish(
                             prNumber: $prNumber,
@@ -468,26 +468,26 @@ class ProcurementOrchestrator
                             userAddress: $userAddress,
                             stage: $stage,
                             status: $status->value,
-                            documentType: $BlockchainFileData['document_type'],
-                            File: $BlockchainFileData['File'],
+                            documentType: $blockchainFileData['document_type'],
+                            file: $blockchainFileData['File'],
                             uploadedBy: $userName,
-                            description: $BlockchainFileData['description'] ?? null,
-                            stageMetadata: $BlockchainFileData['metadata'] ?? null,
+                            description: $blockchainFileData['description'] ?? null,
+                            stageMetadata: $blockchainFileData['metadata'] ?? null,
                         );
 
                         $uploadedDocuments[] = [
-                            'filename' => $BlockchainFileData['File']->getClientOriginalName(),
+                            'filename' => $blockchainFileData['File']->getClientOriginalName(),
                             'txid' => $documentResult['txid'] ?? null,
                         ];
                     } catch (Exception $e) {
                         $failedDocuments[] = [
-                            'filename' => $BlockchainFileData['File']->getClientOriginalName(),
+                            'filename' => $blockchainFileData['File']->getClientOriginalName(),
                             'error' => $e->getMessage(),
                         ];
 
                         Log::error('Orchestrator: Document upload failed (non-critical)', [
                             'pr_number' => $prNumber,
-                            'filename' => $BlockchainFileData['File']->getClientOriginalName(),
+                            'filename' => $blockchainFileData['File']->getClientOriginalName(),
                             'error' => $e->getMessage(),
                         ]);
                     }

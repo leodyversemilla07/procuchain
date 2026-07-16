@@ -13,7 +13,7 @@ use Inertia\Response;
 class NotificationController extends Controller
 {
     public function __construct(
-        private AuditLogService $AuditLogService,
+        private AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -36,7 +36,7 @@ class NotificationController extends Controller
         if ($notification) {
             $notification->markAsRead();
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 'security.notification_read',
                 'notification',
                 $id,
@@ -63,7 +63,7 @@ class NotificationController extends Controller
 
         $user->unreadNotifications()->update(['read_at' => now()]);
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'security.notifications_all_read',
             'notification',
             'all',

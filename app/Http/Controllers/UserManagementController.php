@@ -25,7 +25,7 @@ class UserManagementController extends Controller
 {
     use AuditContext;
 
-    public function __construct(protected AuditLogService $AuditLogService) {}
+    public function __construct(protected AuditLogService $auditLogService) {}
 
     /**
      * Display user management page
@@ -123,7 +123,7 @@ class UserManagementController extends Controller
                 'blockchain_address' => $blockchainAddress,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 action: 'user.created',
                 subjectType: 'user',
                 subjectId: (string) $user->id,
@@ -191,7 +191,7 @@ class UserManagementController extends Controller
                 'user_role' => $validated['role'],
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 action: 'user.updated',
                 subjectType: 'user',
                 subjectId: (string) $user->id,
@@ -232,7 +232,7 @@ class UserManagementController extends Controller
                 'deleted_user_email' => $userEmail,
             ]);
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 action: 'user.deleted',
                 subjectType: 'user',
                 subjectId: (string) $userId,
@@ -313,7 +313,7 @@ class UserManagementController extends Controller
             $deletedCount = count($userIds);
             $message = $deletedCount === 1 ? 'User deleted successfully.' : "{$deletedCount} users deleted successfully.";
 
-            $this->AuditLogService->log(
+            $this->auditLogService->log(
                 action: 'user.bulk_deleted',
                 subjectType: 'user',
                 oldValues: [
@@ -366,7 +366,7 @@ class UserManagementController extends Controller
                     'timestamp' => now()->toDateTimeString(),
                 ]);
 
-                $this->AuditLogService->log(
+                $this->auditLogService->log(
                     action: 'user.password_reset_sent',
                     subjectType: 'user',
                     subjectId: (string) $user->id,

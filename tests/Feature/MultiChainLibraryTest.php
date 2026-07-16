@@ -111,21 +111,21 @@ describe('Client Initialization', function () {
 
 describe('BlockchainRpcClient Initialization', function () {
     it('can instantiate BlockchainRpcClient', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
 
-        expect($BlockchainRpcClient)->toBeInstanceOf(BlockchainRpcClient::class);
+        expect($blockchainRpcClient)->toBeInstanceOf(BlockchainRpcClient::class);
     });
 
     it('is registered as singleton', function () {
-        $BlockchainRpcClient1 = app(BlockchainRpcClient::class);
-        $BlockchainRpcClient2 = app(BlockchainRpcClient::class);
+        $blockchainRpcClient1 = app(BlockchainRpcClient::class);
+        $blockchainRpcClient2 = app(BlockchainRpcClient::class);
 
-        expect($BlockchainRpcClient1)->toBe($BlockchainRpcClient2);
+        expect($blockchainRpcClient1)->toBe($blockchainRpcClient2);
     });
 
     it('provides access to underlying client', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
-        $client = $BlockchainRpcClient->getClient();
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $blockchainRpcClient->getClient();
 
         expect($client)->toBeInstanceOf(Client::class);
     });
@@ -196,7 +196,7 @@ describe('Blockchain Permissions', function () {
 
 describe('Magic Method Calls', function () {
     it('forwards RPC methods through magic __call', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
 
         // These method names should be recognized
         $methods = [
@@ -209,36 +209,36 @@ describe('Magic Method Calls', function () {
         ];
 
         foreach ($methods as $method) {
-            expect(method_exists($BlockchainRpcClient, '__call'))->toBeTrue();
+            expect(method_exists($blockchainRpcClient, '__call'))->toBeTrue();
         }
     });
 });
 
 describe('Error Handling', function () {
     it('provides success status check', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
-        $client = $BlockchainRpcClient->getClient();
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $blockchainRpcClient->getClient();
 
         expect(method_exists($client, 'success'))->toBeTrue();
     });
 
     it('provides error retrieval', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
-        $client = $BlockchainRpcClient->getClient();
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $blockchainRpcClient->getClient();
 
         expect(method_exists($client, 'errormessage'))->toBeTrue();
     });
 
     it('provides error code retrieval', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
-        $client = $BlockchainRpcClient->getClient();
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $blockchainRpcClient->getClient();
 
         expect(method_exists($client, 'errorcode'))->toBeTrue();
     });
 
     it('provides error message retrieval', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
-        $client = $BlockchainRpcClient->getClient();
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
+        $client = $blockchainRpcClient->getClient();
 
         expect(method_exists($client, 'errormessage'))->toBeTrue();
     });
@@ -527,13 +527,13 @@ describe('Individual Stream Coverage', function () {
     });
 
     it('validates all File streams have unique purposes', function () {
-        $BlockchainFileStreams = [
+        $blockchainFileStreams = [
             Stream::FILE_DATA,
             Stream::FILE_METADATA,
             Stream::FILE_CHUNKS,
         ];
 
-        $descriptions = array_map(fn ($s) => $s->getDescription(), $BlockchainFileStreams);
+        $descriptions = array_map(fn ($s) => $s->getDescription(), $blockchainFileStreams);
 
         // All descriptions should be unique
         expect(count($descriptions))->toBe(count(array_unique($descriptions)));
@@ -542,19 +542,19 @@ describe('Individual Stream Coverage', function () {
     it('can iterate through all streams programmatically', function () {
         $allStreams = Stream::cases();
         $procurementCount = 0;
-        $BlockchainFileCount = 0;
+        $blockchainFileCount = 0;
 
         foreach ($allStreams as $stream) {
             if ($stream->isProcurementStream()) {
                 $procurementCount++;
             }
             if ($stream->isBlockchainFileStream()) {
-                $BlockchainFileCount++;
+                $blockchainFileCount++;
             }
         }
 
         expect($procurementCount)->toBe(7)
-            ->and($BlockchainFileCount)->toBe(3);
+            ->and($blockchainFileCount)->toBe(3);
     });
 });
 
@@ -660,10 +660,10 @@ describe('BlockchainRpcClient Features', function () {
     });
 
     it('provides context-aware timeouts', function () {
-        $BlockchainRpcClient = app(BlockchainRpcClient::class);
+        $blockchainRpcClient = app(BlockchainRpcClient::class);
 
         // BlockchainRpcClient should be able to handle different operation types
-        expect($BlockchainRpcClient)->toBeInstanceOf(BlockchainRpcClient::class);
+        expect($blockchainRpcClient)->toBeInstanceOf(BlockchainRpcClient::class);
 
         // Verify timeout configuration exists
         $timeout = config('multichain.connection_timeout');

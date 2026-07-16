@@ -19,7 +19,7 @@ class ProcurementWorkflowConfigController extends Controller
     public function __construct(
         private readonly ProcurementWorkflowService $workflowService,
         private readonly StageDocumentConfigService $documentConfigService,
-        private readonly AuditLogService $AuditLogService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -155,7 +155,7 @@ class ProcurementWorkflowConfigController extends Controller
             $request->user()->id
         );
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'admin.workflow_config_updated',
             'workflow_config',
             $modeEnum->value,
@@ -183,7 +183,7 @@ class ProcurementWorkflowConfigController extends Controller
 
         $this->workflowService->resetToDefaults($modeEnum, $request->user()->id);
 
-        $this->AuditLogService->log(
+        $this->auditLogService->log(
             'admin.workflow_config_reset',
             'workflow_config',
             $modeEnum->value,

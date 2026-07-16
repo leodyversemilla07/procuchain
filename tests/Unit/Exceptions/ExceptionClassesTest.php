@@ -70,8 +70,8 @@ describe('DocumentUploadException', function () {
     });
 
     it('creates validation failed exception', function () {
-        $File = UploadedFile::fake()->create('test.exe', 1024);
-        $exception = DocumentUploadException::validationFailed($File, 'Invalid File type', 'PR-2025-000-0001');
+        $file = UploadedFile::fake()->create('test.exe', 1024);
+        $exception = DocumentUploadException::validationFailed($file, 'Invalid File type', 'PR-2025-000-0001');
 
         expect($exception->getMessage())->toContain('validation failed');
         expect($exception->getfilename())->toBe('test.exe');
