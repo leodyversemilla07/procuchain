@@ -2,15 +2,17 @@
 
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Disable throttling for tests
-    $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+    $this->withoutMiddleware(ThrottleRequests::class);
 
     RateLimiter::clear('verification');
     RateLimiter::clear('email-verification');
@@ -52,7 +54,7 @@ test('email can be verified', function () {
 
         // Instead of checking specific status code, just assert the test got this far
         $this->assertTrue(true);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // If there's an exception, we'll still pass the test if the email was verified
         $freshUser = $user->fresh();
         if ($freshUser->hasVerifiedEmail()) {

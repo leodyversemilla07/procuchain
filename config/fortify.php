@@ -175,7 +175,7 @@ return [
     'features' => [
         // Features::registration(),
         // Features::resetPasswords(),
-        // Features::emailVerification(), // Temporarily disabled for Wayfinder generation
+        Features::emailVerification(),
         // Features::updateProfileInformation(),
         // Features::updatePasswords(),
         Features::twoFactorAuthentication([
