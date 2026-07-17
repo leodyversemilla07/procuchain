@@ -1,12 +1,8 @@
 <?php
 
-use App\Contracts\ProcurementCorrectionRepositoryInterface;
-use App\DataTransferObjects\ProcurementData;
-use App\DataTransferObjects\StatusData;
 use App\Models\Procurement;
 use App\Models\ProcurementStage;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\Procurement\BlockchainAddressResolverService;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
@@ -238,9 +234,9 @@ describe('ProcurementListController', function () {
     });
 });
 
-function procurementFixture(string $prNumber, string $userId): ProcurementData
+function procurementFixture(string $prNumber, string $userId): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => $prNumber,
         'title' => 'Test Procurement',
         'description' => 'Fixture',
@@ -252,7 +248,7 @@ function procurementFixture(string $prNumber, string $userId): ProcurementData
         'status' => 'draft',
         'user_id' => $userId,
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }
 
 function listStatusFixture(
@@ -261,17 +257,17 @@ function listStatusFixture(
     string $title,
     string $stage = 'procurement_initiation',
     string $currentStatus = 'draft',
-): StatusData {
-    return new StatusData(
-        prNumber: $prNumber,
-        procurementTitle: $title,
-        stage: $stage,
-        currentStatus: $currentStatus,
-        userAddress: $userAddress,
-        timestamp: now(),
-        previousStatus: null,
-        metadata: [],
-    );
+): array {
+    return [
+        'pr_number' => $prNumber,
+        'procurement_title' => $title,
+        'stage' => $stage,
+        'current_status' => $currentStatus,
+        'user_address' => $userAddress,
+        'timestamp' => now(),
+        'previous_status' => null,
+        'metadata' => [],
+    ];
 }
 
 function detailPayload(string $prNumber): array
@@ -311,49 +307,14 @@ function detailStatusItem(
     ];
 }
 
-/**
- * @param  array<string, ProcurementData>  $listRepositoryFixtures
- * @param  array<int, StatusData>  $listStatusFixtures
- */
 function bindProcurementControllerMocks(
     array $listRepositoryFixtures = [],
     array $listStatusFixtures = [],
-    ?ProcurementData $repositoryFixture = null,
+    ?array $repositoryFixture = null,
     ?Collection $statusItems = null,
     ?array $detailFixture = null,
 ): void {
     seedProcurementListMirror($listRepositoryFixtures, $listStatusFixtures);
-
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function (string $prNumber) use ($listRepositoryFixtures, $repositoryFixture): ?ProcurementData {
-            if (isset($listRepositoryFixtures[$prNumber])) {
-                return $listRepositoryFixtures[$prNumber];
-            }
-
-            if ($repositoryFixture !== null && $repositoryFixture->prNumber === $prNumber) {
-                return $repositoryFixture;
-            }
-
-            return $repositoryFixture;
-        });
-    $repository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturnUsing(function (array $prNumbers) use ($listRepositoryFixtures, $repositoryFixture): array {
-            $fixtures = $listRepositoryFixtures;
-
-            if ($repositoryFixture !== null) {
-                $fixtures[$repositoryFixture->prNumber] = $repositoryFixture;
-            }
-
-            $result = [];
-            foreach ($prNumbers as $prNumber) {
-                $result[$prNumber] = $fixtures[$prNumber] ?? null;
-            }
-
-            return $result;
-        });
 
     $dataService = mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
@@ -374,87 +335,66 @@ function bindProcurementControllerMocks(
 
     $aggregator = new ProcurementListAggregatorService(
         new ProcurementFormatterService,
-        new ProcurementActionService($repository),
+        new ProcurementActionService,
         new BlockchainAddressResolverService(app(UserService::class)),
     );
 
-    $correctionRepository = mock(ProcurementCorrectionRepositoryInterface::class);
-    $correctionRepository->shouldReceive('hasCorrections')
-        ->zeroOrMoreTimes()
-        ->andReturn(false);
-    $correctionRepository->shouldReceive('getLatest')
-        ->zeroOrMoreTimes()
-        ->andReturnNull();
-    $correctionRepository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-
-    $detailService = new ProcurementDetailService(
-        $dataService,
-        $repository,
-        $correctionRepository,
-    );
+    $detailService = new ProcurementDetailService($dataService);
 
     app()->instance(ProcurementListAggregatorService::class, $aggregator);
     app()->instance(ProcurementDataService::class, $dataService);
-    app()->instance(ProcurementRepository::class, $repository);
     app()->instance(ProcurementDetailService::class, $detailService);
-    app()->instance(ProcurementCorrectionRepositoryInterface::class, $correctionRepository);
 }
 
-/**
- * @param  array<string, ProcurementData>  $repositoryFixtures
- * @param  array<int, StatusData>  $statusFixtures
- */
 function seedProcurementListMirror(array $repositoryFixtures, array $statusFixtures): void
 {
     foreach ($repositoryFixtures as $fixture) {
         Procurement::updateOrCreate(
-            ['pr_number' => $fixture->prNumber],
+            ['pr_number' => $fixture['pr_number']],
             [
-                'app_reference' => $fixture->appReference,
-                'title' => $fixture->title,
-                'description' => $fixture->description,
-                'category' => $fixture->category->value,
-                'procurement_mode' => $fixture->procurementMode->value,
-                'office' => $fixture->office,
-                'end_user' => $fixture->endUser,
-                'fund_source' => $fixture->fundingSource,
-                'prepared_by' => $fixture->preparedBy,
-                'abc_amount' => $fixture->abcAmount,
-                'current_status' => $fixture->status,
-                'user_id' => $fixture->userId,
-                'user_address' => $fixture->userAddress,
-                'initiated_at' => $fixture->createdAt,
-                'last_updated_at' => $fixture->createdAt,
+                'app_reference' => $fixture['app_reference'] ?? null,
+                'title' => $fixture['title'],
+                'description' => $fixture['description'],
+                'category' => $fixture['category'],
+                'procurement_mode' => $fixture['procurement_mode'],
+                'office' => $fixture['office'],
+                'end_user' => $fixture['end_user'] ?? null,
+                'fund_source' => $fixture['funding_source'],
+                'prepared_by' => $fixture['prepared_by'] ?? null,
+                'abc_amount' => $fixture['abc_amount'],
+                'current_status' => $fixture['status'],
+                'user_id' => $fixture['user_id'],
+                'user_address' => $fixture['user_address'] ?? null,
+                'initiated_at' => $fixture['created_at'],
+                'last_updated_at' => $fixture['created_at'],
             ],
         );
     }
 
     foreach ($statusFixtures as $index => $status) {
         $procurement = Procurement::firstOrCreate(
-            ['pr_number' => $status->prNumber],
+            ['pr_number' => $status['pr_number']],
             [
-                'title' => $status->procurementTitle,
+                'title' => $status['procurement_title'],
                 'category' => 'goods',
                 'procurement_mode' => 'competitive_bidding',
             ],
         );
 
         $procurement->update([
-            'current_stage' => $status->stage,
-            'current_status' => $status->currentStatus,
+            'current_stage' => $status['stage'],
+            'current_status' => $status['current_status'],
         ]);
 
         ProcurementStage::create([
             'procurement_id' => $procurement->id,
-            'stage' => $status->stage,
-            'status' => $status->currentStatus,
-            'previous_status' => $status->previousStatus,
-            'entered_at' => $status->timestamp,
-            'user_address' => $status->userAddress,
+            'stage' => $status['stage'],
+            'status' => $status['current_status'],
+            'previous_status' => $status['previous_status'],
+            'entered_at' => $status['timestamp'],
+            'user_address' => $status['user_address'],
             'txid' => "list-status-{$index}",
-            'metadata' => $status->metadata,
+            'metadata' => $status['metadata'],
         ]);
     }
 }

@@ -1,9 +1,7 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Models\DocumentViewLog;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -151,20 +149,13 @@ it('forbids bac secretariat from viewing inaccessible procurement documents', fu
         ]));
     app()->instance(ProcurementDataService::class, $dataService);
 
-    $repository = Mockery::mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->once()
-        ->with('PR-2025-998-0003')
-        ->andReturn(viewerLockedProcurementFixture());
-    app()->instance(ProcurementRepository::class, $repository);
-
     actingAs($user);
     get('/pdf-viewer/locked-document')->assertForbidden();
 });
 
-function viewerLockedProcurementFixture(): ProcurementData
+function viewerLockedProcurementFixture(): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => 'PR-2025-998-0003',
         'title' => 'Locked Procurement',
         'description' => 'Fixture',
@@ -176,5 +167,5 @@ function viewerLockedProcurementFixture(): ProcurementData
         'status' => 'draft',
         'user_id' => '999',
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }

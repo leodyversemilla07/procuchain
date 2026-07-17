@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Repositories\ProcurementRepository;
 use App\Services\Procurement\ProcurementActionService;
 
 beforeEach(function () {
-    $this->mockRepository = Mockery::mock(ProcurementRepository::class);
-    $this->service = new ProcurementActionService($this->mockRepository);
+    $this->service = new ProcurementActionService;
 });
 
 describe('ProcurementActionService', function () {
     describe('getAvailableActions', function () {
         it('returns empty array for invalid stage', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-2025-995-0001')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 'invalid_stage',
@@ -31,10 +25,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns empty array for invalid status', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-2025-995-0001')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 'procurement_initiation',
@@ -47,10 +37,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns upload action for procurement initiation stage', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-2025-995-0001')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 StageEnums::PROCUREMENT_INITIATION->value,
@@ -65,10 +51,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns dialog action for pre-procurement decision', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-2025-995-0001')
-                ->andReturn(null);
-
             // After procurement initiation is complete, the stage transitions to PRE_PROCUREMENT_CONFERENCE
             // with status PROCUREMENT_SUBMITTED for Competitive Bidding mode
             $actions = $this->service->getAvailableActions(
@@ -85,10 +67,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns upload action for bid evaluation', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-2025-995-0001')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 StageEnums::BID_EVALUATION->value,
@@ -103,10 +81,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns no workflow actions for non-bac-secretariat role', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-2025-995-0001')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 StageEnums::PROCUREMENT_INITIATION->value,
@@ -165,9 +139,6 @@ describe('ProcurementActionService', function () {
 
     describe('action registry coverage', function () {
         it('covers all major workflow stages', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->andReturn(null);
-
             $stages = [
                 [StageEnums::PROCUREMENT_INITIATION, ProcurementStatus::PROCUREMENT_INITIATED],
                 [StageEnums::PRE_PROCUREMENT_CONFERENCE, ProcurementStatus::PRE_PROCUREMENT_CONFERENCE_HELD],
@@ -199,9 +170,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('supports SVP workflow stages', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 StageEnums::REQUEST_FOR_QUOTATION->value,
@@ -214,9 +182,6 @@ describe('ProcurementActionService', function () {
         });
 
         it('supports abstract of quotations stage', function () {
-            $this->mockRepository->shouldReceive('findByProcurement')
-                ->andReturn(null);
-
             $actions = $this->service->getAvailableActions(
                 'PR-2025-995-0001',
                 StageEnums::ABSTRACT_OF_QUOTATIONS->value,

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\StatusData;
 use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\Procurement;
@@ -100,8 +98,6 @@ final class ProcurementListAggregatorService
 
     /**
      * Fetch latest status items from blockchain
-     *
-     * @return Collection<int, StatusData>
      */
     private function fetchStatusItems(): Collection
     {
@@ -117,16 +113,16 @@ final class ProcurementListAggregatorService
                 ->orderByDesc('entered_at')
                 ->get();
 
-            return $latestStages->map(fn ($stage) => StatusData::fromBlockchainArray([
-                'pr_number' => $stage->procurement->pr_number ?? '',
-                'procurement_title' => $stage->procurement->title ?? '',
+            return $latestStages->map(fn ($stage) => [
+                'prNumber' => $stage->procurement?->pr_number ?? '',
+                'procurementTitle' => $stage->procurement?->title ?? '',
                 'stage' => $stage->stage,
-                'current_status' => $stage->status,
-                'user_address' => $stage->user_address ?? '',
-                'timestamp' => $stage->entered_at->toIso8601String(),
-                'previous_status' => $stage->previous_status,
-                'metadata' => $stage->metadata,
-            ]));
+                'currentStatus' => $stage->status,
+                'userAddress' => $stage->user_address ?? '',
+                'timestamp' => $stage->entered_at,
+                'previousStatus' => $stage->previous_status ?? '',
+                'metadata' => $stage->metadata ?? [],
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch status items', ['error' => $e->getMessage()]);
 
@@ -153,24 +149,10 @@ final class ProcurementListAggregatorService
                 ->orderByDesc('uploaded_at')
                 ->take($documentLimit)
                 ->get()
-                ->map(fn ($d) => DocumentData::fromBlockchainArray([
-                    'pr_number' => $d->procurement->pr_number ?? '',
-                    'procurement_title' => $d->procurement->title ?? '',
-                    'user_address' => $d->user_address ?? '',
-                    'stage' => $d->stage,
-                    'status' => '',
-                    'document_type' => $d->document_type,
-                    'file_key' => $d->file_key,
-                    'file_name' => $d->filename,
-                    'file_size' => $d->file_size,
-                    'mime_type' => $d->mime_type ?? '',
-                    'hash' => $d->hash,
-                    'data_txid' => $d->txid ?? '',
-                    'metadata_txid' => '',
-                    'uploaded_by' => $d->uploaded_by,
-                    'timestamp' => $d->uploaded_at->toIso8601String(),
-                    'description' => $d->description,
-                ]));
+                ->map(fn ($d) => [
+                    'prNumber' => $d->procurement?->pr_number ?? '',
+                    'documentType' => $d->document_type,
+                ]);
         } catch (\Exception $e) {
             Log::warning('Failed to fetch documents, continuing without document counts', [
                 'error' => $e->getMessage(),
@@ -182,8 +164,8 @@ final class ProcurementListAggregatorService
         // to avoid inflating counts from duplicates or re-uploads
         $documentTypeMap = [];
         foreach ($documentDtos as $doc) {
-            $prNumber = $doc->prNumber;
-            $documentType = $doc->documentType;
+            $prNumber = $doc['prNumber'];
+            $documentType = $doc['documentType'];
             $documentTypeMap[$prNumber][$documentType] = true;
         }
 
@@ -236,9 +218,6 @@ final class ProcurementListAggregatorService
 
     /**
      * Filter status items by archive status
-     *
-     * @param  Collection<int, StatusData>  $statusItems
-     * @return Collection<int, StatusData>
      */
     private function filterByArchiveStatus(Collection $statusItems, bool $archived): Collection
     {
@@ -256,8 +235,8 @@ final class ProcurementListAggregatorService
             $archivedPrNumbers = [];
         }
 
-        $filtered = $statusItems->filter(function (StatusData $statusDto) use ($archivedPrNumbers, $archived) {
-            $isArchived = in_array($statusDto->prNumber, $archivedPrNumbers, true);
+        $filtered = $statusItems->filter(function (array $statusDto) use ($archivedPrNumbers, $archived) {
+            $isArchived = in_array($statusDto['prNumber'], $archivedPrNumbers, true);
 
             return $archived ? $isArchived : ! $isArchived;
         });
@@ -273,9 +252,6 @@ final class ProcurementListAggregatorService
 
     /**
      * Filter status items by user security (BAC Secretariat isolation)
-     *
-     * @param  Collection<int, StatusData>  $statusItems
-     * @return Collection<int, StatusData>
      */
     private function filterBySecurity(Collection $statusItems, ?string $filterByUserId, ?string $filterByUserAddress): Collection
     {
@@ -309,9 +285,9 @@ final class ProcurementListAggregatorService
             }
         }
 
-        $filtered = $statusItems->filter(function (StatusData $statusDto) use ($allowedPrNumbers, $filterByUserAddress) {
-            $prNumberAllowed = in_array($statusDto->prNumber, $allowedPrNumbers, true);
-            $addressAllowed = $filterByUserAddress !== null && $statusDto->userAddress === $filterByUserAddress;
+        $filtered = $statusItems->filter(function (array $statusDto) use ($allowedPrNumbers, $filterByUserAddress) {
+            $prNumberAllowed = in_array($statusDto['prNumber'], $allowedPrNumbers, true);
+            $addressAllowed = $filterByUserAddress !== null && $statusDto['userAddress'] === $filterByUserAddress;
 
             return $prNumberAllowed || $addressAllowed;
         });
@@ -329,7 +305,6 @@ final class ProcurementListAggregatorService
     /**
      * Build the final list result array from status items
      *
-     * @param  Collection<int, StatusData>  $statusItems
      * @param  array<string, int>  $documentCountMap
      * @param  array<string, array{value: string, label: string, abc_amount: float|int}>  $procurementModeMap
      * @return array<int, array<string, mixed>>
@@ -337,11 +312,11 @@ final class ProcurementListAggregatorService
     private function buildListResult(Collection $statusItems, array $documentCountMap, array $procurementModeMap, bool $skipActions, ?User $authUser = null): array
     {
         return $statusItems
-            ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions, $authUser) {
-                $originalTimestamp = $statusDto->timestamp->toIso8601String();
-                $displayTimestamp = $statusDto->timestamp->toDateString();
+            ->map(function (array $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions, $authUser) {
+                $originalTimestamp = $statusDto['timestamp']->toIso8601String();
+                $displayTimestamp = $statusDto['timestamp']->toDateString();
 
-                $stageEnum = StageEnums::tryFrom($statusDto->stage);
+                $stageEnum = StageEnums::tryFrom($statusDto['stage']);
                 $phase = $stageEnum?->getPhase() ?? 'unknown';
                 $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
                 $phaseProgress = $stageEnum?->getPhaseProgress() ?? [
@@ -351,7 +326,7 @@ final class ProcurementListAggregatorService
                     'total_stages_in_phase' => 0,
                 ];
 
-                $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
+                $modeInfo = $procurementModeMap[$statusDto['prNumber']] ?? null;
                 $modeEnum = isset($modeInfo['value']) ? ProcurementMode::tryFrom($modeInfo['value']) : null;
 
                 $userRole = $this->getCurrentUserRole($authUser);
@@ -362,38 +337,38 @@ final class ProcurementListAggregatorService
                 if (! $skipActions) {
                     try {
                         $workflowActions = $this->actionService->getAvailableActions(
-                            $statusDto->prNumber,
-                            $statusDto->stage,
-                            $statusDto->currentStatus,
+                            $statusDto['prNumber'],
+                            $statusDto['stage'],
+                            $statusDto['currentStatus'],
                             $userRole,
                             $modeEnum
                         );
-                        $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
+                        $staticActions = $this->actionService->getStaticActions($statusDto['prNumber'], $userRole);
                     } catch (\Exception $e) {
                         Log::debug('Failed to fetch actions for procurement, using empty actions', [
-                            'pr_number' => $statusDto->prNumber,
+                            'pr_number' => $statusDto['prNumber'],
                             'error' => $e->getMessage(),
                         ]);
                     }
                 }
 
                 return [
-                    'id' => $statusDto->prNumber,
-                    'title' => $statusDto->procurementTitle,
-                    'stage' => $statusDto->stage,
-                    'stage_formatted' => $this->formatter->formatStageName($statusDto->stage),
+                    'id' => $statusDto['prNumber'],
+                    'title' => $statusDto['procurementTitle'],
+                    'stage' => $statusDto['stage'],
+                    'stage_formatted' => $this->formatter->formatStageName($statusDto['stage']),
                     'phase' => $phase,
                     'phase_display' => $phaseDisplayName,
                     'phase_progress' => $phaseProgress,
-                    'current_status' => $statusDto->currentStatus,
-                    'status_formatted' => $this->formatter->formatStatus($statusDto->currentStatus),
+                    'current_status' => $statusDto['currentStatus'],
+                    'status_formatted' => $this->formatter->formatStatus($statusDto['currentStatus']),
                     'timestamp' => $originalTimestamp,
                     'display_date' => $displayTimestamp,
                     'last_updated' => $displayTimestamp,
-                    'user_address' => $statusDto->userAddress,
-                    'user' => $this->userNameResolver->resolve($statusDto->userAddress),
-                    'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
-                    'metadata' => $statusDto->metadata,
+                    'user_address' => $statusDto['userAddress'],
+                    'user' => $this->userNameResolver->resolve($statusDto['userAddress']),
+                    'document_count' => $documentCountMap[$statusDto['prNumber']] ?? 0,
+                    'metadata' => $statusDto['metadata'],
                     'procurement_mode' => $modeInfo['value'] ?? null,
                     'procurement_mode_label' => $modeInfo['label'] ?? null,
                     'mode' => $modeInfo['value'] ?? 'unknown',

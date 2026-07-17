@@ -1,10 +1,6 @@
 <?php
 
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -186,36 +182,21 @@ function bindInaccessibleDocumentContext($testCase, string $reference, string $p
         ->andReturn($isTxid ? null : [
             'pr_number' => $prNumber,
         ]);
+    $dataService->shouldReceive('validateDocumentExistsInBlockchain')
+        ->zeroOrMoreTimes()
+        ->andReturn(null);
     $dataService->shouldReceive('fetchStatusItems')
-        ->once()
-        ->with($prNumber)
+        ->zeroOrMoreTimes()
         ->andReturn(collect([
             ['user_address' => 'different-address'],
         ]));
 
-    $documentRepository = Mockery::mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByfileKey')
-        ->once()
-        ->with($reference)
-        ->andReturn($isTxid ? null : inaccessibleDocumentFixture($reference, $prNumber));
-    $documentRepository->shouldReceive('findByTxid')
-        ->zeroOrMoreTimes()
-        ->andReturn($isTxid ? inaccessibleDocumentFixture('locked-File.pdf', $prNumber, $reference) : null);
-
-    $repository = Mockery::mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->once()
-        ->with($prNumber)
-        ->andReturn(inaccessibleDocumentProcurementFixture($prNumber));
-
     app()->instance(ProcurementDataService::class, $dataService);
-    app()->instance(DocumentRepository::class, $documentRepository);
-    app()->instance(ProcurementRepository::class, $repository);
 }
 
-function inaccessibleDocumentProcurementFixture(string $prNumber): ProcurementData
+function inaccessibleDocumentProcurementFixture(string $prNumber): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => $prNumber,
         'title' => 'Locked Procurement',
         'description' => 'Fixture',
@@ -227,26 +208,26 @@ function inaccessibleDocumentProcurementFixture(string $prNumber): ProcurementDa
         'status' => 'draft',
         'user_id' => '999',
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }
 
-function inaccessibleDocumentFixture(string $fileKey, string $prNumber, string $txid = 'metadata-txid'): DocumentData
+function inaccessibleDocumentFixture(string $fileKey, string $prNumber, string $txid = 'metadata-txid'): array
 {
-    return new DocumentData(
-        prNumber: $prNumber,
-        procurementTitle: 'Locked Procurement',
-        userAddress: 'different-address',
-        stage: 'procurement_initiation',
-        status: 'draft',
-        documentType: 'test_document',
-        fileKey: $fileKey,
-        filename: 'test.pdf',
-        fileSize: 1000,
-        mimeType: 'application/pdf',
-        hash: 'hash',
-        dataTxid: $txid,
-        metadataTxid: 'metadata-txid',
-        uploadedBy: 'System',
-        timestamp: Carbon::now(),
-    );
+    return [
+        'pr_number' => $prNumber,
+        'procurement_title' => 'Locked Procurement',
+        'user_address' => 'different-address',
+        'stage' => 'procurement_initiation',
+        'status' => 'draft',
+        'document_type' => 'test_document',
+        'file_key' => $fileKey,
+        'filename' => 'test.pdf',
+        'file_size' => 1000,
+        'mime_type' => 'application/pdf',
+        'hash' => 'hash',
+        'data_txid' => $txid,
+        'metadata_txid' => 'metadata-txid',
+        'uploaded_by' => 'System',
+        'timestamp' => Carbon::now(),
+    ];
 }

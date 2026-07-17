@@ -2,8 +2,8 @@
 
 namespace App\Services\Blockchain;
 
-use App\DataTransferObjects\FileMetadata;
 use App\Enums\Stream;
+use App\Models\File;
 use App\Models\User;
 use App\Services\BlockchainRpcClient;
 use Exception;
@@ -157,24 +157,23 @@ class FileUploader
 
         $startTime = microtime(true);
 
-        // Create FileMetadata DTO
-        $fileMetadata = new FileMetadata(
-            filename: $filename,
-            fileKey: $fileKey,
-            dataTxid: '',
-            dataKey: $dataKey,
-            mimeType: $mimeType,
-            size: $fileSize,
-            hash: $blockchainFileHash,
-            storageMethod: 'on_chain',
-            storedAt: now(),
-            additionalMetadata: array_merge($metadata, [
-                'pr_number' => $prNumber,
-                'stage_id' => $stageId,
-                'phase' => $this->getPhaseFromStage($stageId),
-                'document_type' => $documentType,
-            ]),
-        );
+        // Create File model instance
+        $file = new File;
+        $file->filename = $filename;
+        $file->file_key = $fileKey;
+        $file->data_txid = '';
+        $file->data_key = $dataKey;
+        $file->mime_type = $mimeType;
+        $file->size = $fileSize;
+        $file->hash = $blockchainFileHash;
+        $file->storage_method = 'on_chain';
+        $file->stored_at = now();
+        $file->additional_metadata = array_merge($metadata, [
+            'pr_number' => $prNumber,
+            'stage_id' => $stageId,
+            'phase' => $this->getPhaseFromStage($stageId),
+            'document_type' => $documentType,
+        ]);
 
         // Build items for batch publishing
         $items = [
@@ -186,7 +185,7 @@ class FileUploader
             [
                 'key' => $dataKey,
                 'data' => ['json' => array_merge(
-                    $fileMetadata->toBlockchainArray(),
+                    $file->toBlockchainArray(),
                     ['data_txid' => 'BATCH_TXID']
                 )],
                 'for' => Stream::FILE_METADATA->value,
@@ -296,34 +295,33 @@ class FileUploader
             ]);
         }
 
-        // Create FileMetadata with chunk references
-        $fileMetadata = new FileMetadata(
-            filename: $filename,
-            fileKey: $fileKey,
-            dataTxid: $chunkTxids[0]['txid'], // Reference first chunk as primary
-            dataKey: $dataKey,
-            mimeType: $mimeType,
-            size: $fileSize,
-            hash: $blockchainFileHash,
-            storageMethod: 'on_chain_chunked',
-            storedAt: now(),
-            additionalMetadata: array_merge($metadata, [
-                'pr_number' => $prNumber,
-                'stage_id' => $stageId,
-                'phase' => $this->getPhaseFromStage($stageId),
-                'document_type' => $documentType,
-                'chunked' => true,
-                'total_chunks' => $totalChunks,
-                'chunk_size' => $this->chunkSize,
-                'chunk_txids' => $chunkTxids,
-            ]),
-        );
+        // Create File model with chunk references
+        $file = new File;
+        $file->filename = $filename;
+        $file->file_key = $fileKey;
+        $file->data_txid = $chunkTxids[0]['txid']; // Reference first chunk as primary
+        $file->data_key = $dataKey;
+        $file->mime_type = $mimeType;
+        $file->size = $fileSize;
+        $file->hash = $blockchainFileHash;
+        $file->storage_method = 'on_chain_chunked';
+        $file->stored_at = now();
+        $file->additional_metadata = array_merge($metadata, [
+            'pr_number' => $prNumber,
+            'stage_id' => $stageId,
+            'phase' => $this->getPhaseFromStage($stageId),
+            'document_type' => $documentType,
+            'chunked' => true,
+            'total_chunks' => $totalChunks,
+            'chunk_size' => $this->chunkSize,
+            'chunk_txids' => $chunkTxids,
+        ]);
 
         // Publish File metadata to File.metadata stream
         $metadataTxid = $this->multichain->publish(
             Stream::FILE_METADATA->value,
             $dataKey,
-            ['json' => $fileMetadata->toBlockchainArray()]
+            ['json' => $file->toBlockchainArray()]
         );
 
         $duration = round((microtime(true) - $startTime) * 1000, 2);

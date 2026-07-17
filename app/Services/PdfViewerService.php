@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Models\DocumentViewLog;
-use App\Repositories\DocumentRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -13,7 +12,6 @@ class PdfViewerService
 {
     public function __construct(
         private ProcurementDataService $procurementDataService,
-        private DocumentRepository $documentRepository
     ) {}
 
     /**

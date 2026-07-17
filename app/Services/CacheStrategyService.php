@@ -2,14 +2,10 @@
 
 namespace App\Services;
 
-use App\Contracts\CacheStrategyInterface;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 
-/**
- * Ensures efficient use of Redis free tier with enforced cache-to-database strategy.
- */
-class CacheStrategyService implements CacheStrategyInterface
+class CacheStrategyService
 {
     public function __construct(
         protected CacheRepository $cache

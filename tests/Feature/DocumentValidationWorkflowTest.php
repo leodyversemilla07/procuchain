@@ -1,14 +1,11 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\ProcurementDataService;
@@ -222,54 +219,42 @@ describe('Progressive Upload Workflow', function () {
     });
 });
 
-function buildDocumentWorkflowProcurement(User $user): ProcurementData
+function buildDocumentWorkflowProcurement(User $user): array
 {
-    return new ProcurementData(
-        prNumber: 'PR-2024-001-0001',
-        appReference: 'APP-2024-001',
-        title: 'Test Procurement',
-        description: 'Test Description',
-        abcAmount: 1000000.00,
-        fundingSource: 'General Fund',
-        category: ProcurementCategory::GOODS,
-        procurementMode: ProcurementMode::COMPETITIVE_BIDDING,
-        office: 'Test Office',
-        endUser: 'Test User',
-        deliveryLocation: null,
-        deliveryDate: null,
-        deliveryTermDays: null,
-        preparedBy: 'Test Preparer',
-        bacResolutionNumber: null,
-        bacResolutionDate: null,
-        philgepsReference: null,
-        philgepsPostingDate: null,
-        approvedBy: null,
-        approvalDate: null,
-        status: 'in_progress',
-        userId: (string) $user->id,
-        createdAt: now(),
-    );
+    return [
+        'pr_number' => 'PR-2024-001-0001',
+        'app_reference' => 'APP-2024-001',
+        'title' => 'Test Procurement',
+        'description' => 'Test Description',
+        'abc_amount' => 1000000.00,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'Test Office',
+        'end_user' => 'Test User',
+        'prepared_by' => 'Test Preparer',
+        'status' => 'in_progress',
+        'user_id' => (string) $user->id,
+        'created_at' => now(),
+    ];
 }
 
-function bindDocumentWorkflowSupportStubs(ProcurementData $procurementData): void
+function bindDocumentWorkflowSupportStubs(array $procurementData): void
 {
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn($procurementData);
-    app()->instance(ProcurementRepository::class, $repository);
-
     $dataService = mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
         ->zeroOrMoreTimes()
         ->andReturn(collect([
             [
-                'user_address' => User::findOrFail((int) $procurementData->userId)->blockchain_address,
+                'user_address' => User::findOrFail((int) $procurementData['user_id'])->blockchain_address,
             ],
         ]));
     app()->instance(ProcurementDataService::class, $dataService);
 
     $support = mock(ProcurementSupportService::class);
+    $support->shouldReceive('findProcurementById')
+        ->zeroOrMoreTimes()
+        ->andReturn($procurementData);
     $support->shouldReceive('validateStageInWorkflow')
         ->zeroOrMoreTimes()
         ->andReturnNull();
@@ -278,7 +263,7 @@ function bindDocumentWorkflowSupportStubs(ProcurementData $procurementData): voi
         ->andReturn([]);
     $support->shouldReceive('getProcurementMode')
         ->zeroOrMoreTimes()
-        ->andReturn($procurementData->procurementMode);
+        ->andReturn(ProcurementMode::COMPETITIVE_BIDDING);
     $support->shouldReceive('getOngoingStatusForStage')
         ->zeroOrMoreTimes()
         ->andReturn(ProcurementStatus::PROCUREMENT_SUBMITTED);

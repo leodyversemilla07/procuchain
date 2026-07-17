@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
-use App\Contracts\DocumentPublisherInterface;
-use App\DataTransferObjects\DocumentData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
-use App\Repositories\DocumentRepository;
+use App\Enums\Stream;
+use App\Models\Procurement;
+use App\Models\ProcurementDocument;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
 use App\Services\DashboardCacheService;
 use Exception;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -24,11 +24,11 @@ use Illuminate\Support\Facades\Log;
  * - Publishes to procurement.documents stream
  * - Returns transaction ID for tracking
  */
-class DocumentPublisher implements DocumentPublisherInterface
+class DocumentPublisher
 {
     public function __construct(
         private BlockchainStorageService $blockchainFileStorage,
-        private DocumentRepository $documents
+        private BlockchainRpcClient $multichain,
     ) {}
 
     /**
@@ -88,27 +88,28 @@ class DocumentPublisher implements DocumentPublisherInterface
                 'file_key' => $blockchainFileResult['file_key'],
             ]);
 
-            $document = new DocumentData(
-                prNumber: $prNumber,
-                procurementTitle: $procurementTitle,
-                userAddress: $userAddress,
-                stage: $stage->value,
-                status: $status,
-                documentType: $documentType->value,
-                fileKey: $blockchainFileResult['file_key'],
-                filename: $blockchainFileResult['filename'],
-                fileSize: $blockchainFileResult['size'],
-                mimeType: $blockchainFileResult['mime_type'],
-                hash: $blockchainFileResult['hash'],
-                dataTxid: $blockchainFileResult['data_txid'],
-                metadataTxid: $blockchainFileResult['metadata_txid'],
-                uploadedBy: $uploadedBy,
-                timestamp: now(),
-                description: $description,
-                stageMetadata: $stageMetadata,
-            );
+            $document = new ProcurementDocument;
+            $procurement = Procurement::where('pr_number', $prNumber)->first();
+            $document->procurement()->associate($procurement);
+            $document->document_type = $documentType->value;
+            $document->stage = $stage->value;
+            $document->filename = $blockchainFileResult['filename'];
+            $document->file_key = $blockchainFileResult['file_key'];
+            $document->mime_type = $blockchainFileResult['mime_type'];
+            $document->file_size = $blockchainFileResult['size'];
+            $document->hash = $blockchainFileResult['hash'];
+            $document->txid = $blockchainFileResult['data_txid'];
+            $document->uploaded_by = $uploadedBy;
+            $document->user_address = $userAddress;
+            $document->uploaded_at = now();
+            $document->description = $description;
+            $document->save();
 
-            $txid = $this->documents->create($document);
+            $txid = $this->multichain->publish(
+                Stream::DOCUMENTS->value,
+                $prNumber,
+                ['json' => $document->toBlockchainArray()]
+            );
 
             // Invalidate ALL procurement list caches after document update
             $this->clearProcurementListCache();
@@ -208,27 +209,25 @@ class DocumentPublisher implements DocumentPublisherInterface
                 'stage' => $stage->value,
             ]);
 
-            $document = new DocumentData(
-                prNumber: $prNumber,
-                procurementTitle: $procurementTitle,
-                userAddress: $userAddress,
-                stage: $stage->value,
-                status: $status,
-                documentType: $documentType->value,
-                fileKey: null,
-                filename: null,
-                fileSize: 0,
-                mimeType: null,
-                hash: null,
-                dataTxid: null,
-                metadataTxid: null,
-                uploadedBy: $uploadedBy,
-                timestamp: now(),
-                description: $description,
-                stageMetadata: $stageMetadata,
-            );
+            $document = new ProcurementDocument;
+            $procurement = Procurement::where('pr_number', $prNumber)->first();
+            $document->procurement()->associate($procurement);
+            $document->document_type = $documentType->value;
+            $document->stage = $stage->value;
+            $document->filename = '';
+            $document->file_key = '';
+            $document->file_size = 0;
+            $document->uploaded_by = $uploadedBy;
+            $document->user_address = $userAddress;
+            $document->uploaded_at = now();
+            $document->description = $description;
+            $document->save();
 
-            $txid = $this->documents->create($document);
+            $txid = $this->multichain->publish(
+                Stream::DOCUMENTS->value,
+                $prNumber,
+                ['json' => $document->toBlockchainArray()]
+            );
 
             Log::info('DocumentPublisher: Metadata published', [
                 'pr_number' => $prNumber,

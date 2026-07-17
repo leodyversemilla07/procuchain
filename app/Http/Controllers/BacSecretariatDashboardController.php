@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\CacheStrategyInterface;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Enums\UserRole;
-use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainRpcClient;
+use App\Services\CacheStrategyService;
 use App\Services\DashboardCacheService;
 use App\Services\DashboardService;
 use App\Services\ProcurementStageTransitionService;
@@ -22,11 +21,10 @@ class BacSecretariatDashboardController extends BaseDashboardController
     public function __construct(
         protected BlockchainRpcClient $multichain,
         protected DashboardService $dashboardService,
-        CacheStrategyInterface $cacheStrategy,
-        ProcurementRepository $procurementRepository,
+        CacheStrategyService $cacheStrategy,
         private ProcurementStageTransitionService $stageTransitionService
     ) {
-        parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
+        parent::__construct($multichain, $dashboardService, $cacheStrategy);
     }
 
     protected function getRoleName(): string

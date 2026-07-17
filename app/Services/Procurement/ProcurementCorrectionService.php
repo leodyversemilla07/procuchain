@@ -4,24 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
-use App\Contracts\CorrectionRepositoryInterface;
-use App\Contracts\ProcurementCorrectionRepositoryInterface;
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementCorrection;
+use App\Models\ProcurementDocument;
+use App\Models\ProcurementMetadataCorrection;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Support\Facades\Log;
 
 final class ProcurementCorrectionService
 {
     public function __construct(
-        private readonly ProcurementRepository $procurementRepository,
-        private readonly ProcurementCorrectionRepositoryInterface $procurementCorrectionRepository,
-        private readonly CorrectionRepositoryInterface $correctionRepository,
-        private readonly DocumentRepository $documentRepository,
         private readonly ProcurementDataService $procurementDataService,
     ) {}
 
@@ -30,15 +27,15 @@ final class ProcurementCorrectionService
      *
      * @throws \RuntimeException If procurement is not found in any stream
      */
-    public function findProcurementForCorrection(string $prNumber, ?User $authUser = null): ProcurementData
+    public function findProcurementForCorrection(string $prNumber, ?User $authUser = null): Procurement
     {
-        $originalProcurement = $this->procurementRepository->findByProcurement($prNumber);
+        $originalProcurement = Procurement::where('pr_number', $prNumber)->first();
 
         if ($originalProcurement) {
             return $originalProcurement;
         }
 
-        Log::warning('Procurement not found in METADATA stream for correction, attempting fallback to STATUS stream', [
+        Log::warning('Procurement not found in database for correction, attempting fallback to STATUS stream', [
             'pr_number' => $prNumber,
             'user' => $authUser?->email ?? 'unknown',
         ]);
@@ -48,21 +45,21 @@ final class ProcurementCorrectionService
             throw new \RuntimeException('Procurement not found in blockchain.');
         }
 
-        return ProcurementData::fromBlockchainArray([
-            'pr_number' => $prNumber,
-            'title' => $statusData['procurement_title'] ?? 'N/A',
-            'description' => $statusData['description'] ?? '',
-            'abc_amount' => $statusData['abc_amount'] ?? 0,
-            'funding_source' => $statusData['funding_source'] ?? '',
-            'category' => $statusData['category'] ?? 'goods',
-            'procurement_mode' => $statusData['procurement_mode'] ?? 'competitive_bidding',
-            'office' => $statusData['office'] ?? '',
-            'end_user' => $statusData['end_user'] ?? null,
-            'status' => $statusData['current_status'] ?? 'procurement_submitted',
-            'user_id' => $authUser?->id ?? '',
-            'user_address' => $statusData['user_address'] ?? $authUser?->blockchain_address ?? null,
-            'created_at' => $statusData['timestamp'] ?? now()->toIso8601String(),
-        ]);
+        $procurement = new Procurement;
+        $procurement->pr_number = $prNumber;
+        $procurement->title = $statusData['procurement_title'] ?? 'N/A';
+        $procurement->description = $statusData['description'] ?? '';
+        $procurement->abc_amount = (float) ($statusData['abc_amount'] ?? 0);
+        $procurement->fund_source = $statusData['funding_source'] ?? '';
+        $procurement->category = $statusData['category'] ?? 'goods';
+        $procurement->procurement_mode = $statusData['procurement_mode'] ?? 'competitive_bidding';
+        $procurement->office = $statusData['office'] ?? '';
+        $procurement->end_user = $statusData['end_user'] ?? null;
+        $procurement->current_status = $statusData['current_status'] ?? 'procurement_submitted';
+        $procurement->user_id = (string) ($authUser?->id ?? '');
+        $procurement->user_address = $statusData['user_address'] ?? $authUser?->blockchain_address ?? null;
+
+        return $procurement;
     }
 
     /**
@@ -134,13 +131,13 @@ final class ProcurementCorrectionService
     {
         Log::info('Fetching correction history', ['pr_number' => $prNumber, 'user' => $authUser?->id]);
 
-        $procurementCorrections = $this->procurementCorrectionRepository->findByProcurement($prNumber);
-        $documentCorrections = $this->correctionRepository->findByProcurement($prNumber);
+        $procurementCorrections = ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))->get();
+        $documentCorrections = ProcurementCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))->get();
 
         Log::info('Found corrections', [
             'pr_number' => $prNumber,
-            'procurement_corrections' => count($procurementCorrections),
-            'document_corrections' => count($documentCorrections),
+            'procurement_corrections' => $procurementCorrections->count(),
+            'document_corrections' => $documentCorrections->count(),
         ]);
 
         return collect([...$procurementCorrections, ...$documentCorrections])
@@ -155,17 +152,18 @@ final class ProcurementCorrectionService
      */
     public function getCorrectionPageData(string $prNumber): array
     {
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
 
         if (! $procurement) {
             abort(404, 'Procurement not found in blockchain');
         }
 
-        $hasCorrections = $this->procurementCorrectionRepository->hasCorrections($prNumber);
-        $latestCorrection = $hasCorrections ? $this->procurementCorrectionRepository->getLatest($prNumber) : null;
+        $procurementCorrectionsQuery = ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber));
+        $hasCorrections = $procurementCorrectionsQuery->exists();
+        $latestCorrection = $hasCorrections ? $procurementCorrectionsQuery->latest('corrected_at')->first() : null;
 
-        $procurementCorrections = $this->procurementCorrectionRepository->findByProcurement($prNumber);
-        $documentCorrections = $this->correctionRepository->findByProcurement($prNumber);
+        $procurementCorrections = $procurementCorrectionsQuery->get();
+        $documentCorrections = ProcurementCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))->get();
 
         $allCorrections = collect([...$procurementCorrections, ...$documentCorrections])
             ->map(fn ($correction) => $this->formatCorrectionForPage($correction))
@@ -175,29 +173,29 @@ final class ProcurementCorrectionService
 
         return [
             'procurement' => [
-                'pr_number' => $procurement->prNumber,
+                'pr_number' => $procurement->pr_number,
                 'title' => $procurement->title,
                 'description' => $procurement->description,
-                'abc_amount' => $procurement->abcAmount,
+                'abc_amount' => $procurement->abc_amount,
                 'formatted_abc_amount' => $procurement->getFormattedAbcAmount(),
-                'funding_source' => $procurement->fundingSource,
-                'category' => $procurement->category->value,
-                'category_display' => $procurement->category->getDisplayName(),
-                'procurement_mode' => $procurement->procurementMode->value,
-                'procurement_mode_display' => $procurement->procurementMode->getDisplayName(),
+                'funding_source' => $procurement->fund_source,
+                'category' => $procurement->category,
+                'category_display' => ProcurementCategory::tryFrom($procurement->category)?->getDisplayName() ?? $procurement->category,
+                'procurement_mode' => $procurement->procurement_mode,
+                'procurement_mode_display' => ProcurementMode::tryFrom($procurement->procurement_mode)?->getDisplayName() ?? $procurement->procurement_mode,
                 'office' => $procurement->office,
-                'end_user' => $procurement->endUser,
-                'bac_resolution_number' => $procurement->bacResolutionNumber,
+                'end_user' => $procurement->end_user,
+                'bac_resolution_number' => $procurement->bac_resolution_number,
                 'bac_resolution_date' => $procurement->getFormattedBacResolutionDate(),
-                'philgeps_reference' => $procurement->philgepsReference,
+                'philgeps_reference' => $procurement->philgeps_reference,
                 'philgeps_posting_date' => $procurement->getFormattedPhilgepsPostingDate(),
-                'approved_by' => $procurement->approvedBy,
+                'approved_by' => $procurement->approved_by,
                 'approval_date' => $procurement->getFormattedApprovalDate(),
-                'status' => $procurement->status,
+                'status' => $procurement->current_status,
                 'has_corrections' => $hasCorrections,
                 'latest_correction' => $latestCorrection ? [
-                    'timestamp' => $latestCorrection->timestamp->toIso8601String(),
-                    'corrected_by' => $latestCorrection->correctedBy,
+                    'timestamp' => $latestCorrection->corrected_at?->toIso8601String(),
+                    'corrected_by' => $latestCorrection->corrected_by,
                     'reason' => $latestCorrection->reason,
                     'changed_fields' => $latestCorrection->getChangedFields(),
                 ] : null,
@@ -212,29 +210,31 @@ final class ProcurementCorrectionService
      */
     public function getFormattedDocuments(string $prNumber): array
     {
-        $documents = $this->documentRepository->findByProcurement($prNumber);
+        $documents = ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('uploaded_at')
+            ->get();
+
         $formattedDocuments = [];
 
         foreach ($documents as $index => $doc) {
             $formattedDocuments[] = [
                 'id' => $index,
-                'pr_number' => $doc->prNumber,
-                'file_key' => $doc->fileKey,
-                'document_type' => $doc->documentType,
-                'document_type_display' => $this->formatDocumentType($doc->documentType),
+                'pr_number' => $doc->procurement?->pr_number ?? '',
+                'file_key' => $doc->file_key,
+                'document_type' => $doc->document_type,
+                'document_type_display' => $this->formatDocumentType($doc->document_type),
                 'stage' => $doc->stage,
                 'stage_display' => $this->formatStage($doc->stage),
-                'file_size' => $doc->fileSize,
+                'file_size' => $doc->file_size,
                 'hash' => $doc->hash,
-                'timestamp' => $doc->timestamp->toIso8601String(),
-                'blockchain_txid' => $doc->dataTxid,
-                'uploaded_by' => $doc->uploadedBy,
+                'timestamp' => $doc->uploaded_at?->toIso8601String(),
+                'blockchain_txid' => $doc->txid,
+                'uploaded_by' => $doc->uploaded_by,
                 'metadata' => [
                     'file_name' => $doc->filename,
-                    'mime_type' => $doc->mimeType,
+                    'mime_type' => $doc->mime_type,
                     'description' => $doc->description,
-                    'metadata_txid' => $doc->metadataTxid,
-                    'stage_metadata' => $doc->stageMetadata,
                 ],
             ];
         }
@@ -249,8 +249,9 @@ final class ProcurementCorrectionService
      */
     public function checkCorrections(string $prNumber): array
     {
-        $hasCorrections = $this->procurementCorrectionRepository->hasCorrections($prNumber);
-        $latestCorrection = $hasCorrections ? $this->procurementCorrectionRepository->getLatest($prNumber) : null;
+        $correctionsQuery = ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber));
+        $hasCorrections = $correctionsQuery->exists();
+        $latestCorrection = $hasCorrections ? $correctionsQuery->latest('corrected_at')->first() : null;
 
         return [
             'has_corrections' => $hasCorrections,
@@ -311,46 +312,45 @@ final class ProcurementCorrectionService
     {
         if (method_exists($correction, 'getChangedFields')) {
             return [
-                'pr_number' => $correction->prNumber,
-                'timestamp' => $correction->timestamp->toIso8601String(),
+                'pr_number' => $correction->procurement?->pr_number,
+                'timestamp' => $correction->corrected_at?->toIso8601String(),
                 'reason' => $correction->reason,
-                'corrected_by' => $correction->correctedBy,
-                'correction_type' => $correction->correctionType ?? 'procurement_metadata',
-                'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType ?? 'procurement_metadata')),
-                'action' => $correction->action ?? 'replace',
+                'corrected_by' => $correction->corrected_by,
+                'correction_type' => $correction->correction_type ?? 'procurement_metadata',
+                'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correction_type ?? 'procurement_metadata')),
+                'action' => 'replace',
                 'txid' => $correction->txid ?? '',
-                'original_txid' => $correction->originalTxid ?? '',
-                'original_document_hash' => $correction->originalDocumentHash ?? '',
-                'document_hash' => $correction->documentHash ?? '',
-                'file_name' => $correction->filename ?? '',
-                'file_key' => $correction->fileKey ?? '',
-                'document_type' => $correction->documentType ?? '',
-                'document_type_display' => $correction->documentTypeDisplay ?? '',
+                'original_txid' => '',
+                'original_document_hash' => '',
+                'document_hash' => '',
+                'file_name' => '',
+                'file_key' => '',
+                'document_type' => '',
+                'document_type_display' => '',
                 'changed_fields' => $correction->getChangedFields(),
-                'corrected_metadata' => $correction->correctedMetadata ?? null,
+                'corrected_metadata' => null,
                 'metadata' => $correction->toBlockchainArray(),
             ];
         }
 
-        // CorrectionData (document corrections)
         return [
-            'pr_number' => $correction->prNumber,
-            'timestamp' => $correction->timestamp->toIso8601String(),
+            'pr_number' => $correction->procurement?->pr_number,
+            'timestamp' => $correction->corrected_at?->toIso8601String(),
             'reason' => $correction->reason,
-            'corrected_by' => $correction->correctedBy,
-            'correction_type' => $correction->correctionType,
-            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
+            'corrected_by' => $correction->corrected_by,
+            'correction_type' => $correction->correction_type,
+            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correction_type)),
             'action' => $correction->action ?? 'replace',
             'txid' => $correction->txid ?? '',
-            'original_txid' => $correction->originalTxid ?? '',
-            'original_document_hash' => $correction->originalDocumentHash ?? '',
-            'document_hash' => $correction->documentHash ?? '',
-            'file_name' => $correction->filename ?? '',
-            'file_key' => $correction->fileKey ?? '',
-            'document_type' => $correction->documentType ?? '',
-            'document_type_display' => $correction->documentTypeDisplay ?? '',
+            'original_txid' => $correction->original_txid ?? '',
+            'original_document_hash' => $correction->original_document_hash ?? '',
+            'document_hash' => '',
+            'file_name' => '',
+            'file_key' => '',
+            'document_type' => '',
+            'document_type_display' => '',
             'changed_fields' => [],
-            'corrected_metadata' => $correction->correctedMetadata ?? null,
+            'corrected_metadata' => $correction->corrected_metadata ?? null,
             'metadata' => $correction->toBlockchainArray(),
         ];
     }
@@ -362,24 +362,24 @@ final class ProcurementCorrectionService
     {
         if (method_exists($correction, 'getChangedFields')) {
             return [
-                'pr_number' => $correction->prNumber,
-                'timestamp' => $correction->timestamp->toIso8601String(),
+                'pr_number' => $correction->procurement?->pr_number,
+                'timestamp' => $correction->corrected_at?->toIso8601String(),
                 'reason' => $correction->reason,
-                'corrected_by' => $correction->correctedBy,
-                'correction_type' => $correction->correctionType ?? 'procurement_metadata',
-                'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType ?? 'procurement_metadata')),
+                'corrected_by' => $correction->corrected_by,
+                'correction_type' => $correction->correction_type ?? 'procurement_metadata',
+                'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correction_type ?? 'procurement_metadata')),
                 'changed_fields' => $correction->getChangedFields(),
                 'metadata' => $correction->toBlockchainArray(),
             ];
         }
 
         return [
-            'pr_number' => $correction->prNumber,
-            'timestamp' => $correction->timestamp->toIso8601String(),
+            'pr_number' => $correction->procurement?->pr_number,
+            'timestamp' => $correction->corrected_at?->toIso8601String(),
             'reason' => $correction->reason,
-            'corrected_by' => $correction->correctedBy,
-            'correction_type' => $correction->correctionType,
-            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
+            'corrected_by' => $correction->corrected_by,
+            'correction_type' => $correction->correction_type,
+            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correction_type)),
             'changed_fields' => [],
             'metadata' => $correction->toBlockchainArray(),
         ];

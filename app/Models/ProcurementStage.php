@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Stream;
+use App\Services\BlockchainRpcClient;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -64,5 +67,63 @@ class ProcurementStage extends Model
             'entered_at',
             'user_address',
         ];
+    }
+
+    public function toBlockchainArray(): array
+    {
+        return [
+            'pr_number' => $this->procurement?->pr_number ?? '',
+            'procurement_title' => $this->procurement?->title ?? null,
+            'stage' => strtolower($this->stage),
+            'current_status' => strtolower($this->status),
+            'user_address' => $this->user_address ?? '',
+            'timestamp' => $this->entered_at?->toIso8601String() ?? now()->toIso8601String(),
+            'previous_status' => $this->previous_status ? strtolower($this->previous_status) : null,
+            'metadata' => $this->metadata,
+        ];
+    }
+
+    public static function fromBlockchainArray(array $data): self
+    {
+        $model = new static;
+
+        $model->stage = $data['stage'] ?? '';
+        $model->status = $data['current_status'] ?? '';
+        $model->user_address = $data['user_address'] ?? '';
+        $model->entered_at = isset($data['timestamp']) ? Carbon::parse($data['timestamp'])->setTimezone('Asia/Manila') : now();
+        $model->previous_status = $data['previous_status'] ?? null;
+        $model->metadata = $data['metadata'] ?? null;
+
+        return $model;
+    }
+
+    public function publishToBlockchain(): ?string
+    {
+        $txid = app(BlockchainRpcClient::class)->publish(
+            Stream::STATUS->value,
+            $this->procurement?->pr_number ?? '',
+            ['json' => $this->toBlockchainArray()]
+        );
+
+        if (! is_string($txid) || $txid === '') {
+            throw new \RuntimeException('Blockchain status publish did not return a transaction id.');
+        }
+
+        return $txid;
+    }
+
+    public function getFormattedDateTime(): string
+    {
+        return $this->entered_at?->format('M j, Y, g:i A') ?? '';
+    }
+
+    public function getFormattedDateOnly(): string
+    {
+        return $this->entered_at?->format('M j, Y') ?? '';
+    }
+
+    public function getFormattedTimeOnly(): string
+    {
+        return $this->entered_at?->format('g:i A') ?? '';
     }
 }

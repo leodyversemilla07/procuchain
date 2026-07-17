@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs\Handlers;
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\StageEnums;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Services\Publishers\DecisionPublisher;
 use App\Services\Publishers\EventPublisher;
 use Carbon\Carbon;
@@ -16,7 +15,6 @@ class ProcurementUpdateHandler
 {
     public function __construct(
         private readonly EventPublisher $eventPublisher,
-        private readonly ProcurementRepository $procurementRepository,
         private readonly DecisionPublisher $decisionPublisher,
     ) {}
 
@@ -28,38 +26,16 @@ class ProcurementUpdateHandler
         $deliveryDate = $data['delivery_date'];
         $deliveryTermDays = (int) $data['delivery_term_days'];
 
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
         if (! $procurement) {
             throw new Exception("Procurement not found: {$prNumber}");
         }
 
-        $updatedProcurement = new ProcurementData(
-            prNumber: $procurement->prNumber,
-            appReference: $procurement->appReference,
-            title: $procurement->title,
-            description: $procurement->description,
-            abcAmount: $procurement->abcAmount,
-            fundingSource: $procurement->fundingSource,
-            category: $procurement->category,
-            procurementMode: $procurement->procurementMode,
-            office: $procurement->office,
-            endUser: $procurement->endUser,
-            deliveryLocation: $deliveryLocation,
-            deliveryDate: Carbon::parse($deliveryDate),
-            deliveryTermDays: $deliveryTermDays,
-            preparedBy: $procurement->preparedBy,
-            bacResolutionNumber: $procurement->bacResolutionNumber,
-            bacResolutionDate: $procurement->bacResolutionDate,
-            philgepsReference: $procurement->philgepsReference,
-            philgepsPostingDate: $procurement->philgepsPostingDate,
-            approvedBy: $procurement->approvedBy,
-            approvalDate: $procurement->approvalDate,
-            status: $procurement->status,
-            userId: $procurement->userId,
-            createdAt: $procurement->createdAt,
-        );
-
-        $this->procurementRepository->update($updatedProcurement);
+        Procurement::where('pr_number', $prNumber)->update([
+            'delivery_location' => $deliveryLocation,
+            'delivery_date' => Carbon::parse($deliveryDate),
+            'delivery_term_days' => $deliveryTermDays,
+        ]);
 
         $eventResult = $this->eventPublisher->publish(
             prNumber: $prNumber,
@@ -90,7 +66,7 @@ class ProcurementUpdateHandler
     {
         $prNumber = $data['pr_number'];
         $userAddress = $data['user_address'];
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
 
         return $this->decisionPublisher->publishDecision(
             decisionType: $data['decision_type'],

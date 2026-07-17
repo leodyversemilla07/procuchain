@@ -8,7 +8,7 @@ use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Enums\UserRole;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -29,7 +29,6 @@ final class ProcurementActionService
     private array $modeCache = [];
 
     public function __construct(
-        private readonly ProcurementRepository $procurementRepository
     ) {}
 
     /**
@@ -103,10 +102,10 @@ final class ProcurementActionService
             return $this->modeCache[$prNumber];
         }
 
-        // Fetch from blockchain with timeout protection
+        // Fetch from database
         try {
-            $procurement = $this->procurementRepository->findByProcurement($prNumber);
-            $mode = $procurement?->procurementMode;
+            $procurement = Procurement::where('pr_number', $prNumber)->first();
+            $mode = $procurement ? ProcurementMode::tryFrom($procurement->procurement_mode) : null;
         } catch (\Exception $e) {
             Log::debug('Failed to fetch procurement mode, using null', [
                 'pr_number' => $prNumber,

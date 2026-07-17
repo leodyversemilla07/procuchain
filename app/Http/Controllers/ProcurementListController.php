@@ -14,8 +14,8 @@ namespace App\Http\Controllers;
 use App\Enums\StageEnums;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller as BaseController;
+use App\Models\ProcurementDocument;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\Procurement\ProcurementListAggregatorService;
 use App\Services\ProcurementDataService;
@@ -249,21 +249,22 @@ class ProcurementListController extends BaseController
         $this->authorize('view-procurement', $pr_number);
 
         try {
-            // Fetch documents from blockchain for this procurement
-            $documentRepository = app(DocumentRepository::class);
-            $documentDataArray = $documentRepository->findByProcurement($pr_number);
-
-            // Transform DocumentData objects to status response format
-            $documents = array_map(function ($doc, $index) {
-                return [
-                    'id' => $index + 1,
-                    'file_name' => $doc->filename,
-                    'blockchain_status' => 'confirmed', // Documents on blockchain are always confirmed
-                    'blockchain_error' => null,
-                    'blockchain_txid' => $doc->metadataTxid,
-                    'blockchain_status_updated_at' => $doc->timestamp->toISOString(),
-                ];
-            }, $documentDataArray, array_keys($documentDataArray));
+            // Fetch documents for this procurement
+            $documents = ProcurementDocument::with('procurement')
+                ->whereHas('procurement', fn ($q) => $q->where('pr_number', $pr_number))
+                ->orderByDesc('uploaded_at')
+                ->get()
+                ->map(function ($doc, $index) {
+                    return [
+                        'id' => $index + 1,
+                        'file_name' => $doc->filename,
+                        'blockchain_status' => 'confirmed',
+                        'blockchain_error' => null,
+                        'blockchain_txid' => $doc->txid,
+                        'blockchain_status_updated_at' => $doc->uploaded_at?->toIso8601String(),
+                    ];
+                })
+                ->toArray();
 
             $total = count($documents);
             $confirmed = $total; // All blockchain documents are confirmed

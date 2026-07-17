@@ -2,12 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\DataTransferObjects\CorrectionData;
-use App\DataTransferObjects\EventData;
-use App\DataTransferObjects\ProcurementCorrectionData;
-use App\DataTransferObjects\ProcurementData;
-use App\DataTransferObjects\ProcurementDocumentData;
-use App\DataTransferObjects\StatusData;
 use App\Enums\Stream;
 use App\Models\User;
 use App\Services\BlockchainRpcClient;
@@ -117,33 +111,29 @@ class MassDataSeeder extends Seeder
         $now = Carbon::now()->subDays(self::PROCUREMENT_COUNT - $index);
 
         // 1. publish procurement metadata (creation)
-        $procurementData = new ProcurementData(
-            prNumber: $prNumber,
-            title: $title,
-            status: 'procurement_initiated',
-            stage: self::STAGES[0],
-            procurementMode: $mode,
-            timestamp: $now->toIso8601String(),
-            userAddress: $user->blockchain_address ?? '',
-        );
+        $procurementData = [
+            'pr_number' => $prNumber,
+            'title' => $title,
+            'status' => 'procurement_initiated',
+            'stage' => self::STAGES[0],
+            'procurement_mode' => $mode,
+            'timestamp' => $now->toIso8601String(),
+            'user_address' => $user->blockchain_address ?? '',
+            'description' => "This procurement covers the acquisition of various items needed by {$office} for the fiscal year ".now()->year.'.',
+            'abc_amount' => (string) $abcAmount,
+            'funding_source' => $this->randomItem(['GAA', 'LGU Fund', 'Trust Fund', 'Foreign Assistance']),
+            'category' => $this->randomItem(['goods', 'infrastructure', 'consulting']),
+            'office' => $office,
+            'end_user' => $office,
+            'delivery_location' => $office,
+            'delivery_date' => $now->addDays(90)->toDateString(),
+            'delivery_term_days' => (string) rand(30, 180),
+            'prepared_by' => $user->name,
+            'approved_by' => $users->where('bac_chairman', fn ($q) => $q)->first()?->name ?? 'Admin',
+            'approval_date' => $now->toDateString(),
+        ];
 
-        $this->publish(Stream::METADATA->value, $prNumber, array_merge(
-            $procurementData->toBlockchainArray(),
-            [
-                'description' => "This procurement covers the acquisition of various items needed by {$office} for the fiscal year ".now()->year.'.',
-                'abc_amount' => (string) $abcAmount,
-                'funding_source' => $this->randomItem(['GAA', 'LGU Fund', 'Trust Fund', 'Foreign Assistance']),
-                'category' => $this->randomItem(['goods', 'infrastructure', 'consulting']),
-                'office' => $office,
-                'end_user' => $office,
-                'delivery_location' => $office,
-                'delivery_date' => $now->addDays(90)->toDateString(),
-                'delivery_term_days' => (string) rand(30, 180),
-                'prepared_by' => $user->name,
-                'approved_by' => $users->where('bac_chairman', fn ($q) => $q)->first()?->name ?? 'Admin',
-                'approval_date' => $now->toDateString(),
-            ]
-        ));
+        $this->publish(Stream::METADATA->value, $prNumber, $procurementData);
 
         // 2. publish status transitions (2-6 status changes)
         $stageCount = rand(2, min(6, count(self::STAGES)));
@@ -154,18 +144,18 @@ class MassDataSeeder extends Seeder
             $status = $s === 0 ? 'procurement_initiated' : 'stage_completed';
             $statusTimestamp = (clone $now)->addHours($s * rand(24, 168));
 
-            $statusData = new StatusData(
-                prNumber: $prNumber,
-                procurementTitle: $title,
-                stage: $stage,
-                currentStatus: $status,
-                previousStatus: $previousStatus,
-                userAddress: $user->blockchain_address ?? '',
-                timestamp: $statusTimestamp,
-                metadata: ['stage_index' => $s],
-            );
+            $statusData = [
+                'pr_number' => $prNumber,
+                'procurement_title' => $title,
+                'stage' => $stage,
+                'current_status' => $status,
+                'previous_status' => $previousStatus,
+                'user_address' => $user->blockchain_address ?? '',
+                'timestamp' => $statusTimestamp->toIso8601String(),
+                'metadata' => json_encode(['stage_index' => $s]),
+            ];
 
-            $this->publish(Stream::STATUS->value, $prNumber, $statusData->toBlockchainArray());
+            $this->publish(Stream::STATUS->value, $prNumber, $statusData);
             $previousStatus = $status;
 
             // 3. publish event for each status
@@ -181,26 +171,25 @@ class MassDataSeeder extends Seeder
             $docType = $docTypes[array_rand($docTypes)];
             $fileName = str_replace('_', '_', $docType).'_'.strtolower(str_replace(' ', '_', $vendor)).'.pdf';
 
-            $docData = new ProcurementDocumentData(
-                prNumber: $prNumber,
-                procurementTitle: $title,
-                userAddress: $user->blockchain_address ?? '',
-                stage: $stage,
-                status: 'uploaded',
-                documentType: $docType,
-                fileName: $fileName,
-                fileSize: (string) rand(100000, 5000000),
-                mimeType: 'application/pdf',
-                hash: bin2hex(random_bytes(32)),
-                dataTxid: 'data_tx_'.bin2hex(random_bytes(8)),
-                metadataTxid: 'meta_tx_'.bin2hex(random_bytes(8)),
-                description: "{$docType} document for {$prNumber}",
-                timestamp: $docTimestamp,
-            );
+            $docData = [
+                'pr_number' => $prNumber,
+                'procurement_title' => $title,
+                'user_address' => $user->blockchain_address ?? '',
+                'stage' => $stage,
+                'status' => 'uploaded',
+                'document_type' => $docType,
+                'filename' => $fileName,
+                'file_size' => (string) rand(100000, 5000000),
+                'mime_type' => 'application/pdf',
+                'hash' => bin2hex(random_bytes(32)),
+                'data_txid' => 'data_tx_'.bin2hex(random_bytes(8)),
+                'metadata_txid' => 'meta_tx_'.bin2hex(random_bytes(8)),
+                'description' => "{$docType} document for {$prNumber}",
+                'timestamp' => $docTimestamp->toIso8601String(),
+                'file_key' => 'file_'.bin2hex(random_bytes(8)),
+            ];
 
-            $docArray = $docData->toBlockchainArray();
-            $docArray['file_key'] = 'file_'.bin2hex(random_bytes(8));
-            $this->publish(Stream::DOCUMENTS->value, $prNumber, $docArray);
+            $this->publish(Stream::DOCUMENTS->value, $prNumber, $docData);
 
             // event for document upload
             $this->publishEvent($prNumber, $title, $stage, $user, $docTimestamp, 99, 'document_upload', "Document uploaded: {$docType}");
@@ -235,65 +224,63 @@ class MassDataSeeder extends Seeder
         string $eventType = 'stage_transition',
         ?string $details = null,
     ): void {
-        $eventData = new EventData(
-            prNumber: $prNumber,
-            procurementTitle: $title,
-            stage: $stage,
-            eventType: $eventType,
-            category: $this->randomItem(['workflow', 'document', 'milestone']),
-            severity: 'info',
-            details: $details ?? "Stage transition to {$stage}",
-            documentCount: rand(0, 5),
-            userAddress: $user->blockchain_address ?? '',
-            timestamp: $timestamp,
-            metadata: ['event_index' => $index],
-        );
+        $eventData = [
+            'pr_number' => $prNumber,
+            'procurement_title' => $title,
+            'stage' => $stage,
+            'event_type' => $eventType,
+            'category' => $this->randomItem(['workflow', 'document', 'milestone']),
+            'severity' => 'info',
+            'details' => $details ?? "Stage transition to {$stage}",
+            'document_count' => rand(0, 5),
+            'user_address' => $user->blockchain_address ?? '',
+            'timestamp' => $timestamp->toIso8601String(),
+            'metadata' => json_encode(['event_index' => $index]),
+        ];
 
-        $this->publish(Stream::EVENTS->value, "{$prNumber}_event_{$index}", $eventData->toBlockchainArray());
+        $this->publish(Stream::EVENTS->value, "{$prNumber}_event_{$index}", $eventData);
     }
 
     private function publishCorrection(string $prNumber, string $title, User $user, Carbon $now, string $vendor): void
     {
         $correctionTimestamp = (clone $now)->addDays(rand(5, 20));
 
-        // Document correction
-        $correctionData = new CorrectionData(
-            prNumber: $prNumber,
-            procurementTitle: $title,
-            originalTxid: 'orig_tx_'.bin2hex(random_bytes(8)),
-            originalDocumentHash: bin2hex(random_bytes(32)),
-            correctionType: 'document_replacement',
-            action: 'replace',
-            reason: $this->randomItem(['Incorrect document uploaded', 'Updated version available', 'File was corrupted']),
-            correctedBy: $user->name,
-            userAddress: $user->blockchain_address ?? '',
-            timestamp: $correctionTimestamp,
-            correctedMetadata: [
+        $correctionData = [
+            'pr_number' => $prNumber,
+            'procurement_title' => $title,
+            'original_txid' => 'orig_tx_'.bin2hex(random_bytes(8)),
+            'original_document_hash' => bin2hex(random_bytes(32)),
+            'correction_type' => 'document_replacement',
+            'action' => 'replace',
+            'reason' => $this->randomItem(['Incorrect document uploaded', 'Updated version available', 'File was corrupted']),
+            'corrected_by' => $user->name,
+            'user_address' => $user->blockchain_address ?? '',
+            'timestamp' => $correctionTimestamp->toIso8601String(),
+            'corrected_metadata' => json_encode([
                 'vendor' => $vendor,
                 'new_filename' => 'corrected_'.strtolower(str_replace(' ', '_', $vendor)).'.pdf',
-            ],
-        );
+            ]),
+        ];
 
-        $this->publish(Stream::CORRECTIONS->value, $prNumber, $correctionData->toBlockchainArray());
+        $this->publish(Stream::CORRECTIONS->value, $prNumber, $correctionData);
 
-        // Metadata correction
-        $metaCorrectionData = new ProcurementCorrectionData(
-            prNumber: $prNumber,
-            procurementTitle: $title,
-            correctionType: 'metadata_update',
-            reason: $this->randomItem(['ABC amount updated', 'Delivery date extended', 'Funding source corrected']),
-            correctedBy: $user->name,
-            userAddress: $user->blockchain_address ?? '',
-            timestamp: $correctionTimestamp,
-            originalValues: ['abc_amount' => '1000000', 'delivery_date' => '2025-06-30'],
-            correctedValues: ['abc_amount' => '1200000', 'delivery_date' => '2025-08-15'],
-            metadata: [
+        $metaCorrectionData = [
+            'pr_number' => $prNumber,
+            'procurement_title' => $title,
+            'correction_type' => 'metadata_update',
+            'reason' => $this->randomItem(['ABC amount updated', 'Delivery date extended', 'Funding source corrected']),
+            'corrected_by' => $user->name,
+            'user_address' => $user->blockchain_address ?? '',
+            'timestamp' => $correctionTimestamp->toIso8601String(),
+            'original_values' => json_encode(['abc_amount' => '1000000', 'delivery_date' => '2025-06-30']),
+            'corrected_values' => json_encode(['abc_amount' => '1200000', 'delivery_date' => '2025-08-15']),
+            'metadata' => json_encode([
                 'approved_by' => $user->name,
                 'approval_date' => $correctionTimestamp->toDateString(),
-            ],
-        );
+            ]),
+        ];
 
-        $this->publish(Stream::PROCUREMENTS_CORRECTIONS->value, $prNumber, $metaCorrectionData->toBlockchainArray());
+        $this->publish(Stream::PROCUREMENTS_CORRECTIONS->value, $prNumber, $metaCorrectionData);
     }
 
     private function publish(string $stream, string $key, array $data): void

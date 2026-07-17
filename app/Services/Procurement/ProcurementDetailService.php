@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
-use App\Contracts\ProcurementCorrectionRepositoryInterface;
-use App\DataTransferObjects\ProcurementData;
+use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementWorkflowConfig;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Support\Facades\Log;
 
@@ -23,8 +24,6 @@ final class ProcurementDetailService
 {
     public function __construct(
         private readonly ProcurementDataService $dataService,
-        private readonly ProcurementRepository $procurementRepository,
-        private readonly ProcurementCorrectionRepositoryInterface $correctionRepository,
     ) {}
 
     /**
@@ -46,7 +45,7 @@ final class ProcurementDetailService
 
         $this->dataService->preloadUserNames(collect($events));
 
-        $procurementDetails = $this->procurementRepository->findByProcurement($prNumber);
+        $procurementDetails = Procurement::where('pr_number', $prNumber)->first();
 
         $procurementData = $this->dataService->buildProcurementData(
             $prNumber,
@@ -82,19 +81,20 @@ final class ProcurementDetailService
      *
      * @return array<string, mixed>|null
      */
-    private function buildWorkflowInfo(?ProcurementData $procurementDetails, string $currentStageValue): ?array
+    private function buildWorkflowInfo(?Procurement $procurementDetails, string $currentStageValue): ?array
     {
         if (! $procurementDetails) {
             return null;
         }
 
-        $procurementMode = $procurementDetails->procurementMode;
+        $procurementModeRaw = $procurementDetails->procurement_mode;
+        $procurementMode = ProcurementMode::tryFrom($procurementModeRaw);
 
-        $workflowConfig = ProcurementWorkflowConfig::forMode($procurementMode)->active()->first();
+        $workflowConfig = ProcurementWorkflowConfig::forMode($procurementModeRaw)->active()->first();
 
         $stages = $workflowConfig
             ? $workflowConfig->getStagesAsEnums()
-            : StageEnums::getStagesForMode($procurementMode);
+            : ($procurementMode ? StageEnums::getStagesForMode($procurementMode) : []);
 
         $stagesList = array_values($stages);
         $currentStageIndex = -1;
@@ -117,48 +117,48 @@ final class ProcurementDetailService
         })->toArray();
 
         return [
-            'mode' => $procurementMode->value,
-            'name' => $procurementMode->getDisplayName(),
+            'mode' => $procurementMode?->value,
+            'name' => $procurementMode?->getDisplayName() ?? $procurementModeRaw,
             'stages' => $workflowStages,
         ];
     }
 
     /**
-     * Build the procurement details array from the DTO.
+     * Build the procurement details array from the model.
      *
      * @return array<string, mixed>
      */
-    private function buildDetailsArray(ProcurementData $details): array
+    private function buildDetailsArray(Procurement $details): array
     {
         return [
-            'pr_number' => $details->prNumber,
-            'app_reference' => $details->appReference,
+            'pr_number' => $details->pr_number,
+            'app_reference' => $details->app_reference,
             'title' => $details->title,
             'description' => $details->description,
-            'abc_amount' => $details->abcAmount,
+            'abc_amount' => $details->abc_amount,
             'abc_amount_formatted' => $details->getFormattedAbcAmount(),
-            'funding_source' => $details->fundingSource,
-            'category' => $details->category->value,
-            'category_label' => $details->category->label(),
-            'procurement_mode' => $details->procurementMode->value,
-            'procurement_mode_label' => $details->procurementMode->label(),
+            'funding_source' => $details->fund_source,
+            'category' => $details->category,
+            'category_label' => ProcurementCategory::tryFrom($details->category)?->label() ?? $details->category,
+            'procurement_mode' => $details->procurement_mode,
+            'procurement_mode_label' => ProcurementMode::tryFrom($details->procurement_mode)?->label() ?? $details->procurement_mode,
             'office' => $details->office,
-            'end_user' => $details->endUser,
-            'delivery_location' => $details->deliveryLocation,
-            'delivery_date' => $details->deliveryDate?->toIso8601String(),
+            'end_user' => $details->end_user,
+            'delivery_location' => $details->delivery_location,
+            'delivery_date' => $details->delivery_date?->toIso8601String(),
             'delivery_date_formatted' => $details->getFormattedDeliveryDate(),
-            'delivery_term_days' => $details->deliveryTermDays,
-            'prepared_by' => $details->preparedBy,
-            'bac_resolution_number' => $details->bacResolutionNumber,
-            'bac_resolution_date' => $details->bacResolutionDate?->toIso8601String(),
+            'delivery_term_days' => $details->delivery_term_days,
+            'prepared_by' => $details->prepared_by,
+            'bac_resolution_number' => $details->bac_resolution_number,
+            'bac_resolution_date' => $details->bac_resolution_date?->toIso8601String(),
             'bac_resolution_date_formatted' => $details->getFormattedBacResolutionDate(),
-            'philgeps_reference' => $details->philgepsReference,
-            'philgeps_posting_date' => $details->philgepsPostingDate?->toIso8601String(),
+            'philgeps_reference' => $details->philgeps_reference,
+            'philgeps_posting_date' => $details->philgeps_posting_date?->toIso8601String(),
             'philgeps_posting_date_formatted' => $details->getFormattedPhilgepsPostingDate(),
-            'approved_by' => $details->approvedBy,
-            'approval_date' => $details->approvalDate?->toIso8601String(),
+            'approved_by' => $details->approved_by,
+            'approval_date' => $details->approval_date?->toIso8601String(),
             'approval_date_formatted' => $details->getFormattedApprovalDate(),
-            'created_at' => $details->createdAt->toIso8601String(),
+            'created_at' => ($details->initiated_at ?? $details->created_at)->toIso8601String(),
             'created_at_formatted' => $details->getFormattedCreatedAt(),
         ];
     }
@@ -170,30 +170,31 @@ final class ProcurementDetailService
      */
     private function buildCorrectionsArray(string $prNumber): array
     {
-        $hasCorrections = $this->correctionRepository->hasCorrections($prNumber);
-        $latestCorrection = $hasCorrections ? $this->correctionRepository->getLatest($prNumber) : null;
-        $allCorrections = $hasCorrections ? $this->correctionRepository->findByProcurement($prNumber) : [];
+        $correctionsQuery = ProcurementMetadataCorrection::whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber));
+        $hasCorrections = $correctionsQuery->exists();
+        $latestCorrection = $hasCorrections ? $correctionsQuery->latest('corrected_at')->first() : null;
+        $allCorrections = $hasCorrections ? $correctionsQuery->get() : collect();
 
         return [
             'has_corrections' => $hasCorrections,
             'latest_correction' => $latestCorrection ? [
-                'timestamp' => $latestCorrection->timestamp->toIso8601String(),
-                'corrected_by' => $latestCorrection->correctedBy,
+                'timestamp' => $latestCorrection->corrected_at?->toIso8601String(),
+                'corrected_by' => $latestCorrection->corrected_by,
                 'reason' => $latestCorrection->reason,
                 'changed_fields' => $latestCorrection->getChangedFields(),
             ] : null,
-            'corrections' => array_map(function ($correction) {
+            'corrections' => $allCorrections->map(function ($correction) {
                 return [
-                    'pr_number' => $correction->prNumber,
-                    'timestamp' => $correction->timestamp->toIso8601String(),
+                    'pr_number' => $correction->procurement?->pr_number,
+                    'timestamp' => $correction->corrected_at?->toIso8601String(),
                     'reason' => $correction->reason,
-                    'corrected_by' => $correction->correctedBy,
-                    'correction_type' => $correction->correctionType,
-                    'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
+                    'corrected_by' => $correction->corrected_by,
+                    'correction_type' => $correction->correction_type,
+                    'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correction_type)),
                     'changed_fields' => $correction->getChangedFields(),
                     'metadata' => $correction->toBlockchainArray(),
                 ];
-            }, $allCorrections),
+            })->toArray(),
         ];
     }
 }

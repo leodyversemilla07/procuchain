@@ -2,21 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Contracts\ProcurementCorrectionRepositoryInterface;
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\PdfViewerService;
-use App\Services\Procurement\ProcurementDetailService;
 use App\Services\ProcurementDataService;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Tests\SeedsPermissions;
-
-use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 uses(SeedsPermissions::class);
@@ -106,16 +97,6 @@ function browserBindProcurementDetailMocks(string $prNumber, User $user, bool $a
 {
     $title = $accessible ? 'Accessible Procurement' : 'Locked Procurement';
 
-    $procurementRepository = mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->with($prNumber)
-        ->andReturn(browserProcurementFixture(
-            prNumber: $prNumber,
-            userId: $accessible ? (string) $user->id : '999',
-            title: $title,
-        ));
-
     $dataService = mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
         ->zeroOrMoreTimes()
@@ -146,57 +127,13 @@ function browserBindProcurementDetailMocks(string $prNumber, User $user, bool $a
             title: $title,
         ));
 
-    $correctionRepository = mock(ProcurementCorrectionRepositoryInterface::class);
-    $correctionRepository->shouldReceive('hasCorrections')
-        ->zeroOrMoreTimes()
-        ->andReturn(false);
-    $correctionRepository->shouldReceive('getLatest')
-        ->zeroOrMoreTimes()
-        ->andReturnNull();
-    $correctionRepository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-
-    $detailService = new ProcurementDetailService(
-        $dataService,
-        $procurementRepository,
-        $correctionRepository,
-    );
-
-    app()->instance(ProcurementRepository::class, $procurementRepository);
     app()->instance(ProcurementDataService::class, $dataService);
-    app()->instance(ProcurementDetailService::class, $detailService);
-    app()->instance(ProcurementCorrectionRepositoryInterface::class, $correctionRepository);
 }
 
 function browserBindPdfViewerMocks(string $fileKey, string $prNumber, User $user, bool $accessible): void
 {
     $procurementTitle = $accessible ? 'Accessible Procurement' : 'Locked Procurement';
     $userAddress = $accessible ? $user->blockchain_address : 'different-address';
-
-    $documentRepository = mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByfileKey')
-        ->zeroOrMoreTimes()
-        ->with($fileKey)
-        ->andReturn(browserDocumentFixture(
-            fileKey: $fileKey,
-            prNumber: $prNumber,
-            procurementTitle: $procurementTitle,
-            userAddress: $userAddress,
-        ));
-    $documentRepository->shouldReceive('findByTxid')
-        ->zeroOrMoreTimes()
-        ->andReturn(null);
-
-    $procurementRepository = mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->with($prNumber)
-        ->andReturn(browserProcurementFixture(
-            prNumber: $prNumber,
-            userId: $accessible ? (string) $user->id : '999',
-            title: $procurementTitle,
-        ));
 
     $dataService = mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
@@ -254,15 +191,13 @@ function browserBindPdfViewerMocks(string $fileKey, string $prNumber, User $user
             'last_viewed' => now()->format('M j, Y g:i A'),
         ]);
 
-    app()->instance(DocumentRepository::class, $documentRepository);
-    app()->instance(ProcurementRepository::class, $procurementRepository);
     app()->instance(ProcurementDataService::class, $dataService);
     app()->instance(PdfViewerService::class, $pdfViewerService);
 }
 
-function browserProcurementFixture(string $prNumber, string $userId, string $title): ProcurementData
+function browserProcurementFixture(string $prNumber, string $userId, string $title): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => $prNumber,
         'title' => $title,
         'description' => 'Browser fixture',
@@ -274,7 +209,7 @@ function browserProcurementFixture(string $prNumber, string $userId, string $tit
         'status' => 'draft',
         'user_id' => $userId,
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }
 
 function browserProcurementViewData(string $prNumber, string $title): array
@@ -323,22 +258,22 @@ function browserDocumentFixture(
     string $prNumber,
     string $procurementTitle,
     string $userAddress,
-): DocumentData {
-    return new DocumentData(
-        prNumber: $prNumber,
-        procurementTitle: $procurementTitle,
-        userAddress: $userAddress,
-        stage: 'request_for_quotation',
-        status: 'draft',
-        documentType: 'request_for_quotation',
-        fileKey: $fileKey,
-        filename: $fileKey,
-        fileSize: 1024,
-        mimeType: 'application/pdf',
-        hash: 'browser-hash',
-        dataTxid: 'browser-data-txid',
-        metadataTxid: 'browser-metadata-txid',
-        uploadedBy: 'Browser Tester',
-        timestamp: Carbon::now(),
-    );
+): array {
+    return [
+        'pr_number' => $prNumber,
+        'procurement_title' => $procurementTitle,
+        'user_address' => $userAddress,
+        'stage' => 'request_for_quotation',
+        'status' => 'draft',
+        'document_type' => 'request_for_quotation',
+        'file_key' => $fileKey,
+        'filename' => $fileKey,
+        'file_size' => 1024,
+        'mime_type' => 'application/pdf',
+        'hash' => 'browser-hash',
+        'data_txid' => 'browser-data-txid',
+        'metadata_txid' => 'browser-metadata-txid',
+        'uploaded_by' => 'Browser Tester',
+        'timestamp' => now()->toIso8601String(),
+    ];
 }

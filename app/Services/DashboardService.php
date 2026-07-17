@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\EventData;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
@@ -11,7 +9,6 @@ use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\Dashboard\ModeAnalyzer as ModeAnalyzerService;
 use App\Services\Dashboard\StatisticsCalculator;
 use Exception;
@@ -42,7 +39,6 @@ class DashboardService
 
     public function __construct(
         private BlockchainRpcClient $multichain,
-        private ProcurementRepository $procurementRepository,
         private StatisticsCalculator $statisticsCalculator,
         private ModeAnalyzerService $modeAnalyzer,
         private UserService $userService
@@ -199,11 +195,11 @@ class DashboardService
             $limit = config('dashboard.display_limits.recent_activities_display');
             // Fetch only the required amount plus some buffer for filtering
             $fetchLimit = min($limit * 2, config('dashboard.stream_limits.recent_activities'));
-            $eventDtos = ProcurementEvent::with('procurement')
+            $eventItems = ProcurementEvent::with('procurement')
                 ->orderByDesc('occurred_at')
                 ->take($fetchLimit)
                 ->get()
-                ->map(fn ($event) => EventData::fromBlockchainArray([
+                ->map(fn ($event) => [
                     'pr_number' => $event->procurement->pr_number ?? '',
                     'procurement_title' => $event->procurement->title ?? '',
                     'stage' => $event->stage,
@@ -213,33 +209,33 @@ class DashboardService
                     'details' => $event->details,
                     'document_count' => $event->document_count,
                     'user_address' => $event->user_address ?? '',
-                    'timestamp' => $event->occurred_at->toIso8601String(),
+                    'timestamp' => $event->occurred_at,
                     'metadata' => $event->metadata,
-                ]));
+                ]);
 
-            if (empty($eventDtos)) {
-                Log::warning('No events found in repository');
+            if ($eventItems->isEmpty()) {
+                Log::warning('No events found');
 
                 return [];
             }
 
-            return collect($eventDtos)
-                ->map(function (EventData $event) {
+            return $eventItems
+                ->map(function (array $event) {
                     $actionLabel = $this->getEventLabel(
-                        $event->eventType,
-                        $event->details
+                        $event['event_type'],
+                        $event['details']
                     );
 
                     return [
-                        'id' => $event->prNumber,
-                        'title' => $event->procurementTitle,
+                        'id' => $event['pr_number'],
+                        'title' => $event['procurement_title'],
                         'action' => $actionLabel,
-                        'details' => $event->details,
-                        'raw_event_type' => $event->eventType,
-                        'stage' => $event->stage,
-                        'date' => $event->timestamp->toIso8601String(),
-                        'user' => $this->getUserName($event->userAddress),
-                        'timestamp' => $event->timestamp->timestamp,
+                        'details' => $event['details'],
+                        'raw_event_type' => $event['event_type'],
+                        'stage' => $event['stage'],
+                        'date' => $event['timestamp']->toIso8601String(),
+                        'user' => $this->getUserName($event['user_address']),
+                        'timestamp' => $event['timestamp']->timestamp,
                     ];
                 })
                 ->sortByDesc('timestamp')
@@ -268,30 +264,16 @@ class DashboardService
         try {
             // Only fetch recent documents to improve performance (from mirror)
             $documentLimit = config('dashboard.stream_limits.document_items', 500);
-            $documentDtos = ProcurementDocument::with('procurement')
+            $documentItems = ProcurementDocument::with('procurement')
                 ->orderByDesc('uploaded_at')
                 ->take($documentLimit)
                 ->get()
-                ->map(fn ($d) => DocumentData::fromBlockchainArray([
+                ->map(fn ($d) => [
                     'pr_number' => $d->procurement->pr_number ?? '',
-                    'procurement_title' => $d->procurement->title ?? '',
-                    'user_address' => $d->user_address ?? '',
-                    'stage' => $d->stage,
-                    'status' => '',
-                    'document_type' => $d->document_type,
-                    'file_key' => $d->file_key,
-                    'file_name' => $d->filename,
-                    'file_size' => $d->file_size,
-                    'mime_type' => $d->mime_type ?? '',
                     'hash' => $d->hash,
-                    'data_txid' => $d->txid ?? '',
-                    'metadata_txid' => '',
-                    'uploaded_by' => $d->uploaded_by,
-                    'timestamp' => $d->uploaded_at->toIso8601String(),
-                    'description' => $d->description,
-                ]));
+                ]);
 
-            if (empty($documentDtos)) {
+            if ($documentItems->isEmpty()) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
 
                 return 0;
@@ -301,9 +283,9 @@ class DashboardService
             $dashboardPrNumbers = $procurementsByKey->keys()->toArray();
 
             // Count unique documents per procurement, but only for dashboard procurements
-            $documentCountMap = collect($documentDtos)
-                ->filter(fn (DocumentData $doc) => in_array($doc->prNumber, $dashboardPrNumbers))
-                ->groupBy(fn (DocumentData $doc) => $doc->prNumber)
+            $documentCountMap = collect($documentItems)
+                ->filter(fn (array $doc) => in_array($doc['pr_number'], $dashboardPrNumbers))
+                ->groupBy(fn (array $doc) => $doc['pr_number'])
                 ->map(function ($docs) {
                     return collect($docs)->pluck('hash')->unique()->count();
                 });
@@ -313,7 +295,7 @@ class DashboardService
             Log::info('Dashboard document count calculated', [
                 'total_documents' => $totalDocuments,
                 'procurements_counted' => count($dashboardPrNumbers),
-                'documents_fetched' => count($documentDtos),
+                'documents_fetched' => count($documentItems),
             ]);
 
             return $totalDocuments;

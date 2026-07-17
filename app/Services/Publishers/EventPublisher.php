@@ -4,26 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
-use App\Contracts\EventPublisherInterface;
-use App\DataTransferObjects\EventData;
-use App\Repositories\EventRepository;
+use App\Models\ProcurementEvent;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Event Publisher Service
- *
- * Publishes events to the blockchain
- * - Records procurement events
- * - Publishes to procurement.events stream
- * - Provides audit trail
- */
-class EventPublisher implements EventPublisherInterface
+class EventPublisher
 {
-    public function __construct(
-        private EventRepository $events
-    ) {}
-
     /**
      * Publish an event to the timeline
      *
@@ -61,21 +47,18 @@ class EventPublisher implements EventPublisherInterface
                 'severity' => $severity,
             ]);
 
-            $event = new EventData(
-                prNumber: $prNumber,
-                procurementTitle: $procurementTitle,
-                stage: $stage,
-                eventType: $eventType,
-                category: $category,
-                severity: $severity,
-                details: $details,
-                documentCount: $documentCount,
-                userAddress: $userAddress,
-                timestamp: now(),
-                metadata: $metadata,
-            );
+            $event = new ProcurementEvent;
+            $event->stage = $stage;
+            $event->event_type = $eventType;
+            $event->category = $category;
+            $event->severity = $severity;
+            $event->details = $details;
+            $event->document_count = $documentCount;
+            $event->user_address = $userAddress;
+            $event->occurred_at = now();
+            $event->metadata = $metadata;
 
-            $txid = $this->events->create($event);
+            $txid = $event->publishToBlockchain();
 
             Log::info('EventPublisher: Success', [
                 'pr_number' => $prNumber,

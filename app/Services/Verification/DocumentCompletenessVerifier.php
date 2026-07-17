@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services\Verification;
 
-use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\Verification\CompletenessResult;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
-use App\Repositories\DocumentRepository;
+use App\Models\ProcurementDocument;
 use App\Services\DocumentValidationService;
 use App\Services\StageDocumentRequirementsService;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 final class DocumentCompletenessVerifier
 {
     public function __construct(
-        private readonly DocumentRepository $documentRepository,
         private readonly DocumentValidationService $validationService,
         private readonly StageDocumentRequirementsService $requirements,
     ) {}
@@ -28,16 +27,21 @@ final class DocumentCompletenessVerifier
     public function verify(string $prNumber, StageEnums $stage, ?iterable $documents = null): CompletenessResult
     {
         try {
-            $documents = $documents ?? $this->documentRepository->findByProcurement($prNumber);
+            if ($documents === null) {
+                $documents = ProcurementDocument::with('procurement')
+                    ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+                    ->orderByDesc('uploaded_at')
+                    ->get();
+            }
 
             $stageDocuments = array_filter(
-                $documents,
-                fn (DocumentData $doc): bool => $doc->stage === $stage->value
+                $documents instanceof Collection ? $documents->all() : (array) $documents,
+                fn ($doc): bool => $doc->stage === $stage->value
             );
 
             $uploadedTypes = [];
             foreach ($stageDocuments as $doc) {
-                $docType = DocumentTypeEnums::tryFrom($doc->documentType);
+                $docType = DocumentTypeEnums::tryFrom($doc->document_type);
                 if ($docType !== null) {
                     $uploadedTypes[] = $docType;
                 }

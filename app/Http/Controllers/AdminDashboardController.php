@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\CacheStrategyInterface;
 use App\Enums\UserRole;
-use App\Repositories\ProcurementRepository;
 use App\Services\AdminAnalyticsService;
 use App\Services\BlockchainRpcClient;
+use App\Services\CacheStrategyService;
 use App\Services\DashboardService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -17,11 +16,10 @@ class AdminDashboardController extends BaseDashboardController
     public function __construct(
         BlockchainRpcClient $multichain,
         DashboardService $dashboardService,
-        CacheStrategyInterface $cacheStrategy,
-        ProcurementRepository $procurementRepository,
+        CacheStrategyService $cacheStrategy,
         private AdminAnalyticsService $analyticsService
     ) {
-        parent::__construct($multichain, $dashboardService, $cacheStrategy, $procurementRepository);
+        parent::__construct($multichain, $dashboardService, $cacheStrategy);
     }
 
     /**

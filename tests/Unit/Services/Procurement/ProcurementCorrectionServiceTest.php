@@ -1,15 +1,9 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Models\Procurement;
 use App\Models\ProcurementCorrection;
 use App\Models\ProcurementMetadataCorrection;
-use App\Repositories\CorrectionRepository;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementRepository;
-use App\Services\BlockchainRpcClient;
 use App\Services\Procurement\ProcurementCorrectionService;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,20 +13,12 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 /**
- * Helper: build a ProcurementCorrectionService with BlockchainRpcClient-backed final repos.
+ * Helper: build a ProcurementCorrectionService with mocked data service.
  */
 function buildCorrectionService(
-    ?object $procurementRepository = null,
-    ?BlockchainRpcClient $correctionBlockchainRpcClient = null,
-    ?BlockchainRpcClient $procCorrectionBlockchainRpcClient = null,
-    ?object $documentRepository = null,
     ?object $procurementDataService = null,
 ): ProcurementCorrectionService {
     return new ProcurementCorrectionService(
-        $procurementRepository ?? Mockery::mock(ProcurementRepository::class),
-        new ProcurementCorrectionRepository($procCorrectionBlockchainRpcClient ?? Mockery::mock(BlockchainRpcClient::class)),
-        new CorrectionRepository($correctionBlockchainRpcClient ?? Mockery::mock(BlockchainRpcClient::class)),
-        $documentRepository ?? Mockery::mock(DocumentRepository::class),
         $procurementDataService ?? Mockery::mock(ProcurementDataService::class),
     );
 }
@@ -58,17 +44,9 @@ function createCorrectionTestProcurement(string $prNumber = 'PR-2025-001-0001'):
 beforeEach(function () {
     Log::spy();
 
-    $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
-    $this->documentRepository = Mockery::mock(DocumentRepository::class);
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
-    $this->procCorrectionBlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
-    $this->correctionBlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
     $this->service = buildCorrectionService(
-        procurementRepository: $this->procurementRepository,
-        correctionBlockchainRpcClient: $this->correctionBlockchainRpcClient,
-        procCorrectionBlockchainRpcClient: $this->procCorrectionBlockchainRpcClient,
-        documentRepository: $this->documentRepository,
         procurementDataService: $this->procurementDataService,
     );
 });
@@ -178,39 +156,16 @@ describe('ProcurementCorrectionService', function () {
     });
 
     describe('findProcurementForCorrection', function () {
-        it('returns procurement from primary repository when found', function () {
-            $procurement = ProcurementData::fromBlockchainArray([
-                'pr_number' => 'PR-2025-001-0001',
-                'title' => 'Test',
-                'description' => 'Test',
-                'abc_amount' => '500000',
-                'funding_source' => 'GAA',
-                'category' => 'goods',
-                'procurement_mode' => 'competitive_bidding',
-                'office' => 'Office',
-                'status' => 'draft',
-                'user_id' => '1',
-                'created_at' => now()->toIso8601String(),
-            ]);
-
-            $this->procurementRepository
-                ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001-0001')
-                ->once()
-                ->andReturn($procurement);
+        it('returns procurement from database when found', function () {
+            $procurement = createCorrectionTestProcurement('PR-2025-001-0001');
 
             $result = $this->service->findProcurementForCorrection('PR-2025-001-0001');
 
-            expect($result)->toBe($procurement);
+            expect($result)->toBeInstanceOf(Procurement::class)
+                ->and($result->pr_number)->toBe('PR-2025-001-0001');
         });
 
-        it('falls back to STATUS stream when not found in primary repo', function () {
-            $this->procurementRepository
-                ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001-0001')
-                ->once()
-                ->andReturn(null);
-
+        it('falls back to STATUS stream when not found in database', function () {
             $statusCollection = collect([
                 [
                     'procurement_title' => 'Test Procurement',
@@ -231,20 +186,12 @@ describe('ProcurementCorrectionService', function () {
 
             $result = $this->service->findProcurementForCorrection('PR-2025-001-0001');
 
-            expect($result)->toBeInstanceOf(ProcurementData::class)
-                ->and($result->prNumber)->toBe('PR-2025-001-0001')
-                ->and($result->title)->toBe('Test Procurement')
-                ->and($result->status)->toBe('procurement_submitted')
-                ->and($result->userAddress)->toBe('1abc123');
+            expect($result)->toBeInstanceOf(Procurement::class)
+                ->and($result->pr_number)->toBe('PR-2025-001-0001')
+                ->and($result->title)->toBe('Test Procurement');
         });
 
         it('throws RuntimeException when not found in any stream', function () {
-            $this->procurementRepository
-                ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001-0001')
-                ->once()
-                ->andReturn(null);
-
             $this->procurementDataService
                 ->shouldReceive('fetchStatusItems')
                 ->with('PR-2025-001-0001')

@@ -1,13 +1,9 @@
 <?php
 
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -62,60 +58,61 @@ it('forbids bac secretariat from correcting inaccessible documents by txid', fun
 
 function bindLockedDocumentAccess(string $reference, string $prNumber, bool $isTxid = false): void
 {
-    $dataService = Mockery::mock(ProcurementDataService::class);
-    $dataService->shouldReceive('getDocumentDataByfileKey')
-        ->zeroOrMoreTimes()
-        ->andReturn($isTxid ? null : lockedDocumentFixture($reference, $prNumber)->toBlockchainArray());
-    $dataService->shouldReceive('fetchStatusItems')
-        ->once()
-        ->with($prNumber)
-        ->andReturn(collect([
-            ['user_address' => 'different-address'],
-        ]));
+    $fixture = $isTxid ? null : lockedDocumentFixture($reference, $prNumber);
+
+    $dataService = new class($reference, $prNumber, $fixture) extends ProcurementDataService
+    {
+        public function __construct(
+            private readonly string $reference,
+            private readonly string $prNumber,
+            private readonly ?array $fixture,
+        ) {}
+
+        public function getDocumentDataByfileKey(string $fileKey): ?array
+        {
+            return $this->fixture;
+        }
+
+        public function fetchStatusItems(string $prNumber): Collection
+        {
+            return collect([
+                ['user_address' => 'different-address'],
+            ]);
+        }
+
+        public function validateDocumentExistsInBlockchain(string $fileKey): ?array
+        {
+            return null;
+        }
+    };
+
     app()->instance(ProcurementDataService::class, $dataService);
-
-    $documentRepository = Mockery::mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByfileKey')
-        ->once()
-        ->with($reference)
-        ->andReturn($isTxid ? null : lockedDocumentFixture($reference, $prNumber));
-    $documentRepository->shouldReceive('findByTxid')
-        ->zeroOrMoreTimes()
-        ->andReturn($isTxid ? lockedDocumentFixture('locked-File.pdf', $prNumber, $reference) : null);
-    app()->instance(DocumentRepository::class, $documentRepository);
-
-    $procurementRepository = Mockery::mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findByProcurement')
-        ->once()
-        ->with($prNumber)
-        ->andReturn(lockedProcurementFixture($prNumber));
-    app()->instance(ProcurementRepository::class, $procurementRepository);
 }
 
-function lockedDocumentFixture(string $fileKey, string $prNumber, string $txid = 'data-txid'): DocumentData
+function lockedDocumentFixture(string $fileKey, string $prNumber, string $txid = 'data-txid'): array
 {
-    return new DocumentData(
-        prNumber: $prNumber,
-        procurementTitle: 'Locked Procurement',
-        userAddress: 'different-address',
-        stage: 'procurement_initiation',
-        status: 'draft',
-        documentType: 'test_document',
-        fileKey: $fileKey,
-        filename: 'test.pdf',
-        fileSize: 1000,
-        mimeType: 'application/pdf',
-        hash: 'hash',
-        dataTxid: $txid,
-        metadataTxid: 'metadata-txid',
-        uploadedBy: 'System',
-        timestamp: Carbon::now(),
-    );
+    return [
+        'pr_number' => $prNumber,
+        'procurement_title' => 'Locked Procurement',
+        'user_address' => 'different-address',
+        'stage' => 'procurement_initiation',
+        'status' => 'draft',
+        'document_type' => 'test_document',
+        'file_key' => $fileKey,
+        'filename' => 'test.pdf',
+        'file_size' => 1000,
+        'mime_type' => 'application/pdf',
+        'hash' => 'hash',
+        'data_txid' => $txid,
+        'metadata_txid' => 'metadata-txid',
+        'uploaded_by' => 'System',
+        'timestamp' => now()->toIso8601String(),
+    ];
 }
 
-function lockedProcurementFixture(string $prNumber): ProcurementData
+function lockedProcurementFixture(string $prNumber): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => $prNumber,
         'title' => 'Locked Procurement',
         'description' => 'Fixture',
@@ -127,5 +124,5 @@ function lockedProcurementFixture(string $prNumber): ProcurementData
         'status' => 'draft',
         'user_id' => '999',
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }

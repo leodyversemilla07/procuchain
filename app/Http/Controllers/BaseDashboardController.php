@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\CacheStrategyInterface;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller as BaseController;
 use App\Models\Procurement;
 use App\Models\ProcurementStage;
-use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainRpcClient;
+use App\Services\CacheStrategyService;
 use App\Services\DashboardCacheService;
 use App\Services\DashboardService;
 use DateInterval;
@@ -25,8 +24,7 @@ abstract class BaseDashboardController extends BaseController
     public function __construct(
         protected BlockchainRpcClient $multichain,
         protected DashboardService $dashboardService,
-        protected CacheStrategyInterface $cacheStrategy,
-        private ProcurementRepository $procurementRepository,
+        protected CacheStrategyService $cacheStrategy,
     ) {}
 
     /**

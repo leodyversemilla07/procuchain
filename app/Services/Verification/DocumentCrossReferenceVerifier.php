@@ -6,14 +6,14 @@ namespace App\Services\Verification;
 
 use App\DataTransferObjects\Verification\CrossReferenceResult;
 use App\Enums\StageEnums;
-use App\Repositories\DocumentRepository;
+use App\Models\ProcurementDocument;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 final class DocumentCrossReferenceVerifier
 {
     public function __construct(
-        private readonly DocumentRepository $documentRepository,
     ) {}
 
     /**
@@ -22,7 +22,12 @@ final class DocumentCrossReferenceVerifier
     public function verify(string $prNumber, ?iterable $documents = null): CrossReferenceResult
     {
         try {
-            $documents = $documents ?? $this->documentRepository->findByProcurement($prNumber);
+            if ($documents === null) {
+                $documents = ProcurementDocument::with('procurement')
+                    ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+                    ->orderByDesc('uploaded_at')
+                    ->get();
+            }
 
             $prNumberChecks = [];
             $amountChecks = [];
@@ -32,11 +37,12 @@ final class DocumentCrossReferenceVerifier
             $warnings = [];
 
             foreach ($documents as $doc) {
-                $prMatches = $doc->prNumber === $prNumber;
+                $docPrNumber = $doc->procurement?->pr_number ?? '';
+                $prMatches = $docPrNumber === $prNumber;
                 $prNumberChecks[] = [
-                    'document_type' => $doc->documentType,
-                    'file_key' => $doc->fileKey,
-                    'pr_number_in_doc' => $doc->prNumber,
+                    'document_type' => $doc->document_type,
+                    'file_key' => $doc->file_key,
+                    'pr_number_in_doc' => $docPrNumber,
                     'expected_pr_number' => $prNumber,
                     'matches' => $prMatches,
                 ];
@@ -44,15 +50,15 @@ final class DocumentCrossReferenceVerifier
                 if (! $prMatches) {
                     $errors[] = sprintf(
                         'PR number mismatch in %s: expected %s, found %s',
-                        $doc->documentType,
+                        $doc->document_type,
                         $prNumber,
-                        $doc->prNumber
+                        $docPrNumber
                     );
                 }
             }
 
-            $sortedDocs = $documents;
-            usort($sortedDocs, fn ($a, $b) => $a->timestamp->timestamp - $b->timestamp->timestamp);
+            $sortedDocs = $documents instanceof Collection ? $documents->all() : (array) $documents;
+            usort($sortedDocs, fn ($a, $b) => ($a->uploaded_at?->timestamp ?? 0) - ($b->uploaded_at?->timestamp ?? 0));
 
             $stageOrder = array_flip(StageEnums::values());
             $previousStageId = -1;
@@ -63,15 +69,15 @@ final class DocumentCrossReferenceVerifier
                 if ($docStageId < $previousStageId) {
                     $warnings[] = sprintf(
                         'Document %s uploaded out of stage order (stage: %s)',
-                        $doc->documentType,
+                        $doc->document_type,
                         $doc->stage
                     );
                 }
 
                 $dateChecks[] = [
-                    'document_type' => $doc->documentType,
+                    'document_type' => $doc->document_type,
                     'stage' => $doc->stage,
-                    'uploaded_at' => $doc->timestamp->toIso8601String(),
+                    'uploaded_at' => $doc->uploaded_at?->toIso8601String(),
                     'stage_order' => $docStageId,
                 ];
 

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Jobs\Handlers;
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\UserRole;
 use App\Jobs\Handlers\Concerns\HandlesTempFiles;
+use App\Models\Procurement;
 use App\Models\User;
 use App\Notifications\ProcurementCorrectionSubmitted;
 use App\Services\Publishers\CorrectionPublisher;
@@ -62,7 +62,7 @@ class CorrectionHandler
 
     public function executeProcurementCorrection(array $data): array
     {
-        $originalProcurement = ProcurementData::fromArray($data['original_procurement']);
+        $originalProcurement = Procurement::fromBlockchainArray($data['original_procurement']);
 
         $result = $this->procurementCorrectionPublisher->publishCorrection(
             originalProcurement: $originalProcurement,
@@ -72,7 +72,7 @@ class CorrectionHandler
             userAddress: $data['user_address'],
         );
 
-        $this->sendCorrectionNotifications($data['pr_number'] ?? $originalProcurement->prNumber, $originalProcurement->title, $data['corrected_by'], $data['reason'], $result['txid'] ?? null);
+        $this->sendCorrectionNotifications($data['pr_number'] ?? $originalProcurement->pr_number, $originalProcurement->title, $data['corrected_by'], $data['reason'], $result['txid'] ?? null);
 
         return $result;
     }

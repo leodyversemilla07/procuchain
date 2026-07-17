@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Contracts\BlockchainStorageInterface;
 use App\Enums\Stream;
 use App\Models\User;
 use App\Services\Blockchain\FileLifecycleManager;
@@ -14,18 +13,7 @@ use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Blockchain Storage Service — thin facade for MultiChain File operations.
- *
- * Delegates to four focused services:
- * - FileUploader: upload + chunked encoding
- * - FileRetriever: retrieval + chunk reassembly
- * - FileLifecycleManager: delete, restore, status checks
-
- *
- * @see config/blockchain.php for upload limits and chunking configuration
- */
-class BlockchainStorageService implements BlockchainStorageInterface
+class BlockchainStorageService
 {
     private int $maxChunkSize;
 

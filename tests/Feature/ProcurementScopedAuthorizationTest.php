@@ -1,8 +1,6 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -80,12 +78,6 @@ describe('procurement-scoped authorization', function () {
 
 function denyProcurementAccess(string $prNumber): void
 {
-    $repository = Mockery::mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->atLeast()->once()
-        ->with($prNumber)
-        ->andReturn(scopedProcurementFixture($prNumber, '999'));
-
     $dataService = Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
         ->atLeast()->once()
@@ -94,13 +86,12 @@ function denyProcurementAccess(string $prNumber): void
             ['user_address' => 'different-address'],
         ]));
 
-    app()->instance(ProcurementRepository::class, $repository);
     app()->instance(ProcurementDataService::class, $dataService);
 }
 
-function scopedProcurementFixture(string $prNumber, string $userId): ProcurementData
+function scopedProcurementFixture(string $prNumber, string $userId): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => $prNumber,
         'title' => 'Scoped Fixture',
         'description' => 'Fixture',
@@ -112,5 +103,5 @@ function scopedProcurementFixture(string $prNumber, string $userId): Procurement
         'status' => 'draft',
         'user_id' => $userId,
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }

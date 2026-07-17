@@ -1,14 +1,11 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\NormalizedTableSyncService;
 use App\Services\Procurement\ProcurementSupportService;
@@ -232,43 +229,24 @@ describe('Authorization', function () {
     });
 });
 
-function buildPhaseProcurementData(User $user): ProcurementData
+function buildPhaseProcurementData(User $user): array
 {
-    return new ProcurementData(
-        prNumber: 'PR-2024-001-0001',
-        appReference: 'APP-2024-001',
-        title: 'Test Procurement',
-        description: 'Test Description',
-        abcAmount: 1000000.00,
-        fundingSource: 'General Fund',
-        category: ProcurementCategory::GOODS,
-        procurementMode: ProcurementMode::COMPETITIVE_BIDDING,
-        office: 'Test Office',
-        endUser: 'Test User',
-        deliveryLocation: null,
-        deliveryDate: null,
-        deliveryTermDays: null,
-        preparedBy: 'Test Preparer',
-        bacResolutionNumber: null,
-        bacResolutionDate: null,
-        philgepsReference: null,
-        philgepsPostingDate: null,
-        approvedBy: null,
-        approvalDate: null,
-        status: 'in_progress',
-        userId: (string) $user->id,
-        createdAt: now(),
-    );
-}
-
-function bindProcurementRepositoryStub(ProcurementData $procurementData): void
-{
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn($procurementData);
-
-    app()->instance(ProcurementRepository::class, $repository);
+    return [
+        'pr_number' => 'PR-2024-001-0001',
+        'app_reference' => 'APP-2024-001',
+        'title' => 'Test Procurement',
+        'description' => 'Test Description',
+        'abc_amount' => 1000000.00,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'Test Office',
+        'end_user' => 'Test User',
+        'prepared_by' => 'Test Preparer',
+        'status' => 'in_progress',
+        'user_id' => (string) $user->id,
+        'created_at' => now(),
+    ];
 }
 
 function bindProcurementDataServiceStub(User $user): void
@@ -285,7 +263,7 @@ function bindProcurementDataServiceStub(User $user): void
     app()->instance(ProcurementDataService::class, $dataService);
 }
 
-function bindSupportServiceStub(ProcurementData $procurementData): void
+function bindSupportServiceStub(array $procurementData): void
 {
     $support = mock(ProcurementSupportService::class);
     $support->shouldReceive('stageExistsInWorkflow')
@@ -297,8 +275,8 @@ function bindSupportServiceStub(ProcurementData $procurementData): void
     $support->shouldReceive('findProcurementById')
         ->zeroOrMoreTimes()
         ->andReturn([
-            'procurement_title' => $procurementData->title,
-            'current_status' => $procurementData->status,
+            'procurement_title' => $procurementData['title'],
+            'current_status' => $procurementData['status'],
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]);
     $support->shouldReceive('handleAutoStageTransition')
@@ -306,12 +284,12 @@ function bindSupportServiceStub(ProcurementData $procurementData): void
         ->andReturnNull();
     $support->shouldReceive('getProcurementMode')
         ->zeroOrMoreTimes()
-        ->andReturn($procurementData->procurementMode);
+        ->andReturn(ProcurementMode::COMPETITIVE_BIDDING);
     $support->shouldReceive('getWorkflowInfo')
         ->zeroOrMoreTimes()
         ->andReturn([
             'mode' => [
-                'value' => $procurementData->procurementMode->value,
+                'value' => 'competitive_bidding',
             ],
             'workflow' => [
                 'stages' => [],
@@ -372,26 +350,24 @@ function bindCompletionValidationStub(array $completion = ['can_complete' => fal
     app()->instance(ModeAwareDocumentValidationService::class, $validation);
 }
 
-function bindPhasePageStubs(ProcurementData $procurementData): void
+function bindPhasePageStubs(array $procurementData): void
 {
-    bindProcurementRepositoryStub($procurementData);
-    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
+    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData['user_id']));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub();
     bindNormalizedTableSyncStub();
 }
 
-function bindUploadStubs(ProcurementData $procurementData): void
+function bindUploadStubs(array $procurementData): void
 {
-    bindProcurementRepositoryStub($procurementData);
-    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
+    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData['user_id']));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub();
 }
 
-function bindModeAwareGuideStubs(ProcurementData $procurementData): void
+function bindModeAwareGuideStubs(array $procurementData): void
 {
-    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
+    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData['user_id']));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub(guide: [
         'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
@@ -417,16 +393,16 @@ function bindModeAwareGuideStubs(ProcurementData $procurementData): void
     ]);
 }
 
-function bindCompletionValidationStubs(ProcurementData $procurementData, array $completion): void
+function bindCompletionValidationStubs(array $procurementData, array $completion): void
 {
-    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
+    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData['user_id']));
     bindSupportServiceStub($procurementData);
     bindCompletionValidationStub($completion);
 }
 
-function bindValidateUploadStubs(ProcurementData $procurementData): void
+function bindValidateUploadStubs(array $procurementData): void
 {
-    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
+    bindProcurementDataServiceStub(User::findOrFail((int) $procurementData['user_id']));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub(['errors' => [], 'warnings' => []]);
 }

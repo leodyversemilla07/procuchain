@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
-use App\Contracts\CorrectionRepositoryInterface;
-use App\DataTransferObjects\CorrectionData;
+use App\Models\ProcurementCorrection;
 use App\Services\BlockchainStorageService;
 use Exception;
 use Illuminate\Http\UploadedFile;
@@ -21,7 +20,6 @@ use Illuminate\Support\Facades\Log;
 class CorrectionPublisher
 {
     public function __construct(
-        private CorrectionRepositoryInterface $corrections,
         private BlockchainStorageService $blockchainFileStorage
     ) {}
 
@@ -97,22 +95,18 @@ class CorrectionPublisher
             }
 
             // Create correction record
-            $correction = new CorrectionData(
-                txid: null, // Will be set when published to blockchain
-                prNumber: $prNumber,
-                procurementTitle: $procurementTitle,
-                originalTxid: $originalTxid,
-                originalDocumentHash: $originalDocumentHash,
-                correctionType: $correctionType,
-                action: $action,
-                reason: $reason,
-                correctedBy: $correctedBy,
-                correctedMetadata: $correctedMetadata,
-                userAddress: $userAddress,
-                timestamp: now(),
-            );
+            $correction = new ProcurementCorrection;
+            $correction->original_txid = $originalTxid;
+            $correction->original_document_hash = $originalDocumentHash;
+            $correction->correction_type = $correctionType;
+            $correction->action = $action;
+            $correction->reason = $reason;
+            $correction->corrected_by = $correctedBy;
+            $correction->corrected_metadata = $correctedMetadata;
+            $correction->user_address = $userAddress;
+            $correction->corrected_at = now();
 
-            $txid = $this->corrections->create($correction);
+            $txid = $correction->publishToBlockchain();
 
             Log::info('CorrectionPublisher: Success', [
                 'pr_number' => $prNumber,
@@ -123,7 +117,7 @@ class CorrectionPublisher
                 'success' => true,
                 'correction_txid' => $txid,
                 'action' => $action,
-                'corrected_File' => $correctedMetadata,
+                'corrected_file' => $correctedMetadata,
             ];
         } catch (Exception $e) {
             Log::error('CorrectionPublisher: Failed', [

@@ -1,13 +1,10 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
-use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\NormalizedTableSyncService;
 use App\Services\Procurement\ProcurementSupportService;
@@ -246,48 +243,33 @@ describe('Authorization for New Stages', function () {
     });
 });
 
-function buildSvpProcurementData(User $user): ProcurementData
+function buildSvpProcurementData(User $user): array
 {
-    return new ProcurementData(
-        prNumber: 'PR-2024-001-0001',
-        appReference: 'APP-2024-001',
-        title: 'Test Procurement',
-        description: 'Test Description',
-        abcAmount: 100000.00,
-        fundingSource: 'General Fund',
-        category: ProcurementCategory::GOODS,
-        procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
-        office: 'Test Office',
-        endUser: 'Test User',
-        deliveryLocation: null,
-        deliveryDate: null,
-        deliveryTermDays: null,
-        preparedBy: 'Test Preparer',
-        bacResolutionNumber: null,
-        bacResolutionDate: null,
-        philgepsReference: null,
-        philgepsPostingDate: null,
-        approvedBy: null,
-        approvalDate: null,
-        status: 'in_progress',
-        userId: (string) $user->id,
-        createdAt: now(),
-    );
+    return [
+        'pr_number' => 'PR-2024-001-0001',
+        'app_reference' => 'APP-2024-001',
+        'title' => 'Test Procurement',
+        'description' => 'Test Description',
+        'abc_amount' => 100000.00,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'small_value_procurement',
+        'office' => 'Test Office',
+        'end_user' => 'Test User',
+        'prepared_by' => 'Test Preparer',
+        'status' => 'in_progress',
+        'user_id' => (string) $user->id,
+        'created_at' => now(),
+    ];
 }
 
-function bindSvpStageSupportStubs(ProcurementData $procurementData): void
+function bindSvpStageSupportStubs(array $procurementData): void
 {
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn($procurementData);
-    app()->instance(ProcurementRepository::class, $repository);
-
     $dataService = mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
         ->zeroOrMoreTimes()
         ->andReturn(collect([
-            ['user_address' => User::findOrFail((int) $procurementData->userId)->blockchain_address],
+            ['user_address' => User::findOrFail((int) $procurementData['user_id'])->blockchain_address],
         ]));
     app()->instance(ProcurementDataService::class, $dataService);
 
@@ -301,8 +283,8 @@ function bindSvpStageSupportStubs(ProcurementData $procurementData): void
     $support->shouldReceive('findProcurementById')
         ->zeroOrMoreTimes()
         ->andReturn([
-            'procurement_title' => $procurementData->title,
-            'current_status' => $procurementData->status,
+            'procurement_title' => $procurementData['title'],
+            'current_status' => $procurementData['status'],
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]);
     $support->shouldReceive('handleAutoStageTransition')
@@ -310,12 +292,12 @@ function bindSvpStageSupportStubs(ProcurementData $procurementData): void
         ->andReturnNull();
     $support->shouldReceive('getProcurementMode')
         ->zeroOrMoreTimes()
-        ->andReturn($procurementData->procurementMode);
+        ->andReturn(ProcurementMode::SMALL_VALUE_PROCUREMENT);
     $support->shouldReceive('getWorkflowInfo')
         ->zeroOrMoreTimes()
         ->andReturn([
             'mode' => [
-                'value' => $procurementData->procurementMode->value,
+                'value' => 'small_value_procurement',
             ],
             'workflow' => [
                 'stages' => [],

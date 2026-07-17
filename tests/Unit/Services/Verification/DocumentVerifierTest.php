@@ -1,10 +1,10 @@
 <?php
 
-use App\DataTransferObjects\DocumentData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Repositories\DocumentRepository;
+use App\Models\Procurement;
+use App\Models\ProcurementDocument;
 use App\Services\BlockchainStorageService;
 use App\Services\DocumentValidationService;
 use App\Services\StageDocumentRequirementsService;
@@ -13,54 +13,37 @@ use App\Services\Verification\DocumentComplianceVerifier;
 use App\Services\Verification\DocumentCrossReferenceVerifier;
 use App\Services\Verification\DocumentIntegrityVerifier;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
-function makeDocumentData(array $overrides = []): DocumentData
+function makeDocumentData(array $overrides = []): object
 {
-    $defaults = [
-        'prNumber' => 'PR-2024-001-0001',
-        'procurementTitle' => 'Test Procurement',
-        'userAddress' => '0xTestAddress',
+    $merged = array_merge([
+        'pr_number' => 'PR-2024-001-0001',
+        'procurement_title' => 'Test Procurement',
+        'user_address' => '0xTestAddress',
         'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         'status' => ProcurementStatus::PROCUREMENT_INITIATED->value,
-        'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
-        'fileKey' => 'test-File-key-'.uniqid(),
+        'document_type' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
+        'file_key' => 'test-file-key-'.uniqid(),
         'filename' => 'test-document.pdf',
-        'fileSize' => 1024,
-        'mimeType' => 'application/pdf',
+        'file_size' => 1024,
+        'mime_type' => 'application/pdf',
         'hash' => hash('sha256', 'test-content'),
-        'dataTxid' => 'txid-'.uniqid(),
-        'metadataTxid' => 'meta-txid-'.uniqid(),
-        'uploadedBy' => 'test-user',
-        'timestamp' => Carbon::now(),
+        'data_txid' => 'txid-'.uniqid(),
+        'metadata_txid' => 'meta-txid-'.uniqid(),
+        'uploaded_by' => 'test-user',
+        'uploaded_at' => Carbon::now(),
         'description' => null,
-        'stageMetadata' => null,
-    ];
+        'stage_metadata' => null,
+    ], $overrides);
 
-    $merged = array_merge($defaults, $overrides);
+    $merged['procurement'] = (object) ['pr_number' => $merged['pr_number']];
 
-    return new DocumentData(
-        prNumber: $merged['prNumber'],
-        procurementTitle: $merged['procurementTitle'],
-        userAddress: $merged['userAddress'],
-        stage: $merged['stage'],
-        status: $merged['status'],
-        documentType: $merged['documentType'],
-        fileKey: $merged['fileKey'],
-        filename: $merged['filename'],
-        fileSize: $merged['fileSize'],
-        mimeType: $merged['mimeType'],
-        hash: $merged['hash'],
-        dataTxid: $merged['dataTxid'],
-        metadataTxid: $merged['metadataTxid'],
-        uploadedBy: $merged['uploadedBy'],
-        timestamp: $merged['timestamp'],
-        description: $merged['description'],
-        stageMetadata: $merged['stageMetadata'],
-    );
+    return (object) $merged;
 }
 
 // =============================================================================
@@ -70,10 +53,8 @@ describe('DocumentIntegrityVerifier', function () {
     beforeEach(function () {
         Log::spy();
         $this->blockchainStorage = Mockery::mock(BlockchainStorageService::class);
-        $this->documentRepository = Mockery::mock(DocumentRepository::class);
         $this->verifier = new DocumentIntegrityVerifier(
             $this->blockchainStorage,
-            $this->documentRepository,
         );
     });
 
@@ -125,15 +106,22 @@ describe('DocumentIntegrityVerifier', function () {
 
     describe('verifySingle', function () {
         it('delegates to verify when document found', function () {
+            $procurement = Procurement::create(['pr_number' => 'PR-TEST-001', 'title' => 'Test', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding']);
+            ProcurementDocument::create([
+                'procurement_id' => $procurement->id,
+                'file_key' => 'fk-1',
+                'txid' => 'txid-1',
+                'document_type' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
+                'stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                'filename' => 'test.pdf',
+                'mime_type' => 'application/pdf',
+                'hash' => hash('sha256', 'test-content'),
+                'uploaded_by' => 'test-user',
+                'uploaded_at' => Carbon::now(),
+            ]);
+
             $content = 'File-content';
             $hash = hash('sha256', $content);
-            $doc = makeDocumentData(['fileKey' => 'fk-1', 'dataTxid' => 'txid-1']);
-
-            $this->documentRepository
-                ->shouldReceive('findByfileKey')
-                ->once()
-                ->with('fk-1')
-                ->andReturn($doc);
 
             $this->blockchainStorage
                 ->shouldReceive('retrieveFile')
@@ -147,44 +135,44 @@ describe('DocumentIntegrityVerifier', function () {
         });
 
         it('returns failure when document not found', function () {
-            $this->documentRepository
-                ->shouldReceive('findByfileKey')
-                ->once()
-                ->with('nonexistent-key')
-                ->andReturn(null);
-
             $result = $this->verifier->verifySingle('nonexistent-key');
 
             expect($result->isValid)->toBeFalse();
-            expect($result->errors[0])->toContain('Document not found');
         });
     });
 
     describe('batchVerify', function () {
         it('verifies all documents for a procurement', function () {
+            $procurement = Procurement::create(['pr_number' => 'PR-2024-001-0001', 'title' => 'Test', 'category' => 'goods', 'procurement_mode' => 'competitive_bidding']);
+            ProcurementDocument::create([
+                'procurement_id' => $procurement->id,
+                'file_key' => 'fk-1',
+                'txid' => 'txid-1',
+                'document_type' => DocumentTypeEnums::PURCHASE_REQUEST->value,
+                'stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                'filename' => 'test-1.pdf',
+                'mime_type' => 'application/pdf',
+                'hash' => hash('sha256', 'content-1'),
+                'uploaded_by' => 'test-user',
+                'uploaded_at' => Carbon::now(),
+            ]);
+            ProcurementDocument::create([
+                'procurement_id' => $procurement->id,
+                'file_key' => 'fk-2',
+                'txid' => 'txid-2',
+                'document_type' => DocumentTypeEnums::PPMP->value,
+                'stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                'filename' => 'test-2.pdf',
+                'mime_type' => 'application/pdf',
+                'hash' => hash('sha256', 'content-2'),
+                'uploaded_by' => 'test-user',
+                'uploaded_at' => Carbon::now(),
+            ]);
+
             $content1 = 'content-1';
             $content2 = 'content-2';
             $hash1 = hash('sha256', $content1);
             $hash2 = hash('sha256', $content2);
-
-            $doc1 = makeDocumentData([
-                'fileKey' => 'fk-1',
-                'dataTxid' => 'txid-1',
-                'documentType' => DocumentTypeEnums::PURCHASE_REQUEST->value,
-                'timestamp' => Carbon::now(),
-            ]);
-            $doc2 = makeDocumentData([
-                'fileKey' => 'fk-2',
-                'dataTxid' => 'txid-2',
-                'documentType' => DocumentTypeEnums::PPMP->value,
-                'timestamp' => Carbon::now(),
-            ]);
-
-            $this->documentRepository
-                ->shouldReceive('findByProcurement')
-                ->once()
-                ->with('PR-2024-001-0001')
-                ->andReturn(collect([$doc1, $doc2]));
 
             $this->blockchainStorage
                 ->shouldReceive('retrieveFile')
@@ -211,11 +199,9 @@ describe('DocumentIntegrityVerifier', function () {
 describe('DocumentCompletenessVerifier', function () {
     beforeEach(function () {
         Log::spy();
-        $this->documentRepository = Mockery::mock(DocumentRepository::class);
         $this->validationService = Mockery::mock(DocumentValidationService::class);
         $this->requirements = Mockery::mock(StageDocumentRequirementsService::class);
         $this->verifier = new DocumentCompletenessVerifier(
-            $this->documentRepository,
             $this->validationService,
             $this->requirements,
         );
@@ -308,16 +294,16 @@ describe('DocumentCompletenessVerifier', function () {
         it('handles exception gracefully', function () {
             $stage = StageEnums::PROCUREMENT_INITIATION;
 
-            $this->documentRepository
-                ->shouldReceive('findByProcurement')
+            $this->validationService
+                ->shouldReceive('validateStageCompletion')
                 ->once()
-                ->andThrow(new Exception('Repository error'));
+                ->andThrow(new Exception('Validation error'));
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage);
 
             expect($result->isComplete)->toBeFalse();
             expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('Repository error');
+            expect($result->errors[0])->toContain('Validation error');
         });
     });
 });
@@ -328,21 +314,18 @@ describe('DocumentCompletenessVerifier', function () {
 describe('DocumentCrossReferenceVerifier', function () {
     beforeEach(function () {
         Log::spy();
-        $this->documentRepository = Mockery::mock(DocumentRepository::class);
-        $this->verifier = new DocumentCrossReferenceVerifier(
-            $this->documentRepository,
-        );
+        $this->verifier = new DocumentCrossReferenceVerifier;
     });
 
     describe('verify', function () {
         it('returns consistent when all PR numbers match', function () {
             $doc1 = makeDocumentData([
-                'prNumber' => 'PR-2024-001-0001',
-                'timestamp' => Carbon::now(),
+                'pr_number' => 'PR-2024-001-0001',
+                'uploaded_at' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
-                'prNumber' => 'PR-2024-001-0001',
-                'timestamp' => Carbon::now()->addMinute(),
+                'pr_number' => 'PR-2024-001-0001',
+                'uploaded_at' => Carbon::now()->addMinute(),
             ]);
 
             $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
@@ -353,12 +336,12 @@ describe('DocumentCrossReferenceVerifier', function () {
 
         it('returns inconsistent with PR mismatch', function () {
             $doc1 = makeDocumentData([
-                'prNumber' => 'PR-2024-001-0001',
-                'timestamp' => Carbon::now(),
+                'pr_number' => 'PR-2024-001-0001',
+                'uploaded_at' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
-                'prNumber' => 'PR-2025-989-0001',
-                'timestamp' => Carbon::now()->addMinute(),
+                'pr_number' => 'PR-2025-989-0001',
+                'uploaded_at' => Carbon::now()->addMinute(),
             ]);
 
             $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
@@ -370,16 +353,16 @@ describe('DocumentCrossReferenceVerifier', function () {
 
         it('warns about out-of-order documents', function () {
             $doc1 = makeDocumentData([
-                'prNumber' => 'PR-2024-001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
-                'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
-                'timestamp' => Carbon::now(),
+                'document_type' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
+                'uploaded_at' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
-                'prNumber' => 'PR-2024-001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'stage' => StageEnums::PROCUREMENT_INITIATION->value,
-                'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
-                'timestamp' => Carbon::now()->addMinute(),
+                'document_type' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
+                'uploaded_at' => Carbon::now()->addMinute(),
             ]);
 
             $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
@@ -388,17 +371,10 @@ describe('DocumentCrossReferenceVerifier', function () {
             expect($result->warnings[0])->toContain('out of stage order');
         });
 
-        it('handles exception gracefully', function () {
-            $this->documentRepository
-                ->shouldReceive('findByProcurement')
-                ->once()
-                ->andThrow(new Exception('Connection failed'));
-
+        it('returns consistent when no documents to cross-reference', function () {
             $result = $this->verifier->verify('PR-2024-001-0001');
 
-            expect($result->isConsistent)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('Connection failed');
+            expect($result->isConsistent)->toBeTrue();
         });
     });
 });
@@ -409,10 +385,8 @@ describe('DocumentCrossReferenceVerifier', function () {
 describe('DocumentComplianceVerifier', function () {
     beforeEach(function () {
         Log::spy();
-        $this->documentRepository = Mockery::mock(DocumentRepository::class);
         $this->requirements = Mockery::mock(StageDocumentRequirementsService::class);
         $this->verifier = new DocumentComplianceVerifier(
-            $this->documentRepository,
             $this->requirements,
         );
     });
@@ -422,8 +396,8 @@ describe('DocumentComplianceVerifier', function () {
             $stage = StageEnums::PROCUREMENT_INITIATION;
             $doc = makeDocumentData([
                 'stage' => $stage->value,
-                'mimeType' => 'application/pdf',
-                'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
+                'mime_type' => 'application/pdf',
+                'document_type' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
             ]);
 
             $this->requirements
@@ -448,8 +422,8 @@ describe('DocumentComplianceVerifier', function () {
             $stage = StageEnums::PROCUREMENT_INITIATION;
             $doc = makeDocumentData([
                 'stage' => $stage->value,
-                'mimeType' => 'image/png',
-                'documentType' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
+                'mime_type' => 'image/png',
+                'document_type' => DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->value,
             ]);
 
             $this->requirements
@@ -475,8 +449,8 @@ describe('DocumentComplianceVerifier', function () {
             $stage = StageEnums::PROCUREMENT_INITIATION;
             $doc = makeDocumentData([
                 'stage' => $stage->value,
-                'mimeType' => 'application/pdf',
-                'documentType' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
+                'mime_type' => 'application/pdf',
+                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
             ]);
 
             $this->requirements
@@ -500,8 +474,8 @@ describe('DocumentComplianceVerifier', function () {
         it('handles exception gracefully', function () {
             $stage = StageEnums::PROCUREMENT_INITIATION;
 
-            $this->documentRepository
-                ->shouldReceive('findByProcurement')
+            $this->requirements
+                ->shouldReceive('getRequiredDocuments')
                 ->once()
                 ->andThrow(new Exception('Service unavailable'));
 

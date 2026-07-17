@@ -4,78 +4,56 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
-use App\Contracts\CorrectionRepositoryInterface;
-use App\DataTransferObjects\CorrectionData;
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\EventData;
-use App\DataTransferObjects\StatusData;
 use App\Enums\StageEnums;
-use App\Repositories\DocumentRepository;
-use App\Repositories\EventRepository;
-use App\Repositories\StatusRepository;
+use App\Models\ProcurementCorrection;
+use App\Models\ProcurementDocument;
+use App\Models\ProcurementEvent;
+use App\Models\ProcurementStage;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Service for fetching single-procurement data from blockchain repositories
- *
- * Handles:
- * - Fetching status, documents, events, corrections for a specific procurement
- * - Document lookup by File key
- * - Sorting raw blockchain data
- *
- * Bulk listing operations are handled by ProcurementListAggregatorService.
- * User name resolution is handled by BlockchainAddressResolverService.
- *
- * @see ProcurementListAggregatorService
- * @see BlockchainAddressResolverService
- */
 final class ProcurementFetcherService
 {
     public function __construct(
-        private readonly StatusRepository $statusRepository,
-        private readonly DocumentRepository $documentRepository,
-        private readonly EventRepository $eventRepository,
-        private readonly CorrectionRepositoryInterface $correctionRepository,
         private readonly ProcurementFormatterService $formatter,
         private readonly BlockchainAddressResolverService $userNameResolver,
     ) {}
 
-    /**
-     * Fetch status items for a specific procurement
-     */
     public function fetchStatusItems(string $prNumber): Collection
     {
-        $statusDtos = $this->statusRepository->findByProcurement($prNumber);
+        $stages = ProcurementStage::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('entered_at')
+            ->get();
 
-        return collect($statusDtos)
-            ->map(function (StatusData $statusDto) {
-                $stage = $statusDto->stage;
-                $currentStatus = $statusDto->currentStatus;
+        return $stages
+            ->map(function (ProcurementStage $stage) {
+                $stageName = $stage->stage;
+                $currentStatus = $stage->status;
 
-                $stageEnum = StageEnums::tryFrom($stage);
+                $stageEnum = StageEnums::tryFrom($stageName);
                 $phase = $stageEnum?->getPhase() ?? 'unknown';
                 $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
 
                 return [
-                    'stage' => $stage,
-                    'stage_formatted' => $this->formatter->formatStageName($stage),
-                    'stage_description' => $this->formatter->getStageDescription($stage),
-                    'stage_order' => $this->formatter->getStageOrderIndex($stage),
+                    'stage' => $stageName,
+                    'stage_formatted' => $this->formatter->formatStageName($stageName),
+                    'stage_description' => $this->formatter->getStageDescription($stageName),
+                    'stage_order' => $this->formatter->getStageOrderIndex($stageName),
                     'phase' => $phase,
                     'phase_display' => $phaseDisplayName,
                     'current_status' => $currentStatus,
                     'status' => $currentStatus,
                     'status_formatted' => $this->formatter->formatStatus($currentStatus),
-                    'timestamp' => $statusDto->timestamp,
-                    'formatted_date' => $statusDto->getFormattedDateTime(),
-                    'formatted_date_only' => $statusDto->getFormattedDateOnly(),
-                    'formatted_time_only' => $statusDto->getFormattedTimeOnly(),
-                    'pr_number' => $statusDto->prNumber,
-                    'procurement_title' => $statusDto->procurementTitle,
-                    'user_address' => $statusDto->userAddress,
-                    'metadata' => $statusDto->metadata,
+                    'timestamp' => $stage->entered_at,
+                    'formatted_date' => $stage->entered_at?->format('Y-m-d H:i:s'),
+                    'formatted_date_only' => $stage->entered_at?->format('Y-m-d'),
+                    'formatted_time_only' => $stage->entered_at?->format('H:i:s'),
+                    'pr_number' => $stage->procurement?->pr_number ?? '',
+                    'procurement_title' => $stage->procurement?->title ?? '',
+                    'user_address' => $stage->user_address ?? '',
+                    'metadata' => $stage->metadata ?? [],
                 ];
             })
             ->sort(function ($a, $b) {
@@ -86,7 +64,6 @@ final class ProcurementFetcherService
                     return $timestampB <=> $timestampA;
                 }
 
-                // If timestamps are equal, prioritize transitions
                 $isTransitionA = isset($a['metadata']['transition']) && $a['metadata']['transition'] === true;
                 $isTransitionB = isset($b['metadata']['transition']) && $b['metadata']['transition'] === true;
 
@@ -98,78 +75,70 @@ final class ProcurementFetcherService
             });
     }
 
-    /**
-     * Fetch and process all documents for a specific procurement
-     *
-     * @return array<int, array<string, mixed>>
-     */
     public function fetchDocuments(string $prNumber): array
     {
-        $documentDtos = $this->documentRepository->findByProcurement($prNumber);
+        $documents = ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('uploaded_at')
+            ->get();
 
         Log::debug('Document Fetching Stats', [
             'pr_number' => $prNumber,
-            'total_after_filtering_by_id' => count($documentDtos),
+            'total_after_filtering_by_id' => count($documents),
         ]);
 
-        // Fetch corrections for this procurement
-        $correctionDtos = $this->correctionRepository->findByProcurement($prNumber);
-        $correctionsByTxid = collect($correctionDtos)->groupBy(fn (CorrectionData $correction) => $correction->originalTxid);
+        $corrections = ProcurementCorrection::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->get();
+        $correctionsByTxid = $corrections->groupBy(fn (ProcurementCorrection $c) => $c->original_txid);
 
-        return collect($documentDtos)
-            ->map(function (DocumentData $doc) use ($correctionsByTxid) {
-                $fileKey = $doc->fileKey;
+        return $documents
+            ->map(function (ProcurementDocument $doc) use ($correctionsByTxid) {
+                $fileKey = $doc->file_key;
                 $blockchainFileUrl = ! empty($fileKey) ? route('files.download', ['fileKey' => $fileKey]) : '';
 
-                $stageMetadata = $doc->stageMetadata;
-                if ($stageMetadata && is_array($stageMetadata)) {
-                    $stageMetadata = $this->formatter->formatStageMetadata($stageMetadata);
-                }
-
-                // Check for corrections
-                $documentCorrections = $correctionsByTxid->get($doc->dataTxid, collect());
+                $documentCorrections = $correctionsByTxid->get($doc->txid, collect());
                 $hasCorrections = $documentCorrections->isNotEmpty();
                 $latestCorrection = null;
 
                 if ($hasCorrections) {
-                    $latestCorrectionData = $documentCorrections->sortByDesc(fn (CorrectionData $c) => $c->timestamp)->first();
+                    $latestCorrectionModel = $documentCorrections->sortByDesc(fn (ProcurementCorrection $c) => $c->corrected_at)->first();
 
-                    if ($latestCorrectionData) {
+                    if ($latestCorrectionModel) {
                         $latestCorrection = [
-                            'txid' => $latestCorrectionData->txid,
-                            'timestamp' => $latestCorrectionData->timestamp->toIso8601String(),
-                            'correction_type' => $latestCorrectionData->correctionType,
-                            'correction_type_display' => $this->formatter->formatCorrectionType($latestCorrectionData->correctionType),
-                            'action' => $latestCorrectionData->action,
-                            'reason' => $latestCorrectionData->reason,
-                            'corrected_by' => $latestCorrectionData->correctedBy,
-                            'corrected_metadata' => $latestCorrectionData->correctedMetadata,
+                            'txid' => $latestCorrectionModel->txid,
+                            'timestamp' => $latestCorrectionModel->corrected_at?->toIso8601String(),
+                            'correction_type' => $latestCorrectionModel->correction_type,
+                            'correction_type_display' => $this->formatter->formatCorrectionType($latestCorrectionModel->correction_type),
+                            'action' => $latestCorrectionModel->action,
+                            'reason' => $latestCorrectionModel->reason,
+                            'corrected_by' => $latestCorrectionModel->corrected_by,
+                            'corrected_metadata' => $latestCorrectionModel->corrected_metadata,
                         ];
                     }
                 }
 
                 return [
                     'file_key' => $fileKey,
-                    'document_type' => $doc->documentType,
-                    'document_type_formatted' => $this->formatter->formatDocumentType($doc->documentType),
+                    'document_type' => $doc->document_type,
+                    'document_type_formatted' => $this->formatter->formatDocumentType($doc->document_type),
                     'spaces_url' => $blockchainFileUrl,
                     'hash' => $doc->hash,
                     'hash_short' => $doc->getShortenedHash(),
                     'hash_medium' => $doc->getShortenedHash(6, 4),
-                    'file_size' => $doc->fileSize,
-                    'file_size_formatted' => $doc->getFormattedfileSize(),
+                    'file_size' => $doc->file_size,
+                    'file_size_formatted' => $doc->getFormattedFileSize(),
                     'stage' => $doc->stage,
                     'stage_formatted' => $this->formatter->formatStageName($doc->stage),
-                    'stage_metadata' => $stageMetadata,
-                    'pr_number' => $doc->prNumber,
-                    'procurement_title' => $doc->procurementTitle,
-                    'user_address' => $doc->userAddress,
-                    'timestamp' => $doc->timestamp,
+                    'pr_number' => $doc->procurement?->pr_number ?? '',
+                    'procurement_title' => $doc->procurement?->title ?? '',
+                    'user_address' => $doc->user_address,
+                    'timestamp' => $doc->uploaded_at,
                     'formatted_date' => $doc->getFormattedDateTime(),
                     'formatted_date_only' => $doc->getFormattedDateOnly(),
                     'formatted_time_only' => $doc->getFormattedTimeOnly(),
-                    'metadata_txid' => $doc->metadataTxid,
-                    'data_txid' => $doc->dataTxid,
+                    'metadata_txid' => $doc->txid,
+                    'data_txid' => $doc->txid,
                     'has_corrections' => $hasCorrections,
                     'latest_correction' => $latestCorrection,
                 ];
@@ -179,49 +148,43 @@ final class ProcurementFetcherService
             ->toArray();
     }
 
-    /**
-     * Fetch and process events for a specific procurement
-     *
-     * @return array<int, array<string, mixed>>
-     */
     public function fetchEvents(string $prNumber): array
     {
-        $eventDtos = $this->eventRepository->findByProcurement($prNumber);
+        $events = ProcurementEvent::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderBy('occurred_at')
+            ->get();
 
-        return collect($eventDtos)
-            ->map(function (EventData $event) {
+        return $events
+            ->map(function (ProcurementEvent $event) {
                 return [
-                    'timestamp' => $event->timestamp,
-                    'formatted_date' => $event->getFormattedDateTime(),
-                    'formatted_date_only' => $event->getFormattedDateOnly(),
-                    'formatted_time_only' => $event->getFormattedTimeOnly(),
-                    'event_type' => $event->eventType,
-                    'event_type_formatted' => $this->formatter->formatEventType($event->eventType),
+                    'timestamp' => $event->occurred_at,
+                    'formatted_date' => $event->occurred_at?->format('Y-m-d H:i:s'),
+                    'formatted_date_only' => $event->occurred_at?->format('Y-m-d'),
+                    'formatted_time_only' => $event->occurred_at?->format('H:i:s'),
+                    'event_type' => $event->event_type,
+                    'event_type_formatted' => $this->formatter->formatEventType($event->event_type),
                     'details' => $event->details,
                     'stage' => $event->stage,
                     'stage_formatted' => $this->formatter->formatStageName($event->stage),
                     'stage_order' => $this->formatter->getStageOrderIndex($event->stage),
-                    'document_count' => $event->documentCount,
-                    'pr_number' => $event->prNumber,
-                    'procurement_title' => $event->procurementTitle,
-                    'user_address' => $event->userAddress,
+                    'document_count' => $event->document_count,
+                    'pr_number' => $event->procurement?->pr_number ?? '',
+                    'procurement_title' => $event->procurement?->title ?? '',
+                    'user_address' => $event->user_address,
                     'category' => $event->category,
                     'category_formatted' => $this->formatter->formatEventCategory($event->category),
                     'severity' => $event->severity,
                 ];
             })
-            ->sortBy('timestamp')
             ->values()
             ->toArray();
     }
 
-    /**
-     * Get document data from blockchain by File key
-     */
-    public function getDocumentByfileKey(string $fileKey): ?DocumentData
+    public function getDocumentByfileKey(string $fileKey): ?ProcurementDocument
     {
         try {
-            $document = $this->documentRepository->findByfileKey($fileKey);
+            $document = ProcurementDocument::with('procurement')->where('file_key', $fileKey)->first();
 
             if (! $document) {
                 Log::info('No blockchain document found for file key', ['file_key' => $fileKey]);
@@ -232,7 +195,7 @@ final class ProcurementFetcherService
             Log::info('Found blockchain document data', [
                 'file_key' => $fileKey,
                 'hash' => $document->hash,
-                'pr_number' => $document->prNumber,
+                'pr_number' => $document->procurement?->pr_number,
             ]);
 
             return $document;
@@ -246,18 +209,18 @@ final class ProcurementFetcherService
         }
     }
 
-    /**
-     * Get hash by procurement number and File key pattern matching
-     */
     public function getHashByPrNumber(string $prNumber, string $fileKey): ?string
     {
         try {
-            $prDocuments = $this->documentRepository->findByProcurement($prNumber);
+            $prDocuments = ProcurementDocument::with('procurement')
+                ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+                ->orderByDesc('uploaded_at')
+                ->get();
 
-            $document = collect($prDocuments)
-                ->first(function (DocumentData $doc) use ($fileKey) {
+            $document = $prDocuments
+                ->first(function (ProcurementDocument $doc) use ($fileKey) {
                     $fileKeyParts = explode('/', $fileKey);
-                    $docfileKeyParts = explode('/', $doc->fileKey);
+                    $docfileKeyParts = explode('/', $doc->file_key);
 
                     if (count($fileKeyParts) >= 1 && count($docfileKeyParts) >= 1) {
                         return $fileKeyParts[0] === $docfileKeyParts[0];
@@ -270,7 +233,7 @@ final class ProcurementFetcherService
                 Log::info('Alternative hash lookup result', [
                     'found_hash' => ! empty($document->hash),
                     'hash_value' => $document->hash,
-                    'matched_file_key' => $document->fileKey,
+                    'matched_file_key' => $document->file_key,
                 ]);
 
                 return $document->hash;
@@ -288,13 +251,10 @@ final class ProcurementFetcherService
         }
     }
 
-    /**
-     * Validate that the File exists in document stream
-     */
-    public function validateDocumentExists(string $fileKey): ?DocumentData
+    public function validateDocumentExists(string $fileKey): ?ProcurementDocument
     {
         try {
-            return $this->documentRepository->findByfileKey($fileKey);
+            return ProcurementDocument::with('procurement')->where('file_key', $fileKey)->first();
         } catch (\Exception $e) {
             Log::error('Blockchain validation failed', [
                 'file_key' => $fileKey,
@@ -305,17 +265,11 @@ final class ProcurementFetcherService
         }
     }
 
-    /**
-     * Preload user names for batch user lookup from raw stream items
-     */
     public function preloadUserNames(Collection $items): void
     {
         $this->userNameResolver->preloadFromRawItems($items);
     }
 
-    /**
-     * Get username from blockchain address
-     */
     public function getUserName(string $address): string
     {
         return $this->userNameResolver->resolve($address);

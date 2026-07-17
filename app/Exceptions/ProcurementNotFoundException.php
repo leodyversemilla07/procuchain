@@ -6,16 +6,11 @@ namespace App\Exceptions;
 
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Exception thrown when a procurement record is not found
- */
 class ProcurementNotFoundException extends Exception
 {
-    /**
-     * The procurement ID that was not found
-     */
     protected ?string $procurementId = null;
 
     public function __construct(
@@ -28,17 +23,11 @@ class ProcurementNotFoundException extends Exception
         $this->procurementId = $procurementId;
     }
 
-    /**
-     * Get the procurement ID that was not found
-     */
     public function getProcurementId(): ?string
     {
         return $this->procurementId;
     }
 
-    /**
-     * Create exception for a specific procurement ID
-     */
     public static function forId(string $procurementId): self
     {
         return new self(
@@ -47,9 +36,6 @@ class ProcurementNotFoundException extends Exception
         );
     }
 
-    /**
-     * Create exception for a specific stage
-     */
     public static function forStage(string $procurementId, string $stage): self
     {
         return new self(
@@ -58,18 +44,11 @@ class ProcurementNotFoundException extends Exception
         );
     }
 
-    /**
-     * Report the exception
-     */
     public function report(): bool
     {
-        // Don't report 404s to error tracking services
         return false;
     }
 
-    /**
-     * Render the exception into an HTTP response
-     */
     public function render(Request $request): Response
     {
         if ($request->wantsJson()) {
@@ -79,8 +58,8 @@ class ProcurementNotFoundException extends Exception
             ], 404);
         }
 
-        return response(view('errors.404', [
-            'message' => $this->getMessage(),
-        ]), 404);
+        return Inertia::render('error', ['status' => 404])
+            ->toResponse($request)
+            ->setStatusCode(404);
     }
 }

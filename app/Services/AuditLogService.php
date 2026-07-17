@@ -2,9 +2,8 @@
 
 namespace App\Services;
 
-use App\Contracts\EventPublisherInterface;
-use App\Contracts\NotificationServiceInterface;
 use App\Models\AuditLog;
+use App\Services\Publishers\EventPublisher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -140,8 +139,8 @@ class AuditLogService
 
     public function __construct(
         protected Request $request,
-        protected EventPublisherInterface $events,
-        protected NotificationServiceInterface $notifications,
+        protected EventPublisher $events,
+        protected NotificationService $notifications,
     ) {}
 
     /**

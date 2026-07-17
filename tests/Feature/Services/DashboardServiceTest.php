@@ -1,13 +1,9 @@
 <?php
 
-use App\DataTransferObjects\DocumentData;
-use App\DataTransferObjects\EventData;
-use App\DataTransferObjects\ProcurementData;
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainRpcClient;
 use App\Services\Dashboard\ModeAnalyzer;
 use App\Services\Dashboard\StatisticsCalculator;
@@ -23,12 +19,10 @@ beforeEach(function () {
     Log::spy();
 
     $this->blockchainRpcClient = mock(BlockchainRpcClient::class);
-    $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
-    $this->procurementRepository = mock(ProcurementRepository::class);
+    $this->userService = mock(UserService::class)->makePartial();
 
     $this->service = new DashboardService(
         $this->blockchainRpcClient,
-        $this->procurementRepository,
         new StatisticsCalculator,
         new ModeAnalyzer,
         $this->userService,
@@ -153,21 +147,18 @@ describe('DashboardService', function () {
                 ],
             ];
 
-            $procurementOne = ProcurementData::fromBlockchainArray([
-                'pr_number' => 'PR-001',
+            seedDashboardProcurement([
+                'prNumber' => 'PR-001',
                 'title' => 'Mode A Procurement',
                 'category' => 'goods',
-                'procurement_mode' => 'small_value_procurement',
+                'procurementMode' => 'small_value_procurement',
             ]);
-            $procurementTwo = ProcurementData::fromBlockchainArray([
-                'pr_number' => 'PR-002',
+            seedDashboardProcurement([
+                'prNumber' => 'PR-002',
                 'title' => 'Mode B Procurement',
                 'category' => 'goods',
-                'procurement_mode' => 'competitive_bidding',
+                'procurementMode' => 'competitive_bidding',
             ]);
-
-            seedDashboardProcurement($procurementOne);
-            seedDashboardProcurement($procurementTwo);
 
             $result = $this->service->getProcurementsByKey($streamData);
 
@@ -492,20 +483,18 @@ describe('DashboardService', function () {
                 ->with('1ABC123XYZ')
                 ->andReturn('Jane Doe');
 
-            $eventData = new EventData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Test Procurement',
-                stage: 'Contract And PO',
-                eventType: 'document_uploaded',
-                category: 'document',
-                severity: 'info',
-                details: 'Contract signed',
-                documentCount: 1,
-                userAddress: '1ABC123XYZ',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-
-            seedDashboardEvent($eventData);
+            seedDashboardEvent([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Test Procurement',
+                'stage' => 'Contract And PO',
+                'eventType' => 'document_uploaded',
+                'category' => 'document',
+                'severity' => 'info',
+                'details' => 'Contract signed',
+                'documentCount' => 1,
+                'userAddress' => '1ABC123XYZ',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
 
             $result = $this->service->getRecentActivities();
 
@@ -517,20 +506,18 @@ describe('DashboardService', function () {
         });
 
         test('it filters out invalid activity items', function () {
-            $validEvent = new EventData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Valid',
-                stage: 'Pre-Procurement',
-                eventType: 'test',
-                category: 'test',
-                severity: 'info',
-                details: 'test',
-                documentCount: 0,
-                userAddress: '1ABC123XYZ',
-                timestamp: Carbon::now(),
-            );
-
-            seedDashboardEvent($validEvent);
+            seedDashboardEvent([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Valid',
+                'stage' => 'Pre-Procurement',
+                'eventType' => 'test',
+                'category' => 'test',
+                'severity' => 'info',
+                'details' => 'test',
+                'documentCount' => 0,
+                'userAddress' => '1ABC123XYZ',
+                'timestamp' => Carbon::now(),
+            ]);
 
             $result = $this->service->getRecentActivities();
 
@@ -544,46 +531,42 @@ describe('DashboardService', function () {
         });
 
         test('it sorts activities by timestamp descending', function () {
-            $event1 = new EventData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Oldest',
-                stage: 'Pre-Procurement',
-                eventType: 'test',
-                category: 'test',
-                severity: 'info',
-                details: 'test',
-                documentCount: 0,
-                userAddress: '1ABC123XYZ',
-                timestamp: Carbon::parse('2024-01-10T10:00:00Z'),
-            );
-            $event2 = new EventData(
-                prNumber: 'PR-002',
-                procurementTitle: 'Newest',
-                stage: 'Bidding',
-                eventType: 'test',
-                category: 'test',
-                severity: 'info',
-                details: 'test',
-                documentCount: 0,
-                userAddress: '1ABC123XYZ',
-                timestamp: Carbon::parse('2024-01-20T10:00:00Z'),
-            );
-            $event3 = new EventData(
-                prNumber: 'PR-003',
-                procurementTitle: 'Middle',
-                stage: 'Post-Qualification',
-                eventType: 'test',
-                category: 'test',
-                severity: 'info',
-                details: 'test',
-                documentCount: 0,
-                userAddress: '1ABC123XYZ',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-
-            seedDashboardEvent($event1);
-            seedDashboardEvent($event2);
-            seedDashboardEvent($event3);
+            seedDashboardEvent([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Oldest',
+                'stage' => 'Pre-Procurement',
+                'eventType' => 'test',
+                'category' => 'test',
+                'severity' => 'info',
+                'details' => 'test',
+                'documentCount' => 0,
+                'userAddress' => '1ABC123XYZ',
+                'timestamp' => Carbon::parse('2024-01-10T10:00:00Z'),
+            ]);
+            seedDashboardEvent([
+                'prNumber' => 'PR-002',
+                'procurementTitle' => 'Newest',
+                'stage' => 'Bidding',
+                'eventType' => 'test',
+                'category' => 'test',
+                'severity' => 'info',
+                'details' => 'test',
+                'documentCount' => 0,
+                'userAddress' => '1ABC123XYZ',
+                'timestamp' => Carbon::parse('2024-01-20T10:00:00Z'),
+            ]);
+            seedDashboardEvent([
+                'prNumber' => 'PR-003',
+                'procurementTitle' => 'Middle',
+                'stage' => 'Post-Qualification',
+                'eventType' => 'test',
+                'category' => 'test',
+                'severity' => 'info',
+                'details' => 'test',
+                'documentCount' => 0,
+                'userAddress' => '1ABC123XYZ',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
 
             $result = $this->service->getRecentActivities();
 
@@ -596,18 +579,18 @@ describe('DashboardService', function () {
             // Generate more activities than display limit (8)
             $events = [];
             for ($i = 1; $i <= 15; $i++) {
-                $events[] = new EventData(
-                    prNumber: "PR-{$i}",
-                    procurementTitle: "Procurement {$i}",
-                    stage: 'Pre-Procurement',
-                    eventType: 'test',
-                    category: 'test',
-                    severity: 'info',
-                    details: 'test',
-                    documentCount: 0,
-                    userAddress: '1ABC123XYZ',
-                    timestamp: Carbon::parse("2024-01-{$i}T10:00:00Z"),
-                );
+                $events[] = [
+                    'prNumber' => "PR-{$i}",
+                    'procurementTitle' => "Procurement {$i}",
+                    'stage' => 'Pre-Procurement',
+                    'eventType' => 'test',
+                    'category' => 'test',
+                    'severity' => 'info',
+                    'details' => 'test',
+                    'documentCount' => 0,
+                    'userAddress' => '1ABC123XYZ',
+                    'timestamp' => Carbon::parse("2024-01-{$i}T10:00:00Z"),
+                ];
             }
 
             foreach ($events as $event) {
@@ -639,61 +622,57 @@ describe('DashboardService', function () {
                 'PR-002' => ['prNumber' => 'PR-002'],
             ]);
 
-            $doc1 = new DocumentData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Test Procurement 1',
-                userAddress: '1ABC123XYZ',
-                stage: 'Pre-Procurement',
-                status: 'Active',
-                documentType: 'Contract',
-                fileKey: 'key1',
-                filename: 'doc1.pdf',
-                fileSize: 1000,
-                mimeType: 'application/pdf',
-                hash: 'hash1',
-                dataTxid: 'tx1',
-                metadataTxid: 'mtx1',
-                uploadedBy: 'user1',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-            $doc2 = new DocumentData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Test Procurement 1',
-                userAddress: '1ABC123XYZ',
-                stage: 'Pre-Procurement',
-                status: 'Active',
-                documentType: 'Contract',
-                fileKey: 'key2',
-                filename: 'doc2.pdf',
-                fileSize: 1000,
-                mimeType: 'application/pdf',
-                hash: 'hash2',
-                dataTxid: 'tx2',
-                metadataTxid: 'mtx2',
-                uploadedBy: 'user1',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-            $doc3 = new DocumentData(
-                prNumber: 'PR-002',
-                procurementTitle: 'Test Procurement 2',
-                userAddress: '1DEF456ABC',
-                stage: 'Bidding',
-                status: 'Active',
-                documentType: 'Bid',
-                fileKey: 'key3',
-                filename: 'doc3.pdf',
-                fileSize: 1000,
-                mimeType: 'application/pdf',
-                hash: 'hash3',
-                dataTxid: 'tx3',
-                metadataTxid: 'mtx3',
-                uploadedBy: 'user2',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-
-            seedDashboardDocument($doc1);
-            seedDashboardDocument($doc2);
-            seedDashboardDocument($doc3);
+            seedDashboardDocument([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Test Procurement 1',
+                'userAddress' => '1ABC123XYZ',
+                'stage' => 'Pre-Procurement',
+                'status' => 'Active',
+                'documentType' => 'Contract',
+                'fileKey' => 'key1',
+                'filename' => 'doc1.pdf',
+                'fileSize' => 1000,
+                'mimeType' => 'application/pdf',
+                'hash' => 'hash1',
+                'dataTxid' => 'tx1',
+                'metadataTxid' => 'mtx1',
+                'uploadedBy' => 'user1',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
+            seedDashboardDocument([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Test Procurement 1',
+                'userAddress' => '1ABC123XYZ',
+                'stage' => 'Pre-Procurement',
+                'status' => 'Active',
+                'documentType' => 'Contract',
+                'fileKey' => 'key2',
+                'filename' => 'doc2.pdf',
+                'fileSize' => 1000,
+                'mimeType' => 'application/pdf',
+                'hash' => 'hash2',
+                'dataTxid' => 'tx2',
+                'metadataTxid' => 'mtx2',
+                'uploadedBy' => 'user1',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
+            seedDashboardDocument([
+                'prNumber' => 'PR-002',
+                'procurementTitle' => 'Test Procurement 2',
+                'userAddress' => '1DEF456ABC',
+                'stage' => 'Bidding',
+                'status' => 'Active',
+                'documentType' => 'Bid',
+                'fileKey' => 'key3',
+                'filename' => 'doc3.pdf',
+                'fileSize' => 1000,
+                'mimeType' => 'application/pdf',
+                'hash' => 'hash3',
+                'dataTxid' => 'tx3',
+                'metadataTxid' => 'mtx3',
+                'uploadedBy' => 'user2',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -712,43 +691,40 @@ describe('DashboardService', function () {
                 'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $doc1 = new DocumentData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Test Procurement',
-                userAddress: '1ABC123XYZ',
-                stage: 'Pre-Procurement',
-                status: 'Active',
-                documentType: 'Contract',
-                fileKey: 'key1',
-                filename: 'doc1.pdf',
-                fileSize: 1000,
-                mimeType: 'application/pdf',
-                hash: 'duplicate_hash',
-                dataTxid: 'tx1',
-                metadataTxid: 'mtx1',
-                uploadedBy: 'user1',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-            $doc2 = new DocumentData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Test Procurement',
-                userAddress: '1ABC123XYZ',
-                stage: 'Pre-Procurement',
-                status: 'Active',
-                documentType: 'Contract',
-                fileKey: 'key2',
-                filename: 'doc2.pdf',
-                fileSize: 1000,
-                mimeType: 'application/pdf',
-                hash: 'duplicate_hash', // Same hash
-                dataTxid: 'tx2',
-                metadataTxid: 'mtx2',
-                uploadedBy: 'user1',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-
-            seedDashboardDocument($doc1);
-            seedDashboardDocument($doc2);
+            seedDashboardDocument([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Test Procurement',
+                'userAddress' => '1ABC123XYZ',
+                'stage' => 'Pre-Procurement',
+                'status' => 'Active',
+                'documentType' => 'Contract',
+                'fileKey' => 'key1',
+                'filename' => 'doc1.pdf',
+                'fileSize' => 1000,
+                'mimeType' => 'application/pdf',
+                'hash' => 'duplicate_hash',
+                'dataTxid' => 'tx1',
+                'metadataTxid' => 'mtx1',
+                'uploadedBy' => 'user1',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
+            seedDashboardDocument([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Test Procurement',
+                'userAddress' => '1ABC123XYZ',
+                'stage' => 'Pre-Procurement',
+                'status' => 'Active',
+                'documentType' => 'Contract',
+                'fileKey' => 'key2',
+                'filename' => 'doc2.pdf',
+                'fileSize' => 1000,
+                'mimeType' => 'application/pdf',
+                'hash' => 'duplicate_hash',
+                'dataTxid' => 'tx2',
+                'metadataTxid' => 'mtx2',
+                'uploadedBy' => 'user1',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -770,25 +746,23 @@ describe('DashboardService', function () {
                 'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $doc1 = new DocumentData(
-                prNumber: 'PR-001',
-                procurementTitle: 'Test Procurement',
-                userAddress: '1ABC123XYZ',
-                stage: 'Pre-Procurement',
-                status: 'Active',
-                documentType: 'Contract',
-                fileKey: 'key1',
-                filename: 'doc1.pdf',
-                fileSize: 1000,
-                mimeType: 'application/pdf',
-                hash: 'valid_hash',
-                dataTxid: 'tx1',
-                metadataTxid: 'mtx1',
-                uploadedBy: 'user1',
-                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
-            );
-
-            seedDashboardDocument($doc1);
+            seedDashboardDocument([
+                'prNumber' => 'PR-001',
+                'procurementTitle' => 'Test Procurement',
+                'userAddress' => '1ABC123XYZ',
+                'stage' => 'Pre-Procurement',
+                'status' => 'Active',
+                'documentType' => 'Contract',
+                'fileKey' => 'key1',
+                'filename' => 'doc1.pdf',
+                'fileSize' => 1000,
+                'mimeType' => 'application/pdf',
+                'hash' => 'valid_hash',
+                'dataTxid' => 'tx1',
+                'metadataTxid' => 'mtx1',
+                'uploadedBy' => 'user1',
+                'timestamp' => Carbon::parse('2024-01-15T10:00:00Z'),
+            ]);
 
             $result = $this->service->getTotalDocuments($procurements);
             expect($result)->toBe(1); // Only valid document counted
@@ -931,56 +905,56 @@ describe('DashboardService', function () {
     });
 });
 
-function seedDashboardProcurement(ProcurementData|EventData|DocumentData $data): Procurement
+function seedDashboardProcurement(array $data): Procurement
 {
     return Procurement::firstOrCreate(
-        ['pr_number' => $data->prNumber],
+        ['pr_number' => $data['prNumber']],
         [
-            'title' => $data->procurementTitle ?? $data->title,
-            'category' => $data instanceof ProcurementData ? $data->category->value : 'goods',
-            'procurement_mode' => $data instanceof ProcurementData ? $data->procurementMode->value : 'competitive_bidding',
-            'abc_amount' => $data instanceof ProcurementData ? $data->abcAmount : 0,
-            'current_status' => $data instanceof ProcurementData ? $data->status : null,
-            'user_id' => $data instanceof ProcurementData ? $data->userId : null,
-            'user_address' => $data->userAddress ?? null,
-            'initiated_at' => $data instanceof ProcurementData ? $data->createdAt : now(),
+            'title' => $data['procurementTitle'] ?? $data['title'],
+            'category' => $data['category'] ?? 'goods',
+            'procurement_mode' => $data['procurementMode'] ?? 'competitive_bidding',
+            'abc_amount' => $data['abcAmount'] ?? 0,
+            'current_status' => $data['status'] ?? null,
+            'user_id' => $data['userId'] ?? null,
+            'user_address' => $data['userAddress'] ?? null,
+            'initiated_at' => $data['timestamp'] ?? $data['initiatedAt'] ?? now(),
         ],
     );
 }
 
-function seedDashboardEvent(EventData $event): ProcurementEvent
+function seedDashboardEvent(array $event): ProcurementEvent
 {
     $procurement = seedDashboardProcurement($event);
 
     return ProcurementEvent::create([
         'procurement_id' => $procurement->id,
-        'event_type' => $event->eventType,
-        'category' => $event->category,
-        'severity' => $event->severity,
-        'details' => $event->details,
-        'stage' => $event->stage,
-        'document_count' => $event->documentCount,
-        'user_address' => $event->userAddress,
-        'occurred_at' => $event->timestamp,
+        'event_type' => $event['eventType'],
+        'category' => $event['category'],
+        'severity' => $event['severity'],
+        'details' => $event['details'],
+        'stage' => $event['stage'],
+        'document_count' => $event['documentCount'],
+        'user_address' => $event['userAddress'],
+        'occurred_at' => $event['timestamp'],
     ]);
 }
 
-function seedDashboardDocument(DocumentData $document): ProcurementDocument
+function seedDashboardDocument(array $document): ProcurementDocument
 {
     $procurement = seedDashboardProcurement($document);
 
     return ProcurementDocument::create([
         'procurement_id' => $procurement->id,
-        'document_type' => $document->documentType,
-        'stage' => $document->stage,
-        'filename' => $document->filename,
-        'file_key' => $document->fileKey,
-        'mime_type' => $document->mimeType,
-        'file_size' => $document->fileSize,
-        'hash' => $document->hash,
-        'uploaded_by' => $document->uploadedBy,
-        'user_address' => $document->userAddress,
-        'txid' => $document->dataTxid,
-        'uploaded_at' => $document->timestamp,
+        'document_type' => $document['documentType'],
+        'stage' => $document['stage'],
+        'filename' => $document['filename'],
+        'file_key' => $document['fileKey'],
+        'mime_type' => $document['mimeType'],
+        'file_size' => $document['fileSize'],
+        'hash' => $document['hash'],
+        'uploaded_by' => $document['uploadedBy'],
+        'user_address' => $document['userAddress'],
+        'txid' => $document['dataTxid'],
+        'uploaded_at' => $document['timestamp'],
     ]);
 }

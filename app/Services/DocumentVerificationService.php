@@ -10,8 +10,8 @@ use App\DataTransferObjects\Verification\CrossReferenceResult;
 use App\DataTransferObjects\Verification\VerificationReportDTO;
 use App\DataTransferObjects\Verification\VerificationResult;
 use App\Enums\StageEnums;
+use App\Models\ProcurementDocument;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
 use App\Services\Verification\DocumentCompletenessVerifier;
 use App\Services\Verification\DocumentComplianceVerifier;
 use App\Services\Verification\DocumentCrossReferenceVerifier;
@@ -30,7 +30,6 @@ final class DocumentVerificationService
         private readonly DocumentCompletenessVerifier $completenessVerifier,
         private readonly DocumentCrossReferenceVerifier $crossReferenceVerifier,
         private readonly DocumentComplianceVerifier $complianceVerifier,
-        private readonly DocumentRepository $documentRepository,
     ) {}
 
     public function verifyIntegrity(string $fileKey, string $dataTxid): VerificationResult
@@ -68,17 +67,19 @@ final class DocumentVerificationService
      */
     public function generateVerificationReport(string $prNumber, ?StageEnums $stage = null, ?User $authUser = null): VerificationReportDTO
     {
-        $documents = $this->documentRepository->findByProcurement($prNumber);
+        $documents = ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('uploaded_at')
+            ->get();
 
         if ($stage === null) {
             $stage = $this->determineCurrentStage($documents->all());
         }
 
-        // Lightweight integrity results using stored metadata (avoids slow blockchain retrieval)
         $integrityResults = [];
         foreach ($documents as $doc) {
             $integrityResults[] = [
-                'file_key' => $doc->fileKey,
+                'file_key' => $doc->file_key,
                 'is_valid' => true,
                 'expected_hash' => $doc->hash,
                 'actual_hash' => $doc->hash,
@@ -123,7 +124,7 @@ final class DocumentVerificationService
         $latestStageIndex = 0;
 
         foreach ($documents as $doc) {
-            $stageIndex = array_search($doc->stage, $stageValues, true);
+            $stageIndex = array_search($doc->stage ?? '', $stageValues, true);
             if ($stageIndex !== false && $stageIndex > $latestStageIndex) {
                 $latestStageIndex = $stageIndex;
             }

@@ -2,7 +2,6 @@
 
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Services\Procurement\StageStatusMappingService;
 use App\Services\Publishers\DecisionPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
@@ -13,12 +12,10 @@ use function Pest\Laravel\mock;
 beforeEach(function () {
     $this->statusPublisher = mock(StatusPublisher::class);
     $this->eventPublisher = mock(EventPublisher::class);
-    $this->statusMapper = new StageStatusMappingService;
 
     $this->publisher = new DecisionPublisher(
         $this->statusPublisher,
         $this->eventPublisher,
-        $this->statusMapper
     );
 });
 

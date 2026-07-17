@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Verification;
 
 use App\DataTransferObjects\Verification\VerificationResult;
-use App\Repositories\DocumentRepository;
+use App\Models\ProcurementDocument;
 use App\Services\BlockchainStorageService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +14,6 @@ final class DocumentIntegrityVerifier
 {
     public function __construct(
         private readonly BlockchainStorageService $blockchainStorage,
-        private readonly DocumentRepository $documentRepository,
     ) {}
 
     /**
@@ -68,7 +67,7 @@ final class DocumentIntegrityVerifier
     public function verifySingle(string $fileKey): VerificationResult
     {
         try {
-            $document = $this->documentRepository->findByfileKey($fileKey);
+            $document = ProcurementDocument::with('procurement')->where('file_key', $fileKey)->first();
 
             if ($document === null) {
                 return VerificationResult::failure(
@@ -79,7 +78,7 @@ final class DocumentIntegrityVerifier
                 );
             }
 
-            return $this->verify($fileKey, $document->dataTxid);
+            return $this->verify($fileKey, $document->txid);
         } catch (Exception $e) {
             Log::error('Single document verification failed', [
                 'file_key' => $fileKey,
@@ -100,18 +99,22 @@ final class DocumentIntegrityVerifier
      */
     public function batchVerify(string $prNumber): array
     {
-        $documents = $this->documentRepository->findByProcurement($prNumber);
+        $documents = ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('uploaded_at')
+            ->get();
+
         $results = [];
 
         foreach ($documents as $doc) {
             $results[] = [
                 'document' => [
-                    'file_key' => $doc->fileKey,
-                    'document_type' => $doc->documentType,
+                    'file_key' => $doc->file_key,
+                    'document_type' => $doc->document_type,
                     'stage' => $doc->stage,
-                    'uploaded_at' => $doc->timestamp->toIso8601String(),
+                    'uploaded_at' => $doc->uploaded_at?->toIso8601String(),
                 ],
-                'verification' => $this->verify($doc->fileKey, $doc->dataTxid)->toArray(),
+                'verification' => $this->verify($doc->file_key, $doc->txid)->toArray(),
             ];
         }
 

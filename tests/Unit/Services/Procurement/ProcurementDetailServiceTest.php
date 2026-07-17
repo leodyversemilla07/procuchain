@@ -1,13 +1,8 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
-use App\DataTransferObjects\StatusData;
 use App\Models\Procurement;
 use App\Models\ProcurementArchive;
 use App\Models\ProcurementStage;
-use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementRepository;
-use App\Services\BlockchainRpcClient;
 use App\Services\Procurement\BlockchainAddressResolverService;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
@@ -29,13 +24,9 @@ beforeEach(function () {
 describe('ProcurementDetailService', function () {
     beforeEach(function () {
         $this->dataService = Mockery::mock(ProcurementDataService::class);
-        $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
-        $this->procCorrectionBlockchainRpcClient = Mockery::mock(BlockchainRpcClient::class);
 
         $this->service = new ProcurementDetailService(
             $this->dataService,
-            $this->procurementRepository,
-            new ProcurementCorrectionRepository($this->procCorrectionBlockchainRpcClient),
         );
     });
 
@@ -94,18 +85,12 @@ describe('ProcurementDetailService', function () {
                     'stage' => 'procurement_initiation',
                 ]);
 
-            $this->procurementRepository
-                ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001-0001')
-                ->once()
-                ->andReturn(null);
-
             $result = $this->service->getDetail('PR-2025-001-0001');
 
             expect($result)
                 ->toHaveKeys(['procurement', 'workflow'])
                 ->and($result['procurement']['title'])->toBe('Test Procurement')
-                ->and($result['workflow'])->toBeNull(); // null because no procurementDetails
+                ->and($result['workflow'])->toBeNull();
         });
 
         it('includes workflow and details when procurement details exist', function () {
@@ -118,18 +103,18 @@ describe('ProcurementDetailService', function () {
                 'timestamp' => now()->toIso8601String(),
             ];
 
-            $procurementDetails = ProcurementData::fromBlockchainArray([
+            Procurement::create([
                 'pr_number' => 'PR-2025-001-0001',
                 'title' => 'Test Procurement',
                 'description' => 'Test description',
-                'abc_amount' => '500000',
-                'funding_source' => 'GAA',
+                'abc_amount' => 500000,
                 'category' => 'goods',
                 'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering',
-                'status' => 'procurement_submitted',
+                'current_status' => 'procurement_submitted',
+                'current_stage' => 'procurement_initiation',
                 'user_id' => '1',
-                'created_at' => now()->toIso8601String(),
+                'initiated_at' => now(),
             ]);
 
             $this->dataService
@@ -156,15 +141,6 @@ describe('ProcurementDetailService', function () {
                     'stage' => 'procurement_initiation',
                 ]);
 
-            $this->procurementRepository
-                ->shouldReceive('findByProcurement')
-                ->andReturn($procurementDetails);
-
-            // Mock correction BlockchainRpcClient to return no corrections
-            $this->procCorrectionBlockchainRpcClient
-                ->shouldReceive('liststreamitems')
-                ->andReturn([]);
-
             $result = $this->service->getDetail('PR-2025-001-0001');
 
             expect($result['workflow'])->not->toBeNull()
@@ -177,12 +153,11 @@ describe('ProcurementDetailService', function () {
 
 describe('ProcurementListAggregatorService', function () {
     beforeEach(function () {
-        $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
         $this->userService = Mockery::mock(UserService::class);
 
         $this->aggregator = new ProcurementListAggregatorService(
             new ProcurementFormatterService,
-            new ProcurementActionService($this->procurementRepository),
+            new ProcurementActionService,
             new BlockchainAddressResolverService($this->userService),
         );
     });
@@ -237,23 +212,23 @@ describe('ProcurementListAggregatorService', function () {
             $method = new ReflectionMethod(ProcurementListAggregatorService::class, 'filterByArchiveStatus');
             $method->setAccessible(true);
 
-            $activeDto = new StatusData(
-                prNumber: 'PR-2025-991-0001',
-                procurementTitle: 'Active',
-                stage: 'procurement_initiation',
-                currentStatus: 'procurement_submitted',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+            $activeDto = [
+                'prNumber' => 'PR-2025-991-0001',
+                'procurementTitle' => 'Active',
+                'stage' => 'procurement_initiation',
+                'currentStatus' => 'procurement_submitted',
+                'userAddress' => '1abc',
+                'timestamp' => Carbon::now(),
+            ];
 
-            $archivedDto = new StatusData(
-                prNumber: 'PR-2025-991-0002',
-                procurementTitle: 'Archived',
-                stage: 'completed',
-                currentStatus: 'completed',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+            $archivedDto = [
+                'prNumber' => 'PR-2025-991-0002',
+                'procurementTitle' => 'Archived',
+                'stage' => 'completed',
+                'currentStatus' => 'completed',
+                'userAddress' => '1abc',
+                'timestamp' => Carbon::now(),
+            ];
 
             $collection = collect([$activeDto, $archivedDto]);
 
@@ -278,30 +253,30 @@ describe('ProcurementListAggregatorService', function () {
             $result = $method->invoke($this->aggregator, $collection, false);
 
             expect($result)->toHaveCount(1)
-                ->and($result->first()->prNumber)->toBe('PR-2025-991-0001');
+                ->and($result->first()['prNumber'])->toBe('PR-2025-991-0001');
         });
 
         it('filters correctly for archived procurements', function () {
             $method = new ReflectionMethod(ProcurementListAggregatorService::class, 'filterByArchiveStatus');
             $method->setAccessible(true);
 
-            $activeDto = new StatusData(
-                prNumber: 'PR-2025-991-0001',
-                procurementTitle: 'Active',
-                stage: 'procurement_initiation',
-                currentStatus: 'procurement_submitted',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+            $activeDto = [
+                'prNumber' => 'PR-2025-991-0001',
+                'procurementTitle' => 'Active',
+                'stage' => 'procurement_initiation',
+                'currentStatus' => 'procurement_submitted',
+                'userAddress' => '1abc',
+                'timestamp' => Carbon::now(),
+            ];
 
-            $archivedDto = new StatusData(
-                prNumber: 'PR-2025-991-0002',
-                procurementTitle: 'Archived',
-                stage: 'completed',
-                currentStatus: 'completed',
-                userAddress: '1abc',
-                timestamp: Carbon::now(),
-            );
+            $archivedDto = [
+                'prNumber' => 'PR-2025-991-0002',
+                'procurementTitle' => 'Archived',
+                'stage' => 'completed',
+                'currentStatus' => 'completed',
+                'userAddress' => '1abc',
+                'timestamp' => Carbon::now(),
+            ];
 
             $collection = collect([$activeDto, $archivedDto]);
 
@@ -326,7 +301,7 @@ describe('ProcurementListAggregatorService', function () {
             $result = $method->invoke($this->aggregator, $collection, true);
 
             expect($result)->toHaveCount(1)
-                ->and($result->first()->prNumber)->toBe('PR-2025-991-0002');
+                ->and($result->first()['prNumber'])->toBe('PR-2025-991-0002');
         });
     });
 });

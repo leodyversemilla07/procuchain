@@ -4,15 +4,14 @@ namespace App\Policies;
 
 use App\Enums\Permission;
 use App\Models\DocumentViewLog;
+use App\Models\ProcurementDocument;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
 use App\Services\ProcurementDataService;
 
 class DocumentPolicy
 {
     public function __construct(
         private readonly ProcurementDataService $procurementDataService,
-        private readonly DocumentRepository $documentRepository,
         private readonly ProcurementPolicy $procurementPolicy,
     ) {}
 
@@ -68,11 +67,15 @@ class DocumentPolicy
 
     private function resolveProcurementNumber(string $fileKey): ?string
     {
-        $document = $this->documentRepository->findByfileKey($fileKey)
-            ?? $this->documentRepository->findByTxid($fileKey);
+        $document = ProcurementDocument::with('procurement')
+            ->where(function ($q) use ($fileKey) {
+                $q->where('file_key', $fileKey)
+                    ->orWhere('txid', $fileKey);
+            })
+            ->first();
 
-        if ($document !== null && $document->prNumber !== '') {
-            return $document->prNumber;
+        if ($document !== null && ($document->procurement?->pr_number ?? '') !== '') {
+            return $document->procurement->pr_number;
         }
 
         $documentViewLog = DocumentViewLog::query()

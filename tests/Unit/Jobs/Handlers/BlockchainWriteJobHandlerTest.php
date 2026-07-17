@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
@@ -13,20 +12,21 @@ use App\Jobs\Handlers\ProcurementInitiationHandler;
 use App\Jobs\Handlers\ProcurementUpdateHandler;
 use App\Jobs\Handlers\StageCompletionHandler;
 use App\Jobs\Handlers\StageTransitionHandler;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Services\Publishers\CorrectionPublisher;
 use App\Services\Publishers\DecisionPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use App\Services\Publishers\StatusPublisher;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 // ============================================================================
 // BlockchainWriteJob – Dispatch Routing Tests
@@ -585,13 +585,13 @@ describe('CorrectionHandler', function () {
         $procurementCorrectionPublisher->shouldReceive('publishCorrection')
             ->once()
             ->withArgs(function (
-                ProcurementData $originalProcurement,
+                Procurement $originalProcurement,
                 array $correctedData,
                 string $reason,
                 string $correctedBy,
                 string $userAddress,
             ) {
-                return $originalProcurement->prNumber === 'PR-2025-992-0011'
+                return $originalProcurement->pr_number === 'PR-2025-992-0011'
                     && $correctedData['title'] === 'Corrected Title'
                     && $reason === 'Title was wrong'
                     && $correctedBy === 'Admin'
@@ -778,28 +778,18 @@ describe('StageTransitionHandler', function () {
     });
 
     it('executeSkip skips optional stages', function () {
-        $statusPublisher = Mockery::mock(StatusPublisher::class);
-        $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
-
-        $procurement = ProcurementData::fromArray([
+        Procurement::create([
             'pr_number' => 'PR-2025-992-0015',
             'title' => 'Skip Test',
-            'description' => 'Testing skip',
-            'abc_amount' => '50000',
-            'funding_source' => 'GAA',
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
-            'office' => 'Test Office',
-            'status' => 'procurement_initiated',
-            'user_id' => 'user-1',
-            'created_at' => '2024-01-01T00:00:00+00:00',
+            'current_status' => 'procurement_initiated',
+            'current_stage' => 'procurement_initiation',
+            'initiated_at' => now(),
         ]);
 
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0015')
-            ->andReturn($procurement);
+        $statusPublisher = Mockery::mock(StatusPublisher::class);
+        $eventPublisher = Mockery::mock(EventPublisher::class);
 
         $statusPublisher->shouldReceive('publish')
             ->once()
@@ -828,7 +818,7 @@ describe('StageTransitionHandler', function () {
             })
             ->andReturn(['event_txid' => 'skip-ev-1']);
 
-        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
+        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher);
         $result = $handler->executeSkip([
             'pr_number' => 'PR-2025-992-0015',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
@@ -844,14 +834,8 @@ describe('StageTransitionHandler', function () {
     it('executeSkip throws when procurement not found', function () {
         $statusPublisher = Mockery::mock(StatusPublisher::class);
         $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
 
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0016')
-            ->andReturnNull();
-
-        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
+        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher);
         $handler->executeSkip([
             'pr_number' => 'PR-2025-992-0016',
             'stage' => StageEnums::PRE_BID_CONFERENCE->value,
@@ -860,28 +844,18 @@ describe('StageTransitionHandler', function () {
     })->throws(Exception::class, 'Procurement not found: PR-2025-992-0016');
 
     it('executeRepeat repeats stages with event and status publishing', function () {
-        $statusPublisher = Mockery::mock(StatusPublisher::class);
-        $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
-
-        $procurement = ProcurementData::fromArray([
+        Procurement::create([
             'pr_number' => 'PR-2025-992-0017',
             'title' => 'Repeat Test',
-            'description' => 'Testing repeat',
-            'abc_amount' => '75000',
-            'funding_source' => 'GAA',
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
-            'office' => 'Test Office',
-            'status' => 'procurement_initiated',
-            'user_id' => 'user-1',
-            'created_at' => '2024-01-01T00:00:00+00:00',
+            'current_status' => 'procurement_initiated',
+            'current_stage' => 'procurement_initiation',
+            'initiated_at' => now(),
         ]);
 
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0017')
-            ->andReturn($procurement);
+        $statusPublisher = Mockery::mock(StatusPublisher::class);
+        $eventPublisher = Mockery::mock(EventPublisher::class);
 
         $eventPublisher->shouldReceive('publish')
             ->once()
@@ -911,7 +885,7 @@ describe('StageTransitionHandler', function () {
             })
             ->andReturn(['status_txid' => 'rep-st-1']);
 
-        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
+        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher);
         $result = $handler->executeRepeat([
             'pr_number' => 'PR-2025-992-0017',
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
@@ -927,14 +901,8 @@ describe('StageTransitionHandler', function () {
     it('executeRepeat throws when procurement not found', function () {
         $statusPublisher = Mockery::mock(StatusPublisher::class);
         $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
 
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0018')
-            ->andReturnNull();
-
-        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
+        $handler = new StageTransitionHandler($statusPublisher, $eventPublisher);
         $handler->executeRepeat([
             'pr_number' => 'PR-2025-992-0018',
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
@@ -954,36 +922,18 @@ describe('ProcurementUpdateHandler', function () {
     });
 
     it('executeDeliveryDetails updates delivery info and publishes event', function () {
-        $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
-        $decisionPublisher = Mockery::mock(DecisionPublisher::class);
-
-        $procurement = ProcurementData::fromArray([
+        Procurement::create([
             'pr_number' => 'PR-2025-992-0019',
             'title' => 'Delivery Test',
-            'description' => 'Testing delivery update',
-            'abc_amount' => '120000',
-            'funding_source' => 'GAA',
             'category' => 'goods',
             'procurement_mode' => 'competitive_bidding',
-            'office' => 'Test Office',
-            'status' => 'awarded',
-            'user_id' => 'user-1',
-            'created_at' => '2024-01-01T00:00:00+00:00',
+            'current_status' => 'awarded',
+            'current_stage' => 'awarded',
+            'initiated_at' => now(),
         ]);
 
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0019')
-            ->andReturn($procurement);
-
-        $procurementRepo->shouldReceive('update')
-            ->once()
-            ->withArgs(function (ProcurementData $updated) {
-                return $updated->deliveryLocation === 'Manila'
-                    && $updated->deliveryTermDays === 30
-                    && $updated->prNumber === 'PR-2025-992-0019';
-            });
+        $eventPublisher = Mockery::mock(EventPublisher::class);
+        $decisionPublisher = Mockery::mock(DecisionPublisher::class);
 
         $eventPublisher->shouldReceive('publish')
             ->once()
@@ -999,7 +949,7 @@ describe('ProcurementUpdateHandler', function () {
             })
             ->andReturn(['event_txid' => 'del-ev-1']);
 
-        $handler = new ProcurementUpdateHandler($eventPublisher, $procurementRepo, $decisionPublisher);
+        $handler = new ProcurementUpdateHandler($eventPublisher, $decisionPublisher);
         $result = $handler->executeDeliveryDetails([
             'pr_number' => 'PR-2025-992-0019',
             'user_address' => '0xDEL',
@@ -1013,15 +963,9 @@ describe('ProcurementUpdateHandler', function () {
 
     it('executeDeliveryDetails throws when procurement not found', function () {
         $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
         $decisionPublisher = Mockery::mock(DecisionPublisher::class);
 
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0020')
-            ->andReturnNull();
-
-        $handler = new ProcurementUpdateHandler($eventPublisher, $procurementRepo, $decisionPublisher);
+        $handler = new ProcurementUpdateHandler($eventPublisher, $decisionPublisher);
         $handler->executeDeliveryDetails([
             'pr_number' => 'PR-2025-992-0020',
             'user_address' => '0xDNF',
@@ -1031,17 +975,9 @@ describe('ProcurementUpdateHandler', function () {
         ]);
     })->throws(Exception::class, 'Procurement not found: PR-2025-992-0020');
 
-    // Note: ProcurementUpdateHandler passes ProcurementData to publishDecision()
-    // but the publisher expects ?array — pre-existing type mismatch. Testing with null procurement.
     it('executeDecision delegates to DecisionPublisher', function () {
         $eventPublisher = Mockery::mock(EventPublisher::class);
-        $procurementRepo = Mockery::mock(ProcurementRepository::class);
         $decisionPublisher = Mockery::mock(DecisionPublisher::class);
-
-        $procurementRepo->shouldReceive('findByProcurement')
-            ->once()
-            ->with('PR-2025-992-0021')
-            ->andReturnNull();
 
         $decisionPublisher->shouldReceive('publishDecision')
             ->once()
@@ -1060,7 +996,7 @@ describe('ProcurementUpdateHandler', function () {
             })
             ->andReturn(['decision_txid' => 'dec-tx-1']);
 
-        $handler = new ProcurementUpdateHandler($eventPublisher, $procurementRepo, $decisionPublisher);
+        $handler = new ProcurementUpdateHandler($eventPublisher, $decisionPublisher);
         $result = $handler->executeDecision([
             'pr_number' => 'PR-2025-992-0021',
             'user_address' => '0xDEC',

@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\DocumentTypeEnums;
 use App\Http\Requests\Document\CorrectDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
-use App\Repositories\CorrectionRepository;
-use App\Repositories\DocumentRepository;
+use App\Models\ProcurementCorrection;
+use App\Models\ProcurementDocument;
 use App\Services\AuditLogService;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
@@ -19,8 +19,6 @@ use Inertia\Response;
 class DocumentCorrectionController extends Controller
 {
     public function __construct(
-        protected DocumentRepository $documentRepository,
-        protected CorrectionRepository $correctionRepository,
         protected CorrectionPublisher $correctionPublisher,
         protected AuditLogService $auditLogService,
     ) {}
@@ -32,14 +30,14 @@ class DocumentCorrectionController extends Controller
         $validated = $request->validated();
 
         try {
-            $originalDocument = $this->documentRepository->findByTxid($txid);
+            $originalDocument = ProcurementDocument::with('procurement')->where('txid', $txid)->first();
 
             if (! $originalDocument) {
                 return back()->with('error', 'Document not found in blockchain.');
             }
 
-            $pr_number = $originalDocument->prNumber;
-            $procurementTitle = $originalDocument->procurementTitle;
+            $pr_number = $originalDocument->procurement?->pr_number;
+            $procurementTitle = $originalDocument->procurement?->title;
 
             if (! $pr_number || ! $procurementTitle) {
                 return back()->with('error', 'Invalid document: missing procurement information.');
@@ -107,72 +105,72 @@ class DocumentCorrectionController extends Controller
         $this->authorize('correct-procurement', $procurement);
 
         try {
-            // Fetch corrections for this procurement using repository
-            $correctionDtos = $this->correctionRepository->findByProcurement($procurement);
+            // Fetch corrections for this procurement using Eloquent
+            $corrections = ProcurementCorrection::with('procurement')
+                ->whereHas('procurement', fn ($q) => $q->where('pr_number', $procurement))
+                ->orderByDesc('corrected_at')
+                ->get();
 
-            // Fetch all documents using repository for document metadata lookup
-            $allDocuments = $this->documentRepository->all();
+            // Fetch all documents for document metadata lookup
+            $allDocuments = ProcurementDocument::with('procurement')->orderByDesc('uploaded_at')->take(5000)->get();
 
             // Create a map of document info keyed by pr_number for quick lookup
             $documentsMap = collect($allDocuments)
-                ->keyBy(fn ($doc) => $doc->prNumber.'_'.$doc->fileKey)
+                ->keyBy(fn ($doc) => ($doc->procurement?->pr_number ?? '').'_'.$doc->file_key)
                 ->mapWithKeys(function ($doc) {
-                    // Get formatted document type
-                    $documentTypeEnum = DocumentTypeEnums::fromString($doc->documentType);
+                    $documentTypeEnum = DocumentTypeEnums::fromString($doc->document_type);
 
                     return [
-                        $doc->fileKey => [
+                        $doc->file_key => [
                             'file_name' => $doc->filename,
-                            'file_key' => $doc->fileKey,
-                            'document_type' => $doc->documentType,
-                            'document_type_display' => $documentTypeEnum?->getDisplayName() ?? $doc->documentType,
+                            'file_key' => $doc->file_key,
+                            'document_type' => $doc->document_type,
+                            'document_type_display' => $documentTypeEnum?->getDisplayName() ?? $doc->document_type,
                             'hash' => $doc->hash,
-                            'file_size' => $doc->fileSize,
+                            'file_size' => $doc->file_size,
                         ],
                     ];
                 });
 
             // Map corrections to response format
-            $corrections = collect($correctionDtos)
-                ->map(function ($correctionDto) use ($documentsMap) {
-                    // Try to find the original document info
+            $corrections = $corrections
+                ->map(function ($correction) use ($documentsMap) {
                     $originalDoc = null;
                     foreach ($documentsMap as $key => $doc) {
-                        if ($doc['hash'] === $correctionDto->originalDocumentHash) {
+                        if ($doc['hash'] === $correction->original_document_hash) {
                             $originalDoc = $doc;
                             break;
                         }
                     }
 
-                    // Format correction type for display
-                    $correctionTypeDisplay = match ($correctionDto->correctionType) {
+                    $correctionTypeDisplay = match ($correction->correction_type) {
                         'replace' => 'Document Replacement',
                         'invalidate' => 'Document Invalidation',
                         'metadata' => 'Metadata Correction',
                         'document_correction' => 'Document Correction',
-                        default => ucwords(str_replace('_', ' ', $correctionDto->correctionType)),
+                        default => ucwords(str_replace('_', ' ', $correction->correction_type)),
                     };
 
                     return [
-                        'txid' => $correctionDto->txid,
-                        'timestamp' => $correctionDto->timestamp->toIso8601String(),
-                        'original_txid' => $correctionDto->originalTxid,
-                        'correction_txid' => $correctionDto->txid,
-                        'reason' => $correctionDto->reason,
-                        'corrected_by' => $correctionDto->correctedBy,
-                        'correction_type' => $correctionDto->correctionType,
+                        'txid' => $correction->txid,
+                        'timestamp' => $correction->corrected_at?->toIso8601String(),
+                        'original_txid' => $correction->original_txid,
+                        'correction_txid' => $correction->txid,
+                        'reason' => $correction->reason,
+                        'corrected_by' => $correction->corrected_by,
+                        'correction_type' => $correction->correction_type,
                         'correction_type_display' => $correctionTypeDisplay,
-                        'original_document_hash' => $correctionDto->originalDocumentHash,
-                        'document_hash' => $correctionDto->originalDocumentHash,
+                        'original_document_hash' => $correction->original_document_hash,
+                        'document_hash' => $correction->original_document_hash,
                         'file_name' => $originalDoc['file_name'] ?? null,
                         'file_key' => $originalDoc['file_key'] ?? null,
                         'document_type' => $originalDoc['document_type'] ?? '',
                         'document_type_display' => $originalDoc['document_type_display'] ?? null,
-                        'pr_number' => $correctionDto->prNumber,
-                        'procurement_title' => $correctionDto->procurementTitle,
-                        'action' => $correctionDto->action,
-                        'metadata' => $correctionDto->toBlockchainArray(),
-                        'corrected_metadata' => $correctionDto->correctedMetadata,
+                        'pr_number' => $correction->procurement?->pr_number ?? '',
+                        'procurement_title' => $correction->procurement?->title ?? '',
+                        'action' => $correction->action,
+                        'metadata' => $correction->toBlockchainArray(),
+                        'corrected_metadata' => $correction->corrected_metadata,
                     ];
                 })
                 ->sortByDesc('timestamp')
@@ -211,14 +209,13 @@ class DocumentCorrectionController extends Controller
         ]);
 
         try {
-            // Find correction by original txid using repository
-            $corrections = $this->correctionRepository->findByOriginalTxid($txid);
-            $correction = ! empty($corrections) ? $corrections[0] : null;
+            // Find correction by original txid using Eloquent
+            $correction = ProcurementCorrection::where('original_txid', $txid)->first();
 
             return response()->json([
                 'success' => true,
                 'has_correction' => $correction !== null,
-                'correction' => $correction,
+                'correction' => $correction?->toBlockchainArray(),
             ]);
         } catch (\Exception $e) {
             return response()->json([

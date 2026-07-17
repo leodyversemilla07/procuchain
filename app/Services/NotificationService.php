@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Contracts\NotificationServiceInterface;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\AuditEventNotification;
@@ -10,7 +9,7 @@ use App\Notifications\ProcurementStageNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
-class NotificationService implements NotificationServiceInterface
+class NotificationService
 {
     public function notifyStageUpdate(
         string $pr_number,

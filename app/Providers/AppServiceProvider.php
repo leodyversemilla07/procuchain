@@ -2,16 +2,6 @@
 
 namespace App\Providers;
 
-use App\Contracts\BlockchainStorageInterface;
-use App\Contracts\CacheStrategyInterface;
-use App\Contracts\CorrectionRepositoryInterface;
-use App\Contracts\DocumentPublisherInterface;
-use App\Contracts\DocumentRepositoryInterface;
-use App\Contracts\EventPublisherInterface;
-use App\Contracts\NotificationServiceInterface;
-use App\Contracts\ProcurementCorrectionRepositoryInterface;
-use App\Contracts\ProcurementRepositoryInterface;
-use App\Contracts\StatusPublisherInterface;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\DocumentViewLog;
@@ -33,21 +23,13 @@ use App\Policies\ProcurementPolicy;
 use App\Policies\ReportPolicy;
 use App\Policies\SettingsPolicy;
 use App\Policies\UserPolicy;
-use App\Repositories\CorrectionRepository;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementCorrectionRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\AuditLogService;
 use App\Services\BlockchainRecordSyncService;
 use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
-use App\Services\CacheStrategyService;
 use App\Services\IntegrityVerificationService;
 use App\Services\NotificationService;
 use App\Services\ProcurementStageTransitionService;
-use App\Services\Publishers\DocumentPublisher;
-use App\Services\Publishers\EventPublisher;
-use App\Services\Publishers\StatusPublisher;
 use App\Services\WorkflowDefinitionService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Event;
@@ -72,31 +54,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(NotificationService::class);
         $this->app->singleton(WorkflowDefinitionService::class);
 
-        // Register interface bindings - Cache
-        $this->app->singleton(CacheStrategyInterface::class, CacheStrategyService::class);
-
-        // Register interface bindings - Repositories
-        $this->app->bind(ProcurementRepositoryInterface::class, ProcurementRepository::class);
-        $this->app->bind(DocumentRepositoryInterface::class, DocumentRepository::class);
-        $this->app->bind(CorrectionRepositoryInterface::class, CorrectionRepository::class);
-        $this->app->bind(ProcurementCorrectionRepositoryInterface::class, ProcurementCorrectionRepository::class);
-
-        // Legacy procurement_records repository removed - using normalized tables now
-
         // Integrity verification stores per-run counters, so each resolution must be fresh.
         $this->app->bind(IntegrityVerificationService::class);
 
         // Blockchain mirror sync (repair from chain, full rebuild)
         $this->app->singleton(BlockchainRecordSyncService::class);
-
-        // Register interface bindings - Publishers
-        $this->app->bind(DocumentPublisherInterface::class, DocumentPublisher::class);
-        $this->app->bind(StatusPublisherInterface::class, StatusPublisher::class);
-        $this->app->bind(EventPublisherInterface::class, EventPublisher::class);
-
-        // Register interface bindings - Services
-        $this->app->singleton(BlockchainStorageInterface::class, BlockchainStorageService::class);
-        $this->app->singleton(NotificationServiceInterface::class, NotificationService::class);
     }
 
     public function boot(): void

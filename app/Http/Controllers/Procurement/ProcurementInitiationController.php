@@ -13,8 +13,7 @@ use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\Procurement;
-use App\Repositories\ProcurementRepository;
-use App\Repositories\StatusRepository;
+use App\Models\ProcurementStage;
 use App\Services\AuditLogService;
 use App\Services\Procurement\ProcurementStageCompletionService;
 use App\Services\Procurement\ProcurementStagePageService;
@@ -31,7 +30,6 @@ class ProcurementInitiationController extends BaseController
 {
     public function __construct(
         private readonly ProcurementSupportService $procurementSupport,
-        private readonly ProcurementRepository $procurements,
         private readonly ProcurementStagePageService $stagePageService,
         private readonly ProcurementStageUploadService $stageUploadService,
         private readonly ProcurementStageCompletionService $stageCompletionService,
@@ -43,17 +41,17 @@ class ProcurementInitiationController extends BaseController
         if ($id) {
             $this->authorize('view-procurement', $id);
 
-            $procurement = $this->procurements->findByProcurement($id);
+            $procurement = Procurement::where('pr_number', $id)->first();
 
             if (! $procurement) {
                 abort(404);
             }
 
-            // Get the latest status from blockchain to check if stage is complete
-            $statusRepo = app(StatusRepository::class);
-            $statuses = $statusRepo->findByProcurement($id);
-            // findByProcurement returns statuses sorted by timestamp descending (newest first)
-            $latestStatus = ! empty($statuses) ? $statuses[0] : null;
+            // Get the latest status from Eloquent to check if stage is complete
+            $latestStatus = ProcurementStage::with('procurement')
+                ->whereHas('procurement', fn ($q) => $q->where('pr_number', $id))
+                ->orderByDesc('entered_at')
+                ->first();
 
             // Check if this stage has been marked complete
             // A stage is complete when there's a status record with marked_complete_at metadata

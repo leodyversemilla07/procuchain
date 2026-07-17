@@ -6,7 +6,7 @@ namespace App\Jobs\Handlers;
 
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Services\Procurement\StageStatusMappingService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
@@ -17,7 +17,6 @@ class StageTransitionHandler
     public function __construct(
         private readonly StatusPublisher $statusPublisher,
         private readonly EventPublisher $eventPublisher,
-        private readonly ProcurementRepository $procurementRepository,
         private readonly ?StageStatusMappingService $stageStatusMappingService = null,
     ) {}
 
@@ -27,7 +26,7 @@ class StageTransitionHandler
         $stage = StageEnums::from($data['stage']);
         $reason = $data['reason'] ?? 'Stage marked as optional and skipped by user.';
         $userAddress = $data['user_address'];
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
 
         if (! $procurement) {
             throw new Exception("Procurement not found: {$prNumber}");
@@ -43,7 +42,7 @@ class StageTransitionHandler
             metadata: [
                 'skipped_at' => now()->toIso8601String(),
                 'skip_reason' => $reason,
-                'procurement_mode' => $procurement->procurementMode->value,
+                'procurement_mode' => $procurement->procurement_mode,
             ],
         );
 
@@ -60,7 +59,7 @@ class StageTransitionHandler
             metadata: [
                 'stage' => $stage->value,
                 'skip_reason' => $reason,
-                'procurement_mode' => $procurement->procurementMode->value,
+                'procurement_mode' => $procurement->procurement_mode,
             ],
         );
 
@@ -77,7 +76,7 @@ class StageTransitionHandler
         $stage = StageEnums::from($data['stage']);
         $reason = $data['reason'] ?? 'Additional bulletin required';
         $userAddress = $data['user_address'];
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
 
         if (! $procurement) {
             throw new Exception("Procurement not found: {$prNumber}");
@@ -98,7 +97,7 @@ class StageTransitionHandler
             metadata: [
                 'stage' => $stage->value,
                 'repeat_reason' => $reason,
-                'procurement_mode' => $procurement->procurementMode->value,
+                'procurement_mode' => $procurement->procurement_mode,
             ],
         );
 
@@ -112,7 +111,7 @@ class StageTransitionHandler
             metadata: [
                 'action' => 'repeat_stage',
                 'repeated_at' => now()->toIso8601String(),
-                'procurement_mode' => $procurement->procurementMode->value,
+                'procurement_mode' => $procurement->procurement_mode,
             ],
         );
 

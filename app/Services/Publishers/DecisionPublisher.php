@@ -2,10 +2,9 @@
 
 namespace App\Services\Publishers;
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Services\Procurement\StageStatusMappingService;
+use App\Models\Procurement;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,7 +24,6 @@ class DecisionPublisher
     public function __construct(
         protected StatusPublisher $statusPublisher,
         protected EventPublisher $eventPublisher,
-        protected StageStatusMappingService $statusMapper
     ) {}
 
     /**
@@ -102,7 +100,7 @@ class DecisionPublisher
         string $procurementTitle,
         bool $wasHeld,
         string $userAddress,
-        ProcurementData|array|null $procurement = null
+        Procurement|array|null $procurement = null
     ): array {
         $config = self::DECISION_CONFIG[$decisionType] ?? null;
 
@@ -193,7 +191,7 @@ class DecisionPublisher
         string $procurementTitle,
         string $userAddress,
         array $config,
-        ProcurementData|array|null $procurement = null
+        Procurement|array|null $procurement = null
     ): array {
         /** @var StageEnums $stage */
         $stage = $config['stage'];
@@ -224,8 +222,8 @@ class DecisionPublisher
             userAddress: $userAddress
         );
 
-        // Get title from procurement (supports both DTO and array)
-        $title = $procurement instanceof ProcurementData
+        // Get title from procurement (supports both model and array)
+        $title = $procurement instanceof Procurement
             ? $procurement->title
             : ($procurement['title'] ?? $procurementTitle);
 

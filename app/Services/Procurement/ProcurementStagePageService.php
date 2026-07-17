@@ -4,7 +4,7 @@ namespace App\Services\Procurement;
 
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,6 @@ class ProcurementStagePageService
 {
     public function __construct(
         private readonly ProcurementSupportService $procurementSupport,
-        private readonly ProcurementRepository $procurementRepository,
         private readonly ModeAwareDocumentValidationService $modeAwareDocumentValidationService,
         private readonly NormalizedTableSyncService $normalizedTableSyncService,
     ) {}
@@ -36,7 +35,7 @@ class ProcurementStagePageService
         }
 
         $procurementData = $stage === StageEnums::NOTICE_TO_PROCEED
-            ? $this->procurementRepository->findByProcurement($prNumber)
+            ? Procurement::where('pr_number', $prNumber)->first()
             : null;
         $mode = $this->procurementSupport->getProcurementMode($prNumber);
 
@@ -48,10 +47,10 @@ class ProcurementStagePageService
                 'stage' => $stage->getDisplayName(),
                 'stage_value' => $stage->value,
                 'current_stage' => $procurement['stage'] ?? '',
-                'delivery_location' => $procurementData?->deliveryLocation,
-                'delivery_date' => $procurementData?->deliveryDate?->format('Y-m-d'),
+                'delivery_location' => $procurementData?->delivery_location,
+                'delivery_date' => $procurementData?->delivery_date?->format('Y-m-d'),
                 'delivery_date_formatted' => $procurementData?->getFormattedDeliveryDate(),
-                'delivery_term_days' => $procurementData?->deliveryTermDays,
+                'delivery_term_days' => $procurementData?->delivery_term_days,
             ],
             'workflowInfo' => $this->procurementSupport->getWorkflowInfo($prNumber, $stage),
             'documentGuide' => $this->modeAwareDocumentValidationService->getStageDocumentGuide($stage, $mode),

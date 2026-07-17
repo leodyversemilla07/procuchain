@@ -10,14 +10,11 @@
  * 4. Workflow transitions correctly after skip
  */
 
-use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Facades\Queue;
 
@@ -32,31 +29,22 @@ beforeEach(function () {
     $this->bacSecretariat->save();
 
     // Helper to create mock procurement data
-    $this->mockProcurementData = new ProcurementData(
-        prNumber: 'PR-2024-001-0001',
-        appReference: 'APP-2024-001',
-        title: 'Test Procurement',
-        description: 'Test Description',
-        abcAmount: 1000000.00,
-        fundingSource: 'General Fund',
-        category: ProcurementCategory::GOODS,
-        procurementMode: ProcurementMode::COMPETITIVE_BIDDING,
-        office: 'Test Office',
-        endUser: 'Test User',
-        deliveryLocation: null,
-        deliveryDate: null,
-        deliveryTermDays: null,
-        preparedBy: 'Test Preparer',
-        bacResolutionNumber: null,
-        bacResolutionDate: null,
-        philgepsReference: null,
-        philgepsPostingDate: null,
-        approvedBy: null,
-        approvalDate: null,
-        status: 'in_progress',
-        userId: (string) $this->bacSecretariat->id,
-        createdAt: now()
-    );
+    $this->mockProcurementData = [
+        'pr_number' => 'PR-2024-001-0001',
+        'app_reference' => 'APP-2024-001',
+        'title' => 'Test Procurement',
+        'description' => 'Test Description',
+        'abc_amount' => 1000000.00,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'Test Office',
+        'end_user' => 'Test User',
+        'prepared_by' => 'Test Preparer',
+        'status' => 'in_progress',
+        'user_id' => (string) $this->bacSecretariat->id,
+        'created_at' => now(),
+    ];
 });
 
 describe('Skip Stage Endpoint Availability', function () {
@@ -110,13 +98,6 @@ describe('Skip Optional Stage', function () {
         Queue::fake();
         actingAs($this->bacSecretariat);
 
-        // Mock the procurement repository
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')
-            ->with('PR-2024-001-0001')
-            ->andReturn($this->mockProcurementData);
-        $this->instance(ProcurementRepository::class, $repository);
-
         // Mock the BlockchainRpcClient for blockchain operations
         $multichain = mock(BlockchainRpcClient::class);
         $multichain->shouldReceive('listStreamKeyItems')
@@ -141,38 +122,22 @@ describe('Cannot Skip Required Stage', function () {
         actingAs($this->bacSecretariat);
 
         // Create procurement with SVP mode where RFQ is required
-        $svpProcurement = new ProcurementData(
-            prNumber: 'PR-2024-002-0001',
-            appReference: 'APP-2024-002',
-            title: 'SVP Procurement',
-            description: 'Test Description',
-            abcAmount: 50000.00,
-            fundingSource: 'General Fund',
-            category: ProcurementCategory::GOODS,
-            procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
-            office: 'Test Office',
-            endUser: 'Test User',
-            deliveryLocation: null,
-            deliveryDate: null,
-            deliveryTermDays: null,
-            preparedBy: 'Test Preparer',
-            bacResolutionNumber: null,
-            bacResolutionDate: null,
-            philgepsReference: null,
-            philgepsPostingDate: null,
-            approvedBy: null,
-            approvalDate: null,
-            status: 'in_progress',
-            userId: (string) $this->bacSecretariat->id,
-            createdAt: now()
-        );
-
-        // Mock the procurement repository
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')
-            ->with('PR-2024-002-0001')
-            ->andReturn($svpProcurement);
-        $this->instance(ProcurementRepository::class, $repository);
+        $svpProcurement = [
+            'pr_number' => 'PR-2024-002-0001',
+            'app_reference' => 'APP-2024-002',
+            'title' => 'SVP Procurement',
+            'description' => 'Test Description',
+            'abc_amount' => 50000.00,
+            'funding_source' => 'General Fund',
+            'category' => 'goods',
+            'procurement_mode' => 'small_value_procurement',
+            'office' => 'Test Office',
+            'end_user' => 'Test User',
+            'prepared_by' => 'Test Preparer',
+            'status' => 'in_progress',
+            'user_id' => (string) $this->bacSecretariat->id,
+            'created_at' => now(),
+        ];
 
         // Mock the BlockchainRpcClient for blockchain operations
         $multichain = mock(BlockchainRpcClient::class);

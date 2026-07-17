@@ -1,11 +1,9 @@
 <?php
 
-use App\Contracts\CacheStrategyInterface;
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\AdminAnalyticsService;
 use App\Services\BlockchainRpcClient;
+use App\Services\CacheStrategyService;
 use App\Services\DashboardCacheService;
 use App\Services\DashboardService;
 use App\Services\ProcurementStageTransitionService;
@@ -173,7 +171,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             'totalDocuments' => 0,
         ]);
 
-    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyService::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
             if ($key === DashboardCacheService::recentActivities('bac_secretariat')) {
@@ -199,14 +197,6 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             throw new RuntimeException("Unexpected small cache key [{$key}]");
         });
 
-    $procurementRepository = Mockery::mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([
-            'PR-2025-001-0001' => dashboardProcurementFixture('PR-2025-001-0001', (string) $secretariatUser->id),
-            'PR-2025-002-0001' => dashboardProcurementFixture('PR-2025-002-0001', '999'),
-        ]);
-
     $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->once()
@@ -220,8 +210,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
 
     $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
-    $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
-    $this->app->instance(ProcurementRepository::class, $procurementRepository);
+    $this->app->instance(CacheStrategyService::class, $cacheStrategy);
     $this->app->instance(ProcurementStageTransitionService::class, $stageTransitionService);
     $this->app->instance(AdminAnalyticsService::class, $analyticsService);
 
@@ -292,7 +281,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
         now()->addDay()
     );
 
-    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyService::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
             if ($key === DashboardCacheService::recentActivities('bac_secretariat')) {
@@ -318,11 +307,6 @@ test('bac secretariat dashboard renders without global error when multichain is 
             throw new RuntimeException("Unexpected small cache key [{$key}]");
         });
 
-    $procurementRepository = Mockery::mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-
     $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->zeroOrMoreTimes()
@@ -335,8 +319,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
 
     $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
-    $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
-    $this->app->instance(ProcurementRepository::class, $procurementRepository);
+    $this->app->instance(CacheStrategyService::class, $cacheStrategy);
     $this->app->instance(ProcurementStageTransitionService::class, $stageTransitionService);
     $this->app->instance(AdminAnalyticsService::class, $analyticsService);
 
@@ -409,7 +392,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
             'totalDocuments' => 0,
         ]);
 
-    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyService::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
             if ($key === DashboardCacheService::recentActivities('bac_secretariat')) {
@@ -435,11 +418,6 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
             throw new RuntimeException("Unexpected small cache key [{$key}]");
         });
 
-    $procurementRepository = Mockery::mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
-
     $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->once()
@@ -453,8 +431,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
 
     $this->app->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     $this->app->instance(DashboardService::class, $dashboardService);
-    $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
-    $this->app->instance(ProcurementRepository::class, $procurementRepository);
+    $this->app->instance(CacheStrategyService::class, $cacheStrategy);
     $this->app->instance(ProcurementStageTransitionService::class, $stageTransitionService);
     $this->app->instance(AdminAnalyticsService::class, $analyticsService);
 
@@ -512,18 +489,13 @@ function bindDashboardDependencies(): void
             'pendingActions' => 0,
         ]);
 
-    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyService::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->zeroOrMoreTimes()
         ->andReturnUsing(fn ($key, $ttl, $callback) => $callback());
     $cacheStrategy->shouldReceive('rememberSmall')
         ->zeroOrMoreTimes()
         ->andReturnUsing(fn ($key, $ttl, $callback) => $callback());
-
-    $procurementRepository = Mockery::mock(ProcurementRepository::class);
-    $procurementRepository->shouldReceive('findManyByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn([]);
 
     $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
@@ -537,25 +509,7 @@ function bindDashboardDependencies(): void
 
     app()->instance(BlockchainRpcClient::class, $blockchainRpcClient);
     app()->instance(DashboardService::class, $dashboardService);
-    app()->instance(CacheStrategyInterface::class, $cacheStrategy);
-    app()->instance(ProcurementRepository::class, $procurementRepository);
+    app()->instance(CacheStrategyService::class, $cacheStrategy);
     app()->instance(ProcurementStageTransitionService::class, $stageTransitionService);
     app()->instance(AdminAnalyticsService::class, $analyticsService);
-}
-
-function dashboardProcurementFixture(string $prNumber, string $userId): ProcurementData
-{
-    return ProcurementData::fromArray([
-        'pr_number' => $prNumber,
-        'title' => 'Dashboard Fixture',
-        'description' => 'Fixture',
-        'abc_amount' => 1000,
-        'funding_source' => 'General Fund',
-        'category' => 'goods',
-        'procurement_mode' => 'competitive_bidding',
-        'office' => 'BAC Office',
-        'status' => 'draft',
-        'user_id' => $userId,
-        'created_at' => now()->toIso8601String(),
-    ]);
 }

@@ -6,9 +6,9 @@ namespace App\Console\Commands;
 
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementStage;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
-use App\Repositories\StatusRepository;
 use App\Services\Publishers\StatusPublisher;
 use Exception;
 use Illuminate\Console\Command;
@@ -61,8 +61,6 @@ class CorrectProcurementStatuses extends Command
     ];
 
     public function __construct(
-        private StatusRepository $statusRepository,
-        private ProcurementRepository $procurementRepository,
         private StatusPublisher $statusPublisher
     ) {
         parent::__construct();
@@ -169,7 +167,7 @@ class CorrectProcurementStatuses extends Command
                 $this->line("Processing {$prNumber}...");
 
                 // Get procurement data
-                $procurement = $this->procurementRepository->findByProcurement($prNumber);
+                $procurement = Procurement::where('pr_number', $prNumber)->first();
 
                 if (! $procurement) {
                     $this->error("  [FAIL] Procurement not found: {$prNumber}");
@@ -179,7 +177,10 @@ class CorrectProcurementStatuses extends Command
                 }
 
                 // Verify current status is indeed incorrect
-                $currentStatus = $this->statusRepository->getLatest($prNumber);
+                $currentStatus = ProcurementStage::with('procurement')
+                    ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+                    ->orderByDesc('entered_at')
+                    ->first();
 
                 if (! $currentStatus) {
                     $this->error("  [FAIL] No status found for: {$prNumber}");
@@ -188,7 +189,7 @@ class CorrectProcurementStatuses extends Command
                     continue;
                 }
 
-                if ($currentStatus->currentStatus !== $correction['incorrect_status']) {
+                if ($currentStatus->status !== $correction['incorrect_status']) {
                     $this->warn("  [WARN]  Current status ({$currentStatus->currentStatus}) doesn't match expected incorrect status ({$correction['incorrect_status']}). Skipping.");
 
                     continue;
@@ -199,8 +200,8 @@ class CorrectProcurementStatuses extends Command
                 $correctStatus = ProcurementStatus::from($correction['correct_status']);
                 $incorrectStatus = ProcurementStatus::from($correction['incorrect_status']);
 
-                // Get the original user's blockchain address from the procurement's userId
-                $user = User::find($procurement->userId);
+                // Get the original user's blockchain address from the procurement's user_id
+                $user = User::find($procurement->user_id);
                 if (! $user || ! $user->blockchain_address) {
                     $this->error("  [FAIL] User not found or missing blockchain address for: {$prNumber}");
                     $failureCount++;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Repositories\ProcurementArchiveRepository;
+use App\Models\ProcurementArchive;
 use App\Services\Procurement\ProcurementFetcherService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
@@ -32,7 +32,6 @@ class ProcurementDataService
     public function __construct(
         private readonly ProcurementFetcherService $fetcher,
         private readonly ProcurementFormatterService $formatter,
-        private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementListAggregatorService $listAggregator,
     ) {}
 
@@ -231,7 +230,7 @@ class ProcurementDataService
             'documents' => $documents,
             'events' => $events,
             'timeline' => $statusItems->values()->toArray(),
-            'is_archived' => $this->archiveRepository->isArchived($pr_number),
+            'is_archived' => ProcurementArchive::whereHas('procurement', fn ($q) => $q->where('pr_number', $pr_number))->exists(),
         ];
     }
 

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\DocumentViewLog;
-use App\Repositories\DocumentRepository;
 use App\Services\PdfViewerService;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,11 +14,9 @@ beforeEach(function () {
     Log::spy();
 
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
-    $this->documentRepository = Mockery::mock(DocumentRepository::class);
 
     $this->service = new PdfViewerService(
         $this->procurementDataService,
-        $this->documentRepository,
     );
 });
 

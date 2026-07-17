@@ -1,9 +1,6 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -49,31 +46,14 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
         ]));
     app()->instance(ProcurementDataService::class, $dataService);
 
-    $repository = Mockery::mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->once()
-        ->with('PR-2025-998-0001')
-        ->andReturn(downloadLockedProcurementFixture());
-    app()->instance(ProcurementRepository::class, $repository);
-
-    $documentRepository = Mockery::mock(DocumentRepository::class);
-    $documentRepository->shouldReceive('findByfileKey')
-        ->once()
-        ->with('locked-File.pdf')
-        ->andReturn(null);
-    $documentRepository->shouldReceive('findByTxid')
-        ->zeroOrMoreTimes()
-        ->andReturn(null);
-    app()->instance(DocumentRepository::class, $documentRepository);
-
     $this->actingAs($user)
         ->get('/files/locked-File.pdf')
         ->assertForbidden();
 });
 
-function downloadLockedProcurementFixture(): ProcurementData
+function downloadLockedProcurementFixture(): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => 'PR-2025-998-0001',
         'title' => 'Locked Procurement',
         'description' => 'Fixture',
@@ -85,5 +65,5 @@ function downloadLockedProcurementFixture(): ProcurementData
         'status' => 'draft',
         'user_id' => '999',
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }

@@ -6,8 +6,8 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Jobs\BlockchainWriteJob;
+use App\Models\Procurement;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
 use Illuminate\Support\Str;
 
@@ -15,7 +15,6 @@ class ProcurementStageCompletionService
 {
     public function __construct(
         private readonly ProcurementSupportService $procurementSupport,
-        private readonly ProcurementRepository $procurementRepository,
         private readonly ModeAwareDocumentValidationService $modeAwareDocumentValidationService,
     ) {}
 
@@ -59,7 +58,7 @@ class ProcurementStageCompletionService
             ];
         }
 
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
         if ($procurement === null) {
             return [
                 'status' => 404,
@@ -100,7 +99,7 @@ class ProcurementStageCompletionService
             ];
         }
 
-        $previousStatus = ProcurementStatus::tryFrom($procurement->status);
+        $previousStatus = ProcurementStatus::tryFrom($procurement->current_status);
         $completionStatus = $this->procurementSupport->getCompletionStatusForStage($stage);
 
         BlockchainWriteJob::dispatch('mark_stage_complete', [
@@ -112,7 +111,7 @@ class ProcurementStageCompletionService
             'previous_status' => $previousStatus?->value,
             'next_stage' => $nextStage?->value,
             'next_stage_status' => $nextStage ? $this->procurementSupport->getInitialStatusForStage($prNumber, $nextStage)->value : null,
-            'procurement_mode' => $procurement->procurementMode->value,
+            'procurement_mode' => $procurement->procurement_mode,
             'document_count' => count($uploadedDocumentEnums),
             'is_pre_procurement' => $stage->isPreProcurement(),
         ], $jobId, $user->id);

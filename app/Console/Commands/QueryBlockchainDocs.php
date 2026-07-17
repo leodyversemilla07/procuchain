@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Repositories\DocumentRepository;
+use App\Models\ProcurementDocument;
 use Illuminate\Console\Command;
 
 class QueryBlockchainDocs extends Command
@@ -11,12 +11,15 @@ class QueryBlockchainDocs extends Command
 
     protected $description = 'Query blockchain documents for a procurement';
 
-    public function handle(DocumentRepository $repo): int
+    public function handle(): int
     {
         $prNumber = $this->argument('pr_number');
         $this->info("Querying documents for {$prNumber}...");
 
-        $docs = $repo->findByProcurement($prNumber);
+        $docs = ProcurementDocument::with('procurement')
+            ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
+            ->orderByDesc('uploaded_at')
+            ->get();
 
         if ($docs->isEmpty()) {
             $this->warn("No documents found for {$prNumber}");
@@ -30,9 +33,9 @@ class QueryBlockchainDocs extends Command
             $this->line(sprintf(
                 '  Stage: %-30s | Type: %-40s | File: %s (%d bytes) | Hash: %s',
                 $doc->stage,
-                $doc->documentType,
+                $doc->document_type,
                 $doc->filename,
-                $doc->fileSize,
+                $doc->file_size,
                 substr($doc->hash, 0, 12).'...'
             ));
         }
@@ -44,9 +47,9 @@ class QueryBlockchainDocs extends Command
         foreach ($sbbDocs as $doc) {
             $this->line(sprintf(
                 '  Type: %-40s | File: %s (%d bytes)',
-                $doc->documentType,
+                $doc->document_type,
                 $doc->filename,
-                $doc->fileSize
+                $doc->file_size
             ));
         }
 

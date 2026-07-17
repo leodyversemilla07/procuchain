@@ -3,14 +3,13 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Models\Procurement;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 
 class ProcurementPolicy
 {
     public function __construct(
-        private readonly ProcurementRepository $procurementRepository,
         private readonly ProcurementDataService $procurementDataService,
     ) {}
 
@@ -80,9 +79,9 @@ class ProcurementPolicy
 
     private function canBacSecretariatAccessProcurement(User $user, string $prNumber): bool
     {
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+        $procurement = Procurement::where('pr_number', $prNumber)->first();
 
-        if ($procurement !== null && $procurement->userId === (string) $user->id) {
+        if ($procurement !== null && $procurement->user_id === (string) $user->id) {
             return true;
         }
 

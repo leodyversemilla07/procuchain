@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
-use App\DataTransferObjects\StatusData;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Support\Collection;
@@ -27,13 +26,11 @@ final class BlockchainAddressResolverService
     ) {}
 
     /**
-     * Preload user names from StatusData DTOs for performance
-     *
-     * @param  Collection<int, StatusData>  $statusDtos
+     * Preload user names from status arrays for performance
      */
-    public function preloadFromStatusDtos(Collection $statusDtos): void
+    public function preloadFromStatusDtos(Collection $statusItems): void
     {
-        $addresses = $statusDtos->map(fn (StatusData $dto) => $dto->userAddress)
+        $addresses = $statusItems->pluck('userAddress')
             ->unique()
             ->filter()
             ->toArray();

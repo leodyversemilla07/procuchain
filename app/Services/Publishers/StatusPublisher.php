@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
-use App\Contracts\StatusPublisherInterface;
-use App\DataTransferObjects\StatusData;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Repositories\StatusRepository;
+use App\Models\ProcurementStage;
 use App\Services\DashboardCacheService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -21,12 +19,8 @@ use Illuminate\Support\Facades\Log;
  * - Publishes to procurement.status stream
  * - Validates status changes
  */
-class StatusPublisher implements StatusPublisherInterface
+class StatusPublisher
 {
-    public function __construct(
-        private StatusRepository $statuses
-    ) {}
-
     /**
      * Publish a status update
      *
@@ -58,18 +52,15 @@ class StatusPublisher implements StatusPublisherInterface
                 'previous_status' => $previousStatus?->value,
             ]);
 
-            $status = new StatusData(
-                prNumber: $prNumber,
-                procurementTitle: $procurementTitle,
-                stage: $stage->value,
-                currentStatus: $currentStatus->value,
-                userAddress: $userAddress,
-                timestamp: now(),
-                previousStatus: $previousStatus?->value,
-                metadata: $metadata,
-            );
+            $status = new ProcurementStage;
+            $status->stage = $stage->value;
+            $status->status = $currentStatus->value;
+            $status->user_address = $userAddress;
+            $status->entered_at = now();
+            $status->previous_status = $previousStatus?->value;
+            $status->metadata = $metadata;
 
-            $txid = $this->statuses->create($status);
+            $txid = $status->publishToBlockchain();
 
             // Invalidate ALL procurement list caches after status update
             // This includes versioned caches (v6), user-specific caches, and legacy caches

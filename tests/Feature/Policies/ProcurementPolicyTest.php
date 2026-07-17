@@ -1,8 +1,6 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -101,16 +99,12 @@ describe('ProcurementPolicy', function () {
 
 function bindScopedProcurementPolicyStubs(string $prNumber, string $procurementUserId, ?string $touchedAddress): void
 {
-    $repository = Mockery::mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->once()
-        ->with($prNumber)
-        ->andReturn(policyProcurementFixture($prNumber, $procurementUserId));
-
     $dataService = Mockery::mock(ProcurementDataService::class);
 
     if ($touchedAddress === null) {
-        $dataService->shouldNotReceive('fetchStatusItems');
+        $dataService->shouldReceive('fetchStatusItems')
+            ->zeroOrMoreTimes()
+            ->andReturn(collect([]));
     } else {
         $dataService->shouldReceive('fetchStatusItems')
             ->once()
@@ -120,13 +114,12 @@ function bindScopedProcurementPolicyStubs(string $prNumber, string $procurementU
             ]));
     }
 
-    app()->instance(ProcurementRepository::class, $repository);
     app()->instance(ProcurementDataService::class, $dataService);
 }
 
-function policyProcurementFixture(string $prNumber, string $userId): ProcurementData
+function policyProcurementFixture(string $prNumber, string $userId): array
 {
-    return ProcurementData::fromArray([
+    return [
         'pr_number' => $prNumber,
         'title' => 'Policy Fixture',
         'description' => 'Fixture',
@@ -138,5 +131,5 @@ function policyProcurementFixture(string $prNumber, string $userId): Procurement
         'status' => 'draft',
         'user_id' => $userId,
         'created_at' => now()->toIso8601String(),
-    ]);
+    ];
 }

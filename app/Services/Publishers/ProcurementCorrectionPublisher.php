@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
-use App\Contracts\ProcurementCorrectionRepositoryInterface;
-use App\DataTransferObjects\ProcurementCorrectionData;
-use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategory;
-use App\Enums\ProcurementMode;
+use App\Models\Procurement;
+use App\Models\ProcurementMetadataCorrection;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -21,14 +18,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcurementCorrectionPublisher
 {
-    public function __construct(
-        private ProcurementCorrectionRepositoryInterface $procurementCorrections
-    ) {}
-
     /**
      * Publish a procurement metadata correction
      *
-     * @param  ProcurementData  $originalProcurement  The original procurement data
+     * @param  Procurement  $originalProcurement  The original procurement data
      * @param  array  $correctedData  The corrected field values
      * @param  string  $reason  Reason for the correction
      * @param  string  $correctedBy  Who made the correction
@@ -36,7 +29,7 @@ class ProcurementCorrectionPublisher
      * @return array Correction transaction information
      */
     public function publishCorrection(
-        ProcurementData $originalProcurement,
+        Procurement $originalProcurement,
         array $correctedData,
         string $reason,
         string $correctedBy,
@@ -44,7 +37,7 @@ class ProcurementCorrectionPublisher
     ): array {
         try {
             Log::info('ProcurementCorrectionPublisher: Publishing correction', [
-                'pr_number' => $originalProcurement->prNumber,
+                'pr_number' => $originalProcurement->pr_number,
                 'corrected_fields' => array_keys($correctedData),
             ]);
 
@@ -52,65 +45,60 @@ class ProcurementCorrectionPublisher
             $correctionType = $this->determineCorrectionType($correctedData);
 
             // Create correction record
-            $correction = new ProcurementCorrectionData(
-                prNumber: $originalProcurement->prNumber,
-                procurementTitle: $originalProcurement->title,
-                correctionType: $correctionType,
-                reason: $reason,
-                correctedBy: $correctedBy,
-                userAddress: $userAddress,
-                timestamp: now(),
+            $correction = new ProcurementMetadataCorrection;
+            $correction->correction_type = $correctionType;
+            $correction->reason = $reason;
+            $correction->corrected_by = $correctedBy;
+            $correction->user_address = $userAddress;
+            $correction->corrected_at = now();
 
-                // Original values
-                originalTitle: $originalProcurement->title,
-                originalDescription: $originalProcurement->description,
-                originalAbcAmount: $originalProcurement->abcAmount,
-                originalFundingSource: $originalProcurement->fundingSource,
-                originalCategory: $originalProcurement->category,
-                originalProcurementMode: $originalProcurement->procurementMode,
-                originalOffice: $originalProcurement->office,
-                originalEndUser: $originalProcurement->endUser,
-                originalPurpose: $originalProcurement->purpose,
-                originalDeliveryLocation: $originalProcurement->deliveryLocation,
-                originalDeliveryDate: $originalProcurement->deliveryDate,
-                originalDeliveryTermDays: $originalProcurement->deliveryTermDays,
-                originalBacResolutionNumber: $originalProcurement->bacResolutionNumber,
-                originalBacResolutionDate: $originalProcurement->bacResolutionDate,
-                originalPhilgepsReference: $originalProcurement->philgepsReference,
-                originalPhilgepsPostingDate: $originalProcurement->philgepsPostingDate,
-                originalApprovedBy: $originalProcurement->approvedBy,
-                originalApprovalDate: $originalProcurement->approvalDate,
+            // Original values
+            $correction->original_title = $originalProcurement->title;
+            $correction->original_description = $originalProcurement->description;
+            $correction->original_abc_amount = $originalProcurement->abc_amount;
+            $correction->original_funding_source = $originalProcurement->fund_source;
+            $correction->original_category = $originalProcurement->category;
+            $correction->original_procurement_mode = $originalProcurement->procurement_mode;
+            $correction->original_office = $originalProcurement->office;
+            $correction->original_end_user = $originalProcurement->end_user;
+            $correction->original_delivery_location = $originalProcurement->delivery_location;
+            $correction->original_delivery_date = $originalProcurement->delivery_date;
+            $correction->original_delivery_term_days = $originalProcurement->delivery_term_days;
+            $correction->original_bac_resolution_number = $originalProcurement->bac_resolution_number;
+            $correction->original_bac_resolution_date = $originalProcurement->bac_resolution_date;
+            $correction->original_philgeps_reference = $originalProcurement->philgeps_reference;
+            $correction->original_philgeps_posting_date = $originalProcurement->philgeps_posting_date;
+            $correction->original_approved_by = $originalProcurement->approved_by;
+            $correction->original_approval_date = $originalProcurement->approval_date;
 
-                // Corrected values (merge with original for unchanged fields)
-                correctedTitle: $correctedData['title'] ?? $originalProcurement->title,
-                correctedDescription: $correctedData['description'] ?? $originalProcurement->description,
-                correctedAbcAmount: $correctedData['abc_amount'] ?? $originalProcurement->abcAmount,
-                correctedFundingSource: $correctedData['funding_source'] ?? $originalProcurement->fundingSource,
-                correctedCategory: isset($correctedData['category']) ? ProcurementCategory::from($correctedData['category']) : $originalProcurement->category,
-                correctedProcurementMode: isset($correctedData['procurement_mode']) ? ProcurementMode::from($correctedData['procurement_mode']) : $originalProcurement->procurementMode,
-                correctedOffice: $correctedData['office'] ?? $originalProcurement->office,
-                correctedEndUser: $correctedData['end_user'] ?? $originalProcurement->endUser,
-                correctedPurpose: $correctedData['purpose'] ?? $originalProcurement->purpose,
-                correctedDeliveryLocation: $correctedData['delivery_location'] ?? $originalProcurement->deliveryLocation,
-                correctedDeliveryDate: isset($correctedData['delivery_date']) ? Carbon::parse($correctedData['delivery_date']) : $originalProcurement->deliveryDate,
-                correctedDeliveryTermDays: $correctedData['delivery_term_days'] ?? $originalProcurement->deliveryTermDays,
-                correctedBacResolutionNumber: $correctedData['bac_resolution_number'] ?? $originalProcurement->bacResolutionNumber,
-                correctedBacResolutionDate: isset($correctedData['bac_resolution_date']) ? Carbon::parse($correctedData['bac_resolution_date']) : $originalProcurement->bacResolutionDate,
-                correctedPhilgepsReference: $correctedData['philgeps_reference'] ?? $originalProcurement->philgepsReference,
-                correctedPhilgepsPostingDate: isset($correctedData['philgeps_posting_date']) ? Carbon::parse($correctedData['philgeps_posting_date']) : $originalProcurement->philgepsPostingDate,
-                correctedApprovedBy: $correctedData['approved_by'] ?? $originalProcurement->approvedBy,
-                correctedApprovalDate: isset($correctedData['approval_date']) ? Carbon::parse($correctedData['approval_date']) : $originalProcurement->approvalDate,
-            );
+            // Corrected values (merge with original for unchanged fields)
+            $correction->corrected_title = $correctedData['title'] ?? $originalProcurement->title;
+            $correction->corrected_description = $correctedData['description'] ?? $originalProcurement->description;
+            $correction->corrected_abc_amount = $correctedData['abc_amount'] ?? $originalProcurement->abc_amount;
+            $correction->corrected_funding_source = $correctedData['funding_source'] ?? $originalProcurement->fund_source;
+            $correction->corrected_category = $correctedData['category'] ?? $originalProcurement->category;
+            $correction->corrected_procurement_mode = $correctedData['procurement_mode'] ?? $originalProcurement->procurement_mode;
+            $correction->corrected_office = $correctedData['office'] ?? $originalProcurement->office;
+            $correction->corrected_end_user = $correctedData['end_user'] ?? $originalProcurement->end_user;
+            $correction->corrected_delivery_location = $correctedData['delivery_location'] ?? $originalProcurement->delivery_location;
+            $correction->corrected_delivery_date = isset($correctedData['delivery_date']) ? Carbon::parse($correctedData['delivery_date']) : $originalProcurement->delivery_date;
+            $correction->corrected_delivery_term_days = $correctedData['delivery_term_days'] ?? $originalProcurement->delivery_term_days;
+            $correction->corrected_bac_resolution_number = $correctedData['bac_resolution_number'] ?? $originalProcurement->bac_resolution_number;
+            $correction->corrected_bac_resolution_date = isset($correctedData['bac_resolution_date']) ? Carbon::parse($correctedData['bac_resolution_date']) : $originalProcurement->bac_resolution_date;
+            $correction->corrected_philgeps_reference = $correctedData['philgeps_reference'] ?? $originalProcurement->philgeps_reference;
+            $correction->corrected_philgeps_posting_date = isset($correctedData['philgeps_posting_date']) ? Carbon::parse($correctedData['philgeps_posting_date']) : $originalProcurement->philgeps_posting_date;
+            $correction->corrected_approved_by = $correctedData['approved_by'] ?? $originalProcurement->approved_by;
+            $correction->corrected_approval_date = isset($correctedData['approval_date']) ? Carbon::parse($correctedData['approval_date']) : $originalProcurement->approval_date;
 
             // Validate that correction actually changes something
             if (! $correction->hasChanges()) {
                 throw new Exception('Correction must change at least one field');
             }
 
-            $txid = $this->procurementCorrections->create($correction);
+            $txid = $correction->publishToBlockchain();
 
             Log::info('ProcurementCorrectionPublisher: Success', [
-                'pr_number' => $originalProcurement->prNumber,
+                'pr_number' => $originalProcurement->pr_number,
                 'correction_txid' => $txid,
                 'correction_type' => $correctionType,
                 'changed_fields' => array_keys($correction->getChangedFields()),
@@ -124,7 +112,7 @@ class ProcurementCorrectionPublisher
             ];
         } catch (Exception $e) {
             Log::error('ProcurementCorrectionPublisher: Failed', [
-                'pr_number' => $originalProcurement->prNumber,
+                'pr_number' => $originalProcurement->pr_number,
                 'error' => $e->getMessage(),
             ]);
 

@@ -41,7 +41,7 @@ class CleanupTempFiles extends Command
         $deleted = 0;
         $failed = 0;
 
-        foreach (File::BlockchainFiles($tempDir) as $file) {
+        foreach (File::files($tempDir) as $file) {
             if ($file->getMTime() < $cutoff) {
                 if ($dryRun) {
                     $this->line("[DRY-RUN] Would delete: {$file->getfilename()}");

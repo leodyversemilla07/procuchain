@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Services\BlockchainRpcClient;
 use Exception;
 use Illuminate\Http\UploadedFile;
@@ -422,9 +421,8 @@ class ProcurementOrchestrator
             // Step 1: Create procurement metadata (CRITICAL)
             Log::info('Orchestrator: Step 1 - Creating procurement metadata', ['pr_number' => $prNumber]);
 
-            $metadataResult = app(ProcurementRepository::class)->create(
-                ProcurementData::fromArray($procurementData)
-            );
+            $procurement = new Procurement($procurementData);
+            $metadataResult = $procurement->publishToBlockchain();
 
             $this->publishedTransactions['metadata'] = [
                 'txid' => $metadataResult['txid'] ?? 'pending',

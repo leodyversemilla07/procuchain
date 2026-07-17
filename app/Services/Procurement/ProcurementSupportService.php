@@ -2,13 +2,12 @@
 
 namespace App\Services\Procurement;
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Models\Procurement;
+use App\Models\ProcurementDocument;
 use App\Models\User;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainRpcClient;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\DocumentPublisher;
@@ -25,7 +24,6 @@ class ProcurementSupportService
         protected StatusPublisher $statusPublisher,
         protected EventPublisher $eventPublisher,
         protected ProcurementDataService $procurementDataService,
-        protected DocumentRepository $documentRepository,
         protected WorkflowDefinitionService $workflowDefinitionService,
         protected StageStatusMappingService $stageStatusMappingService
     ) {}
@@ -71,14 +69,15 @@ class ProcurementSupportService
     public function getUploadedDocumentTypes(string $pr_number, StageEnums $stage): array
     {
         try {
-            // Fetch all documents for this procurement from blockchain
-            $documents = $this->documentRepository->findByProcurement($pr_number);
+            $documents = ProcurementDocument::with('procurement')
+                ->whereHas('procurement', fn ($q) => $q->where('pr_number', $pr_number))
+                ->orderByDesc('uploaded_at')
+                ->get();
 
-            // Filter by current stage and extract document types
             $uploadedTypes = [];
             foreach ($documents as $doc) {
                 if ($doc->stage === $stage->value) {
-                    $uploadedTypes[] = $doc->documentType;
+                    $uploadedTypes[] = $doc->document_type;
                 }
             }
 
@@ -95,11 +94,11 @@ class ProcurementSupportService
     }
 
     /**
-     * Get the procurement data DTO from blockchain.
+     * Get the procurement model from database.
      */
-    public function getProcurementData(string $prNumber): ?ProcurementData
+    public function getProcurementData(string $prNumber): ?Procurement
     {
-        return app(ProcurementRepository::class)->findByProcurement($prNumber);
+        return Procurement::where('pr_number', $prNumber)->first();
     }
 
     /**
@@ -109,7 +108,7 @@ class ProcurementSupportService
     {
         $procurement = $this->getProcurementData($prNumber);
 
-        return $procurement?->procurementMode;
+        return ProcurementMode::tryFrom($procurement?->procurement_mode ?? '');
     }
 
     /**
@@ -375,7 +374,7 @@ class ProcurementSupportService
             metadata: [
                 'skipped_at' => now()->toIso8601String(),
                 'skip_reason' => $reason ?? 'Stage marked as optional and skipped by user.',
-                'procurement_mode' => $procurement->procurementMode->value,
+                'procurement_mode' => $procurement->procurement_mode,
             ]
         );
 
@@ -393,7 +392,7 @@ class ProcurementSupportService
             metadata: [
                 'stage' => $stage->value,
                 'skip_reason' => $reason,
-                'procurement_mode' => $procurement->procurementMode->value,
+                'procurement_mode' => $procurement->procurement_mode,
             ]
         );
 

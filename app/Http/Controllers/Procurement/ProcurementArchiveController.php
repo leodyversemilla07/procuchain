@@ -6,7 +6,8 @@ namespace App\Http\Controllers\Procurement;
 
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
-use App\Repositories\ProcurementArchiveRepository;
+use App\Models\Procurement;
+use App\Models\ProcurementArchive;
 use App\Services\AuditLogService;
 use App\Services\ProcurementDataService;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,6 @@ use Illuminate\Support\Facades\Log;
 class ProcurementArchiveController extends Controller
 {
     public function __construct(
-        private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementDataService $procurementDataService,
         private readonly AuditLogService $auditLogService,
     ) {}
@@ -49,11 +49,15 @@ class ProcurementArchiveController extends Controller
                 return back()->with('error', 'Only fully completed procurements can be archived.');
             }
 
-            $this->archiveRepository->archive(
-                $pr_number,
-                (string) $request->user()->id,
-                $request->input('reason')
-            );
+            $procurement = Procurement::where('pr_number', $pr_number)->first();
+
+            ProcurementArchive::create([
+                'procurement_id' => $procurement?->id,
+                'action' => 'archive',
+                'user_id' => (string) $request->user()->id,
+                'reason' => $request->input('reason'),
+                'archived_at' => now(),
+            ]);
 
             $this->auditLogService->log(
                 'procurement.archived',
@@ -83,10 +87,7 @@ class ProcurementArchiveController extends Controller
         $this->authorize('restore-procurement', $pr_number);
 
         try {
-            $this->archiveRepository->restore(
-                $pr_number,
-                (string) $request->user()->id
-            );
+            ProcurementArchive::whereHas('procurement', fn ($q) => $q->where('pr_number', $pr_number))->delete();
 
             $this->auditLogService->log(
                 'procurement.restored',

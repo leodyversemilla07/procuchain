@@ -2,16 +2,10 @@
 
 declare(strict_types=1);
 
-use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategory;
-use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\SeedsPermissions;
-
-use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 uses(SeedsPermissions::class);
@@ -107,7 +101,6 @@ describe('Request for Quotation (RFQ) Browser Flow', function () {
             'blockchain_address' => 'test-blockchain-address',
         ]);
         $this->bacSecretariat->assignRole('bac_secretariat');
-        mockSmallValueProcurement($this->bacSecretariat);
     });
 
     it('displays RFQ stage page correctly', function () {
@@ -158,7 +151,6 @@ describe('Abstract of Quotations Browser Flow', function () {
             'blockchain_address' => 'test-blockchain-address',
         ]);
         $this->bacSecretariat->assignRole('bac_secretariat');
-        mockSmallValueProcurement($this->bacSecretariat);
     });
 
     it('displays Abstract of Quotations stage page correctly', function () {
@@ -200,37 +192,3 @@ describe('Abstract of Quotations Browser Flow', function () {
             ->assertNoJavascriptErrors();
     });
 });
-
-function mockSmallValueProcurement(User $user, string $prNumber = 'PR-2024-001-0001'): void
-{
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn(new ProcurementData(
-            prNumber: $prNumber,
-            appReference: 'APP-2024-001',
-            title: 'Test SVP Procurement',
-            description: 'Test Description',
-            abcAmount: 100000.00,
-            fundingSource: 'General Fund',
-            category: ProcurementCategory::GOODS,
-            procurementMode: ProcurementMode::SMALL_VALUE_PROCUREMENT,
-            office: 'Test Office',
-            endUser: 'Test User',
-            deliveryLocation: null,
-            deliveryDate: null,
-            deliveryTermDays: null,
-            preparedBy: 'Test Preparer',
-            bacResolutionNumber: null,
-            bacResolutionDate: null,
-            philgepsReference: null,
-            philgepsPostingDate: null,
-            approvedBy: null,
-            approvalDate: null,
-            status: 'in_progress',
-            userId: (string) $user->id,
-            createdAt: now()
-        ));
-
-    app()->instance(ProcurementRepository::class, $repository);
-}

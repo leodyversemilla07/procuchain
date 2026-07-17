@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -63,5 +64,47 @@ class File extends Model
             'hash',
             'storage_method',
         ];
+    }
+
+    public function toBlockchainArray(): array
+    {
+        $base = [
+            'filename' => $this->filename,
+            'file_key' => $this->file_key,
+            'data_txid' => $this->data_txid,
+            'data_key' => $this->data_key,
+            'mime_type' => $this->mime_type,
+            'size' => $this->size,
+            'hash' => $this->hash,
+            'storage_method' => $this->storage_method,
+            'stored_at' => $this->stored_at?->toIso8601String() ?? now()->toIso8601String(),
+        ];
+
+        if ($this->additional_metadata !== null) {
+            $base = array_merge($base, $this->additional_metadata);
+        }
+
+        return $base;
+    }
+
+    public static function fromBlockchainArray(array $data): self
+    {
+        $model = new static;
+
+        $baseFields = ['filename', 'file_key', 'data_txid', 'data_key', 'mime_type', 'size', 'hash', 'storage_method', 'stored_at'];
+        $additionalMetadata = array_diff_key($data, array_flip($baseFields));
+
+        $model->filename = $data['filename'] ?? '';
+        $model->file_key = $data['file_key'] ?? '';
+        $model->data_txid = $data['data_txid'] ?? '';
+        $model->data_key = $data['data_key'] ?? '';
+        $model->mime_type = $data['mime_type'] ?? '';
+        $model->size = (int) ($data['size'] ?? 0);
+        $model->hash = $data['hash'] ?? '';
+        $model->storage_method = $data['storage_method'] ?? '';
+        $model->stored_at = isset($data['stored_at']) ? Carbon::parse($data['stored_at'])->setTimezone('Asia/Manila') : now();
+        $model->additional_metadata = ! empty($additionalMetadata) ? $additionalMetadata : null;
+
+        return $model;
     }
 }

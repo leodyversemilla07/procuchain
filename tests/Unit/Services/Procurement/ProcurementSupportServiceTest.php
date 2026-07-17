@@ -1,11 +1,9 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementMode;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
-use App\Repositories\DocumentRepository;
-use App\Repositories\ProcurementRepository;
+use App\Models\Procurement;
 use App\Services\BlockchainRpcClient;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\Procurement\StageStatusMappingService;
@@ -14,7 +12,11 @@ use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
 use App\Services\WorkflowDefinitionService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     Log::spy();
@@ -24,7 +26,6 @@ beforeEach(function () {
     $this->statusPublisher = Mockery::mock(StatusPublisher::class);
     $this->eventPublisher = Mockery::mock(EventPublisher::class);
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
-    $this->documentRepository = Mockery::mock(DocumentRepository::class);
     $this->workflowDefinitionService = Mockery::mock(WorkflowDefinitionService::class);
     $this->stageStatusMappingService = Mockery::mock(StageStatusMappingService::class);
 
@@ -34,35 +35,28 @@ beforeEach(function () {
         $this->statusPublisher,
         $this->eventPublisher,
         $this->procurementDataService,
-        $this->documentRepository,
         $this->workflowDefinitionService,
         $this->stageStatusMappingService,
     );
 });
 
-// Helper to mock procurement repository for getProcurementMode
+// Helper to seed procurement in database for getProcurementMode
 function mockProcurementRepo(ProcurementMode $mode, string $prNumber = 'PR-2025-001-0001'): void
 {
-    $procurement = ProcurementData::fromBlockchainArray([
+    Procurement::create([
         'pr_number' => $prNumber,
         'title' => 'Test',
         'description' => 'Test',
-        'abc_amount' => '500000',
-        'funding_source' => 'GAA',
+        'abc_amount' => 500000,
+        'fund_source' => 'GAA',
         'category' => 'goods',
         'procurement_mode' => $mode->value,
         'office' => 'Test Office',
-        'status' => 'procurement_submitted',
+        'current_status' => 'procurement_submitted',
+        'current_stage' => 'procurement_initiation',
         'user_id' => '1',
-        'created_at' => now()->toIso8601String(),
+        'initiated_at' => now(),
     ]);
-
-    $repo = Mockery::mock(ProcurementRepository::class);
-    $repo->shouldReceive('findByProcurement')
-        ->with($prNumber)
-        ->andReturn($procurement);
-
-    app()->instance(ProcurementRepository::class, $repo);
 }
 
 describe('ProcurementSupportService', function () {
@@ -156,12 +150,6 @@ describe('ProcurementSupportService', function () {
         });
 
         it('falls back to default getNextStage when mode not found', function () {
-            // Mock procurement repo returning null
-            $repo = Mockery::mock(ProcurementRepository::class);
-            $repo->shouldReceive('findByProcurement')
-                ->andReturn(null);
-            app()->instance(ProcurementRepository::class, $repo);
-
             $result = $this->service->getNextStageForProcurement('PR-2025-990-0001', StageEnums::PROCUREMENT_INITIATION);
 
             // Should use the enum's getNextStage method as fallback
@@ -199,11 +187,6 @@ describe('ProcurementSupportService', function () {
         });
 
         it('returns true for all stages when mode not found', function () {
-            $repo = Mockery::mock(ProcurementRepository::class);
-            $repo->shouldReceive('findByProcurement')
-                ->andReturn(null);
-            app()->instance(ProcurementRepository::class, $repo);
-
             $result = $this->service->stageExistsInWorkflow('PR-2025-990-0001', StageEnums::BID_OPENING);
 
             expect($result)->toBeTrue();
@@ -240,11 +223,6 @@ describe('ProcurementSupportService', function () {
         });
 
         it('falls back to enum canSkip when mode not found', function () {
-            $repo = Mockery::mock(ProcurementRepository::class);
-            $repo->shouldReceive('findByProcurement')
-                ->andReturn(null);
-            app()->instance(ProcurementRepository::class, $repo);
-
             // PROCUREMENT_INITIATION should not be skippable
             $result = $this->service->isStageOptional('PR-2025-990-0001', StageEnums::PROCUREMENT_INITIATION);
 

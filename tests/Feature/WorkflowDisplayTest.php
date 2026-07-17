@@ -1,12 +1,10 @@
 <?php
 
-use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
+use App\Models\Procurement;
 use App\Models\ProcurementWorkflowConfig;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\NormalizedTableSyncService;
 use App\Services\Procurement\ProcurementSupportService;
@@ -39,6 +37,7 @@ beforeEach(function () {
         ProcurementMode::SMALL_VALUE_PROCUREMENT,
         'Test SVP Procurement',
         100000.00,
+        'PR-2024-001-0002',
     );
 });
 
@@ -63,7 +62,7 @@ describe('Public Workflow Page', function () {
 describe('Workflow Info Structure', function () {
     it('includes the expected workflow info structure for SVP stages', function () {
         actingAs($this->bacSecretariat);
-        bindWorkflowProcurementRepository($this, $this->svpProcurementData);
+        bindWorkflowSupportStub($this->svpProcurementData);
 
         $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
 
@@ -93,7 +92,6 @@ describe('Workflow Info Structure', function () {
 describe('Stage Pages With Workflow Info', function () {
     it('includes workflow info on representative competitive bidding stage pages', function () {
         actingAs($this->bacSecretariat);
-        bindWorkflowProcurementRepository($this, $this->competitiveProcurementData);
         bindWorkflowSupportStub($this->competitiveProcurementData);
         bindWorkflowDocumentGuideStub();
 
@@ -111,7 +109,6 @@ describe('Stage Pages With Workflow Info', function () {
 
     it('includes workflow info on SVP-only stage pages', function () {
         actingAs($this->bacSecretariat);
-        bindWorkflowProcurementRepository($this, $this->svpProcurementData);
         bindWorkflowSupportStub($this->svpProcurementData);
         bindWorkflowDocumentGuideStub();
 
@@ -125,12 +122,6 @@ describe('Procurement Initiation With Workflow Info', function () {
     it('returns 404 when the procurement does not exist', function () {
         actingAs($this->bacSecretariat);
 
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')
-            ->with('PR-2025-997-0001')
-            ->andReturn(null);
-        $this->instance(ProcurementRepository::class, $repository);
-
         $response = $this->get(route('bac-secretariat.procurement.initiation.show', [
             'pr_number' => 'PR-2025-997-0001',
         ]));
@@ -140,7 +131,6 @@ describe('Procurement Initiation With Workflow Info', function () {
 
     it('includes workflow info on the procurement initiation page', function () {
         actingAs($this->bacSecretariat);
-        bindWorkflowProcurementRepository($this, $this->competitiveProcurementData);
         bindWorkflowSupportStub($this->competitiveProcurementData);
         bindWorkflowDocumentGuideStub();
 
@@ -222,45 +212,43 @@ function buildWorkflowProcurementData(
     string $title,
     float $abcAmount,
     string $prNumber = 'PR-2024-001-0001',
-): ProcurementData {
-    return new ProcurementData(
-        prNumber: $prNumber,
-        appReference: 'APP-2024-001',
-        title: $title,
-        description: 'Test Description',
-        abcAmount: $abcAmount,
-        fundingSource: 'General Fund',
-        category: ProcurementCategory::GOODS,
-        procurementMode: $mode,
-        office: 'Test Office',
-        endUser: 'Test User',
-        deliveryLocation: null,
-        deliveryDate: null,
-        deliveryTermDays: null,
-        preparedBy: 'Test Preparer',
-        bacResolutionNumber: null,
-        bacResolutionDate: null,
-        philgepsReference: null,
-        philgepsPostingDate: null,
-        approvedBy: null,
-        approvalDate: null,
-        status: 'in_progress',
-        userId: (string) $user->id,
-        createdAt: now(),
-    );
+): array {
+    Procurement::create([
+        'pr_number' => $prNumber,
+        'app_reference' => 'APP-2024-001',
+        'title' => $title,
+        'description' => 'Test Description',
+        'abc_amount' => $abcAmount,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => $mode->value,
+        'office' => 'Test Office',
+        'end_user' => 'Test User',
+        'prepared_by' => 'Test Preparer',
+        'status' => 'in_progress',
+        'user_id' => $user->id,
+        'created_at' => now(),
+    ]);
+
+    return [
+        'pr_number' => $prNumber,
+        'app_reference' => 'APP-2024-001',
+        'title' => $title,
+        'description' => 'Test Description',
+        'abc_amount' => $abcAmount,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => $mode->value,
+        'office' => 'Test Office',
+        'end_user' => 'Test User',
+        'prepared_by' => 'Test Preparer',
+        'status' => 'in_progress',
+        'user_id' => (string) $user->id,
+        'created_at' => now(),
+    ];
 }
 
-function bindWorkflowProcurementRepository(TestCase $testCase, ProcurementData $procurementData): void
-{
-    $repository = mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->zeroOrMoreTimes()
-        ->andReturn($procurementData);
-
-    app()->instance(ProcurementRepository::class, $repository);
-}
-
-function bindWorkflowSupportStub(ProcurementData $procurementData): void
+function bindWorkflowSupportStub(array $procurementData): void
 {
     $support = mock(ProcurementSupportService::class);
     $support->shouldReceive('stageExistsInWorkflow')
@@ -269,8 +257,8 @@ function bindWorkflowSupportStub(ProcurementData $procurementData): void
     $support->shouldReceive('findProcurementById')
         ->zeroOrMoreTimes()
         ->andReturn([
-            'procurement_title' => $procurementData->title,
-            'current_status' => $procurementData->status,
+            'procurement_title' => $procurementData['title'],
+            'current_status' => $procurementData['status'],
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
         ]);
     $support->shouldReceive('handleAutoStageTransition')
@@ -278,12 +266,15 @@ function bindWorkflowSupportStub(ProcurementData $procurementData): void
         ->andReturnNull();
     $support->shouldReceive('getProcurementMode')
         ->zeroOrMoreTimes()
-        ->andReturn($procurementData->procurementMode);
+        ->andReturn(ProcurementMode::tryFrom($procurementData['procurement_mode']));
     $support->shouldReceive('getWorkflowInfo')
         ->zeroOrMoreTimes()
         ->andReturn([
             'mode' => [
-                'value' => $procurementData->procurementMode->value,
+                'value' => $procurementData['procurement_mode'],
+                'display_name' => 'Test Mode',
+                'description' => 'Test description',
+                'irr_section' => 'Section 10',
             ],
             'workflow' => [
                 'stages' => [],
