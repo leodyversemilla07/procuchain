@@ -4,6 +4,9 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Http\Controllers\EmailVerificationNotificationController;
+use Laravel\Fortify\Http\Controllers\EmailVerificationPromptController;
+use Laravel\Fortify\Http\Controllers\VerifyEmailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,3 +41,28 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Email Verification Routes
+|--------------------------------------------------------------------------
+|
+| Defined by hand (rather than via Fortify's `emailVerification` feature) so
+| Wayfinder can generate the `verification.verify` route. Fortify registers
+| that route with required {id}/{hash} path parameters, which Wayfinder's URL
+| probe cannot resolve. Using optional parameters lets generation succeed while
+| the runtime still receives explicit id/hash from the signed verification link.
+|
+*/
+
+Route::get('email/verify', [EmailVerificationPromptController::class, '__invoke'])
+    ->middleware('auth')
+    ->name('verification.notice');
+
+Route::get('email/verify/{id?}/{hash?}', [VerifyEmailController::class, '__invoke'])
+    ->middleware(['auth', 'signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
+Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');

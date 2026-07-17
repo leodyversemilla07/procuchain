@@ -175,7 +175,14 @@ return [
     'features' => [
         // Features::registration(),
         // Features::resetPasswords(),
-        Features::emailVerification(),
+        // Features::emailVerification(),
+        //
+        // NOTE: The `verification.verify` route is defined by hand in routes/auth.php
+        // (with optional {id?}/{hash?} params) instead of via this feature flag.
+        // Fortify registers it with required {id}/{hash} path parameters, which
+        // Wayfinder cannot resolve when probing route URLs to generate its
+        // TypeScript helpers. Keeping the feature flag off avoids the duplicate
+        // required-parameter route while the controllers/notification still work.
         // Features::updateProfileInformation(),
         // Features::updatePasswords(),
         Features::twoFactorAuthentication([

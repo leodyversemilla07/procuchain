@@ -24,7 +24,7 @@ test('proFile page is displayed', function () {
             ->where('auth.user.email', $user->email)
             ->where('auth.user.role', null)
             ->where('auth.can.manageProcurement', false)
-            ->where('mustVerifyEmail', false)
+            ->where('mustVerifyEmail', true)
         );
 });
 

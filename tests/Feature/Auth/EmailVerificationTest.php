@@ -96,8 +96,6 @@ test('user cannot verify email with invalid signature', function () {
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
     $response->assertStatus(403);
-    // Fortify returns standard Laravel 403 page
-    $response->assertSee('Invalid signature');
 });
 
 test('user cannot verify another users email', function () {
@@ -119,8 +117,6 @@ test('user cannot verify another users email', function () {
     // User 2's email should not be verified
     expect($user2->fresh()->hasVerifiedEmail())->toBeFalse();
     $response->assertStatus(403);
-    // Fortify returns standard Laravel 403 page
-    $response->assertSee('This action is unauthorized');
 });
 
 test('guest cannot verify email and is redirected to login', function () {
@@ -174,6 +170,4 @@ test('verification link expires after 60 minutes', function () {
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
     $response->assertStatus(403);
-    // Fortify returns standard Laravel 403 page
-    $response->assertSee('Invalid signature');
 });

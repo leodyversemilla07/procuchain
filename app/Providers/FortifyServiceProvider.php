@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Http\JsonResponse;
@@ -25,12 +24,14 @@ use Laravel\Fortify\Contracts\TwoFactorConfirmedResponse as TwoFactorConfirmedRe
 use Laravel\Fortify\Contracts\TwoFactorDisabledResponse as TwoFactorDisabledResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorEnabledResponse as TwoFactorEnabledResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
+use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Responses\FailedPasswordConfirmationResponse as FailedPasswordConfirmationResponseImplementation;
 use Laravel\Fortify\Http\Responses\RecoveryCodesGeneratedResponse;
 use Laravel\Fortify\Http\Responses\TwoFactorConfirmedResponse;
 use Laravel\Fortify\Http\Responses\TwoFactorDisabledResponse;
 use Laravel\Fortify\Http\Responses\TwoFactorEnabledResponse;
+use Laravel\Fortify\Http\Responses\VerifyEmailResponse;
 use Laravel\Fortify\TwoFactorAuthenticationProvider;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -52,11 +53,6 @@ class FortifyServiceProvider extends ServiceProvider
                 $app->make(Google2FA::class),
                 $app->make(Repository::class)
             );
-        });
-
-        // Use custom email verification notification
-        $this->app->resolving(MustVerifyEmail::class, function ($user) {
-            $user->sendEmailVerificationNotification();
         });
 
         // Register Fortify response bindings
@@ -88,6 +84,9 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(TwoFactorDisabledResponseContract::class, TwoFactorDisabledResponse::class);
         $this->app->singleton(RecoveryCodesGeneratedResponseContract::class, RecoveryCodesGeneratedResponse::class);
         $this->app->singleton(FailedPasswordConfirmationResponse::class, FailedPasswordConfirmationResponseImplementation::class);
+
+        // Bind VerifyEmailResponse - required when emailVerification feature is off
+        $this->app->singleton(VerifyEmailResponseContract::class, VerifyEmailResponse::class);
     }
 
     /**
