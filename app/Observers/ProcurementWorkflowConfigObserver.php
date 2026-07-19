@@ -6,21 +6,20 @@ namespace App\Observers;
 
 use App\Enums\Stream;
 use App\Models\ProcurementWorkflowConfig;
+use App\Observers\Concerns\HandlesBlockchainSync;
 use App\Services\BlockchainSyncService;
 
 class ProcurementWorkflowConfigObserver
 {
+    use HandlesBlockchainSync;
+
     public function __construct(
         private readonly BlockchainSyncService $sync,
     ) {}
 
     public function created(ProcurementWorkflowConfig $config): void
     {
-        if (app()->runningUnitTests()) {
-            return;
-        }
-
-        if ($config->txid !== null) {
+        if (! $this->shouldSyncToBlockchain($config)) {
             return;
         }
 
@@ -31,7 +30,7 @@ class ProcurementWorkflowConfigObserver
 
     public function updated(ProcurementWorkflowConfig $config): void
     {
-        if (app()->runningUnitTests()) {
+        if (! $this->shouldSyncToBlockchain()) {
             return;
         }
 

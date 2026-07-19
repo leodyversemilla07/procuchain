@@ -6,21 +6,20 @@ namespace App\Observers;
 
 use App\Enums\Stream;
 use App\Models\DocumentViewLog;
+use App\Observers\Concerns\HandlesBlockchainSync;
 use App\Services\BlockchainSyncService;
 
 class DocumentViewObserver
 {
+    use HandlesBlockchainSync;
+
     public function __construct(
         private readonly BlockchainSyncService $sync,
     ) {}
 
     public function created(DocumentViewLog $documentViewLog): void
     {
-        if (app()->runningUnitTests()) {
-            return;
-        }
-
-        if ($documentViewLog->txid !== null) {
+        if (! $this->shouldSyncToBlockchain($documentViewLog)) {
             return;
         }
 

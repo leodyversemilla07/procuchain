@@ -6,21 +6,20 @@ namespace App\Observers;
 
 use App\Enums\Stream;
 use App\Models\AuditLog;
+use App\Observers\Concerns\HandlesBlockchainSync;
 use App\Services\BlockchainSyncService;
 
 class AuditLogObserver
 {
+    use HandlesBlockchainSync;
+
     public function __construct(
         private readonly BlockchainSyncService $sync,
     ) {}
 
     public function created(AuditLog $auditLog): void
     {
-        if (app()->runningUnitTests()) {
-            return;
-        }
-
-        if ($auditLog->txid !== null) {
+        if (! $this->shouldSyncToBlockchain($auditLog)) {
             return;
         }
 

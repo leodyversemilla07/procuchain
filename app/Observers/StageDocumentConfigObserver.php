@@ -6,21 +6,20 @@ namespace App\Observers;
 
 use App\Enums\Stream;
 use App\Models\StageDocumentConfig;
+use App\Observers\Concerns\HandlesBlockchainSync;
 use App\Services\BlockchainSyncService;
 
 class StageDocumentConfigObserver
 {
+    use HandlesBlockchainSync;
+
     public function __construct(
         private readonly BlockchainSyncService $sync,
     ) {}
 
     public function created(StageDocumentConfig $config): void
     {
-        if (app()->runningUnitTests()) {
-            return;
-        }
-
-        if ($config->txid !== null) {
+        if (! $this->shouldSyncToBlockchain($config)) {
             return;
         }
 
@@ -31,7 +30,7 @@ class StageDocumentConfigObserver
 
     public function updated(StageDocumentConfig $config): void
     {
-        if (app()->runningUnitTests()) {
+        if (! $this->shouldSyncToBlockchain()) {
             return;
         }
 

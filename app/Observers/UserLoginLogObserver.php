@@ -6,21 +6,20 @@ namespace App\Observers;
 
 use App\Enums\Stream;
 use App\Models\UserLoginLog;
+use App\Observers\Concerns\HandlesBlockchainSync;
 use App\Services\BlockchainSyncService;
 
 class UserLoginLogObserver
 {
+    use HandlesBlockchainSync;
+
     public function __construct(
         private readonly BlockchainSyncService $sync,
     ) {}
 
     public function created(UserLoginLog $loginLog): void
     {
-        if (app()->runningUnitTests()) {
-            return;
-        }
-
-        if ($loginLog->txid !== null) {
+        if (! $this->shouldSyncToBlockchain($loginLog)) {
             return;
         }
 
