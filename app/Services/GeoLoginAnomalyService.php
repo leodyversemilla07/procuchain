@@ -41,7 +41,7 @@ class GeoLoginAnomalyService
         ];
 
         // Skip for testing or local IPs
-        if ($this->isLocalIp($ipAddress) || app()->environment('testing')) {
+        if ($this->isLocalIp($ipAddress) || config('app.env') === 'testing') {
             return $result;
         }
 
@@ -89,7 +89,7 @@ class GeoLoginAnomalyService
      */
     public function getGeolocation(string $ipAddress): ?array
     {
-        if (app()->runningUnitTests()) {
+        if (config('app.env') === 'testing') {
             return null;
         }
 

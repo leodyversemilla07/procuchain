@@ -198,7 +198,7 @@ class IntegrityViolationLog extends Model
         ?array $revisionLineage = null,
     ): self {
         // Skip cooldown deduplication in unit tests
-        if (! app()->runningUnitTests()) {
+        if (config('app.env') !== 'testing') {
             // Get cooldown period from config (default 24 hours)
             $cooldownHours = config('integrity.breach_notifications.cooldown_hours', 24);
             $cooldownCutoff = now()->subHours($cooldownHours);

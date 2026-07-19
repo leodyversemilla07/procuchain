@@ -34,6 +34,11 @@ final class ProcurementListAggregatorService
         private readonly BlockchainAddressResolverService $userNameResolver,
     ) {}
 
+    private function isRunningTests(): bool
+    {
+        return config('app.env') === 'testing';
+    }
+
     /**
      * Fetch and process all procurement data for listing with role-based filtering.
      *
@@ -53,7 +58,7 @@ final class ProcurementListAggregatorService
             ]);
 
             // Set a reasonable timeout for blockchain operations (skip in testing)
-            if (! app()->runningUnitTests()) {
+            if (! $this->isRunningTests()) {
                 set_time_limit(22);
             }
 

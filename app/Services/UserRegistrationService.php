@@ -17,7 +17,7 @@ class UserRegistrationService
 
     public function publishRegistration(User $user, string $registeredBy): void
     {
-        if (app()->runningUnitTests()) {
+        if (! $this->shouldPublishToBlockchain()) {
             return;
         }
 
@@ -35,7 +35,7 @@ class UserRegistrationService
 
     public function publishAddressChange(User $user, string $oldAddress, string $changedBy): void
     {
-        if (app()->runningUnitTests()) {
+        if (! $this->shouldPublishToBlockchain()) {
             return;
         }
 
@@ -51,6 +51,11 @@ class UserRegistrationService
         ];
 
         $this->publishAndSync($user, $data);
+    }
+
+    private function shouldPublishToBlockchain(): bool
+    {
+        return ! app()->runningUnitTests();
     }
 
     private function publishAndSync(User $user, array $data): void

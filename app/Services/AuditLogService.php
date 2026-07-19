@@ -143,6 +143,11 @@ class AuditLogService
         protected NotificationService $notifications,
     ) {}
 
+    private function shouldPublishToBlockchain(): bool
+    {
+        return ! app()->runningUnitTests();
+    }
+
     /**
      * Get the human-readable label for an action key.
      * Returns the raw key if no label is defined.
@@ -266,7 +271,7 @@ class AuditLogService
         array $newValues,
         ?AuditLog $log,
     ): void {
-        if (app()->runningUnitTests()) {
+        if (! $this->shouldPublishToBlockchain()) {
             return;
         }
 

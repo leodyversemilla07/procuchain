@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,7 +27,7 @@ class SecurityHeaders
     {
         /** @var Response $response */
         $response = $next($request);
-        $isProduction = app()->environment('production');
+        $isProduction = App::environment('production');
 
         // HTTP Strict Transport Security - enforce HTTPS for 1 year
         // Only set in production to avoid issues in local development

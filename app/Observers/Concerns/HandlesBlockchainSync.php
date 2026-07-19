@@ -10,7 +10,7 @@ trait HandlesBlockchainSync
 {
     protected function shouldSyncToBlockchain(?Model $model = null): bool
     {
-        if (app()->runningUnitTests()) {
+        if (config('app.env') === 'testing') {
             return false;
         }
 

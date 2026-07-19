@@ -37,7 +37,7 @@ class BlockchainRpcClient
 
     public function __construct()
     {
-        $isConsole = app()->runningInConsole();
+        $isConsole = php_sapi_name() === 'cli' || php_sapi_name() === 'phpdbg';
 
         $this->maxRetries = $isConsole
             ? (int) config('multichain.max_retries', 3)

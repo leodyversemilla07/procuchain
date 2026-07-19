@@ -37,6 +37,11 @@ class ProcurementListController extends BaseController
 
     private ProcurementDetailService $detailService;
 
+    private function isNotTesting(): bool
+    {
+        return config('app.env') !== 'testing';
+    }
+
     /**
      * Constructor
      */
@@ -60,9 +65,8 @@ class ProcurementListController extends BaseController
         try {
             Log::info('Fetching procurements list');
 
-            // Set a reasonable timeout for blockchain operations
             // Set a reasonable timeout for blockchain operations (skip in testing)
-            if (! app()->runningUnitTests()) {
+            if ($this->isNotTesting()) {
                 set_time_limit(28); // Give 2 seconds buffer
             }
 
