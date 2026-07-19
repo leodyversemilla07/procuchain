@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Verification;
 
-use App\DataTransferObjects\Verification\CompletenessResult;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Models\ProcurementDocument;
@@ -21,10 +20,7 @@ final class DocumentCompletenessVerifier
         private readonly StageDocumentRequirementsService $requirements,
     ) {}
 
-    /**
-     * Verify document completeness for a specific stage.
-     */
-    public function verify(string $prNumber, StageEnums $stage, ?iterable $documents = null): CompletenessResult
+    public function verify(string $prNumber, StageEnums $stage, ?iterable $documents = null): array
     {
         try {
             if ($documents === null) {
@@ -74,13 +70,7 @@ final class DocumentCompletenessVerifier
                 'completion_percentage' => $validationResult['completion_percentage'],
             ]);
 
-            return CompletenessResult::fromValidation(
-                prNumber: $prNumber,
-                stage: $stage,
-                validationResult: $validationResult,
-                errors: $errors,
-                warnings: $warnings,
-            );
+            return $this->buildResult($prNumber, $stage, $validationResult, $errors, $warnings);
         } catch (Exception $e) {
             Log::error('Document completeness verification failed', [
                 'pr_number' => $prNumber,
@@ -88,18 +78,51 @@ final class DocumentCompletenessVerifier
                 'error' => $e->getMessage(),
             ]);
 
-            return new CompletenessResult(
-                isComplete: false,
-                prNumber: $prNumber,
-                stage: $stage,
-                completionPercentage: 0.0,
-                requiredDocuments: [],
-                uploadedDocuments: [],
-                missingDocuments: [],
-                errors: ['Completeness verification failed: '.$e->getMessage()],
-                warnings: [],
-                verifiedAt: now(),
-            );
+            return $this->buildResult($prNumber, $stage, [
+                'can_complete' => false,
+                'completion_percentage' => 0.0,
+                'required_documents' => [],
+                'uploaded_documents' => [],
+                'missing_documents' => [],
+            ], ['Completeness verification failed: '.$e->getMessage()], []);
         }
+    }
+
+    private function buildResult(
+        string $prNumber,
+        StageEnums $stage,
+        array $validationResult,
+        array $errors,
+        array $warnings,
+    ): array {
+        $isComplete = $validationResult['can_complete'] ?? false;
+        $requiredDocuments = $validationResult['required_documents'] ?? [];
+        $uploadedDocuments = $validationResult['uploaded_documents'] ?? [];
+        $missingDocuments = $validationResult['missing_documents'] ?? [];
+
+        $requiredValues = array_flip($requiredDocuments);
+        $uploadedRequiredCount = count(array_filter($uploadedDocuments, fn (string $doc): bool => isset($requiredValues[$doc])));
+        $uploadedOptionalCount = count(array_filter($uploadedDocuments, fn (string $doc): bool => ! isset($requiredValues[$doc])));
+
+        return [
+            'is_complete' => $isComplete,
+            'pr_number' => $prNumber,
+            'stage' => $stage->value,
+            'stage_display_name' => $stage->getDisplayName(),
+            'completion_percentage' => $validationResult['completion_percentage'] ?? 0.0,
+            'required_documents' => $requiredDocuments,
+            'uploaded_documents' => $uploadedDocuments,
+            'missing_documents' => $missingDocuments,
+            'document_counts' => [
+                'required' => count($requiredDocuments),
+                'uploaded' => $uploadedRequiredCount,
+                'uploaded_optional' => $uploadedOptionalCount,
+                'missing' => count($missingDocuments),
+            ],
+            'can_complete_stage' => $isComplete && empty($missingDocuments),
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'verified_at' => now()->toIso8601String(),
+        ];
     }
 }

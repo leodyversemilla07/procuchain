@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Verification;
 
-use App\DataTransferObjects\Verification\CrossReferenceResult;
+use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Models\ProcurementDocument;
 use Exception;
@@ -13,13 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 final class DocumentCrossReferenceVerifier
 {
-    public function __construct(
-    ) {}
-
-    /**
-     * Verify cross-references between documents (PR numbers, amounts, dates).
-     */
-    public function verify(string $prNumber, ?iterable $documents = null): CrossReferenceResult
+    public function verify(string $prNumber, ?iterable $documents = null): array
     {
         try {
             if ($documents === null) {
@@ -93,36 +87,66 @@ final class DocumentCrossReferenceVerifier
                 'errors_count' => count($errors),
             ]);
 
-            if ($isConsistent) {
-                return CrossReferenceResult::consistent(
-                    prNumber: $prNumber,
-                    prNumberChecks: $prNumberChecks,
-                    amountChecks: $amountChecks,
-                    dateChecks: $dateChecks,
-                    signatoryChecks: $signatoryChecks,
-                    warnings: $warnings,
-                );
-            }
-
-            return CrossReferenceResult::inconsistent(
-                prNumber: $prNumber,
-                errors: $errors,
-                prNumberChecks: $prNumberChecks,
-                amountChecks: $amountChecks,
-                dateChecks: $dateChecks,
-                signatoryChecks: $signatoryChecks,
-                warnings: $warnings,
-            );
+            return $this->buildResult($prNumber, $isConsistent, $prNumberChecks, $amountChecks, $dateChecks, $signatoryChecks, $errors, $warnings);
         } catch (Exception $e) {
             Log::error('Cross-reference verification failed', [
                 'pr_number' => $prNumber,
                 'error' => $e->getMessage(),
             ]);
 
-            return CrossReferenceResult::inconsistent(
-                prNumber: $prNumber,
-                errors: ['Cross-reference verification failed: '.$e->getMessage()],
-            );
+            return $this->buildResult($prNumber, false, [], [], [], [], ['Cross-reference verification failed: '.$e->getMessage()], []);
         }
+    }
+
+    private function buildResult(
+        string $prNumber,
+        bool $isConsistent,
+        array $prNumberChecks,
+        array $amountChecks,
+        array $dateChecks,
+        array $signatoryChecks,
+        array $errors,
+        array $warnings,
+    ): array {
+        $prNumberChecksWithDisplayNames = array_map(function ($check) {
+            $documentType = DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
+            $check['document_type_display'] = $documentType?->getDisplayName() ?? ucwords(str_replace('_', ' ', $check['document_type'] ?? 'Unknown'));
+
+            return $check;
+        }, $prNumberChecks);
+
+        $hasPrMismatch = false;
+        foreach ($prNumberChecks as $check) {
+            if (! ($check['matches'] ?? true)) {
+                $hasPrMismatch = true;
+                break;
+            }
+        }
+
+        $hasAmountInconsistency = false;
+        foreach ($amountChecks as $check) {
+            if (! ($check['consistent'] ?? true)) {
+                $hasAmountInconsistency = true;
+                break;
+            }
+        }
+
+        return [
+            'is_consistent' => $isConsistent,
+            'pr_number' => $prNumber,
+            'pr_number_checks' => $prNumberChecksWithDisplayNames,
+            'amount_checks' => $amountChecks,
+            'date_checks' => $dateChecks,
+            'signatory_checks' => $signatoryChecks,
+            'summary' => [
+                'total_issues' => count($errors),
+                'total_warnings' => count($warnings),
+                'has_pr_mismatch' => $hasPrMismatch,
+                'has_amount_inconsistency' => $hasAmountInconsistency,
+            ],
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'verified_at' => now()->toIso8601String(),
+        ];
     }
 }

@@ -7,8 +7,8 @@ namespace App\Http\Controllers;
 use App\Enums\StageEnums;
 use App\Http\Requests\Document\VerifyProcurementRequest;
 use App\Http\Requests\Document\VerifySingleDocumentRequest;
-use App\Services\DocumentVerificationService;
 use App\Services\ProcurementDataService;
+use App\Services\Verification\DocumentVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -55,19 +55,16 @@ final class DocumentVerificationController extends Controller
 
         if (in_array('completeness', $verificationTypes, true)) {
             $stage = $stage ?? StageEnums::PROCUREMENT_INITIATION;
-            $completenessResult = $this->verificationService->verifyCompleteness($prNumber, $stage);
-            $results['completeness'] = $completenessResult->toArray();
+            $results['completeness'] = $this->verificationService->verifyCompleteness($prNumber, $stage);
         }
 
         if (in_array('cross_reference', $verificationTypes, true)) {
-            $crossRefResult = $this->verificationService->verifyCrossReferences($prNumber);
-            $results['cross_reference'] = $crossRefResult->toArray();
+            $results['cross_reference'] = $this->verificationService->verifyCrossReferences($prNumber);
         }
 
         if (in_array('compliance', $verificationTypes, true)) {
             $stage = $stage ?? StageEnums::PROCUREMENT_INITIATION;
-            $complianceResult = $this->verificationService->verifyCompliance($prNumber, $stage);
-            $results['compliance'] = $complianceResult->toArray();
+            $results['compliance'] = $this->verificationService->verifyCompliance($prNumber, $stage);
         }
 
         Log::info('Procurement verification completed', [
@@ -140,8 +137,8 @@ final class DocumentVerificationController extends Controller
         $result = $this->verificationService->verifySingleDocument($decodedfileKey);
 
         return response()->json([
-            'success' => $result->isValid,
-            'result' => $result->toArray(),
+            'success' => $result['is_valid'],
+            'result' => $result,
         ]);
     }
 
@@ -175,7 +172,7 @@ final class DocumentVerificationController extends Controller
 
         return Inertia::render('procurements/verification', [
             'prNumber' => $prNumber,
-            'report' => $report->toArray(),
+            'report' => $report,
             'procurementStatus' => $procurementStatus,
         ]);
     }

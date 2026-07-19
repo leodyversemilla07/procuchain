@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Verification;
 
-use App\DataTransferObjects\Verification\VerificationResult;
 use App\Models\ProcurementDocument;
 use App\Services\BlockchainStorageService;
 use Exception;
@@ -16,10 +15,7 @@ final class DocumentIntegrityVerifier
         private readonly BlockchainStorageService $blockchainStorage,
     ) {}
 
-    /**
-     * Verify document integrity using SHA-256 hash comparison.
-     */
-    public function verify(string $fileKey, string $dataTxid): VerificationResult
+    public function verify(string $fileKey, string $dataTxid): array
     {
         try {
             $blockchainFileData = $this->blockchainStorage->retrieveFile($fileKey, $dataTxid);
@@ -33,15 +29,12 @@ final class DocumentIntegrityVerifier
                 'hash_match' => $storedHash === $actualHash,
             ]);
 
-            if ($isValid) {
-                return VerificationResult::success($fileKey, $actualHash, 'integrity');
-            }
-
-            return VerificationResult::failure(
+            return $this->buildResult(
+                isValid: $isValid,
                 fileKey: $fileKey,
                 expectedHash: $storedHash,
                 actualHash: $actualHash,
-                errors: ['Document integrity compromised: hash mismatch detected'],
+                errors: $isValid ? [] : ['Document integrity compromised: hash mismatch detected'],
                 verificationType: 'integrity',
             );
         } catch (Exception $e) {
@@ -51,7 +44,8 @@ final class DocumentIntegrityVerifier
                 'error' => $e->getMessage(),
             ]);
 
-            return VerificationResult::failure(
+            return $this->buildResult(
+                isValid: false,
                 fileKey: $fileKey,
                 expectedHash: null,
                 actualHash: null,
@@ -61,16 +55,14 @@ final class DocumentIntegrityVerifier
         }
     }
 
-    /**
-     * Verify a single document by File key.
-     */
-    public function verifySingle(string $fileKey): VerificationResult
+    public function verifySingle(string $fileKey): array
     {
         try {
             $document = ProcurementDocument::with('procurement')->where('file_key', $fileKey)->first();
 
             if ($document === null) {
-                return VerificationResult::failure(
+                return $this->buildResult(
+                    isValid: false,
                     fileKey: $fileKey,
                     expectedHash: null,
                     actualHash: null,
@@ -85,7 +77,8 @@ final class DocumentIntegrityVerifier
                 'error' => $e->getMessage(),
             ]);
 
-            return VerificationResult::failure(
+            return $this->buildResult(
+                isValid: false,
                 fileKey: $fileKey,
                 expectedHash: null,
                 actualHash: null,
@@ -94,9 +87,6 @@ final class DocumentIntegrityVerifier
         }
     }
 
-    /**
-     * Batch verify all documents for a procurement.
-     */
     public function batchVerify(string $prNumber): array
     {
         $documents = ProcurementDocument::with('procurement')
@@ -114,7 +104,7 @@ final class DocumentIntegrityVerifier
                     'stage' => $doc->stage,
                     'uploaded_at' => $doc->uploaded_at?->toIso8601String(),
                 ],
-                'verification' => $this->verify($doc->file_key, $doc->txid)->toArray(),
+                'verification' => $this->verify($doc->file_key, $doc->txid),
             ];
         }
 
@@ -124,5 +114,27 @@ final class DocumentIntegrityVerifier
         ]);
 
         return $results;
+    }
+
+    private function buildResult(
+        bool $isValid,
+        string $fileKey,
+        ?string $expectedHash,
+        ?string $actualHash,
+        array $errors = [],
+        string $verificationType = 'integrity',
+        array $warnings = [],
+    ): array {
+        return [
+            'is_valid' => $isValid,
+            'verification_type' => $verificationType,
+            'file_key' => $fileKey,
+            'expected_hash' => $expectedHash,
+            'actual_hash' => $actualHash,
+            'hash_match' => $expectedHash !== null && $actualHash !== null && $expectedHash === $actualHash,
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'verified_at' => now()->toIso8601String(),
+        ];
     }
 }

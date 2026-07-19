@@ -2,27 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace App\Services\Verification;
 
-use App\DataTransferObjects\Verification\CompletenessResult;
-use App\DataTransferObjects\Verification\ComplianceResult;
-use App\DataTransferObjects\Verification\CrossReferenceResult;
-use App\DataTransferObjects\Verification\VerificationReportDTO;
-use App\DataTransferObjects\Verification\VerificationResult;
 use App\Enums\StageEnums;
 use App\Models\ProcurementDocument;
 use App\Models\User;
-use App\Services\Verification\DocumentCompletenessVerifier;
-use App\Services\Verification\DocumentComplianceVerifier;
-use App\Services\Verification\DocumentCrossReferenceVerifier;
-use App\Services\Verification\DocumentIntegrityVerifier;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Document Verification Service
- *
- * Orchestrates document verification by delegating to focused verifiers.
- */
 final class DocumentVerificationService
 {
     public function __construct(
@@ -32,27 +18,27 @@ final class DocumentVerificationService
         private readonly DocumentComplianceVerifier $complianceVerifier,
     ) {}
 
-    public function verifyIntegrity(string $fileKey, string $dataTxid): VerificationResult
+    public function verifyIntegrity(string $fileKey, string $dataTxid): array
     {
         return $this->integrityVerifier->verify($fileKey, $dataTxid);
     }
 
-    public function verifyCompleteness(string $prNumber, StageEnums $stage, ?iterable $documents = null): CompletenessResult
+    public function verifyCompleteness(string $prNumber, StageEnums $stage, ?iterable $documents = null): array
     {
         return $this->completenessVerifier->verify($prNumber, $stage, $documents);
     }
 
-    public function verifyCrossReferences(string $prNumber, ?iterable $documents = null): CrossReferenceResult
+    public function verifyCrossReferences(string $prNumber, ?iterable $documents = null): array
     {
         return $this->crossReferenceVerifier->verify($prNumber, $documents);
     }
 
-    public function verifyCompliance(string $prNumber, StageEnums $stage, ?iterable $documents = null): ComplianceResult
+    public function verifyCompliance(string $prNumber, StageEnums $stage, ?iterable $documents = null): array
     {
         return $this->complianceVerifier->verify($prNumber, $stage, $documents);
     }
 
-    public function verifySingleDocument(string $fileKey): VerificationResult
+    public function verifySingleDocument(string $fileKey): array
     {
         return $this->integrityVerifier->verifySingle($fileKey);
     }
@@ -62,10 +48,7 @@ final class DocumentVerificationService
         return $this->integrityVerifier->batchVerify($prNumber);
     }
 
-    /**
-     * Generate a comprehensive verification report for a procurement.
-     */
-    public function generateVerificationReport(string $prNumber, ?StageEnums $stage = null, ?User $authUser = null): VerificationReportDTO
+    public function generateVerificationReport(string $prNumber, ?StageEnums $stage = null, ?User $authUser = null): array
     {
         $documents = ProcurementDocument::with('procurement')
             ->whereHas('procurement', fn ($q) => $q->where('pr_number', $prNumber))
@@ -102,15 +85,62 @@ final class DocumentVerificationService
             'documents_verified' => count($integrityResults),
         ]);
 
-        return VerificationReportDTO::fromResults(
-            prNumber: $prNumber,
-            stage: $stage,
-            integrityResults: $integrityResults,
-            completenessResult: $completenessResult,
-            crossReferenceResult: $crossReferenceResult,
-            complianceResult: $complianceResult,
-            verifiedBy: $authUser?->id,
-        );
+        $integrityValid = true;
+        foreach ($integrityResults as $result) {
+            if (! ($result['is_valid'] ?? true)) {
+                $integrityValid = false;
+                break;
+            }
+        }
+
+        $overallValid = $integrityValid
+            && ($completenessResult['is_complete'] ?? false)
+            && ($crossReferenceResult['is_consistent'] ?? false)
+            && ($complianceResult['is_compliant'] ?? false);
+
+        $criticalIssues = 0;
+        foreach ($integrityResults as $result) {
+            if (! ($result['is_valid'] ?? true)) {
+                $criticalIssues++;
+            }
+        }
+        $criticalIssues += count($completenessResult['errors'] ?? []);
+        $criticalIssues += count($crossReferenceResult['errors'] ?? []);
+        $criticalIssues += count($complianceResult['errors'] ?? []);
+
+        $warningsCount = 0;
+        foreach ($integrityResults as $result) {
+            $warningsCount += count($result['warnings'] ?? []);
+        }
+        $warningsCount += count($completenessResult['warnings'] ?? []);
+        $warningsCount += count($crossReferenceResult['warnings'] ?? []);
+        $warningsCount += count($complianceResult['warnings'] ?? []);
+
+        $overallStatus = $overallValid ? 'verified' : ($criticalIssues > 0 ? 'failed' : 'warnings');
+
+        return [
+            'pr_number' => $prNumber,
+            'stage' => $stage->value,
+            'stage_display_name' => $stage->getDisplayName(),
+            'overall_valid' => $overallValid,
+            'overall_status' => $overallStatus,
+            'integrity_results' => $integrityResults,
+            'completeness_result' => $completenessResult,
+            'cross_reference_result' => $crossReferenceResult,
+            'compliance_result' => $complianceResult,
+            'summary' => array_merge([
+                'integrity_valid' => $integrityValid,
+                'documents_verified' => count($integrityResults),
+                'completeness_percentage' => $completenessResult['completion_percentage'] ?? 0,
+                'cross_references_consistent' => $crossReferenceResult['is_consistent'] ?? false,
+                'ra_12009_compliant' => $complianceResult['is_compliant'] ?? false,
+            ], [
+                'critical_issues' => $criticalIssues,
+                'warnings' => $warningsCount,
+            ]),
+            'generated_at' => now()->toIso8601String(),
+            'verified_by' => $authUser?->id,
+        ];
     }
 
     private function determineCurrentStage(array $documents): StageEnums

@@ -71,9 +71,9 @@ describe('DocumentIntegrityVerifier', function () {
 
             $result = $this->verifier->verify('File-key-1', 'txid-1');
 
-            expect($result->isValid)->toBeTrue();
-            expect($result->errors)->toBeEmpty();
-            expect($result->verificationType)->toBe('integrity');
+            expect($result['is_valid'])->toBeTrue();
+            expect($result['errors'])->toBeEmpty();
+            expect($result['verification_type'])->toBe('integrity');
         });
 
         it('returns failure when hashes do not match', function () {
@@ -85,9 +85,9 @@ describe('DocumentIntegrityVerifier', function () {
 
             $result = $this->verifier->verify('File-key-1', 'txid-1');
 
-            expect($result->isValid)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('hash mismatch');
+            expect($result['is_valid'])->toBeFalse();
+            expect($result['errors'])->not->toBeEmpty();
+            expect($result['errors'][0])->toContain('hash mismatch');
         });
 
         it('returns failure on exception', function () {
@@ -98,9 +98,9 @@ describe('DocumentIntegrityVerifier', function () {
 
             $result = $this->verifier->verify('File-key-1', 'txid-1');
 
-            expect($result->isValid)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('Blockchain unavailable');
+            expect($result['is_valid'])->toBeFalse();
+            expect($result['errors'])->not->toBeEmpty();
+            expect($result['errors'][0])->toContain('Blockchain unavailable');
         });
     });
 
@@ -131,13 +131,13 @@ describe('DocumentIntegrityVerifier', function () {
 
             $result = $this->verifier->verifySingle('fk-1');
 
-            expect($result->isValid)->toBeTrue();
+            expect($result['is_valid'])->toBeTrue();
         });
 
         it('returns failure when document not found', function () {
             $result = $this->verifier->verifySingle('nonexistent-key');
 
-            expect($result->isValid)->toBeFalse();
+            expect($result['is_valid'])->toBeFalse();
         });
     });
 
@@ -231,9 +231,9 @@ describe('DocumentCompletenessVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
-            expect($result->isComplete)->toBeTrue();
-            expect($result->completionPercentage)->toBe(100.0);
-            expect($result->errors)->toBeEmpty();
+            expect($result['is_complete'])->toBeTrue();
+            expect($result['completion_percentage'])->toBe(100.0);
+            expect($result['errors'])->toBeEmpty();
         });
 
         it('returns incomplete when docs missing', function () {
@@ -257,8 +257,8 @@ describe('DocumentCompletenessVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage, []);
 
-            expect($result->isComplete)->toBeFalse();
-            expect($result->missingDocuments)->not->toBeEmpty();
+            expect($result['is_complete'])->toBeFalse();
+            expect($result['missing_documents'])->not->toBeEmpty();
         });
 
         it('warns when no optional docs uploaded', function () {
@@ -287,8 +287,8 @@ describe('DocumentCompletenessVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
-            expect($result->warnings)->not->toBeEmpty();
-            expect($result->warnings[0])->toContain('No optional documents uploaded');
+            expect($result['warnings'])->not->toBeEmpty();
+            expect($result['warnings'][0])->toContain('No optional documents uploaded');
         });
 
         it('handles exception gracefully', function () {
@@ -301,9 +301,9 @@ describe('DocumentCompletenessVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage);
 
-            expect($result->isComplete)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('Validation error');
+            expect($result['is_complete'])->toBeFalse();
+            expect($result['errors'])->not->toBeEmpty();
+            expect($result['errors'][0])->toContain('Validation error');
         });
     });
 });
@@ -330,8 +330,8 @@ describe('DocumentCrossReferenceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
 
-            expect($result->isConsistent)->toBeTrue();
-            expect($result->errors)->toBeEmpty();
+            expect($result['is_consistent'])->toBeTrue();
+            expect($result['errors'])->toBeEmpty();
         });
 
         it('returns inconsistent with PR mismatch', function () {
@@ -346,9 +346,9 @@ describe('DocumentCrossReferenceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
 
-            expect($result->isConsistent)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('PR number mismatch');
+            expect($result['is_consistent'])->toBeFalse();
+            expect($result['errors'])->not->toBeEmpty();
+            expect($result['errors'][0])->toContain('PR number mismatch');
         });
 
         it('warns about out-of-order documents', function () {
@@ -367,14 +367,14 @@ describe('DocumentCrossReferenceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', [$doc1, $doc2]);
 
-            expect($result->warnings)->not->toBeEmpty();
-            expect($result->warnings[0])->toContain('out of stage order');
+            expect($result['warnings'])->not->toBeEmpty();
+            expect($result['warnings'][0])->toContain('out of stage order');
         });
 
         it('returns consistent when no documents to cross-reference', function () {
             $result = $this->verifier->verify('PR-2024-001-0001');
 
-            expect($result->isConsistent)->toBeTrue();
+            expect($result['is_consistent'])->toBeTrue();
         });
     });
 });
@@ -414,8 +414,8 @@ describe('DocumentComplianceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
-            expect($result->isCompliant)->toBeTrue();
-            expect($result->errors)->toBeEmpty();
+            expect($result['is_compliant'])->toBeTrue();
+            expect($result['errors'])->toBeEmpty();
         });
 
         it('returns non-compliant with non-PDF', function () {
@@ -440,9 +440,9 @@ describe('DocumentComplianceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
-            expect($result->isCompliant)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('invalid format');
+            expect($result['is_compliant'])->toBeFalse();
+            expect($result['errors'])->not->toBeEmpty();
+            expect($result['errors'][0])->toContain('invalid format');
         });
 
         it('warns about inappropriate document type', function () {
@@ -467,8 +467,8 @@ describe('DocumentComplianceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage, [$doc]);
 
-            expect($result->warnings)->not->toBeEmpty();
-            expect($result->warnings[0])->toContain('may not be appropriate');
+            expect($result['warnings'])->not->toBeEmpty();
+            expect($result['warnings'][0])->toContain('may not be appropriate');
         });
 
         it('handles exception gracefully', function () {
@@ -481,9 +481,9 @@ describe('DocumentComplianceVerifier', function () {
 
             $result = $this->verifier->verify('PR-2024-001-0001', $stage);
 
-            expect($result->isCompliant)->toBeFalse();
-            expect($result->errors)->not->toBeEmpty();
-            expect($result->errors[0])->toContain('Service unavailable');
+            expect($result['is_compliant'])->toBeFalse();
+            expect($result['errors'])->not->toBeEmpty();
+            expect($result['errors'][0])->toContain('Service unavailable');
         });
     });
 });
