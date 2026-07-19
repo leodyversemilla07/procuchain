@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\Stream;
-use App\Services\BlockchainRpcClient;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -198,21 +196,6 @@ class ProcurementMetadataCorrection extends Model
         $model->corrected_approval_date = isset($data['corrected_approval_date']) ? Carbon::parse($data['corrected_approval_date']) : null;
 
         return $model;
-    }
-
-    public function publishToBlockchain(): ?string
-    {
-        $txid = app(BlockchainRpcClient::class)->publish(
-            Stream::PROCUREMENTS_CORRECTIONS->value,
-            $this->procurement?->pr_number ?? '',
-            ['json' => $this->toBlockchainArray()]
-        );
-
-        if (! is_string($txid) || $txid === '') {
-            throw new \RuntimeException('Blockchain metadata correction publish did not return a transaction id.');
-        }
-
-        return $txid;
     }
 
     public function getChangedFields(): array

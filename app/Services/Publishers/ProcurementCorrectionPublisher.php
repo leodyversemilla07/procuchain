@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Enums\Stream;
 use App\Models\Procurement;
 use App\Models\ProcurementMetadataCorrection;
+use App\Services\BlockchainRpcClient;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +20,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcurementCorrectionPublisher
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $rpcClient,
+    ) {}
+
     /**
      * Publish a procurement metadata correction
      *
@@ -95,7 +101,15 @@ class ProcurementCorrectionPublisher
                 throw new Exception('Correction must change at least one field');
             }
 
-            $txid = $correction->publishToBlockchain();
+            $txid = $this->rpcClient->publish(
+                Stream::PROCUREMENTS_CORRECTIONS->value,
+                $originalProcurement->pr_number,
+                ['json' => $correction->toBlockchainArray()]
+            );
+
+            if (! is_string($txid) || $txid === '') {
+                throw new Exception('Blockchain metadata correction publish did not return a transaction id.');
+            }
 
             Log::info('ProcurementCorrectionPublisher: Success', [
                 'pr_number' => $originalProcurement->pr_number,

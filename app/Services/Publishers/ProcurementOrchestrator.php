@@ -7,8 +7,10 @@ namespace App\Services\Publishers;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Enums\Stream;
 use App\Models\Procurement;
 use App\Services\BlockchainRpcClient;
+use App\Services\DashboardCacheService;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +32,7 @@ class ProcurementOrchestrator
         public DocumentPublisher $documentPublisher,
         public StatusPublisher $statusPublisher,
         public EventPublisher $eventPublisher,
+        private BlockchainRpcClient $rpcClient,
     ) {}
 
     /**
@@ -328,8 +331,7 @@ class ProcurementOrchestrator
             }
 
             // Use publishmulti for atomic batch operation
-            $multichain = app(BlockchainRpcClient::class);
-            $txid = $multichain->publishmulti('procurement.status', $items);
+            $txid = $this->rpcClient->publishmulti('procurement.status', $items);
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -422,10 +424,20 @@ class ProcurementOrchestrator
             Log::info('Orchestrator: Step 1 - Creating procurement metadata', ['pr_number' => $prNumber]);
 
             $procurement = new Procurement($procurementData);
-            $metadataResult = $procurement->publishToBlockchain();
+            $txid = $this->rpcClient->publish(
+                Stream::METADATA->value,
+                $prNumber,
+                ['json' => $procurement->toBlockchainArray()]
+            );
+
+            if (! is_string($txid) || $txid === '') {
+                throw new Exception('Blockchain procurement metadata publish did not return a transaction id.');
+            }
+
+            DashboardCacheService::clearAllProcurementCaches();
 
             $this->publishedTransactions['metadata'] = [
-                'txid' => $metadataResult['txid'] ?? 'pending',
+                'txid' => $txid,
                 'step' => 'metadata',
                 'pr_number' => $prNumber,
             ];

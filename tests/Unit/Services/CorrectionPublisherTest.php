@@ -24,10 +24,7 @@ beforeEach(function () {
         ->andReturn('FILE_DATA_txid');
 
     $this->blockchainFileStorage = new BlockchainStorageService($this->mockBlockchainFileStorageMultichain);
-    $this->publisher = new CorrectionPublisher($this->blockchainFileStorage);
-
-    // Bind the BlockchainRpcClient mock to the container so ProcurementCorrection::publishToBlockchain() uses it
-    app()->instance(BlockchainRpcClient::class, $this->mockMultichain);
+    $this->publisher = new CorrectionPublisher($this->blockchainFileStorage, $this->mockMultichain);
 
     // Setup fake storage for uploaded BlockchainFiles
     Storage::fake('local');
@@ -39,14 +36,12 @@ it('can publish a replacement correction', function () {
     $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
     $file = UploadedFile::fake()->createWithContent('test.pdf', $pdfContent);
 
-    // Mock the multichain publish call for correction
-    // The model's publishToBlockchain reads pr_number from procurement relationship (null for unsaved models)
     $this->mockMultichain
         ->shouldReceive('publish')
         ->once()
         ->with(
             'procurement.corrections',
-            '',
+            'PR-2024-001-0001',
             Mockery::on(function ($data) {
                 return isset($data['json'])
                     && $data['json']['pr_number'] === ''
@@ -82,7 +77,7 @@ it('can publish an invalidation correction', function () {
         ->once()
         ->with(
             'procurement.corrections',
-            '',
+            'PR-2024-001-0001',
             Mockery::on(function ($data) {
                 return isset($data['json'])
                     && $data['json']['pr_number'] === ''

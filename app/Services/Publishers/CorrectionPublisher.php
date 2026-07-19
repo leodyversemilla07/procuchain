@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Enums\Stream;
 use App\Models\ProcurementCorrection;
+use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
 use Exception;
 use Illuminate\Http\UploadedFile;
@@ -20,7 +22,8 @@ use Illuminate\Support\Facades\Log;
 class CorrectionPublisher
 {
     public function __construct(
-        private BlockchainStorageService $blockchainFileStorage
+        private BlockchainStorageService $blockchainFileStorage,
+        private BlockchainRpcClient $rpcClient,
     ) {}
 
     /**
@@ -106,7 +109,17 @@ class CorrectionPublisher
             $correction->user_address = $userAddress;
             $correction->corrected_at = now();
 
-            $txid = $correction->publishToBlockchain();
+            $txid = $this->rpcClient->publish(
+                Stream::CORRECTIONS->value,
+                $prNumber,
+                ['json' => $correction->toBlockchainArray()]
+            );
+
+            if (! is_string($txid) || $txid === '') {
+                throw new Exception('Blockchain correction publish did not return a transaction id.');
+            }
+
+            Log::info('Correction published to blockchain', ['txid' => $txid]);
 
             Log::info('CorrectionPublisher: Success', [
                 'pr_number' => $prNumber,

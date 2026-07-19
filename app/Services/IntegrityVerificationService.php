@@ -253,7 +253,10 @@ class IntegrityVerificationService
 
     private function buildRecorder(): IntegrityViolationRecorder
     {
-        return new IntegrityViolationRecorder($this->state);
+        return new IntegrityViolationRecorder(
+            $this->state,
+            app(BlockchainAuditTrailService::class),
+        );
     }
 
     private function buildVerifier(IntegrityViolationRecorder $recorder): IntegrityRecordVerifier

@@ -6,7 +6,9 @@ namespace App\Services\Publishers;
 
 use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
+use App\Enums\Stream;
 use App\Models\ProcurementStage;
+use App\Services\BlockchainRpcClient;
 use App\Services\DashboardCacheService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +23,10 @@ use Illuminate\Support\Facades\Log;
  */
 class StatusPublisher
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $rpcClient,
+    ) {}
+
     /**
      * Publish a status update
      *
@@ -60,7 +66,15 @@ class StatusPublisher
             $status->previous_status = $previousStatus?->value;
             $status->metadata = $metadata;
 
-            $txid = $status->publishToBlockchain();
+            $txid = $this->rpcClient->publish(
+                Stream::STATUS->value,
+                $prNumber,
+                ['json' => $status->toBlockchainArray()]
+            );
+
+            if (! is_string($txid) || $txid === '') {
+                throw new Exception('Blockchain status publish did not return a transaction id.');
+            }
 
             // Invalidate ALL procurement list caches after status update
             // This includes versioned caches (v6), user-specific caches, and legacy caches

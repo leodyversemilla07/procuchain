@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\Stream;
-use App\Services\BlockchainRpcClient;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Log;
 
 /**
  * ProcurementDocument Model
@@ -121,28 +118,6 @@ class ProcurementDocument extends Model
         $model->description = $data['description'] ?? null;
 
         return $model;
-    }
-
-    public function publishToBlockchain(): string
-    {
-        try {
-            $txid = app(BlockchainRpcClient::class)->publish(
-                Stream::DOCUMENTS->value,
-                $this->procurement?->pr_number ?? $this->file_key,
-                ['json' => $this->toBlockchainArray()]
-            );
-
-            if (! is_string($txid) || $txid === '') {
-                throw new \RuntimeException('Blockchain document publish did not return a transaction id.');
-            }
-
-            Log::info('Document published to blockchain', ['txid' => $txid]);
-
-            return $txid;
-        } catch (\Exception $e) {
-            Log::error('Failed to publish document', ['error' => $e->getMessage()]);
-            throw $e;
-        }
     }
 
     public function getFormattedDateTime(): string

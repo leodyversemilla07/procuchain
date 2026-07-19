@@ -18,6 +18,7 @@ use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
 use App\Models\User;
 use App\Notifications\IntegrityBreachNotification;
+use App\Services\BlockchainAuditTrailService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -42,6 +43,7 @@ class IntegrityViolationRecorder
 
     public function __construct(
         private readonly IntegrityVerificationRunState $state,
+        private readonly BlockchainAuditTrailService $auditTrailService,
     ) {}
 
     public function record(
@@ -96,7 +98,14 @@ class IntegrityViolationRecorder
             'created_at' => now(),
         ]);
 
-        $auditLog->publishToBlockchain();
+        try {
+            $this->auditTrailService->publishViolation($auditLog);
+        } catch (\Exception $e) {
+            Log::debug('IntegrityViolationRecorder: failed to publish violation to blockchain', [
+                'audit_log_id' => $auditLog->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         if ($record && method_exists($record, 'update')) {
             $record->update(['has_breach' => true]);

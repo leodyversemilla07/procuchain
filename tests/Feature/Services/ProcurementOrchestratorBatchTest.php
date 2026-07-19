@@ -58,6 +58,7 @@ it('publishes status and event in single atomic batch transaction', function () 
         documentPublisher: mock(DocumentPublisher::class),
         statusPublisher: mock(StatusPublisher::class),
         eventPublisher: mock(EventPublisher::class),
+        rpcClient: $mockBlockchainRpcClient,
     );
 
     // Execute batch publish
@@ -107,7 +108,8 @@ it('publishes only status when no event data provided', function () {
     $orchestrator = new ProcurementOrchestrator(
         mock(DocumentPublisher::class),
         mock(StatusPublisher::class),
-        mock(EventPublisher::class)
+        mock(EventPublisher::class),
+        $mockBlockchainRpcClient,
     );
 
     $result = $orchestrator->publishStatusWithEventBatch(
@@ -140,7 +142,8 @@ it('includes previous status when provided', function () {
     $orchestrator = new ProcurementOrchestrator(
         mock(DocumentPublisher::class),
         mock(StatusPublisher::class),
-        mock(EventPublisher::class)
+        mock(EventPublisher::class),
+        $mockBlockchainRpcClient,
     );
 
     $result = $orchestrator->publishStatusWithEventBatch(
@@ -166,7 +169,8 @@ it('logs performance metrics for batch operations', function () {
     $orchestrator = new ProcurementOrchestrator(
         mock(DocumentPublisher::class),
         mock(StatusPublisher::class),
-        mock(EventPublisher::class)
+        mock(EventPublisher::class),
+        $mockBlockchainRpcClient,
     );
 
     $orchestrator->publishStatusWithEventBatch(

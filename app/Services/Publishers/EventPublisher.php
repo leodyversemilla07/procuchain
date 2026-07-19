@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Enums\Stream;
 use App\Models\ProcurementEvent;
+use App\Services\BlockchainRpcClient;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
 class EventPublisher
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $rpcClient,
+    ) {}
+
     /**
      * Publish an event to the timeline
      *
@@ -58,7 +64,19 @@ class EventPublisher
             $event->occurred_at = now();
             $event->metadata = $metadata;
 
-            $txid = $event->publishToBlockchain();
+            $key = ProcurementEvent::eventStreamKey($prNumber, $procurementTitle);
+
+            $txid = $this->rpcClient->publish(
+                Stream::EVENTS->value,
+                $key,
+                ['json' => $event->toBlockchainArray()]
+            );
+
+            if (! is_string($txid) || $txid === '') {
+                throw new Exception('Blockchain event publish did not return a transaction id.');
+            }
+
+            Log::info('Event published to blockchain', ['txid' => $txid]);
 
             Log::info('EventPublisher: Success', [
                 'pr_number' => $prNumber,

@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ProcurementMode;
-use App\Enums\Stream;
-use App\Services\BlockchainRpcClient;
-use App\Services\DashboardCacheService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -255,21 +252,6 @@ class Procurement extends Model
         $model->initiated_at = isset($data['created_at']) ? Carbon::parse($data['created_at'])->setTimezone('Asia/Manila') : now();
 
         return $model;
-    }
-
-    public function publishToBlockchain(): void
-    {
-        $txid = app(BlockchainRpcClient::class)->publish(
-            Stream::METADATA->value,
-            $this->pr_number,
-            ['json' => $this->toBlockchainArray()]
-        );
-
-        if (! is_string($txid) || $txid === '') {
-            throw new \RuntimeException('Blockchain procurement metadata publish did not return a transaction id.');
-        }
-
-        DashboardCacheService::clearAllProcurementCaches();
     }
 
     public function requiresPhilGEPS(): bool

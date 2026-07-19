@@ -293,32 +293,6 @@ class IntegrityViolationLog extends Model
     }
 
     /**
-     * Publish this violation record to the blockchain audit trail.
-     *
-     * The blockchain entry is immutable and permanent — it survives
-     * total MySQL destruction. This satisfies Requirement #6:
-     * "Maintain a permanent audit trail of all recovery operations."
-     *
-     * @return string|null The blockchain transaction ID
-     */
-    public function publishToBlockchain(): ?string
-    {
-        try {
-            return app(BlockchainAuditTrailService::class)->publishViolation($this);
-        } catch (\Exception $e) {
-            // Non-critical — the MySQL record is already created.
-            // Blockchain publishing is best-effort; failures are logged
-            // but must never block the integrity verification pipeline.
-            Log::debug('IntegrityViolationLog: failed to publish to blockchain', [
-                'audit_log_id' => $this->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
      * Mark this violation's recovery as failed.
      */
     public function markFailed(string $reason): void

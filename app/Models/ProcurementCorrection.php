@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\Stream;
-use App\Services\BlockchainRpcClient;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Log;
 
 /**
  * ProcurementCorrection Model
@@ -107,27 +104,5 @@ class ProcurementCorrection extends Model
         $model->txid = $txid;
 
         return $model;
-    }
-
-    public function publishToBlockchain(): ?string
-    {
-        try {
-            $txid = app(BlockchainRpcClient::class)->publish(
-                Stream::CORRECTIONS->value,
-                $this->procurement?->pr_number ?? '',
-                ['json' => $this->toBlockchainArray()]
-            );
-
-            if (! is_string($txid) || $txid === '') {
-                throw new \RuntimeException('Blockchain correction publish did not return a transaction id.');
-            }
-
-            Log::info('Correction published to blockchain', ['txid' => $txid]);
-
-            return $txid;
-        } catch (\Exception $e) {
-            Log::error('Failed to publish correction', ['error' => $e->getMessage()]);
-            throw $e;
-        }
     }
 }
