@@ -25,6 +25,7 @@ class BlockchainRecordSyncService
 {
     public function __construct(
         private NormalizedTableSyncService $normalizedSync,
+        private BlockchainRpcClient $blockchainRpc,
     ) {}
 
     /**
@@ -154,7 +155,7 @@ class BlockchainRecordSyncService
     private function hasBlockchainMetadataForPr(string $prNumber): ?bool
     {
         try {
-            $items = app(BlockchainRpcClient::class)->liststreamkeyitems(Stream::METADATA->value, $prNumber, false, 10000);
+            $items = $this->blockchainRpc->liststreamkeyitems(Stream::METADATA->value, $prNumber, false, 10000);
 
             return collect(is_array($items) ? $items : [])
                 ->contains(fn ($item) => ($item['data']['json']['pr_number'] ?? null) === $prNumber);
@@ -174,7 +175,7 @@ class BlockchainRecordSyncService
     private function getBlockchainTxidsForPr(Stream $stream, string $prNumber): ?array
     {
         try {
-            $items = app(BlockchainRpcClient::class)->liststreamkeyitems($stream->value, $prNumber, false, 10000);
+            $items = $this->blockchainRpc->liststreamkeyitems($stream->value, $prNumber, false, 10000);
 
             return collect(is_array($items) ? $items : [])
                 ->map(fn ($item) => $item['txid'] ?? null)

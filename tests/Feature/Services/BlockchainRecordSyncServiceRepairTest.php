@@ -113,7 +113,7 @@ it('repairs only the requested PR and preserves unrelated normalized records', f
         ->with('PR-2026-100-0001')
         ->andReturn(['metadata' => 0, 'stages' => 0, 'documents' => 0, 'events' => 0]);
 
-    $service = new BlockchainRecordSyncService($sync);
+    $service = new BlockchainRecordSyncService($sync, $blockchainRpcClient);
 
     expect($service->repairFromChain('PR-2026-100-0001'))->toBe(3);
 
@@ -144,7 +144,7 @@ it('removes only the requested procurement when that PR is absent from chain', f
         ->with('PR-2026-300-0001')
         ->andReturn(['metadata' => 0, 'stages' => 0, 'documents' => 0, 'events' => 0]);
 
-    $service = new BlockchainRecordSyncService($sync);
+    $service = new BlockchainRecordSyncService($sync, $blockchainRpcClient);
 
     expect($service->repairFromChain('PR-2026-300-0001'))->toBe(1);
 
@@ -168,7 +168,7 @@ it('does not delete records when blockchain metadata cannot be read', function (
         ->with('PR-2026-500-0001')
         ->andReturn(['metadata' => 0, 'stages' => 0, 'documents' => 0, 'events' => 0]);
 
-    $service = new BlockchainRecordSyncService($sync);
+    $service = new BlockchainRecordSyncService($sync, $blockchainRpcClient);
 
     expect($service->repairFromChain('PR-2026-500-0001'))->toBe(0);
 
