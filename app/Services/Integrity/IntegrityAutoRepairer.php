@@ -15,6 +15,7 @@ use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
+use App\Services\BlockchainAuditTrailService;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +31,7 @@ class IntegrityAutoRepairer
         private readonly BlockchainVerificationIndex $blockchainIndex,
         private readonly NormalizedTableSyncService $syncService,
         private readonly IntegrityRecordVerifier $verifier,
+        private readonly BlockchainAuditTrailService $blockchainAudit,
     ) {}
 
     public function repair(): void
@@ -126,12 +128,15 @@ class IntegrityAutoRepairer
 
             foreach ($pending as $violation) {
                 if ($this->violationIsResolved($violation)) {
-                    $violation->markRestored([
+                    $result = [
                         'restored_by' => 'system_auto_repair',
                         'restored_at' => now()->toIso8601String(),
                         'verification_run_id' => $this->state->runId,
                         'sync_counts' => $syncCounts,
-                    ]);
+                    ];
+
+                    $violation->markRestored($result);
+                    $this->publishRecovery($violation, $result);
 
                     $this->state->restoredCount++;
                 } else {
@@ -419,6 +424,18 @@ class IntegrityAutoRepairer
             return is_array($json) ? $json : null;
         } catch (\Exception $e) {
             return null;
+        }
+    }
+
+    private function publishRecovery(IntegrityViolationLog $violation, array $result): void
+    {
+        try {
+            $this->blockchainAudit->publishRecovery($violation, $result);
+        } catch (\Exception $e) {
+            Log::debug('IntegrityAutoRepairer: failed to publish recovery to chain', [
+                'audit_log_id' => $violation->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

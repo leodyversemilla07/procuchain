@@ -466,21 +466,6 @@ describe('IntegrityViolationLog — Blockchain Publishing', function () {
         expect($log->exists)->toBeTrue();
     });
 
-    it('skips automatic recovery publish during unit tests', function () {
-        $auditLog = IntegrityViolationLog::recordViolation(
-            stream: 'procurement.metadata',
-            streamKey: 'PR-RECOVER-001',
-            violationType: BreachType::HASH_MISMATCH->value,
-        );
-
-        $blockchainRpcClientMock = $this->mock(BlockchainRpcClient::class);
-        $blockchainRpcClientMock->shouldNotReceive('publish');
-
-        $auditLog->markRestored(['items_restored' => 1]);
-
-        expect($auditLog->recovery_status)->toBe('restored');
-    });
-
     it('handles blockchain publish failure gracefully (does not throw)', function () {
         $log = IntegrityViolationLog::recordViolation(
             stream: 'procurement.metadata',

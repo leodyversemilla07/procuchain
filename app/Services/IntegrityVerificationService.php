@@ -198,12 +198,15 @@ class IntegrityVerificationService
                 return ['success' => false, 'items_restored' => 0, 'deleted' => $deletedCount, 'error' => 'Post-repair verification failed'];
             }
 
-            $auditLog->markRestored([
+            $result = [
                 'restored_by' => 'system',
                 'restored_at' => now()->toIso8601String(),
                 'deleted_records' => $deletedCount,
                 'sync_counts' => $syncCounts,
-            ]);
+            ];
+
+            $auditLog->markRestored($result);
+            $this->publishRecovery($auditLog, $result);
 
             $this->state->restoredCount++;
 
@@ -288,7 +291,20 @@ class IntegrityVerificationService
             blockchainIndex: $this->blockchainIndex,
             syncService: $this->syncService,
             verifier: $verifier,
+            blockchainAudit: app(BlockchainAuditTrailService::class),
         );
+    }
+
+    private function publishRecovery(IntegrityViolationLog $auditLog, array $result): void
+    {
+        try {
+            app(BlockchainAuditTrailService::class)->publishRecovery($auditLog, $result);
+        } catch (\Exception $e) {
+            Log::debug('IntegrityVerificationService: failed to publish recovery to chain', [
+                'audit_log_id' => $auditLog->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     // ----------------------------------------------------------------

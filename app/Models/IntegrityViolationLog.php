@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\BreachType;
-use App\Services\BlockchainAuditTrailService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -279,17 +278,6 @@ class IntegrityViolationLog extends Model
             'recovered_at' => Carbon::now(),
             'recovery_result' => $result,
         ]);
-
-        if (! app()->runningUnitTests()) {
-            try {
-                app(BlockchainAuditTrailService::class)->publishRecovery($this, $result);
-            } catch (\Exception $e) {
-                Log::debug('IntegrityViolationLog: failed to publish recovery to chain', [
-                    'audit_log_id' => $this->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
     }
 
     /**

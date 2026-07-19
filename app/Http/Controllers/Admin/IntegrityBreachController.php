@@ -13,6 +13,7 @@ use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementStage;
+use App\Services\BlockchainAuditTrailService;
 use App\Services\BlockchainRecordSyncService;
 use App\Services\BlockchainRpcClient;
 use App\Services\IntegrityVerificationService;
@@ -204,11 +205,24 @@ class IntegrityBreachController extends Controller
 
             IntegrityViolationLog::where('stream_key', $prNumber)
                 ->where('recovery_status', 'pending')
-                ->each(fn ($log) => $log->markRestored([
-                    'restored_by' => auth()->user()->name ?? 'admin',
-                    'restored_at' => now()->toIso8601String(),
-                    'verified_by_run_id' => $verification['run_id'],
-                ]));
+                ->each(function ($log) {
+                    $result = [
+                        'restored_by' => auth()->user()->name ?? 'admin',
+                        'restored_at' => now()->toIso8601String(),
+                        'verified_by_run_id' => $verification['run_id'],
+                    ];
+
+                    $log->markRestored($result);
+
+                    try {
+                        app(BlockchainAuditTrailService::class)->publishRecovery($log, $result);
+                    } catch (\Exception $e) {
+                        Log::debug('IntegrityBreachController: failed to publish recovery to chain', [
+                            'audit_log_id' => $log->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                });
 
             return back()->with('success', "PR {$prNumber} repaired from blockchain and verified clean.");
         } catch (\Exception $e) {
