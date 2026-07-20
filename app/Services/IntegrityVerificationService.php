@@ -56,6 +56,7 @@ class IntegrityVerificationService
         private readonly BlockchainPayloadProjector $payloadProjector,
         private readonly IntegrityComparator $comparator,
         private BlockchainVerificationIndex $blockchainIndex,
+        private readonly BlockchainAuditTrailService $blockchainAudit,
     ) {
         $this->state = new IntegrityVerificationRunState;
     }
@@ -258,7 +259,7 @@ class IntegrityVerificationService
     {
         return new IntegrityViolationRecorder(
             $this->state,
-            app(BlockchainAuditTrailService::class),
+            $this->blockchainAudit,
         );
     }
 
@@ -280,6 +281,9 @@ class IntegrityVerificationService
             recorder: $recorder,
             state: $this->state,
             blockchainIndex: $this->blockchainIndex,
+            rpcClient: $this->blockchainRpcClient,
+            comparator: $this->comparator,
+            payloadProjector: $this->payloadProjector,
         );
     }
 
@@ -291,14 +295,16 @@ class IntegrityVerificationService
             blockchainIndex: $this->blockchainIndex,
             syncService: $this->syncService,
             verifier: $verifier,
-            blockchainAudit: app(BlockchainAuditTrailService::class),
+            blockchainAudit: $this->blockchainAudit,
+            payloadProjector: $this->payloadProjector,
+            rpcClient: $this->blockchainRpcClient,
         );
     }
 
     private function publishRecovery(IntegrityViolationLog $auditLog, array $result): void
     {
         try {
-            app(BlockchainAuditTrailService::class)->publishRecovery($auditLog, $result);
+            $this->blockchainAudit->publishRecovery($auditLog, $result);
         } catch (\Exception $e) {
             Log::debug('IntegrityVerificationService: failed to publish recovery to chain', [
                 'audit_log_id' => $auditLog->id,

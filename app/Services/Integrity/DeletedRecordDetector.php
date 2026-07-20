@@ -14,6 +14,7 @@ use App\Models\ProcurementDocument;
 use App\Models\ProcurementEvent;
 use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
+use App\Services\BlockchainRpcClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -26,6 +27,9 @@ class DeletedRecordDetector
         private readonly IntegrityViolationRecorder $recorder,
         private readonly IntegrityVerificationRunState $state,
         private readonly BlockchainVerificationIndex $blockchainIndex,
+        private readonly BlockchainRpcClient $rpcClient,
+        private readonly IntegrityComparator $comparator,
+        private readonly BlockchainPayloadProjector $payloadProjector,
     ) {}
 
     public function detect(): void
@@ -157,8 +161,7 @@ class DeletedRecordDetector
 
                     if (! $chainData) {
                         try {
-                            $rpcClient = app(BlockchainRpcClient::class);
-                            $txData = $rpcClient->getrawtransaction($record->txid, 1);
+                            $txData = $this->rpcClient->getrawtransaction($record->txid, 1);
                             if (is_array($txData)) {
                                 foreach ($txData['data'] ?? [] as $dataItem) {
                                     if (isset($dataItem['json']) && is_array($dataItem['json'])) {
@@ -173,10 +176,9 @@ class DeletedRecordDetector
                     }
 
                     if ($chainData) {
-                        $comparator = app(IntegrityComparator::class);
-                        $fieldDiffs = $comparator->diff(
+                        $fieldDiffs = $this->comparator->diff(
                             $this->recordToArray($record),
-                            app(BlockchainPayloadProjector::class)->projectForTable($chainData, 'procurements', $record),
+                            $this->payloadProjector->projectForTable($chainData, 'procurements', $record),
                         );
                     }
                 }

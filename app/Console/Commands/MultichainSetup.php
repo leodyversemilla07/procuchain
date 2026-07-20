@@ -81,8 +81,11 @@ class MultichainSetup extends Command
 
     private array $generatedAddresses = [];
 
-    public function __construct(BlockchainRpcClient $multichain)
-    {
+    public function __construct(
+        BlockchainRpcClient $multichain,
+        private readonly UserRegistrationService $userRegistration,
+        private readonly BlockchainStorageService $storageService,
+    ) {
         parent::__construct();
         $this->multichainBlockchainRpcClient = $multichain;
     }
@@ -336,7 +339,7 @@ class MultichainSetup extends Command
                     $this->line("Updated blockchain address for {$user->email} ({$role})");
 
                     // Publish user registration to blockchain
-                    app(UserRegistrationService::class)->publishRegistration(
+                    $this->userRegistration->publishRegistration(
                         $user,
                         'MultichainSetup',
                     );
@@ -437,7 +440,7 @@ class MultichainSetup extends Command
         $this->info('Testing on-chain File storage...');
 
         try {
-            $storage = app(BlockchainStorageService::class);
+            $storage = $this->storageService;
 
             // Create a small test File (keep it small for testing)
             $testContent = "This is a test document for on-chain storage.\n".str_repeat('Test data line. ', 50);

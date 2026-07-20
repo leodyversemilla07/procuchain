@@ -12,6 +12,12 @@ use Illuminate\Console\Command;
  */
 class BlockchainAuditTrailRecovery extends Command
 {
+    public function __construct(
+        private readonly BlockchainAuditTrailService $auditTrailService,
+    ) {
+        parent::__construct();
+    }
+
     protected $signature = 'blockchain:audit-trail
         {--restore : Restore audit trail from blockchain to MySQL}
         {--pr= : Filter by specific PR number / stream key}
@@ -28,7 +34,7 @@ class BlockchainAuditTrailRecovery extends Command
         $this->info('================================================================');
         $this->newLine();
 
-        $service = app(BlockchainAuditTrailService::class);
+        $service = $this->auditTrailService;
 
         // Step 1: Read from blockchain
         $this->info('----------------------------------------------------------------');

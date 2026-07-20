@@ -26,7 +26,8 @@ class BlockchainStorageService
     private FileLifecycleManager $lifecycle;
 
     public function __construct(
-        private BlockchainRpcClient $multichain
+        private BlockchainRpcClient $multichain,
+        private readonly AuditLogService $auditLog,
     ) {
         $this->maxChunkSize = config('blockchain.upload.absolute_max_file_size', 52428800);
         $this->recommendedMaxSize = config('blockchain.upload.max_file_size', 2097152);
@@ -41,7 +42,7 @@ class BlockchainStorageService
         );
 
         $this->retriever = new FileRetriever($multichain);
-        $this->lifecycle = new FileLifecycleManager($multichain);
+        $this->lifecycle = new FileLifecycleManager($multichain, $this->auditLog);
     }
 
     // ── Upload ──────────────────────────────────────────────

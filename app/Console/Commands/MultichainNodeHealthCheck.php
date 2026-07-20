@@ -17,6 +17,12 @@ use Illuminate\Support\Facades\Log;
  */
 class MultichainNodeHealthCheck extends Command
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $blockchainRpc,
+    ) {
+        parent::__construct();
+    }
+
     protected $signature = 'multichain:node-health
         {--fix : Auto-subscribe unsubscribed nodes}
         {--notify : Log warnings for unsubscribed nodes}';
@@ -39,9 +45,6 @@ class MultichainNodeHealthCheck extends Command
         $rpcUser = config('multichain.rpc.username', 'multichainrpc');
         $rpcPass = config('multichain.rpc.password');
         $chainName = config('multichain.chain_name');
-
-        /** @var BlockchainRpcClient $blockchainRpcClient */
-        $blockchainRpcClient = app(BlockchainRpcClient::class);
 
         $healthyNodes = 0;
         $repairedNodes = 0;

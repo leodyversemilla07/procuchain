@@ -14,6 +14,10 @@ class BlockchainAuditTrailService
 {
     use HashesData;
 
+    public function __construct(
+        private readonly BlockchainRpcClient $blockchainRpc,
+    ) {}
+
     /**
      * Publish an integrity violation to the blockchain audit trail.
      *
@@ -27,7 +31,7 @@ class BlockchainAuditTrailService
     public function publishViolation(IntegrityViolationLog $auditLog, array $extraData = []): ?string
     {
         try {
-            $blockchainRpcClient = app(BlockchainRpcClient::class);
+            $blockchainRpcClient = $this->blockchainRpc;
 
             $chainPayload = $this->buildChainPayload($auditLog, $extraData);
 
@@ -89,8 +93,6 @@ class BlockchainAuditTrailService
     public function publishRecovery(IntegrityViolationLog $auditLog, array $recoveryResult = []): ?string
     {
         try {
-            $blockchainRpcClient = app(BlockchainRpcClient::class);
-
             $chainPayload = [
                 'type' => 'recovery',
                 'violation_id' => $auditLog->id,
@@ -111,7 +113,7 @@ class BlockchainAuditTrailService
             // Key: recovery-<violation_id> for unique lookup
             $key = 'recovery-'.$auditLog->id;
 
-            $result = $blockchainRpcClient->publish(
+            $result = $this->blockchainRpc->publish(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 $key,
                 ['json' => $chainPayload],
@@ -120,7 +122,7 @@ class BlockchainAuditTrailService
             if ($result === null || $result === false) {
                 Log::error('BlockchainAuditLog: failed to publish recovery', [
                     'audit_log_id' => $auditLog->id,
-                    'error' => $blockchainRpcClient->getClient()->errormessage(),
+                    'error' => $this->blockchainRpc->getClient()->errormessage(),
                 ]);
 
                 return null;
@@ -156,8 +158,7 @@ class BlockchainAuditTrailService
     public function recoverAuditTrail(int $limit = 10000): array
     {
         try {
-            $blockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $blockchainRpcClient->liststreamitems(
+            $items = $this->blockchainRpc->liststreamitems(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 true,
                 $limit,
@@ -203,8 +204,7 @@ class BlockchainAuditTrailService
     public function recoverAuditTrailForKey(string $streamKey): array
     {
         try {
-            $blockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $blockchainRpcClient->liststreamitems(
+            $items = $this->blockchainRpc->liststreamitems(
                 Stream::INTEGRITY_VIOLATIONS->value,
                 true,
                 10000,

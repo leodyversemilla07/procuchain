@@ -24,6 +24,7 @@ class FileLifecycleManager
 {
     public function __construct(
         private BlockchainRpcClient $multichain,
+        private readonly AuditLogService $auditLog,
     ) {}
 
     /**
@@ -51,7 +52,7 @@ class FileLifecycleManager
                 'reason' => $reason,
             ]);
 
-            app(AuditLogService::class)->log(
+            $this->auditLog->log(
                 action: 'File.deleted',
                 subjectType: 'File',
                 subjectId: $fileKey,
@@ -94,7 +95,7 @@ class FileLifecycleManager
                 'reason' => $reason,
             ]);
 
-            app(AuditLogService::class)->log(
+            $this->auditLog->log(
                 action: 'File.restored',
                 subjectType: 'File',
                 subjectId: $fileKey,

@@ -29,6 +29,13 @@ use Illuminate\Support\Facades\DB;
  */
 class SyncBlockchainTables extends Command
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $blockchainRpc,
+        private readonly BlockchainSyncService $blockchainSync,
+    ) {
+        parent::__construct();
+    }
+
     protected $signature = 'blockchain:sync-table
         {--table= : Table to sync (audit_logs, document_views, workflow_configs, stage_document_configs, user_login_logs, or all)}
         {--restore : Actually restore data (without this flag, just shows what would be restored)}
@@ -113,8 +120,7 @@ class SyncBlockchainTables extends Command
 
         // Count blockchain records
         try {
-            $blockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $blockchainRpcClient->liststreamitems($stream->value, true, 100000);
+            $items = $this->blockchainRpc->liststreamitems($stream->value, true, 100000);
             $chainCount = is_array($items) ? count($items) : 0;
         } catch (\Exception $e) {
             $this->error("  Failed to read from blockchain: {$e->getMessage()}");
@@ -141,7 +147,7 @@ class SyncBlockchainTables extends Command
         // Perform the restore
         $this->info('  Restoring from blockchain...');
 
-        $result = app(BlockchainSyncService::class)->restoreTable(
+        $result = $this->blockchainSync->restoreTable(
             $tableName,
             $stream,
             $config['model'],

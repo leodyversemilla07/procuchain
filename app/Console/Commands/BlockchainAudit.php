@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Log;
  */
 class BlockchainAudit extends Command
 {
+    public function __construct(
+        private readonly IntegrityVerificationService $integrityVerification,
+    ) {
+        parent::__construct();
+    }
+
     protected $signature = 'blockchain:audit
         {--pr= : Audit only a specific PR number}
         {--repair : Auto-repair detected breaches}
@@ -31,7 +37,7 @@ class BlockchainAudit extends Command
                 return $this->displayReport($runId);
             }
 
-            $service = app(IntegrityVerificationService::class);
+            $service = $this->integrityVerification;
             $autoRepair = (bool) $this->option('repair');
             $deepPublisherCheck = (bool) $this->option('deep-publisher-check');
             $source = $this->option('source');
@@ -122,8 +128,7 @@ class BlockchainAudit extends Command
      */
     private function displayReport(string $runId): int
     {
-        $service = app(IntegrityVerificationService::class);
-        $report = $service->generateReport($runId);
+        $report = $this->integrityVerification->generateReport($runId);
 
         $summary = $report['summary'];
 

@@ -33,12 +33,9 @@ class NormalizedTableSyncService
 {
     use HashesData;
 
-    private BlockchainRpcClient $blockchainRpcClient;
-
-    public function __construct()
-    {
-        $this->blockchainRpcClient = app(BlockchainRpcClient::class);
-    }
+    public function __construct(
+        private readonly BlockchainRpcClient $blockchainRpcClient,
+    ) {}
 
     // ----------------------------------------------------------------
     // PUBLIC API

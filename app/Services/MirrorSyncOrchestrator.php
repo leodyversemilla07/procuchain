@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Log;
  */
 class MirrorSyncOrchestrator
 {
+    public function __construct(
+        private readonly BlockchainRecordSyncService $syncService,
+    ) {}
+
     /**
      * Sync blockchain write results to normalized tables via transaction-based sync.
      *
@@ -24,7 +28,7 @@ class MirrorSyncOrchestrator
             return 0;
         }
 
-        $syncService = app(BlockchainRecordSyncService::class);
+        $syncService = $this->syncService;
         $syncedCount = 0;
 
         foreach ($transactions as $type => $txData) {

@@ -35,6 +35,14 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  */
 class IntegrityBreachController extends Controller
 {
+    public function __construct(
+        private readonly BlockchainRpcClient $blockchainRpc,
+        private readonly IntegrityVerificationService $integrityVerification,
+        private readonly BlockchainRecordSyncService $blockchainRecordSync,
+        private readonly BlockchainAuditTrailService $blockchainAuditTrail,
+        private readonly NormalizedTableSyncService $normalizedTableSync,
+    ) {}
+
     /**
      * Display all integrity breaches with filtering.
      */
@@ -108,8 +116,7 @@ class IntegrityBreachController extends Controller
         // Get blockchain data for comparison
         $blockchainData = null;
         try {
-            $blockchainRpcClient = app(BlockchainRpcClient::class);
-            $items = $blockchainRpcClient->liststreamkeyitems($log->stream, $log->stream_key);
+            $items = $this->blockchainRpc->liststreamkeyitems($log->stream, $log->stream_key);
             if (is_array($items) && ! empty($items)) {
                 foreach ($items as $item) {
                     if (($item['txid'] ?? null) === $log->txid) {
@@ -158,7 +165,7 @@ class IntegrityBreachController extends Controller
         }
 
         try {
-            $result = app(IntegrityVerificationService::class)->restoreViolation($log);
+            $result = $this->integrityVerification->restoreViolation($log);
 
             if (! $result['success']) {
                 return back()->with('error', 'Repair failed: '.($result['error'] ?? 'Post-repair verification failed.'));
@@ -190,10 +197,9 @@ class IntegrityBreachController extends Controller
         $prNumber = $validated['pr_number'];
 
         try {
-            $syncService = app(BlockchainRecordSyncService::class);
-            $syncService->repairFromChain($prNumber);
+            $this->blockchainRecordSync->repairFromChain($prNumber);
 
-            $verification = app(IntegrityVerificationService::class)->verifyAndRepair(false, 'manual');
+            $verification = $this->integrityVerification->verifyAndRepair(false, 'manual');
             $stillBreached = IntegrityViolationLog::where('verification_run_id', $verification['run_id'])
                 ->where('stream_key', $prNumber)
                 ->where('recovery_status', 'pending')
@@ -215,7 +221,7 @@ class IntegrityBreachController extends Controller
                     $log->markRestored($result);
 
                     try {
-                        app(BlockchainAuditTrailService::class)->publishRecovery($log, $result);
+                        $this->blockchainAuditTrail->publishRecovery($log, $result);
                     } catch (\Exception $e) {
                         Log::debug('IntegrityBreachController: failed to publish recovery to chain', [
                             'audit_log_id' => $log->id,
@@ -337,8 +343,7 @@ class IntegrityBreachController extends Controller
         $this->authorize('update-audit-log');
 
         try {
-            $syncService = app(NormalizedTableSyncService::class);
-            $counts = $syncService->syncAll();
+            $counts = $this->normalizedTableSync->syncAll();
 
             return response()->json(['success' => true, 'counts' => $counts]);
         } catch (\Exception $e) {
@@ -413,8 +418,7 @@ class IntegrityBreachController extends Controller
         }
 
         try {
-            $service = app(IntegrityVerificationService::class);
-            $result = $service->restoreViolation($log);
+            $result = $this->integrityVerification->restoreViolation($log);
 
             return $result['success']
                 ? back()->with('success', 'Restored from blockchain.')

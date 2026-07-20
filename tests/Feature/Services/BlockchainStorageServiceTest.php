@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\AuditLogService;
 use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
 use Illuminate\Http\UploadedFile;
@@ -17,7 +18,10 @@ beforeEach(function () {
         ->byDefault()
         ->andReturn([]);
 
-    $this->service = new BlockchainStorageService($this->multichainMock);
+    $this->auditLogMock = Mockery::mock(AuditLogService::class);
+    $this->auditLogMock->shouldReceive('log')->byDefault();
+
+    $this->service = new BlockchainStorageService($this->multichainMock, $this->auditLogMock);
 });
 
 /**
@@ -50,7 +54,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->with('File.data', Mockery::type('array'))
                 ->andReturn('batch_txid_123');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
             // Use createWithContent to ensure File has readable content
             $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
             $prNumber = 'PROC-001';
@@ -71,7 +77,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
             $mockService = Mockery::mock(BlockchainRpcClient::class);
             $mockService->shouldReceive('publishmulti')->andReturn('batch_txid');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
             // Use createWithContent to ensure File has readable content
             $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
             $result = $service->uploadFile($file, 'TEST', 1, 'doc', ['pr_number' => 'TEST']);
@@ -96,7 +104,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 }))
                 ->andReturn('batch_txid');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
             $file = UploadedFile::fake()->createWithContent('test.txt', $blockchainFileContent);
 
             $result = $service->uploadFile($file, 'test', 1, 'File', []);
@@ -119,7 +129,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('batch_txid');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
             // Use createWithContent to ensure File has readable content
             $file = UploadedFile::fake()->createWithContent('doc.pdf', str_repeat('x', 100));
 
@@ -129,7 +141,7 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         });
 
         it('throws exception for BlockchainFiles exceeding max size', function () {
-            $service = new BlockchainStorageService($this->multichainMock);
+            $service = new BlockchainStorageService($this->multichainMock, $this->auditLogMock);
 
             // Create File larger than 50MB with actual content
             // We need to create content that exceeds the limit
@@ -155,7 +167,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('batch_txid_with_context');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
             // Use createWithContent to ensure File has readable content
             $file = UploadedFile::fake()->createWithContent('bid.pdf', str_repeat('x', 100));
             $result = $service->uploadFile(
@@ -195,7 +209,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     'data' => $blockchainFileHex,
                 ]);
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             $retrieved = $service->retrieveFile('test/File.pdf', 'data_txid_123');
 
@@ -228,7 +244,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     'data' => $blockchainFileHex,
                 ]]);
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             $retrieved = $service->retrieveFile('test/File.pdf');
 
@@ -253,7 +271,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->once()
                 ->andReturn([]); // No items found
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             expect(fn () => $service->retrieveFile('non/existent/File.pdf'))
                 ->toThrow(Exception::class, 'File not found on blockchain');
@@ -297,7 +317,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     'data' => $blockchainFileHex,
                 ]);
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             $isValid = $service->verifyFileIntegrity('test/File.pdf', 'metadata_txid');
 
@@ -339,7 +361,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     'data' => $corruptedHex,
                 ]);
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             $isValid = $service->verifyFileIntegrity('test/File.pdf', 'metadata_txid');
 
@@ -362,7 +386,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                     ]],
                 ]);
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
             $metadata = $service->getFileMetadata('test_txid');
 
             expect($metadata)->toBeArray();
@@ -389,7 +415,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('delete_txid');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             $success = $service->deleteFile('test/doc.pdf', 'Test deletion');
 
@@ -410,7 +438,9 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('delete_txid');
 
-            $service = new BlockchainStorageService($mockService);
+            $auditLogMock = Mockery::mock(AuditLogService::class);
+            $auditLogMock->shouldReceive('log');
+            $service = new BlockchainStorageService($mockService, $auditLogMock);
 
             $success = $service->deleteFile('test/doc.pdf', 'Compliance violation');
 
@@ -420,14 +450,14 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
     describe('getMaxfileSize', function () {
         it('returns maximum File size in bytes', function () {
-            $service = new BlockchainStorageService($this->multichainMock);
+            $service = new BlockchainStorageService($this->multichainMock, $this->auditLogMock);
             $maxSize = $service->getMaxfileSize();
 
             expect($maxSize)->toBe(52428800); // 50MB in bytes
         });
 
         it('returns formatted max File size', function () {
-            $service = new BlockchainStorageService($this->multichainMock);
+            $service = new BlockchainStorageService($this->multichainMock, $this->auditLogMock);
             $formatted = $service->getMaxfileSizeFormatted();
 
             expect($formatted)->toBe('50 MB');

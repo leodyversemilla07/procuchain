@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\Log;
  */
 class SyncProcurementStreams extends Command
 {
+    public function __construct(
+        private readonly NormalizedTableSyncService $normalizedTableSync,
+    ) {
+        parent::__construct();
+    }
+
     protected $signature = 'blockchain:sync
         {--stream= : Sync only a specific stream by name}
         {--all : Sync all streams including user streams}';
@@ -37,7 +43,7 @@ class SyncProcurementStreams extends Command
                 $this->warn('The --all option is deprecated; syncing normalized procurement streams only.');
             }
 
-            return $this->syncProcurementStreams(app(NormalizedTableSyncService::class));
+            return $this->syncProcurementStreams($this->normalizedTableSync);
         } catch (\Exception $e) {
             $this->error("Sync failed: {$e->getMessage()}");
             Log::error('BlockchainSync: fatal error', ['error' => $e->getMessage()]);

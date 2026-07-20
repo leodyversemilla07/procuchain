@@ -16,6 +16,7 @@ use App\Models\ProcurementEvent;
 use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
 use App\Services\BlockchainAuditTrailService;
+use App\Services\BlockchainRpcClient;
 use App\Services\NormalizedTableSyncService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,8 @@ class IntegrityAutoRepairer
         private readonly NormalizedTableSyncService $syncService,
         private readonly IntegrityRecordVerifier $verifier,
         private readonly BlockchainAuditTrailService $blockchainAudit,
+        private readonly BlockchainPayloadProjector $payloadProjector,
+        private readonly BlockchainRpcClient $rpcClient,
     ) {}
 
     public function repair(): void
@@ -263,7 +266,7 @@ class IntegrityAutoRepairer
 
         $fieldDiffs = $this->verifier->computeFieldDifferences(
             $this->verifier->recordToArray($record, $tableName),
-            app(BlockchainPayloadProjector::class)->projectForTable($chainData, $tableName, $record),
+            $this->payloadProjector->projectForTable($chainData, $tableName, $record),
         );
 
         if (! empty($fieldDiffs)) {
@@ -396,8 +399,7 @@ class IntegrityAutoRepairer
                 }
             }
 
-            $rpcClient = app(BlockchainRpcClient::class);
-            $items = $rpcClient->liststreamkeyitems($stream, $prNumber);
+            $items = $this->rpcClient->liststreamkeyitems($stream, $prNumber);
             $items = is_array($items) ? $items : [];
 
             if ($txid) {

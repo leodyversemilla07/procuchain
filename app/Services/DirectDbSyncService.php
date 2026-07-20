@@ -21,6 +21,10 @@ class DirectDbSyncService
 {
     use HashesData;
 
+    public function __construct(
+        private readonly BlockchainRecordSyncService $syncService,
+    ) {}
+
     public function syncInitiation(array $result, array $data, string $operation, string $prNumber, string $userAddress): int
     {
         $syncedCount = 0;
@@ -215,8 +219,7 @@ class DirectDbSyncService
 
             // Schedule post-sync verification via BlockchainRecordSyncService
             try {
-                $syncService = app(BlockchainRecordSyncService::class);
-                $syncService->syncToMirror(
+                $this->syncService->syncToMirror(
                     Stream::STATUS->value,
                     $prNumber,
                     $statusTxid ?? 'pending-verification',
