@@ -48,23 +48,31 @@ class BlockchainWriteJob implements ShouldQueue
         public readonly ?int $userId = null,
     ) {}
 
-    public function handle(): void
-    {
+    public function handle(
+        DocumentUploadHandler $documentUploadHandler,
+        ProcurementInitiationHandler $procurementInitiationHandler,
+        StageCompletionHandler $stageCompletionHandler,
+        StageTransitionHandler $stageTransitionHandler,
+        CorrectionHandler $correctionHandler,
+        ProcurementUpdateHandler $procurementUpdateHandler,
+        MirrorSyncOrchestrator $mirrorSyncOrchestrator,
+        DirectDbSyncService $directDbSyncService,
+    ): void {
         try {
             $result = match ($this->operation) {
-                'upload_document' => app(DocumentUploadHandler::class)->execute($this->data),
-                'initiate_procurement' => app(ProcurementInitiationHandler::class)->execute($this->data),
-                'mark_stage_complete' => app(StageCompletionHandler::class)->execute($this->data),
-                'skip_stage' => app(StageTransitionHandler::class)->executeSkip($this->data),
-                'repeat_stage' => app(StageTransitionHandler::class)->executeRepeat($this->data),
-                'correct_document' => app(CorrectionHandler::class)->executeDocumentCorrection($this->data),
-                'correct_procurement' => app(CorrectionHandler::class)->executeProcurementCorrection($this->data),
-                'update_delivery_details' => app(ProcurementUpdateHandler::class)->executeDeliveryDetails($this->data),
-                'publish_decision' => app(ProcurementUpdateHandler::class)->executeDecision($this->data),
+                'upload_document' => $documentUploadHandler->execute($this->data),
+                'initiate_procurement' => $procurementInitiationHandler->execute($this->data),
+                'mark_stage_complete' => $stageCompletionHandler->execute($this->data),
+                'skip_stage' => $stageTransitionHandler->executeSkip($this->data),
+                'repeat_stage' => $stageTransitionHandler->executeRepeat($this->data),
+                'correct_document' => $correctionHandler->executeDocumentCorrection($this->data),
+                'correct_procurement' => $correctionHandler->executeProcurementCorrection($this->data),
+                'update_delivery_details' => $procurementUpdateHandler->executeDeliveryDetails($this->data),
+                'publish_decision' => $procurementUpdateHandler->executeDecision($this->data),
                 default => throw new Exception("Unknown blockchain operation: {$this->operation}"),
             };
 
-            $this->syncToMirror($result, $this->data, $this->operation);
+            $this->syncToMirror($result, $this->data, $this->operation, $mirrorSyncOrchestrator, $directDbSyncService);
 
             Cache::put("blockchain_job:{$this->jobId}", [
                 'status' => 'done',
@@ -96,8 +104,13 @@ class BlockchainWriteJob implements ShouldQueue
         }
     }
 
-    private function syncToMirror(array $result, array $data, string $operation): void
-    {
+    private function syncToMirror(
+        array $result,
+        array $data,
+        string $operation,
+        MirrorSyncOrchestrator $mirrorSyncOrchestrator,
+        DirectDbSyncService $directDbSyncService,
+    ): void {
         try {
             $userAddress = $data['user_address']
                 ?? $data['procurement_data']['user_address']
@@ -117,7 +130,7 @@ class BlockchainWriteJob implements ShouldQueue
                 return;
             }
 
-            $syncedCount = app(MirrorSyncOrchestrator::class)->syncTransactionResults(
+            $syncedCount = $mirrorSyncOrchestrator->syncTransactionResults(
                 $result['transactions'] ?? [],
                 $prNumber,
                 $userAddress,
@@ -127,7 +140,7 @@ class BlockchainWriteJob implements ShouldQueue
             $directSyncCount = 0;
             $syncMethod = $this->getDirectSyncMethod($operation);
             if ($syncMethod !== null) {
-                $directSyncCount = app(DirectDbSyncService::class)->{$syncMethod}(
+                $directSyncCount = $directDbSyncService->{$syncMethod}(
                     $result,
                     $data,
                     $operation,

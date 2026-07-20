@@ -15,6 +15,13 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    public function __construct(
+        private readonly LoginLoggerService $loginLogger,
+        private readonly AccountLockoutService $accountLockout,
+    ) {
+        parent::__construct();
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -57,12 +64,12 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             // Log failed login attempt and handle account lockout
-            app(LoginLoggerService::class)->logFailedLogin($this['email'], $this);
+            $this->loginLogger->logFailedLogin($this['email'], $this);
 
             if ($this['email']) {
                 $user = User::where('email', $this['email'])->first();
                 if ($user) {
-                    app(AccountLockoutService::class)->handleFailedLoginAttempt($user);
+                    $this->accountLockout->handleFailedLoginAttempt($user);
                 }
             }
 
@@ -88,7 +95,7 @@ class LoginRequest extends FormRequest
      */
     protected function ensureAccountNotLocked(): void
     {
-        if (app(AccountLockoutService::class)->isAccountLocked($this['email'])) {
+        if ($this->accountLockout->isAccountLocked($this['email'])) {
             // Get user to check lock details
             $user = User::where('email', $this['email'])->first();
 

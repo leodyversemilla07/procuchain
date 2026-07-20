@@ -64,7 +64,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-direct-sync-1',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value)
@@ -122,7 +122,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-direct-sync-2',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::BID_OPENING->value)
@@ -186,7 +186,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-init-sync',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         // Verify procurement was created in DB
         $procurement = Procurement::where('pr_number', 'PR-2025-DDB-005')->first();
@@ -238,7 +238,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-no-proc',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-no-proc');
         expect($cached['status'])->toBe('done');
@@ -279,7 +279,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-skip-stage',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::BIDDING_DOCUMENTS->value)
@@ -328,7 +328,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-init-complete-sync',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::PRE_PROCUREMENT_CONFERENCE->value)
@@ -379,7 +379,7 @@ describe('BlockchainWriteJob direct DB sync', function () {
             'job-stage-complete-sync',
             1,
         );
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $procurement->refresh();
         expect($procurement->current_stage)->toBe(StageEnums::BID_EVALUATION->value)

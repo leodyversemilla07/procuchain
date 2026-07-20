@@ -18,6 +18,7 @@ use App\Services\Publishers\DecisionPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
+use App\Services\NotificationService;
 use App\Services\Publishers\StatusPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -50,7 +51,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
 
         $data = ['pr_number' => 'PR-001', 'File' => 'test.pdf'];
         $job = new BlockchainWriteJob('upload_document', $data, 'job-uuid-1');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-1');
         expect($cached['status'])->toBe('done')
@@ -68,7 +69,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
 
         $data = ['pr_number' => 'PR-002', 'procurement_data' => []];
         $job = new BlockchainWriteJob('initiate_procurement', $data, 'job-uuid-2');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-2');
         expect($cached['status'])->toBe('done')
@@ -84,7 +85,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(StageCompletionHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('mark_stage_complete', ['pr_number' => 'PR-003'], 'job-uuid-3');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-3');
         expect($cached['status'])->toBe('done');
@@ -99,7 +100,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(StageTransitionHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('skip_stage', ['pr_number' => 'PR-004'], 'job-uuid-4');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-4');
         expect($cached['status'])->toBe('done');
@@ -114,7 +115,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(StageTransitionHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('repeat_stage', ['pr_number' => 'PR-005'], 'job-uuid-5');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-5');
         expect($cached['status'])->toBe('done');
@@ -129,7 +130,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(CorrectionHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('correct_document', ['pr_number' => 'PR-006'], 'job-uuid-6');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-6');
         expect($cached['status'])->toBe('done');
@@ -144,7 +145,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(CorrectionHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('correct_procurement', ['pr_number' => 'PR-007'], 'job-uuid-7');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-7');
         expect($cached['status'])->toBe('done');
@@ -159,7 +160,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(ProcurementUpdateHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('update_delivery_details', ['pr_number' => 'PR-008'], 'job-uuid-8');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-8');
         expect($cached['status'])->toBe('done');
@@ -174,7 +175,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(ProcurementUpdateHandler::class, $mockHandler);
 
         $job = new BlockchainWriteJob('publish_decision', ['pr_number' => 'PR-009'], 'job-uuid-9');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get('blockchain_job:job-uuid-9');
         expect($cached['status'])->toBe('done');
@@ -182,7 +183,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
 
     it('throws exception for unknown operations', function () {
         $job = new BlockchainWriteJob('nonexistent_operation', ['pr_number' => 'PR-999'], 'job-uuid-unknown');
-        $job->handle();
+        $this->app->call([$job, 'handle']);
     })->throws(Exception::class, 'Unknown blockchain operation: nonexistent_operation');
 
     it('caches failed result when handler throws', function () {
@@ -196,7 +197,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         $job = new BlockchainWriteJob('upload_document', ['pr_number' => 'PR-2025-992-0001'], 'job-uuid-fail');
 
         try {
-            $job->handle();
+            $this->app->call([$job, 'handle']);
         } catch (Exception) {
             // expected
         }
@@ -217,7 +218,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
 
         $jobId = 'specific-job-id-test';
         $job = new BlockchainWriteJob('initiate_procurement', ['pr_number' => 'PR-2025-992-0002'], $jobId);
-        $job->handle();
+        $this->app->call([$job, 'handle']);
 
         $cached = Cache::get("blockchain_job:{$jobId}");
         expect($cached)->toBeArray()
@@ -655,7 +656,7 @@ describe('StageCompletionHandler', function () {
             })
             ->andReturn(['event_txid' => 'event-tx-1']);
 
-        $handler = new StageCompletionHandler($statusPublisher, $eventPublisher);
+        $handler = new StageCompletionHandler($statusPublisher, $eventPublisher, Mockery::mock(NotificationService::class));
         $result = $handler->execute([
             'pr_number' => 'PR-2025-992-0012',
             'procurement_title' => 'Stage Completion Test',
@@ -703,7 +704,7 @@ describe('StageCompletionHandler', function () {
                     && $toStage === StageEnums::BID_EVALUATION->value;
             });
 
-        $handler = new StageCompletionHandler($statusPublisher, $eventPublisher);
+        $handler = new StageCompletionHandler($statusPublisher, $eventPublisher, Mockery::mock(NotificationService::class));
         $result = $handler->execute([
             'pr_number' => 'PR-2025-992-0013',
             'procurement_title' => 'Transition Test',
@@ -750,7 +751,7 @@ describe('StageCompletionHandler', function () {
             })
             ->andReturn([]);
 
-        $handler = new StageCompletionHandler($statusPublisher, $eventPublisher);
+        $handler = new StageCompletionHandler($statusPublisher, $eventPublisher, Mockery::mock(NotificationService::class));
         $result = $handler->execute([
             'operation_variant' => 'initiation_complete',
             'pr_number' => 'PR-2025-992-0014',

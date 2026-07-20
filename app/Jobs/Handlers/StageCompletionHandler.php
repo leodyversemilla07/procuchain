@@ -18,6 +18,7 @@ class StageCompletionHandler
     public function __construct(
         private readonly StatusPublisher $statusPublisher,
         private readonly EventPublisher $eventPublisher,
+        private readonly NotificationService $notificationService,
     ) {}
 
     public function execute(array $data): array
@@ -184,7 +185,7 @@ class StageCompletionHandler
     private function sendStageNotification(array $data, StageEnums $stage, ProcurementStatus $completionStatus, ?string $nextStageName): void
     {
         try {
-            app(NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 pr_number: $data['pr_number'],
                 procurementTitle: $data['procurement_title'],
                 stageIdentifier: $stage->getDisplayName(),

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Enums\BreachType;
-use App\Services\NotificationPreferenceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -112,12 +111,11 @@ class IntegrityBreachNotification extends Notification
         }
 
         // Check user preferences for 'integrity_breach' event type
-        $prefService = app(NotificationPreferenceService::class);
-        if ($prefService->isEnabled($notifiable, 'integrity_breach', 'email')) {
+        if ($notifiable->isNotificationEnabled('integrity_breach', 'email')) {
             $channels[] = 'mail';
         }
 
-        if ($prefService->isEnabled($notifiable, 'integrity_breach', 'push')) {
+        if ($notifiable->isNotificationEnabled('integrity_breach', 'push')) {
             $channels[] = WebPushChannel::class;
         }
 

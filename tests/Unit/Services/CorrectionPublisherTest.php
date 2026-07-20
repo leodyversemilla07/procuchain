@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\AuditLogService;
 use App\Services\BlockchainRpcClient;
 use App\Services\BlockchainStorageService;
 use App\Services\Publishers\CorrectionPublisher;
@@ -23,7 +24,7 @@ beforeEach(function () {
     $this->mockBlockchainFileStorageMultichain->shouldReceive('publishmulti')
         ->andReturn('FILE_DATA_txid');
 
-    $this->blockchainFileStorage = new BlockchainStorageService($this->mockBlockchainFileStorageMultichain);
+    $this->blockchainFileStorage = new BlockchainStorageService($this->mockBlockchainFileStorageMultichain, Mockery::mock(AuditLogService::class));
     $this->publisher = new CorrectionPublisher($this->blockchainFileStorage, $this->mockMultichain);
 
     // Setup fake storage for uploaded BlockchainFiles

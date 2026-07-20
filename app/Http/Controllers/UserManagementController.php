@@ -25,7 +25,10 @@ class UserManagementController extends Controller
 {
     use AuditContext;
 
-    public function __construct(protected AuditLogService $auditLogService) {}
+    public function __construct(
+        protected AuditLogService $auditLogService,
+        private readonly UserRegistrationService $userRegistration,
+    ) {}
 
     /**
      * Display user management page
@@ -110,7 +113,7 @@ class UserManagementController extends Controller
             $user->assignRole($validated['role']);
 
             // Publish user registration to blockchain
-            app(UserRegistrationService::class)->publishRegistration(
+            $this->userRegistration->publishRegistration(
                 $user,
                 auth()->user()?->name ?? 'System',
             );
@@ -170,7 +173,7 @@ class UserManagementController extends Controller
             $user->update($updateData);
 
             if ($user->wasChanged('blockchain_address') && $oldBlockchainAddress !== null && $user->blockchain_address !== null) {
-                app(UserRegistrationService::class)->publishAddressChange(
+                $this->userRegistration->publishAddressChange(
                     $user,
                     $oldBlockchainAddress,
                     auth()->user()?->name ?? 'System',

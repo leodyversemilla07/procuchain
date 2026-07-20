@@ -389,6 +389,6 @@ class IntegrityVerificationService
     private function reset(string $source): void
     {
         $this->state->reset($source);
-        $this->blockchainIndex = app(BlockchainVerificationIndex::class);
+        $this->blockchainIndex->reset();
     }
 }

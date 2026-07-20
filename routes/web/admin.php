@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountLockoutController;
 use App\Http\Controllers\Admin\IntegrityBreachController;
 use App\Http\Controllers\Admin\ProcurementWorkflowConfigController;
 use App\Http\Controllers\Admin\StageDocumentConfigController;
+use App\Http\Controllers\Admin\SyncBlockchainController;
 use App\Http\Controllers\Admin\UserInvitationController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuditLogController;
@@ -13,19 +14,15 @@ use App\Http\Controllers\LoginHistoryController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\SharedLedgerController;
 use App\Http\Controllers\UserManagementController;
-use App\Services\BlockchainRecordSyncService;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?', 'user' => '[0-9]+'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Full blockchain sync
-    Route::post('/sync-blockchain', function () {
-        $syncService = app(BlockchainRecordSyncService::class);
-        $counts = $syncService->syncAll();
-
-        return response()->json(['success' => true, 'synced' => $counts]);
-    })->middleware('throttle:5,1')->name('sync-blockchain');
+    Route::post('/sync-blockchain', SyncBlockchainController::class)
+        ->middleware('throttle:5,1')
+        ->name('sync-blockchain');
 
     Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
 

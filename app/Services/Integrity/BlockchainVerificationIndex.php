@@ -88,6 +88,15 @@ class BlockchainVerificationIndex
         $this->loadedStreams[$stream] = true;
     }
 
+    public function reset(): void
+    {
+        $this->itemsByStream = [];
+        $this->itemsByTxid = [];
+        $this->itemsByPrNumber = [];
+        $this->loadedStreams = [];
+        $this->failedStreams = [];
+    }
+
     public function isLoaded(string $stream): bool
     {
         return $this->loadedStreams[$stream] ?? false;
