@@ -34,7 +34,7 @@ class NormalizedTableSyncService
     use HashesData;
 
     public function __construct(
-        private readonly BlockchainRpcClient $blockchainRpcClient,
+        private readonly BlockchainStreamReader $streamReader,
     ) {}
 
     // ----------------------------------------------------------------
@@ -120,8 +120,8 @@ class NormalizedTableSyncService
     private function syncMetadata(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::METADATA->value, $prNumber)
-            : $this->getStreamItems(Stream::METADATA->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::METADATA->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::METADATA->value);
 
         $count = 0;
 
@@ -212,8 +212,8 @@ class NormalizedTableSyncService
     private function syncStatusUpdates(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::STATUS->value, $prNumber)
-            : $this->getStreamItems(Stream::STATUS->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::STATUS->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::STATUS->value);
 
         $count = 0;
 
@@ -293,8 +293,8 @@ class NormalizedTableSyncService
     private function syncEvents(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::EVENTS->value, $prNumber)
-            : $this->getStreamItems(Stream::EVENTS->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::EVENTS->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::EVENTS->value);
 
         $count = 0;
 
@@ -369,8 +369,8 @@ class NormalizedTableSyncService
     private function syncDocuments(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::DOCUMENTS->value, $prNumber)
-            : $this->getStreamItems(Stream::DOCUMENTS->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::DOCUMENTS->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::DOCUMENTS->value);
 
         $count = 0;
 
@@ -454,8 +454,8 @@ class NormalizedTableSyncService
     private function syncCorrections(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::CORRECTIONS->value, $prNumber)
-            : $this->getStreamItems(Stream::CORRECTIONS->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::CORRECTIONS->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::CORRECTIONS->value);
 
         $count = 0;
 
@@ -530,8 +530,8 @@ class NormalizedTableSyncService
     private function syncArchives(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::ARCHIVE->value, $prNumber)
-            : $this->getStreamItems(Stream::ARCHIVE->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::ARCHIVE->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::ARCHIVE->value);
 
         $count = 0;
 
@@ -602,8 +602,8 @@ class NormalizedTableSyncService
     private function syncMetadataCorrections(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::PROCUREMENTS_CORRECTIONS->value, $prNumber)
-            : $this->getStreamItems(Stream::PROCUREMENTS_CORRECTIONS->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::PROCUREMENTS_CORRECTIONS->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::PROCUREMENTS_CORRECTIONS->value);
 
         $count = 0;
 
@@ -700,8 +700,8 @@ class NormalizedTableSyncService
     private function syncFileMetadata(?string $prNumber = null): int
     {
         $items = $prNumber
-            ? $this->getStreamItemsForKey(Stream::FILE_METADATA->value, $prNumber)
-            : $this->getStreamItems(Stream::FILE_METADATA->value);
+            ? $this->streamReader->getStreamItemsForKey(Stream::FILE_METADATA->value, $prNumber)
+            : $this->streamReader->getStreamItems(Stream::FILE_METADATA->value);
 
         $count = 0;
 
@@ -772,45 +772,6 @@ class NormalizedTableSyncService
     // ----------------------------------------------------------------
     // HELPERS
     // ----------------------------------------------------------------
-
-    /**
-     * Get all items from a blockchain stream.
-     */
-    private function getStreamItems(string $stream): array
-    {
-        try {
-            $items = $this->blockchainRpcClient->liststreamitems($stream, false, 10000);
-
-            return is_array($items) ? $items : [];
-        } catch (\Exception $e) {
-            Log::error('NormalizedTableSync: failed to read stream', [
-                'stream' => $stream,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
-    }
-
-    /**
-     * Get stream items filtered by key (PR number).
-     */
-    private function getStreamItemsForKey(string $stream, string $key): array
-    {
-        try {
-            $items = $this->blockchainRpcClient->liststreamkeyitems($stream, $key, false, 1000);
-
-            return is_array($items) ? $items : [];
-        } catch (\Exception $e) {
-            Log::error('NormalizedTableSync: failed to read stream key items', [
-                'stream' => $stream,
-                'key' => $key,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
-    }
 
     /**
      * Find or create a Procurement, handling soft-deleted records.

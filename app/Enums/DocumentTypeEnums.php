@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\DocumentRequirementConfig;
+
 /**
  * Document Type Enum
  *
@@ -534,12 +536,7 @@ enum DocumentTypeEnums: string
      */
     public function isRequiredForInitiation(): bool
     {
-        return match ($this) {
-            self::PURCHASE_REQUEST,
-            self::TECHNICAL_SPECIFICATIONS,
-            self::BUDGET_ESTIMATE => true,
-            default => false,
-        };
+        return DocumentRequirementConfig::isRequiredForInitiation($this);
     }
 
     /**
@@ -547,26 +544,7 @@ enum DocumentTypeEnums: string
      */
     public function isRequiredForStage(StageEnums $stage): bool
     {
-        return match ($this) {
-            self::PURCHASE_REQUEST,
-            self::TECHNICAL_SPECIFICATIONS,
-            self::BUDGET_ESTIMATE => $stage === StageEnums::PROCUREMENT_INITIATION,
-
-            self::BIDDING_DOCUMENT,
-            self::ABSTRACT_OF_BIDS,
-            self::BID_EVALUATION_REPORT => in_array($stage, [
-                StageEnums::BIDDING_PREPARATION,
-                StageEnums::BIDDING_EVALUATION,
-            ]),
-
-            self::NOTICE_OF_AWARD,
-            self::CONTRACT => $stage === StageEnums::CONTRACT_AWARD,
-
-            self::INSPECTION_ACCEPTANCE_REPORT,
-            self::CERTIFICATE_OF_COMPLETION => $stage === StageEnums::CONTRACT_COMPLETION,
-
-            default => false,
-        };
+        return DocumentRequirementConfig::isRequiredForStage($this, $stage);
     }
 
     /**
@@ -664,12 +642,7 @@ enum DocumentTypeEnums: string
      */
     public function isMandatory(): bool
     {
-        return match ($this) {
-            self::PURCHASE_REQUEST,
-            self::CERTIFICATE_OF_FUNDS,
-            self::PPMP_ENTRY => true,
-            default => false,
-        };
+        return DocumentRequirementConfig::isMandatory($this);
     }
 
     /**
@@ -677,20 +650,7 @@ enum DocumentTypeEnums: string
      */
     public function isMandatoryForCategory(ProcurementCategory $category): bool
     {
-        return match ($this) {
-            self::PURCHASE_REQUEST,
-            self::CERTIFICATE_OF_FUNDS,
-            self::PPMP_ENTRY => true,
-
-            self::TECHNICAL_SPECIFICATIONS => in_array($category, [
-                ProcurementCategory::GOODS,
-                ProcurementCategory::INFRASTRUCTURE_PROJECTS,
-            ]),
-
-            self::TERMS_OF_REFERENCE => $category === ProcurementCategory::CONSULTING_SERVICES,
-
-            default => false,
-        };
+        return DocumentRequirementConfig::isMandatoryForCategory($this, $category);
     }
 
     /**
@@ -698,17 +658,7 @@ enum DocumentTypeEnums: string
      */
     public function isApplicableForCategory(ProcurementCategory $category): bool
     {
-        return match ($this) {
-            self::TECHNICAL_SPECIFICATIONS => in_array($category, [
-                ProcurementCategory::GOODS,
-                ProcurementCategory::INFRASTRUCTURE_PROJECTS,
-            ]),
-
-            self::TERMS_OF_REFERENCE => $category === ProcurementCategory::CONSULTING_SERVICES,
-
-            // All other documents apply to all categories
-            default => true,
-        };
+        return DocumentRequirementConfig::isApplicableForCategory($this, $category);
     }
 
     /**

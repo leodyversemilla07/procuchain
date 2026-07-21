@@ -17,12 +17,16 @@ use App\Models\ProcurementMetadataCorrection;
 use App\Models\ProcurementStage;
 use App\Services\Integrity\BlockchainPayloadProjector;
 use App\Services\Integrity\BlockchainVerificationIndex;
+use App\Services\Integrity\ChainRecordComparator;
 use App\Services\Integrity\DeletedRecordDetector;
 use App\Services\Integrity\IntegrityAutoRepairer;
 use App\Services\Integrity\IntegrityComparator;
 use App\Services\Integrity\IntegrityRecordVerifier;
 use App\Services\Integrity\IntegrityVerificationRunState;
 use App\Services\Integrity\IntegrityViolationRecorder;
+use App\Services\Integrity\PublisherAuthorizationChecker;
+use App\Services\Integrity\RecordHashService;
+use App\Services\Integrity\RecordViolationTracker;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -30,7 +34,8 @@ use Illuminate\Support\Facades\Log;
  * Verifies normalized DB tables against blockchain source of truth with multi-layer verification.
  *
  * Orchestration only — actual work delegated to:
- * - IntegrityRecordVerifier (Phase 1: hash/content/publisher checks)
+  * - IntegrityRecordVerifier delegating to RecordHashService, ChainRecordComparator,
+  *   PublisherAuthorizationChecker, RecordViolationTracker (Phase 1: hash/content/publisher checks)
  * - DeletedRecordDetector (Phase 2: missing/injected record detection)
  * - IntegrityAutoRepairer (Phase 3: auto-repair from blockchain)
  * - IntegrityViolationRecorder (violation recording + notification)
@@ -112,7 +117,7 @@ class IntegrityVerificationService
 
             // Phase 3: Auto-repair if requested
             if ($autoRepair) {
-                $repairer = $this->buildRepairer($recorder, $verifier);
+                $repairer = $this->buildRepairer($recorder);
                 $repairer->repair();
             }
 
@@ -150,7 +155,7 @@ class IntegrityVerificationService
                 );
 
                 if ($autoRepair) {
-                    $repairer = $this->buildRepairer($recorder, $this->buildVerifier($recorder));
+                    $repairer = $this->buildRepairer($recorder);
                     $repairer->repair();
                 }
             }
@@ -163,7 +168,7 @@ class IntegrityVerificationService
         $verifier->verifyPrRecords($procurement);
 
         if ($autoRepair) {
-            $repairer = $this->buildRepairer($recorder, $verifier);
+            $repairer = $this->buildRepairer($recorder);
             $repairer->repair();
         }
 
@@ -189,8 +194,7 @@ class IntegrityVerificationService
             $syncCounts = $this->syncService->syncAll();
 
             $recorder = $this->buildRecorder();
-            $verifier = $this->buildVerifier($recorder);
-            $this->refreshHashesAfterRepair($verifier);
+            $this->refreshHashesAfterRepair();
 
             if (! $this->violationIsResolved($auditLog)) {
                 $auditLog->markFailed('Post-repair verification failed; the violation still reproduces after syncing from blockchain.');
@@ -263,15 +267,43 @@ class IntegrityVerificationService
         );
     }
 
+    private function buildHashService(): RecordHashService
+    {
+        return new RecordHashService;
+    }
+
+    private function buildChainComparator(): ChainRecordComparator
+    {
+        return new ChainRecordComparator(
+            blockchainIndex: $this->blockchainIndex,
+            payloadProjector: $this->payloadProjector,
+            comparator: $this->comparator,
+            rpcClient: $this->blockchainRpcClient,
+        );
+    }
+
+    private function buildPublisherChecker(IntegrityViolationRecorder $recorder): PublisherAuthorizationChecker
+    {
+        return new PublisherAuthorizationChecker(
+            rpcClient: $this->blockchainRpcClient,
+            recorder: $recorder,
+        );
+    }
+
+    private function buildViolationTracker(): RecordViolationTracker
+    {
+        return new RecordViolationTracker;
+    }
+
     private function buildVerifier(IntegrityViolationRecorder $recorder): IntegrityRecordVerifier
     {
         return new IntegrityRecordVerifier(
             recorder: $recorder,
             state: $this->state,
-            blockchainIndex: $this->blockchainIndex,
-            payloadProjector: $this->payloadProjector,
-            comparator: $this->comparator,
-            rpcClient: $this->blockchainRpcClient,
+            hashService: $this->buildHashService(),
+            chainComparator: $this->buildChainComparator(),
+            publisherChecker: $this->buildPublisherChecker($recorder),
+            violationTracker: $this->buildViolationTracker(),
         );
     }
 
@@ -287,16 +319,16 @@ class IntegrityVerificationService
         );
     }
 
-    private function buildRepairer(IntegrityViolationRecorder $recorder, IntegrityRecordVerifier $verifier): IntegrityAutoRepairer
+    private function buildRepairer(IntegrityViolationRecorder $recorder): IntegrityAutoRepairer
     {
         return new IntegrityAutoRepairer(
             recorder: $recorder,
             state: $this->state,
             blockchainIndex: $this->blockchainIndex,
             syncService: $this->syncService,
-            verifier: $verifier,
+            hashService: $this->buildHashService(),
+            chainComparator: $this->buildChainComparator(),
             blockchainAudit: $this->blockchainAudit,
-            payloadProjector: $this->payloadProjector,
             rpcClient: $this->blockchainRpcClient,
         );
     }
@@ -317,7 +349,7 @@ class IntegrityVerificationService
     // HELPERS
     // ----------------------------------------------------------------
 
-    private function refreshHashesAfterRepair(IntegrityRecordVerifier $verifier): void
+    private function refreshHashesAfterRepair(): void
     {
         $tables = [
             'procurements' => Procurement::class,
@@ -332,7 +364,7 @@ class IntegrityVerificationService
 
         foreach ($tables as $tableName => $modelClass) {
             foreach ($modelClass::query()->lazy() as $record) {
-                $currentHash = $verifier->computeRecordHash($record, $tableName);
+                $currentHash = $this->buildHashService()->computeRecordHash($record, $tableName);
                 if ($record->data_hash !== $currentHash) {
                     $record->forceFill([
                         'data_hash' => $currentHash,
@@ -346,8 +378,7 @@ class IntegrityVerificationService
     private function violationIsResolved(IntegrityViolationLog $violation): bool
     {
         $recorder = $this->buildRecorder();
-        $verifier = $this->buildVerifier($recorder);
-        $repairer = $this->buildRepairer($recorder, $verifier);
+        $repairer = $this->buildRepairer($recorder);
 
         return $repairer->violationIsResolved($violation);
     }

@@ -21,9 +21,6 @@ use App\Services\NormalizedTableSyncService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Auto-repairs pending violations by deleting unauthorized DB records and re-syncing from blockchain.
- */
 class IntegrityAutoRepairer
 {
     public function __construct(
@@ -31,9 +28,9 @@ class IntegrityAutoRepairer
         private readonly IntegrityVerificationRunState $state,
         private readonly BlockchainVerificationIndex $blockchainIndex,
         private readonly NormalizedTableSyncService $syncService,
-        private readonly IntegrityRecordVerifier $verifier,
+        private readonly RecordHashService $hashService,
+        private readonly ChainRecordComparator $chainComparator,
         private readonly BlockchainAuditTrailService $blockchainAudit,
-        private readonly BlockchainPayloadProjector $payloadProjector,
         private readonly BlockchainRpcClient $rpcClient,
     ) {}
 
@@ -195,7 +192,7 @@ class IntegrityAutoRepairer
 
         foreach ($tables as $tableName => $modelClass) {
             foreach ($modelClass::query()->lazy() as $record) {
-                $currentHash = $this->verifier->computeRecordHash($record, $tableName);
+                $currentHash = $this->hashService->computeRecordHash($record, $tableName);
                 if ($record->data_hash !== $currentHash) {
                     $record->forceFill([
                         'data_hash' => $currentHash,
@@ -253,51 +250,35 @@ class IntegrityAutoRepairer
 
         $prNumber = $record->pr_number ?? $record->procurement?->pr_number ?? $violation->stream_key;
 
-        $chainData = $this->fetchChainData($violation->stream, $prNumber, $record->txid ?? null);
+        $chainData = $this->chainComparator->fetchChainData($violation->stream, $prNumber, $record->txid ?? null);
 
         if (! $chainData) {
             return false;
         }
 
         $stream = Stream::from($violation->stream);
-        if (! $this->recordReferencesLatestChainRevision($record, $tableName, $prNumber, $stream)) {
+        if (! $this->chainComparator->recordReferencesLatestChainRevision($record, $tableName, $prNumber, $stream)) {
             return false;
         }
 
-        $fieldDiffs = $this->verifier->computeFieldDifferences(
-            $this->verifier->recordToArray($record, $tableName),
-            $this->payloadProjector->projectForTable($chainData, $tableName, $record),
+        $fieldDiffs = $this->chainComparator->computeProjectedDifferences(
+            $this->hashService->recordToArray($record, $tableName),
+            $record,
+            $tableName,
+            $chainData,
         );
 
         if (! empty($fieldDiffs)) {
             return false;
         }
 
-        if ($tableName === 'procurements' && ! empty($this->verifier->procurementStatusDifferencesFromLatestStatusStream($record, $prNumber))) {
+        if ($tableName === 'procurements' && ! empty($this->chainComparator->procurementStatusDifferencesFromLatestStatusStream($record, $prNumber))) {
             return false;
         }
 
-        $currentHash = $this->verifier->computeRecordHash($record, $tableName);
+        $currentHash = $this->hashService->computeRecordHash($record, $tableName);
 
         return ! $record->data_hash || $currentHash === $record->data_hash;
-    }
-
-    private function recordReferencesLatestChainRevision($record, string $tableName, string $prNumber, Stream $stream): bool
-    {
-        if ($tableName !== 'procurements') {
-            return true;
-        }
-
-        $items = $this->blockchainIndex->itemsByPrNumber($stream, $prNumber);
-        $latest = end($items);
-
-        if (! is_array($latest)) {
-            return true;
-        }
-
-        $latestTxid = $latest['txid'] ?? null;
-
-        return ! is_string($latestTxid) || $latestTxid === '' || $latestTxid === ($record->txid ?? null);
     }
 
     private function findMirrorRecordForViolation(IntegrityViolationLog $violation, ?string $modelClass): ?Model
@@ -379,53 +360,6 @@ class IntegrityAutoRepairer
             ]);
 
             return [];
-        }
-    }
-
-    private function fetchChainData(string $stream, string $prNumber, ?string $txid): ?array
-    {
-        try {
-            if ($this->blockchainIndex->isLoaded($stream)) {
-                if ($txid) {
-                    $json = $this->blockchainIndex->jsonByTxid($stream, $txid);
-                    if ($json) {
-                        return $json;
-                    }
-                } else {
-                    $json = $this->blockchainIndex->latestJsonByPrNumber($stream, $prNumber);
-                    if ($json) {
-                        return $json;
-                    }
-                }
-            }
-
-            $items = $this->rpcClient->liststreamkeyitems($stream, $prNumber);
-            $items = is_array($items) ? $items : [];
-
-            if ($txid) {
-                foreach ($items as $item) {
-                    if (($item['txid'] ?? null) === $txid) {
-                        $json = $item['data']['json'] ?? null;
-
-                        return is_array($json) ? $json : null;
-                    }
-                }
-
-                $this->blockchainIndex->loadStream($stream);
-
-                return $this->blockchainIndex->jsonByTxid($stream, $txid);
-            }
-
-            if (empty($items)) {
-                return null;
-            }
-
-            $latest = end($items);
-            $json = is_array($latest) ? ($latest['data']['json'] ?? null) : null;
-
-            return is_array($json) ? $json : null;
-        } catch (\Exception $e) {
-            return null;
         }
     }
 
