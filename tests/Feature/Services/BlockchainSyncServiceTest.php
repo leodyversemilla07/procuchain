@@ -3,6 +3,8 @@
 use App\Enums\Stream;
 use App\Models\AuditLog;
 use App\Models\DocumentViewLog;
+use App\Models\ProcurementWorkflowConfig;
+use App\Models\StageDocumentConfig;
 use App\Models\User;
 use App\Models\UserLoginLog;
 use App\Services\BlockchainRpcClient;
@@ -314,6 +316,82 @@ describe('Observer Integration — UserLoginLog', function () {
         ]);
 
         expect($log->txid)->toBeNull();
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Observer Integration — StageDocumentConfig
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('Observer Integration — StageDocumentConfig', function () {
+    it('skips automatic publish during unit tests when StageDocumentConfig is created', function () {
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
+
+        $config = StageDocumentConfig::create([
+            'stage' => 'pre.procurement.conference',
+            'procurement_mode' => 'public.bidding',
+            'stage_display_name' => 'Pre-Procurement Conference',
+            'required_documents' => [],
+            'optional_documents' => [],
+            'is_active' => true,
+        ]);
+
+        expect($config->txid)->toBeNull();
+    });
+
+    it('skips publish if txid already set', function () {
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
+
+        StageDocumentConfig::create([
+            'stage' => 'bidding',
+            'procurement_mode' => 'public.bidding',
+            'stage_display_name' => 'Bidding',
+            'required_documents' => [],
+            'optional_documents' => [],
+            'is_active' => true,
+            'txid' => 'already-set',
+            'data_hash' => 'existing-hash',
+            'blockchain_synced_at' => now(),
+        ]);
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Observer Integration — ProcurementWorkflowConfig
+// ═══════════════════════════════════════════════════════════════════════
+
+describe('Observer Integration — ProcurementWorkflowConfig', function () {
+    it('skips automatic publish during unit tests when ProcurementWorkflowConfig is created', function () {
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
+
+        $config = ProcurementWorkflowConfig::create([
+            'procurement_mode' => 'public.bidding',
+            'display_name' => 'Public Bidding',
+            'stages' => [],
+            'optional_stages' => [],
+            'is_active' => true,
+        ]);
+
+        expect($config->txid)->toBeNull();
+    });
+
+    it('skips publish if txid already set', function () {
+        $mock = $this->mock(BlockchainRpcClient::class);
+        $mock->shouldNotReceive('publish');
+
+        ProcurementWorkflowConfig::create([
+            'procurement_mode' => 'alternative',
+            'display_name' => 'Alternative Mode',
+            'stages' => [],
+            'optional_stages' => [],
+            'is_active' => true,
+            'txid' => 'already-set',
+            'data_hash' => 'existing-hash',
+            'blockchain_synced_at' => now(),
+        ]);
     });
 });
 
