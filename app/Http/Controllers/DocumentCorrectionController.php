@@ -200,13 +200,11 @@ class DocumentCorrectionController extends Controller
     /**
      * Check if a specific transaction has been corrected.
      */
-    public function checkCorrection(Request $request, string $txid): JsonResponse
+    public function checkCorrection(CheckCorrectionRequest $request, string $txid): JsonResponse
     {
         $this->authorize('view-document', $txid);
 
-        $validated = $request->validate([
-            'txid' => 'required|string|size:64',
-        ]);
+        $validated = $request->validated();
 
         try {
             // Find correction by original txid using Eloquent

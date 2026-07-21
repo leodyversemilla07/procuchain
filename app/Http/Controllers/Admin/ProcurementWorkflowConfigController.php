@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateWorkflowConfigRequest;
 use App\Models\ProcurementWorkflowConfig;
 use App\Services\AuditLogService;
 use App\Services\ProcurementWorkflowService;
@@ -108,7 +109,7 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Update the workflow configuration.
      */
-    public function update(Request $request, string|ProcurementMode $mode): RedirectResponse
+    public function update(UpdateWorkflowConfigRequest $request, string|ProcurementMode $mode): RedirectResponse
     {
         $this->authorize('manage-workflow-config');
 
@@ -118,12 +119,7 @@ class ProcurementWorkflowConfigController extends Controller
             abort(404, 'Invalid procurement mode');
         }
 
-        $validated = $request->validate([
-            'stages' => 'required|array|min:1',
-            'stages.*' => 'required|string',
-            'optional_stages' => 'nullable|array',
-            'optional_stages.*' => 'string',
-        ]);
+        $validated = $request->validated();
 
         // Validate that all stage values are valid enum values
         $stages = [];

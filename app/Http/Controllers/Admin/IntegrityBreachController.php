@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\BreachType;
 use App\Enums\Stream;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RepairPrRequest;
 use App\Jobs\RunIntegrityVerificationJob;
 use App\Models\IntegrityViolationLog;
 use App\Models\Procurement;
@@ -186,13 +187,11 @@ class IntegrityBreachController extends Controller
     /**
      * Repair all breaches for a PR.
      */
-    public function repairPr(Request $request): RedirectResponse
+    public function repairPr(RepairPrRequest $request): RedirectResponse
     {
         $this->authorize('update-audit-log');
 
-        $validated = $request->validate([
-            'pr_number' => ['required', 'string', 'regex:/^PR-\d{4}-\d{3}(-\d{4})?$/'],
-        ]);
+        $validated = $request->validated();
 
         $prNumber = $validated['pr_number'];
 

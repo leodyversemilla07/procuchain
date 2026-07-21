@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\UpdateNotificationPreferencesRequest;
 use App\Services\NotificationPreferenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,14 +34,9 @@ class NotificationPreferenceController extends Controller
     /**
      * Update notification preferences.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(UpdateNotificationPreferencesRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'email_notifications_enabled' => ['required', 'boolean'],
-            'notification_preferences' => ['required', 'array'],
-            'notification_preferences.*.email' => ['boolean'],
-            'notification_preferences.*.push' => ['boolean'],
-        ]);
+        $validated = $request->validated();
 
         $user = $request->user();
 

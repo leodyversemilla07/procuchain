@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BlockIpRequest;
+use App\Http\Requests\UnblockIpRequest;
 use App\Services\AuditLogService;
 use App\Services\BlockedIpService;
 use App\Services\LoginAnalyticsService;
@@ -142,15 +144,11 @@ class LoginHistoryController extends Controller
     /**
      * Block an IP address
      */
-    public function blockIp(Request $request): RedirectResponse
+    public function blockIp(BlockIpRequest $request): RedirectResponse
     {
         $this->authorize('manage-blocked-ips');
         try {
-            $validated = $request->validate([
-                'ip_address' => 'required|ip',
-                'reason' => 'nullable|string|max:255',
-                'duration' => 'nullable|string|in:temporary,permanent',
-            ]);
+            $validated = $request->validated();
 
             $expiresAt = null;
             if (isset($validated['duration']) && $validated['duration'] === 'temporary') {
@@ -195,13 +193,11 @@ class LoginHistoryController extends Controller
     /**
      * Unblock an IP address
      */
-    public function unblockIp(Request $request): RedirectResponse
+    public function unblockIp(UnblockIpRequest $request): RedirectResponse
     {
         $this->authorize('manage-blocked-ips');
         try {
-            $validated = $request->validate([
-                'ip_address' => 'required|ip',
-            ]);
+            $validated = $request->validated();
 
             $result = $this->blockedIpService->unblockIp($validated['ip_address'], $request->user());
 

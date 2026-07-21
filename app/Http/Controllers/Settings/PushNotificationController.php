@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PushNotification\PushSubscribeRequest;
+use App\Http\Requests\PushNotification\PushUnsubscribeRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,13 +46,9 @@ class PushNotificationController extends Controller
     /**
      * Subscribe user to push notifications (POST)
      */
-    public function store(Request $request): RedirectResponse
+    public function store(PushSubscribeRequest $request): RedirectResponse
     {
-        $request->validate([
-            'endpoint' => 'required|string',
-            'keys.p256dh' => 'required|string',
-            'keys.auth' => 'required|string',
-        ]);
+        $request->validated();
 
         $user = $request->user();
         abort_if($user === null, 401);
@@ -78,11 +76,9 @@ class PushNotificationController extends Controller
     /**
      * Unsubscribe user from push notifications (DELETE)
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(PushUnsubscribeRequest $request): RedirectResponse
     {
-        $request->validate([
-            'endpoint' => 'required|string',
-        ]);
+        $request->validated();
 
         $user = $request->user();
         abort_if($user === null, 401);

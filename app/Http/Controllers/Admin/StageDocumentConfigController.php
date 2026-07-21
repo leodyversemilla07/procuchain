@@ -6,6 +6,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementMode;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateStageDocumentConfigRequest;
 use App\Models\StageDocumentConfig;
 use App\Services\AuditLogService;
 use App\Services\ProcurementWorkflowService;
@@ -122,7 +123,7 @@ class StageDocumentConfigController extends Controller
     /**
      * Update the stage document configuration.
      */
-    public function update(Request $request, string|ProcurementMode $mode, string|StageEnums $stage): RedirectResponse
+    public function update(UpdateStageDocumentConfigRequest $request, string|ProcurementMode $mode, string|StageEnums $stage): RedirectResponse
     {
         $this->authorize('manage-stage-document-config');
 
@@ -133,12 +134,7 @@ class StageDocumentConfigController extends Controller
             abort(404, 'Invalid mode or stage');
         }
 
-        $validated = $request->validate([
-            'required_documents' => 'nullable|array',
-            'required_documents.*' => 'string',
-            'optional_documents' => 'nullable|array',
-            'optional_documents.*' => 'string',
-        ]);
+        $validated = $request->validated();
 
         // Validate that all document values are valid enum values
         $requiredDocuments = [];

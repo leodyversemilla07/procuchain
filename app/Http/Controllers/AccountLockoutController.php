@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AccountLockout\BulkAccountActionRequest;
+use App\Http\Requests\AccountLockout\LockAccountRequest;
+use App\Http\Requests\AccountLockout\UnlockAccountRequest;
 use App\Models\User;
 use App\Services\AccountLockoutService;
 use App\Services\AuditLogService;
@@ -70,13 +73,11 @@ class AccountLockoutController extends Controller
     /**
      * Unlock a user account
      */
-    public function unlock(Request $request, User $user): RedirectResponse
+    public function unlock(UnlockAccountRequest $request, User $user): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         try {
-            $validated = $request->validate([
-                'reason' => 'nullable|string|max:255',
-            ]);
+            $validated = $request->validated();
 
             $result = $this->accountLockout->unlockAccount($user, $validated['reason'] ?? 'Manually unlocked by admin', $request->user());
 
@@ -114,14 +115,11 @@ class AccountLockoutController extends Controller
     /**
      * Manually lock a user account
      */
-    public function lock(Request $request, User $user): RedirectResponse
+    public function lock(LockAccountRequest $request, User $user): RedirectResponse
     {
         $this->authorize('unlock-user-account');
         try {
-            $validated = $request->validate([
-                'reason' => 'required|string|max:255',
-                'duration_hours' => 'nullable|integer|min:1|max:168', // Max 1 week
-            ]);
+            $validated = $request->validated();
 
             // Prevent admin from locking their own account
             if ($user->id === $request->user()->id) {
@@ -205,13 +203,10 @@ class AccountLockoutController extends Controller
     /**
      * Bulk unlock multiple user accounts
      */
-    public function bulkUnlock(Request $request): RedirectResponse
+    public function bulkUnlock(BulkAccountActionRequest $request): RedirectResponse
     {
         $this->authorize('unlock-user-account');
-        $validated = $request->validate([
-            'account_ids' => 'required|array|min:1',
-            'account_ids.*' => 'required|integer|exists:users,id',
-        ]);
+        $validated = $request->validated();
 
         try {
             $accountIds = $validated['account_ids'];
@@ -273,13 +268,10 @@ class AccountLockoutController extends Controller
     /**
      * Bulk reset failed login attempts for multiple users
      */
-    public function bulkResetAttempts(Request $request): RedirectResponse
+    public function bulkResetAttempts(BulkAccountActionRequest $request): RedirectResponse
     {
         $this->authorize('unlock-user-account');
-        $validated = $request->validate([
-            'account_ids' => 'required|array|min:1',
-            'account_ids.*' => 'required|integer|exists:users,id',
-        ]);
+        $validated = $request->validated();
 
         try {
             $accountIds = $validated['account_ids'];

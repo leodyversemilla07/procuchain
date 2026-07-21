@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ProcurementSearchRequest;
+use App\Http\Requests\ReportExportRequest;
+use App\Http\Requests\ReportFilterRequest;
 use App\Services\ProcurementSearchService;
 use App\Services\ReportGenerationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,23 +40,11 @@ class ReportController extends Controller
     /**
      * Generate a report with filters
      */
-    public function generate(Request $request): JsonResponse
+    public function generate(ReportFilterRequest $request): JsonResponse
     {
         $this->authorize('generate-reports');
 
-        $validated = $request->validate([
-            'filter_type' => 'nullable|string|in:month,year,quarter,date_range',
-            'month' => 'nullable|integer|min:1|max:12',
-            'year' => 'nullable|integer|min:2000|max:2100',
-            'quarter' => 'nullable|integer|min:1|max:4',
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date|after_or_equal:date_from',
-            'query' => 'nullable|string|max:255',
-            'status' => 'nullable|string',
-            'stage' => 'nullable|string',
-            'mode' => 'nullable|string',
-            'category' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         try {
             Log::info('Generating report', ['params' => $validated]);
@@ -90,24 +80,11 @@ class ReportController extends Controller
     /**
      * Export report in various formats
      */
-    public function export(Request $request): JsonResponse|StreamedResponse|\Symfony\Component\HttpFoundation\Response
+    public function export(ReportExportRequest $request): JsonResponse|StreamedResponse|\Symfony\Component\HttpFoundation\Response
     {
         $this->authorize('export-reports');
 
-        $validated = $request->validate([
-            'filter_type' => 'nullable|string|in:month,year,quarter,date_range',
-            'month' => 'nullable|integer|min:1|max:12',
-            'year' => 'nullable|integer|min:2000|max:2100',
-            'quarter' => 'nullable|integer|min:1|max:4',
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date|after_or_equal:date_from',
-            'query' => 'nullable|string|max:255',
-            'status' => 'nullable|string',
-            'stage' => 'nullable|string',
-            'mode' => 'nullable|string',
-            'category' => 'nullable|string',
-            'format' => 'required|string|in:json,csv,pdf',
-        ]);
+        $validated = $request->validated();
 
         try {
             $report = $this->reportGenerationService->generateReport($validated);
@@ -161,17 +138,11 @@ class ReportController extends Controller
     /**
      * Perform procurement search.
      */
-    public function search(Request $request): JsonResponse
+    public function search(ProcurementSearchRequest $request): JsonResponse
     {
         $this->authorize('view-reports');
 
-        $validated = $request->validate([
-            'query' => 'required|string|max:255',
-            'status' => 'nullable|string',
-            'stage' => 'nullable|string',
-            'mode' => 'nullable|string',
-            'category' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         try {
             $query = $validated['query'];

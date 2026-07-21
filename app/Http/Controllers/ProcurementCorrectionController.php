@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CheckProcurementCorrectionRequest;
 use App\Http\Requests\Procurement\CorrectProcurementRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Services\AuditLogService;
@@ -97,13 +98,11 @@ class ProcurementCorrectionController extends Controller
     /**
      * Check if a procurement has any corrections.
      */
-    public function checkProcurementCorrection(Request $request, string $prNumber): JsonResponse
+    public function checkProcurementCorrection(CheckProcurementCorrectionRequest $request, string $prNumber): JsonResponse
     {
         $this->authorize('correct-procurement', $prNumber);
 
-        $request->validate([
-            'pr_number' => 'required|string',
-        ]);
+        $request->validated();
 
         try {
             $result = $this->correctionService->checkCorrections($prNumber);
