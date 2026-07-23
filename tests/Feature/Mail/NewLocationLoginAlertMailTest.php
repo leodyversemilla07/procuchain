@@ -28,7 +28,7 @@ test('new location login alert email can be sent', function () {
 
     Mail::to($user->email)->send(new NewLocationLoginAlert($user, $location, $ipAddress, $userAgent, $loginTime));
 
-    Mail::assertSent(NewLocationLoginAlert::class, function ($mail) use ($user, $location, $ipAddress, $userAgent, $loginTime) {
+    Mail::assertSent(NewLocationLoginAlert::class, function ($mail) use ($user, $ipAddress, $userAgent, $loginTime) {
         return $mail->hasTo($user->email) &&
                $mail->user->id === $user->id &&
                $mail->ipAddress === $ipAddress &&

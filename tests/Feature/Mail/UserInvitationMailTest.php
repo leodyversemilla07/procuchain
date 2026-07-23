@@ -2,6 +2,7 @@
 
 use App\Mail\UserInvitationMail;
 use App\Models\UserInvitation;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -48,5 +49,5 @@ test('user invitation email has correct subject and content', function () {
 test('user invitation mail implements ShouldQueue', function () {
     $implements = class_implements(UserInvitationMail::class);
 
-    expect($implements)->toContain(Illuminate\Contracts\Queue\ShouldQueue::class);
+    expect($implements)->toContain(ShouldQueue::class);
 });

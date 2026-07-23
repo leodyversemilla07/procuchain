@@ -34,8 +34,8 @@ use Illuminate\Support\Facades\Log;
  * Verifies normalized DB tables against blockchain source of truth with multi-layer verification.
  *
  * Orchestration only — actual work delegated to:
-  * - IntegrityRecordVerifier delegating to RecordHashService, ChainRecordComparator,
-  *   PublisherAuthorizationChecker, RecordViolationTracker (Phase 1: hash/content/publisher checks)
+ * - IntegrityRecordVerifier delegating to RecordHashService, ChainRecordComparator,
+ *   PublisherAuthorizationChecker, RecordViolationTracker (Phase 1: hash/content/publisher checks)
  * - DeletedRecordDetector (Phase 2: missing/injected record detection)
  * - IntegrityAutoRepairer (Phase 3: auto-repair from blockchain)
  * - IntegrityViolationRecorder (violation recording + notification)
