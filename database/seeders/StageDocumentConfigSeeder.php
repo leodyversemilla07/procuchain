@@ -8,6 +8,7 @@ use App\Enums\StageEnums;
 use App\Models\StageDocumentConfig;
 use App\Services\ModeAwareDocumentRequirementsService;
 use App\Services\StageDocumentRequirementsService;
+use App\Support\ModeDocumentRequirements;
 use Illuminate\Database\Seeder;
 
 /**
@@ -24,7 +25,7 @@ class StageDocumentConfigSeeder extends Seeder
     public function run(): void
     {
         $baseRequirements = app(StageDocumentRequirementsService::class);
-        $modeAwareRequirements = new ModeAwareDocumentRequirementsService($baseRequirements);
+        $modeAwareRequirements = new ModeAwareDocumentRequirementsService($baseRequirements, new ModeDocumentRequirements);
 
         $count = 0;
 

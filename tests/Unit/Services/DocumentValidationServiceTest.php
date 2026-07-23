@@ -6,12 +6,13 @@ use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentRequirementsService;
 use App\Services\StageDocumentRequirementsService;
 use App\Services\WorkflowDefinitionService;
+use App\Support\ModeDocumentRequirements;
 
 beforeEach(function () {
     $this->requirements = new StageDocumentRequirementsService;
     $this->workflowDefinitionService = new WorkflowDefinitionService(
         $this->requirements,
-        new ModeAwareDocumentRequirementsService($this->requirements),
+        new ModeAwareDocumentRequirementsService($this->requirements, new ModeDocumentRequirements),
     );
     $this->service = new DocumentValidationService(
         $this->requirements,
