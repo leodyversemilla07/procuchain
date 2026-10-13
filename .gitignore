@@ -30,18 +30,8 @@ yarn-error.log
 /.codex
 /blockchain
 
-# Terraform
-/terraform/.terraform/
-/terraform/*.tfstate
-/terraform/*.tfstate.backup
-/terraform/*.tfvars
-!/terraform/*.tfvars.example
-/terraform/*.tfvars.backup
-/terraform/secrets.tfvars
-/terraform/main2.bak
-
 # Auto-generated documentation
-/docs/PROCUCHAIN_SOURCE_DOCS*
+**/PROCUCHAIN_SOURCE_DOCS*
 
 # Binary document files
 *.docx
@@ -52,9 +42,5 @@ yarn-error.log
 # Scripts
 /scripts/*.mjs
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
 /public/build
 /public/pdf.worker.min.mjs

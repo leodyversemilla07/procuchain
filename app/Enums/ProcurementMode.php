@@ -10,7 +10,7 @@ namespace App\Enums;
  * Reference: NGPA IRR Rule IV, Section 26
  * Fully aligned with RA 12009 (New Government Procurement Act)
  *
- * @see ngpa/rule-04-modes-of-procurement.md
+ * @see docs/ngpa/rule-04-modes-of-procurement.md
  */
 enum ProcurementMode: string
 {

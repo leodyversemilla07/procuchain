@@ -1,0 +1,25 @@
+HISTORICAL NOTE
+
+This file is retained only as an archival artifact from the original reporting/search feature rollout.
+
+Do not use it as a source of truth for the current codebase.
+
+Current documentation lives in:
+
+- README.md
+- docs/index.md
+- docs/tutorials/quick-start.md
+- docs/explanation/architecture.md
+- docs/reference/routes.md
+- docs/reference/blockchain-schema.md
+- docs/reference/database-schema.md
+- docs/explanation/reporting-architecture.md
+- docs/reference/testing.md
+
+The application has since gained:
+
+- consolidated workflow/document rule resolution via WorkflowDefinitionService
+- updated CI and frontend generation scripts
+- refactored procurement stage flows
+- environment-aware security headers
+- local MultiChain setup via the `multichain:setup` command

@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->encryptCookies(except: ['appearance']);
 
-        // Trust the Elastic Beanstalk ALB proxy
+        // Trust upstream proxies (load balancer / reverse proxy)
         $middleware->trustProxies(at: '*');
 
         $middleware->web(append: [

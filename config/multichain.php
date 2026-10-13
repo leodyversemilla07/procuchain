@@ -73,83 +73,6 @@ return [
     'node_address' => env('MULTICHAIN_NODE_ADDRESS'),
 
     /*
- |--------------------------------------------------------------------------
- | Node Registry
- |--------------------------------------------------------------------------
- |
- | The list of MultiChain nodes in the network. Each node entry defines
- | its id, display name, role, and connection details (public IP,
- | private IP, P2P port, RPC port). Sourced from Terraform outputs
- | and set via .env so deployments don't require code changes.
- |
- | The key format is: MULTICHAIN_NODE_{ID}_* (e.g. MULTICHAIN_NODE_ADMIN_IP)
- |
- */
-
-    'nodes' => [
-        [
-            'id' => 'admin',
-            'name' => env('MULTICHAIN_NODE_ADMIN_NAME', 'Primary Node'),
-            'role' => env('MULTICHAIN_NODE_ADMIN_ROLE', 'Administrator'),
-            'ip' => env('MULTICHAIN_NODE_ADMIN_IP', '127.0.0.1'),
-            'private_ip' => env('MULTICHAIN_NODE_ADMIN_PRIVATE_IP', '127.0.0.1'),
-            'instance_id' => env('MULTICHAIN_NODE_ADMIN_INSTANCE_ID', 'i-07cda06c53cfd2a04'),
-            'p2p_port' => (int) env('MULTICHAIN_NODE_ADMIN_P2P_PORT', 6835),
-            'rpc_port' => (int) env('MULTICHAIN_NODE_ADMIN_RPC_PORT', 6834),
-        ],
-        [
-            'id' => 'bac-secretariat',
-            'name' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_NAME', 'BAC Secretariat'),
-            'role' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_ROLE', 'Secretariat'),
-            'ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_IP', '127.0.0.1'),
-            'private_ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_PRIVATE_IP', '127.0.0.1'),
-            'instance_id' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_INSTANCE_ID', 'i-0aba884e70ad04588'),
-            'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_P2P_PORT', 6835),
-            'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_RPC_PORT', 6834),
-        ],
-        [
-            'id' => 'bac-chairman',
-            'name' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_NAME', 'BAC Chairman'),
-            'role' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_ROLE', 'Chairman'),
-            'ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_IP', '127.0.0.1'),
-            'private_ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_PRIVATE_IP', '127.0.0.1'),
-            'instance_id' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_INSTANCE_ID', 'i-0cd621d6c897b387c'),
-            'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_P2P_PORT', 6835),
-            'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_RPC_PORT', 6834),
-        ],
-        [
-            'id' => 'hope',
-            'name' => env('MULTICHAIN_NODE_HOPE_NAME', 'HOPE'),
-            'role' => env('MULTICHAIN_NODE_HOPE_ROLE', 'HOPE'),
-            'ip' => env('MULTICHAIN_NODE_HOPE_IP', '127.0.0.1'),
-            'private_ip' => env('MULTICHAIN_NODE_HOPE_PRIVATE_IP', '127.0.0.1'),
-            'instance_id' => env('MULTICHAIN_NODE_HOPE_INSTANCE_ID', 'i-0b2be6c5b43568c28'),
-            'p2p_port' => (int) env('MULTICHAIN_NODE_HOPE_P2P_PORT', 6835),
-            'rpc_port' => (int) env('MULTICHAIN_NODE_HOPE_RPC_PORT', 6834),
-        ],
-    ],
-
-    /*
- |--------------------------------------------------------------------------
- | AWS SSM Configuration
- |--------------------------------------------------------------------------
- |
- | Settings for AWS Systems Manager (SSM) used to execute remote
- | commands on MultiChain node EC2 instances. This enables
- | real purge operations (stop daemon, wipe data, restart).
- |
- | The aws_profile is the CLI profile name configured on the EB server.
- | Chain data dir is where MultiChain stores blockchain data on each node.
- |
- */
-
-    'ssm' => [
-        'aws_profile' => env('MULTICHAIN_SSM_AWS_PROFILE', ''),
-        'aws_region' => env('MULTICHAIN_SSM_AWS_REGION', ''),
-        'chain_data_dir' => env('MULTICHAIN_SSM_CHAIN_DATA_DIR', '/root/.multichain/procuchain'),
-    ],
-
-    /*
     |--------------------------------------------------------------------------
     | Connection Settings
     |--------------------------------------------------------------------------
@@ -175,7 +98,7 @@ return [
  |--------------------------------------------------------------------------
  |
  | When the primary RPC node is unavailable (purged, down, or unsubscribed),
- | the Manager automatically tries peer nodes defined in 'nodes' above.
+ | the RPC client retries the configured node.
  |
  | primary_recheck_interval: seconds before re-checking if the primary
  | node has recovered (to switch back automatically).
