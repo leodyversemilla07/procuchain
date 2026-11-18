@@ -7,6 +7,7 @@ use procuchain_issuance::{
     Acknowledgement, AcknowledgementMethod, DeliveryAttempt, DeliveryResult, Distribution,
     DistributionStatus, Issuance, IssuanceArtifact, IssuanceRecipient,
 };
+use procuchain_procurement::{AppContent, PpmpContent};
 use procuchain_records::{
     CanonicalContent, Document, DocumentType, DocumentVersion, RulePackRef, SchemaRef, TemplateRef,
     VersionStatus,
@@ -142,6 +143,204 @@ impl Platform {
 
     pub fn audit_events(&self) -> &[AuditEvent] {
         self.audit.events()
+    }
+
+    /// Rehydrate the minimal document state required for a durable command.
+    pub fn restore_document_version(
+        &mut self,
+        document: Document,
+        version: DocumentVersion,
+    ) -> Result<(), DomainError> {
+        if document.tenant_id() != self.tenant_id {
+            return Err(DomainError::unauthorized(
+                "document belongs to another tenant",
+            ));
+        }
+        if version.document_id() != document.id() || !document.version_ids().contains(&version.id())
+        {
+            return Err(DomainError::rule(
+                "document and version do not form a valid aggregate",
+            ));
+        }
+        self.documents.insert(document.id(), document);
+        self.versions.insert(version.id(), version);
+        Ok(())
+    }
+
+    /// Rehydrate a BAC resolution for a durable APP command.
+    pub fn restore_bac_resolution(&mut self, resolution: BacResolution) -> Result<(), DomainError> {
+        if !self.versions.contains_key(&resolution.version_id()) {
+            return Err(DomainError::not_found(
+                "document version",
+                resolution.version_id(),
+            ));
+        }
+        let resolution_id = resolution.id();
+        let version_id = resolution.version_id();
+        self.bac_resolutions.insert(resolution_id, resolution);
+        self.bac_resolutions_by_version
+            .entry(version_id)
+            .or_default()
+            .push(resolution_id);
+        Ok(())
+    }
+
+    pub fn restore_approval(&mut self, approval: Approval) -> Result<(), DomainError> {
+        if !self.versions.contains_key(&approval.version_id()) {
+            return Err(DomainError::not_found(
+                "document version",
+                approval.version_id(),
+            ));
+        }
+        let id = approval.id();
+        let version_id = approval.version_id();
+        self.approvals.insert(id, approval);
+        self.approvals_by_version
+            .entry(version_id)
+            .or_default()
+            .push(id);
+        Ok(())
+    }
+
+    pub fn restore_signature_request(
+        &mut self,
+        request: SignatureRequest,
+    ) -> Result<(), DomainError> {
+        if !self.versions.contains_key(&request.version_id()) {
+            return Err(DomainError::not_found(
+                "document version",
+                request.version_id(),
+            ));
+        }
+        let id = request.id();
+        let version_id = request.version_id();
+        self.signature_requests.insert(id, request);
+        self.signature_requests_by_version
+            .entry(version_id)
+            .or_default()
+            .push(id);
+        Ok(())
+    }
+
+    pub fn restore_signature(&mut self, signature: Signature) -> Result<(), DomainError> {
+        if !self.versions.contains_key(&signature.version_id()) {
+            return Err(DomainError::not_found(
+                "document version",
+                signature.version_id(),
+            ));
+        }
+        let id = signature.id();
+        let version_id = signature.version_id();
+        self.signatures.insert(id, signature);
+        self.signatures_by_version
+            .entry(version_id)
+            .or_default()
+            .push(id);
+        Ok(())
+    }
+
+    pub fn restore_issuance(&mut self, issuance: Issuance) -> Result<(), DomainError> {
+        if !self.versions.contains_key(&issuance.version_id()) {
+            return Err(DomainError::not_found(
+                "document version",
+                issuance.version_id(),
+            ));
+        }
+        let id = issuance.id();
+        let version_id = issuance.version_id();
+        self.issuances.insert(id, issuance);
+        self.issuances_by_version
+            .entry(version_id)
+            .or_default()
+            .push(id);
+        Ok(())
+    }
+
+    pub fn restore_distribution(&mut self, distribution: Distribution) -> Result<(), DomainError> {
+        if !self.issuances.contains_key(&distribution.issuance_id()) {
+            return Err(DomainError::not_found(
+                "issuance",
+                distribution.issuance_id(),
+            ));
+        }
+        self.distributions.insert(distribution.id(), distribution);
+        Ok(())
+    }
+
+    pub fn restore_acknowledgement(
+        &mut self,
+        acknowledgement: Acknowledgement,
+    ) -> Result<(), DomainError> {
+        if !self
+            .distributions
+            .contains_key(&acknowledgement.distribution_id())
+        {
+            return Err(DomainError::not_found(
+                "distribution",
+                acknowledgement.distribution_id(),
+            ));
+        }
+        self.acknowledgements
+            .insert(acknowledgement.id(), acknowledgement);
+        Ok(())
+    }
+
+    /// Create a validated PPMP draft as the first application-level command
+    /// in the normative vertical slice.
+    pub fn create_ppmp_draft(
+        &mut self,
+        title: impl Into<String>,
+        content: PpmpContent,
+        template: TemplateRef,
+        schema: SchemaRef,
+        author: Actor,
+        rule_pack: RulePackRef,
+    ) -> Result<DocumentVersionId, DomainError> {
+        let canonical = content.to_canonical()?;
+        self.create_draft(
+            DocumentType::Ppmp,
+            title,
+            template,
+            schema,
+            canonical,
+            author,
+            rule_pack,
+        )
+    }
+
+    /// Create an indicative APP draft linked to a PPMP version.
+    pub fn create_indicative_app_draft(
+        &mut self,
+        title: impl Into<String>,
+        ppmp_version_id: DocumentVersionId,
+        content: AppContent,
+        template: TemplateRef,
+        schema: SchemaRef,
+        author: Actor,
+        rule_pack: RulePackRef,
+    ) -> Result<DocumentVersionId, DomainError> {
+        let canonical = content.to_canonical()?;
+        let version_id = self.create_draft(
+            DocumentType::AnnualProcurementPlan,
+            title,
+            template,
+            schema,
+            canonical,
+            author.clone(),
+            rule_pack,
+        )?;
+        self.audit.append(
+            "app.indicative_derived",
+            Some(author.user_id()),
+            "document_version",
+            version_id.to_string(),
+            OffsetDateTime::now_utc(),
+            details([
+                ("source_ppmp_version_id", ppmp_version_id.to_string()),
+                ("app_version_id", version_id.to_string()),
+            ]),
+        );
+        Ok(version_id)
     }
 
     pub fn verify_audit_chain(&self) -> bool {
@@ -1218,5 +1417,87 @@ fn require_authority(authority_ref: impl Into<String>) -> Result<String, DomainE
         Err(DomainError::rule("authority reference must not be empty"))
     } else {
         Ok(authority_ref)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use procuchain_procurement::{PpmpContent, PpmpLine};
+    use procuchain_shared::{ActorRole, Amount, RulePackSnapshotId, UserId};
+
+    fn ppmp_content(lines: Vec<PpmpLine>) -> PpmpContent {
+        PpmpContent {
+            fiscal_year: 2026,
+            end_user_unit: "General Services".to_owned(),
+            project_title: "Office supplies".to_owned(),
+            scope: "Common office supplies".to_owned(),
+            market_scoping_ref: "MS-2026-001".to_owned(),
+            abc_basis: "Recent canvass".to_owned(),
+            schedule: "Q1 2026".to_owned(),
+            risks: vec!["Price movement".to_owned()],
+            lines,
+        }
+    }
+
+    fn ppmp_line() -> PpmpLine {
+        PpmpLine {
+            line_id: "1".to_owned(),
+            description: "Bond paper".to_owned(),
+            quantity: 10,
+            unit: "ream".to_owned(),
+            estimated_cost: Amount::php_pesos(250).expect("amount is valid"),
+            schedule: "January 2026".to_owned(),
+            mode_consideration: "Small Value Procurement".to_owned(),
+        }
+    }
+
+    fn create_ppmp(
+        platform: &mut Platform,
+        content: PpmpContent,
+    ) -> Result<DocumentVersionId, DomainError> {
+        platform.create_ppmp_draft(
+            "PPMP FY 2026",
+            content,
+            TemplateRef::new("ppmp-template", "2026.1", "PE template register")
+                .expect("template is valid"),
+            SchemaRef::new("ppmp-schema", "1.0").expect("schema is valid"),
+            Actor::new(UserId::new(), ActorRole::EndUser, "End User"),
+            RulePackRef::new(
+                RulePackSnapshotId::new(),
+                "rp-2026-a",
+                ContentHash::sha256(b"rp-2026-a"),
+            )
+            .expect("rule pack is valid"),
+        )
+    }
+
+    #[test]
+    fn create_ppmp_draft_validates_and_records_a_ppmp_document() {
+        let mut platform = Platform::new(TenantId::new(), SignaturePolicy::new());
+        let version_id = create_ppmp(&mut platform, ppmp_content(vec![ppmp_line()]))
+            .expect("PPMP draft is created");
+
+        let version = platform.version(version_id).expect("version exists");
+        assert_eq!(
+            platform
+                .document(version.document_id())
+                .expect("document exists")
+                .document_type(),
+            DocumentType::Ppmp
+        );
+        assert_eq!(platform.audit_events().len(), 1);
+        assert!(platform.verify_audit_chain());
+    }
+
+    #[test]
+    fn create_ppmp_draft_rejects_empty_lines_before_persisting() {
+        let mut platform = Platform::new(TenantId::new(), SignaturePolicy::new());
+        let error = create_ppmp(&mut platform, ppmp_content(Vec::new()))
+            .expect_err("empty PPMP must be rejected");
+
+        assert!(matches!(error, DomainError::RuleViolation(_)));
+        assert!(platform.documents().is_empty());
+        assert!(platform.audit_events().is_empty());
     }
 }

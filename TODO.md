@@ -36,22 +36,24 @@
 
 ### 2.1 Persist the vertical slice (P0)
 
-The domain service currently loses all state on restart. Persist the existing aggregates before adding more business scope.
+The in-memory service works; persistence now rehydrates the same aggregates from PostgreSQL.
 
-- [ ] Choose and document the persistence stack: PostgreSQL + SQLx + migrations.
-- [ ] Add local PostgreSQL via Docker Compose and a CI service container.
-- [ ] Create migrations for:
+- [x] Choose and document the persistence stack: PostgreSQL + SQLx + migrations.
+- [x] Add local PostgreSQL via Docker Compose and a CI service container. Local development can use `postgres://procuchain:procuchain_local_dev@127.0.0.1:5433/procuchain` and `PROCUCHAIN_TEST_DATABASE_URL`.
+- [x] Create migrations for:
   - tenants, users, roles, organizational units, committees, and memberships;
   - documents, document versions, canonical content, template/schema/rule-pack references;
   - approvals, BAC resolutions, attendance, votes, and membership snapshots;
   - signature requests, signatures, and validation evidence;
   - issuances, issuance artifacts, distributions, delivery attempts, and acknowledgements;
   - audit events, per-tenant audit sequence, outbox, and idempotency records.
-- [ ] Define repository ports in the application layer and SQLx adapters in infrastructure.
-- [ ] Introduce a unit-of-work boundary that commits domain state, audit events, and outbox rows atomically.
-- [ ] Store canonical content as JSONB or immutable objects, with the hash recomputed on read.
-- [ ] Add repository contract tests and restart/rehydration tests.
+- [x] Define repository ports in the application layer and SQLx adapters in infrastructure.
+- [x] Introduce a unit-of-work boundary that commits domain state, audit events, and outbox rows atomically.
+- [x] Store canonical content as JSONB or immutable objects, with the hash recomputed on read.
+- [x] Add repository contract tests and restart/rehydration tests (`crates/postgres/tests/persistence.rs`).
 - [ ] Add migration and rollback checks to CI.
+- [ ] Persist the remaining `Platform` orchestration state so commands can rebuild the full slice from PostgreSQL alone, not only per-aggregate round trips.
+- [ ] Replace caller-supplied timestamps with server-controlled clocks at the API boundary.
 
 ### 2.2 Identity, tenancy, and authorization (P0)
 
@@ -67,10 +69,10 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 
 ### 2.3 API and React workbench (P0)
 
-- [ ] Choose Axum (or document an alternative) and add versioned `/api/v1` command/resource endpoints.
+- [~] Choose Axum (or document an alternative) and add versioned `/api/v1` command/resource endpoints. Axum is now the transport boundary; only the initial health endpoint exists.
 - [ ] Add OpenAPI generation and contract tests.
-- [ ] Add idempotency keys and optimistic concurrency for state-changing commands.
-- [ ] Add the stable API error model: machine code, message, correlation ID, field violations.
+- [~] Add idempotency keys and optimistic concurrency for state-changing commands. PPMP creation, indicative APP creation, BAC resolution creation, HoPE approval, signature-request creation, signature completion, and document submission support transactional idempotency; submission, APP derivation, BAC resolution, HoPE approval, signature-request creation, and signature completion validate `If-Match` row-version preconditions. Remaining commands still need keys and version preconditions.
+- [~] Add the stable API error model: machine code, message, correlation ID, field violations. Machine codes and correlation IDs are implemented; field-level violations remain.
 - [ ] Add authentication/session handling, CSRF protection, security headers, and rate limits.
 - [ ] Build React/TypeScript workbench pages for:
   - my tasks and overdue actions;
@@ -107,7 +109,9 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 - [ ] Implement issuance withdrawal/reissue and per-distribution artifact binding.
 - [ ] Implement publication records, PhilGEPS adapter boundary, manual fallback, and reconciliation evidence.
 - [ ] Implement evidence-bundle assembly, hashed/signed manifests, export, and printable evidence views.
-- [ ] Implement asynchronous, idempotent MultiChain anchoring as supplementary evidence only.
+- [x] Implement the audit hash chain, Merkle-batched anchors, inclusion proofs, and anchor verification.
+- [ ] Configure an RFC 3161 timestamp authority and store its receipts. `[L]` Provider selection and admissibility need legal and records-management review.
+- [ ] Add WORM retention and public posting of anchor roots and inclusion proofs. `[L]` Publishing channel and legal effect need review.
 - [ ] Run an end-to-end browser/API acceptance test and independent audit reconstruction.
 
 ---
@@ -173,9 +177,9 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 
 - [~] **AC-130** Append-only audit — hash chain exists; no database role restriction or per-tenant sequence.
 - [ ] **AC-131** Evidence bundle completeness.
-- [~] **AC-132** Tamper detection — in-memory chain verification works; no storage-level alerting.
-- [ ] **AC-133** MultiChain is supplementary.
-- [ ] **AC-134** Anchor retry does not duplicate meaning.
+- [~] **AC-132** Tamper detection — audit chain and anchor verification detect mismatches; no storage-level alerting.
+- [~] **AC-133** Anchoring is supplementary — anchors, receipts, and inclusion proofs exist; no external timestamp authority or public posting yet.
+- [~] **AC-134** Anchor ranges are contiguous and non-duplicated — the advisory lock and range check enforce this; concurrency test still needed.
 
 #### Security and privacy
 
@@ -330,7 +334,7 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 
 - [ ] Inventory Laravel entities, routes, documents, and blockchain records.
 - [ ] Define import mappings and provenance rules.
-- [ ] Reconcile legacy content hashes and MultiChain history.
+- [ ] Reconcile legacy content hashes and legacy chain history.
 - [ ] Parallel-run and cutover plan.
 - [ ] Preserve historical records without assigning fabricated compliance.
 
@@ -343,12 +347,12 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 - [ ] **Empty signature policy semantics.** An empty policy blocks signing but also makes `requires_signature` false, so issuance can proceed on approval alone. Decide, with legal review, whether “no configured rule” means “no signature required” or “issuance blocked.”
 - [ ] **Acknowledgement artifact binding.** Acknowledgement checks that the hash belongs to the issuance, not that it is the specific artifact delivered to that recipient. Add per-distribution artifact binding before multiple artifacts are supported.
 - [ ] **Signature completion trusts provider evidence.** There is no authenticated callback or actor check on `complete_signature`.
-- [ ] **Audit durability.** The hash chain is in memory; production needs append-only database permissions, per-tenant sequencing, and integrity alerting.
+- [~] **Audit durability.** The chain and anchors persist with append-only triggers and advisory-lock sequencing; database-role restrictions, integrity alerting, and external timestamping remain.
 - [ ] **Rule-pack placeholder.** `RulePackRef` stores only a label and hash; the actual pack, legal citations, and evaluation outcomes are missing.
 - [ ] **Repo coexistence.** The Rust crate and Laravel app share the repository root. Decide the target layout and cutover boundary before adding infrastructure.
 - [ ] **Toolchain pin.** `rust-toolchain.toml` currently uses `stable` because the pinned `1.99.0` installation was corrupted; restore an exact pin when the toolchain is repaired.
 - [ ] **Spec gate defect.** G2 references undefined AC-135 and AC-136.
-- [ ] **No production database/object store.** Nothing currently survives process restart.
+- [~] **No production object store or backup.** Relational and audit state persist in PostgreSQL; artifacts, backups, and restore drills are still absent.
 
 ---
 
@@ -356,13 +360,13 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 
 - [ ] Web framework: Axum recommended, or document another choice.
 - [x] Repository layout: virtual Cargo workspace with bounded-context crates (`shared`, `records`, `workflow`, `signatures`, `issuance`, `procurement`, `evidence`, `app`, and the `procuchain` binary).
-- [ ] Persistence: confirm PostgreSQL + SQLx; choose migration and offline-query strategy.
+- [x] Persistence: PostgreSQL + SQLx with embedded migrations and runtime-checked queries.
 - [ ] Local object storage: MinIO/S3-compatible or filesystem abstraction with immutable keys.
 - [ ] Frontend delivery: React SPA against REST/OpenAPI versus an Inertia-compatible Rust adapter.
 - [ ] Authentication for local development and the target government identity provider.
 - [ ] Signature provider and fake-provider contract.
 - [ ] PhilGEPS integration contract, credentials, and manual-fallback evidence format.
-- [ ] MultiChain node, stream names, and anchoring cadence.
+- [x] Integrity anchoring: local audit hash chain, Merkle roots, inclusion proofs, and a receipt-bearing anchor port. Hyperledger Fabric is the selected optional consortium-ledger adapter; deployment, RFC 3161 provider, and posting channel remain `[L]`.
 - [ ] Rule-pack authoring format and schema.
 - [ ] Deadline calendar source, holiday handling, and time authority (`Asia/Manila`).
 - [ ] Deployment target and backup/restore objectives.

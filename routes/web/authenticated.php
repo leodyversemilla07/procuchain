@@ -10,6 +10,7 @@ use App\Http\Controllers\Procurement\ProcurementArchiveController;
 use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware(['auth'])
     ->where(['pr_number' => 'PR-\d{4}-\d{3}(-\d{4})?'])
@@ -72,4 +73,7 @@ Route::middleware(['auth'])
         Route::post('/documents/{fileKey}/verify', [DocumentVerificationController::class, 'verifyDocument'])
             ->where('fileKey', '.*')
             ->name('documents.verify');
+
+        Route::get('/mvp/workbench', fn () => Inertia::render('mvp-workbench'))
+            ->name('mvp.workbench');
     });

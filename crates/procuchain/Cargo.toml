@@ -7,4 +7,20 @@ license.workspace = true
 description = "ProcuChain executable"
 
 [dependencies]
+axum.workspace = true
 procuchain-app.workspace = true
+procuchain-issuance.workspace = true
+procuchain-postgres.workspace = true
+procuchain-procurement.workspace = true
+procuchain-records.workspace = true
+procuchain-shared.workspace = true
+procuchain-signatures.workspace = true
+procuchain-workflow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+time.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+uuid.workspace = true

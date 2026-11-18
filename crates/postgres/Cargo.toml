@@ -1,0 +1,23 @@
+[package]
+name = "procuchain-postgres"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "PostgreSQL persistence adapters for the ProcuChain core"
+
+[dependencies]
+procuchain-evidence.workspace = true
+procuchain-issuance.workspace = true
+procuchain-records.workspace = true
+procuchain-shared.workspace = true
+procuchain-signatures.workspace = true
+procuchain-workflow.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+time.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

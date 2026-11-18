@@ -276,6 +276,38 @@ impl SignatureRequest {
         })
     }
 
+    /// Rehydrate a signature request from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: SignatureRequestId,
+        version_id: DocumentVersionId,
+        content_hash: ContentHash,
+        signer: UserId,
+        signer_role: ActorRole,
+        signer_name: String,
+        purpose: SignaturePurpose,
+        method: SignatureMethod,
+        declaration: String,
+        requested_at: OffsetDateTime,
+        deadline: OffsetDateTime,
+        status: SignatureRequestStatus,
+    ) -> Self {
+        Self {
+            id,
+            version_id,
+            content_hash,
+            signer,
+            signer_role,
+            signer_name,
+            purpose,
+            method,
+            declaration,
+            requested_at,
+            deadline,
+            status,
+        }
+    }
+
     pub fn id(&self) -> SignatureRequestId {
         self.id
     }
@@ -393,6 +425,42 @@ impl Signature {
             validation,
             status,
         })
+    }
+
+    /// Rehydrate a completed signature from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: SignatureId,
+        request_id: SignatureRequestId,
+        version_id: DocumentVersionId,
+        content_hash: ContentHash,
+        signer: UserId,
+        signer_role: ActorRole,
+        signer_name: String,
+        method: SignatureMethod,
+        signed_at: OffsetDateTime,
+        provider_transaction: String,
+        credential_ref: String,
+        signed_artifact_hash: ContentHash,
+        validation: SignatureValidation,
+        status: SignatureStatus,
+    ) -> Self {
+        Self {
+            id,
+            request_id,
+            version_id,
+            content_hash,
+            signer,
+            signer_role,
+            signer_name,
+            method,
+            signed_at,
+            provider_transaction,
+            credential_ref,
+            signed_artifact_hash,
+            validation,
+            status,
+        }
     }
 
     pub fn id(&self) -> SignatureId {

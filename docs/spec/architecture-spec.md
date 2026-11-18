@@ -23,10 +23,10 @@ The target stack is:
 | Frontend | React 19 + TypeScript + Vite, reusing the existing design system where useful. |
 | Rendering | Versioned document-rendering service; deterministic PDF/DOCX output is preferred. |
 | Signatures | Provider adapters for approved PKI/e-signature services. |
-| Integrity anchor | MultiChain adapter, optional and asynchronous. |
+| Integrity anchor | Local Merkle anchor with an RFC 3161 timestamp; optional Hyperledger Fabric consortium-ledger adapter. |
 | Observability | Structured logs, metrics, traces, and immutable audit-event export. |
 
-The architecture MUST NOT require MultiChain availability for core document creation, review, approval, signature, issuance, or retrieval.
+The architecture MUST NOT require any external anchor provider for core document creation, review, approval, signature, issuance, or retrieval.
 
 ### ARC-002 — Explicit API boundary
 
@@ -48,7 +48,7 @@ flowchart LR
     Search[(PostgreSQL FTS or OpenSearch)]
     Sign[Signature / PKI provider]
     PhilGEPS[PhilGEPS]
-    Chain[MultiChain]
+    Anchor[RFC 3161 / optional ledger]
     IdP[Government / enterprise identity provider]
     Notify[Email / SMS / notification gateway]
 
@@ -70,7 +70,7 @@ flowchart LR
     Worker --> Search
     Worker --> Sign
     Worker --> PhilGEPS
-    Worker --> Chain
+    Worker --> Anchor
     Worker --> Notify
 ```
 
@@ -84,7 +84,7 @@ Trust boundaries exist at:
 4. API/worker to object storage;
 5. API/worker to external signature provider;
 6. API/worker to PhilGEPS;
-7. API/worker to MultiChain;
+7. API/worker to the configured anchor provider;
 8. API to identity and notification providers.
 
 Every external call MUST use narrowly scoped credentials, timeouts, retry policy, structured error mapping, and audit correlation.
@@ -126,7 +126,7 @@ api
     ├── identity
     ├── signature
     ├── philgeps
-    ├── multichain
+    ├── anchor
     └── notification
 ```
 
@@ -251,7 +251,7 @@ A command that changes aggregate state MUST update the aggregate, its audit even
 
 ### ARC-034 — Audit storage
 
-Audit events SHOULD use append-only table permissions and hash chaining. The application role MUST NOT update or delete them. High-assurance deployments MAY additionally stream signed/daily Merkle roots to MultiChain.
+Audit events SHOULD use append-only table permissions and hash chaining. The application role MUST NOT update or delete them. High-assurance deployments MAY additionally anchor signed/daily Merkle roots with an RFC 3161 timestamp or an optional consortium ledger.
 
 ### ARC-035 — Search index
 
@@ -451,50 +451,64 @@ Bid intake through PhilGEPS MUST preserve the official receipt and submitted art
 
 Retries MUST use bounded exponential backoff and idempotency. Outages MUST NOT be converted into successful publication states. The system MUST display degraded-channel status and escalate missed legal windows.
 
-## 12. MultiChain anchoring
+## 12. Evidence anchoring
 
-### ARC-100 — Scope
+### ARC-100 — Anchoring ladder
 
-MultiChain MAY anchor:
+PostgreSQL remains the system of record. Anchoring is supplementary corroboration and operates in tiers, each independently useful:
 
-- document-version hashes;
-- evidence-bundle manifests;
-- workflow-event batches or daily Merkle roots;
-- publication receipts;
-- external-chain transaction identifiers.
+1. the append-only audit hash chain, always on;
+2. a periodic Merkle root over a contiguous range of audit events;
+3. an RFC 3161 timestamp over that root;
+4. WORM retention plus public posting of the root and its inclusion proof;
+5. an optional **Hyperledger Fabric** consortium ledger, only when at least three independent institutions operate nodes; the LGU is then a client, not an operator.
 
-### ARC-101 — Non-authoritative boundary
+Tiers 1–2 are implemented locally and MUST NOT depend on any external provider. The selected Tier 5 technology is Hyperledger Fabric, integrated through an adapter that submits only anchor metadata and receives a corroboration receipt. Fabric deployment, membership governance, the Tier 4 publishing channel, and the legal effect of any anchor remain subject to legal and records-management review.
 
-The chain MUST NOT be queried to decide current workflow state, legal deadlines, authorization, or document availability. The local database remains authoritative.
+### ARC-100A — Selected consortium ledger
 
-### ARC-102 — Asynchronous operation
+When a consortium ledger is activated, ProcuChain MUST use **Hyperledger Fabric** rather than a public permissionless chain or an EVM chain. Fabric is selected because its permissioned membership, certificate-backed organizational identities, configurable endorsement policies, private channels/private data, and lack of a native cryptocurrency match the requirements of a multi-institution government evidence network. The application MUST use Fabric only as an asynchronous corroboration adapter; PostgreSQL, the local audit chain, and local Merkle anchors remain authoritative.
 
-Anchoring MUST NOT block document or workflow transactions. A durable outbox job MUST retry with bounded backoff and expose failed anchors for operational recovery.
+The initial Fabric deployment target is a separate evidence channel with at least three independently operated institutional organizations. Documents, personal data, bid data, signatures, and workflow state MUST NOT be written to that channel. The Fabric transaction payload is limited to the anchor schema version, tenant-scoped anchor identifier, covered sequence range, Merkle root, previous anchor hash, and creation timestamp.
 
-### ARC-103 — Idempotency
+Official references:
 
-An anchor job MUST use a deterministic idempotency key. Retries MUST NOT create semantically duplicate anchors for the same subject and batch.
+- [Hyperledger Fabric introduction](https://hyperledger-fabric.readthedocs.io/en/latest/whatis.html)
+- [Hyperledger Fabric peers, channels, and organizational identities](https://hyperledger-fabric.readthedocs.io/en/latest/peers/peers.html)
+- [Hyperledger Besu private networks](https://besu.hyperledger.org/private-networks) — evaluated alternative; its EVM/PoA model is not selected for this evidence-only boundary.
 
-### ARC-104 — Verification
+### ARC-101 — Anchored payload
 
-Users MUST be able to compare a local hash or manifest with an anchor. The verification UI MUST state what the anchor proves and what it does not prove.
+An anchor MUST contain only:
 
-### ARC-105 — Existing streams
+- tenant identifier;
+- covered audit sequence range and event count;
+- Merkle root;
+- previous anchor hash;
+- schema version and creation timestamp;
+- provider receipts, kept beside the anchor.
 
-During migration, the platform SHOULD recognize the legacy streams as historical evidence and MAY continue writing compatible anchors where useful:
+An anchor MUST NOT contain document content, personal data, taxpayer identifiers, bid prices, recipient names, or signature material.
 
-- `procurement.metadata`
-- `procurement.documents`
-- `procurement.status`
-- `procurement.events`
-- `procurement.corrections`
-- `procurement.metadata.corrections`
-- `procurement.archive`
-- `file.data`
-- `file.metadata`
-- `file.chunks`
+### ARC-102 — Non-authoritative boundary
 
-The target domain MUST NOT depend on these stream names.
+The anchor provider MUST NOT be queried to decide current workflow state, legal deadlines, authorization, or document availability. The local database and object store remain authoritative.
+
+### ARC-103 — Asynchronous operation
+
+Anchoring MUST NOT block document or workflow transactions. A durable job MUST retry with bounded backoff and expose failed anchors for operational recovery.
+
+### ARC-104 — Idempotency
+
+An anchor MUST cover exactly the audit sequence range after the previous anchor. Retries MUST NOT create overlapping or duplicate ranges, and an unchanged audit log MUST NOT produce an empty anchor.
+
+### ARC-105 — Verification
+
+Users MUST be able to verify an audit event against a stored anchor through its Merkle inclusion proof, and to recompute stored roots from the audit log. The verification UI MUST state what the anchor proves and what it does not prove.
+
+### ARC-106 — Legacy anchor history
+
+During migration, legacy chain or stream records MUST be imported only as historical corroborating evidence, with network, stream, transaction identifier, key or address, timestamp, and payload hash. The importer MUST verify payload reconstruction and MUST NOT fabricate anchors for records the source lacks. The target domain MUST NOT depend on legacy stream names.
 
 ## 13. Identity and access
 
@@ -701,9 +715,9 @@ The importer MUST create legacy source artifacts, immutable legacy document vers
 
 Legacy statuses MUST be mapped to target states with explicit reason and confidence. Unmappable records MUST enter a review queue rather than being assigned a guessed compliant state.
 
-### ARC-184 — MultiChain history
+### ARC-184 — Legacy chain history
 
-Legacy chain records MUST be imported as corroborating evidence with network, stream, transaction, key/address, timestamp, and payload hash. The importer MUST verify payload reconstruction and identify missing or inconsistent records.
+Legacy chain records MUST be imported as corroborating evidence with network, stream, transaction, key or address, timestamp, and payload hash. The importer MUST verify payload reconstruction and identify missing or inconsistent records.
 
 ### ARC-185 — Parallel run
 
@@ -841,7 +855,7 @@ Tests MUST assert that material actions create immutable audit events and that t
 
 The architecture satisfies this specification when it can demonstrate:
 
-1. core procurement work succeeds independently of MultiChain;
+1. core procurement work succeeds independently of any external anchor provider;
 2. a workflow command commits state, audit, and outbox atomically;
 3. a failed PhilGEPS call never becomes a successful publication;
 4. a signature cannot be attached to a changed artifact;

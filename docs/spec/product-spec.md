@@ -65,7 +65,8 @@ The first release will not:
 - give administrators a control to bypass statutory requirements;
 - provide legal advice or decide ambiguous legal questions automatically;
 - replace signatures required to remain wet under an applicable instrument or local policy;
-- use MultiChain as a relational database or full-text search engine;
+- use an anchor provider as a relational database or full-text search engine;
+- treat anchoring as proof of workflow truth or legal validity;
 - reproduce every legacy Laravel route merely for parity;
 - treat an external bidder document as an internally authored official document.
 
@@ -200,7 +201,7 @@ The first release will not:
 ## 9. Boundaries and relationships
 
 - **PhilGEPS:** mandatory external procurement portal and publication/electronic-bidding channel. ProcuChain manages preparation, traceability, and reconciliation around it.
-- **MultiChain:** optional but target-supported integrity anchor for document hashes, workflow evidence, and periodic roots. It is not authoritative for workflow state or document bytes.
+- **Evidence anchor:** supplementary integrity corroboration for audit roots, normally an RFC 3161 timestamp over a Merkle root, with WORM retention and public posting. A consortium ledger is an optional adapter only when independent institutions operate nodes. No anchor is authoritative for workflow state, document bytes, or personal data.
 - **Government identity/PKI:** supplies identity assertions, certificates, and signature evidence where adopted.
 - **Supplier systems:** bidder data remains authoritative in its source system; ProcuChain records received copies and their evidence.
 

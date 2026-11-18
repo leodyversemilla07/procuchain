@@ -1,9 +1,19 @@
+//! Hash-chained audit evidence and Merkle-batched anchoring.
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use procuchain_shared::{ContentHash, UserId};
+
+pub mod anchor;
+
+pub use anchor::{
+    ANCHOR_SCHEMA_VERSION, AnchorBatch, AnchorPublication, AnchorPublicationError, AnchorPublisher,
+    AnchorReceipt, AnchorRecord, EvidenceAnchor, MerkleProofStep, MerkleSide, merkle_proof,
+    merkle_root, verify_merkle_proof,
+};
 
 /// Append-only evidence record.
 ///
@@ -47,7 +57,12 @@ impl AuditEvent {
         canonical.push('\n');
         canonical.push_str(subject_id);
         canonical.push('\n');
-        canonical.push_str(&occurred_at.unix_timestamp_nanos().to_string());
+        canonical.push_str(
+            &occurred_at
+                .unix_timestamp_nanos()
+                .div_euclid(1_000)
+                .to_string(),
+        );
         canonical.push('\n');
         for (key, value) in details {
             canonical.push_str(key);
@@ -68,6 +83,16 @@ pub struct AuditLog {
 impl AuditLog {
     pub fn new() -> Self {
         Self { events: Vec::new() }
+    }
+
+    /// Rehydrate a verified audit chain from durable storage.
+    pub fn restore(events: Vec<AuditEvent>) -> Result<Self, procuchain_shared::DomainError> {
+        if !Self::verify_events(&events) {
+            return Err(procuchain_shared::DomainError::rule(
+                "persisted audit chain failed verification",
+            ));
+        }
+        Ok(Self { events })
     }
 
     pub fn append(

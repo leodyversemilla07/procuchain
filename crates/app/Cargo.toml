@@ -9,11 +9,9 @@ description = "Application service for the governed procurement lifecycle"
 [dependencies]
 procuchain-evidence.workspace = true
 procuchain-issuance.workspace = true
+procuchain-procurement.workspace = true
 procuchain-records.workspace = true
 procuchain-shared.workspace = true
 procuchain-signatures.workspace = true
 procuchain-workflow.workspace = true
 time.workspace = true
-
-[dev-dependencies]
-procuchain-procurement.workspace = true

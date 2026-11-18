@@ -9,4 +9,8 @@ description = "Hash-chained audit evidence"
 [dependencies]
 procuchain-shared.workspace = true
 serde.workspace = true
+thiserror.workspace = true
 time.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

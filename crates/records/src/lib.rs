@@ -306,6 +306,27 @@ impl Document {
         })
     }
 
+    /// Rehydrate a document from durable storage.
+    pub fn restore(
+        id: DocumentId,
+        tenant_id: TenantId,
+        document_type: DocumentType,
+        title: String,
+        business_id: Option<String>,
+        version_ids: Vec<DocumentVersionId>,
+        current_version_id: Option<DocumentVersionId>,
+    ) -> Self {
+        Self {
+            id,
+            tenant_id,
+            document_type,
+            title,
+            business_id,
+            version_ids,
+            current_version_id,
+        }
+    }
+
     pub fn id(&self) -> DocumentId {
         self.id
     }
@@ -399,6 +420,46 @@ impl DocumentVersion {
             correction_of,
             supersedes,
         }
+    }
+
+    /// Rehydrate an immutable version from durable storage.
+    ///
+    /// The recomputed canonical hash must match the stored hash. A mismatch
+    /// means the stored content was altered and is rejected on read.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: DocumentVersionId,
+        document_id: DocumentId,
+        version_number: u32,
+        status: VersionStatus,
+        content: CanonicalContent,
+        content_hash: ContentHash,
+        template: TemplateRef,
+        schema: SchemaRef,
+        author: UserId,
+        authored_at: OffsetDateTime,
+        rule_pack: RulePackRef,
+        correction_of: Option<DocumentVersionId>,
+        supersedes: Option<DocumentVersionId>,
+    ) -> Result<Self, DomainError> {
+        if content.hash() != content_hash {
+            return Err(DomainError::ContentHashMismatch);
+        }
+        Ok(Self {
+            id,
+            document_id,
+            version_number,
+            status,
+            content,
+            content_hash,
+            template,
+            schema,
+            author,
+            authored_at,
+            rule_pack,
+            correction_of,
+            supersedes,
+        })
     }
 
     pub fn id(&self) -> DocumentVersionId {

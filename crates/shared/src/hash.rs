@@ -25,6 +25,11 @@ impl ContentHash {
         Self::sha256(b"procuchain:audit:genesis:v1")
     }
 
+    /// Stable starting value for the append-only anchor chain.
+    pub fn anchor_genesis() -> Self {
+        Self::sha256(b"procuchain:anchor:genesis:v1")
+    }
+
     pub fn from_hex(value: impl Into<String>) -> Result<Self, DomainError> {
         let value = value.into();
         if value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit()) {

@@ -416,7 +416,7 @@ An accepted external submission MAY be referenced by an internal document but MU
 
 ### DOM-093 — Integrity anchor
 
-`IntegrityAnchor` references a subject, hash or Merkle root, anchor transaction, network, chain/stream, anchored time, and receipt. It is optional and supplementary.
+`IntegrityAnchor` references a tenant, a contiguous audit sequence range, a Merkle root, the previous anchor hash, schema version, anchored time, and any provider receipt. It is optional and supplementary.
 
 ## 12. Records-management entities
 
@@ -620,7 +620,7 @@ An evidence manifest MUST include each item's identifier, logical role, hash, by
 | Bid submission received through PhilGEPS | PhilGEPS | ProcuChain retains receipt and copies. |
 | Published opportunity/result | PhilGEPS | ProcuChain tracks evidence and reconciliation. |
 | Contract obligations | ProcuChain | May integrate with finance/performance systems. |
-| Blockchain anchor | MultiChain | Supplementary integrity evidence only. |
+| Blockchain anchor | Evidence anchor | Supplementary integrity evidence only; never authoritative, and never contains document content or personal data. |
 | Search index | Derived store | Rebuildable from PostgreSQL and object metadata. |
 
 ## 18. Model acceptance summary
@@ -634,5 +634,5 @@ The domain model is satisfied when the platform can prove:
 5. legal sources, requirements, rules, controls, and outcomes are traceable;
 6. an external submission is not confused with an internal original;
 7. legal hold prevents disposition;
-8. blockchain anchors remain supplementary;
+8. evidence anchors remain supplementary;
 9. the same historical instance reproduces the same evidence and deadline computation.

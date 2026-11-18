@@ -109,7 +109,7 @@ Performance security valid to final acceptance; variations capped (goods ≤10%,
 * `award_trackers` (resolution_at, loser_notice_at, hope_decision_at, noa_at, compliance_due_at, sla_deadline, tolling_events JSON) ; `contract_securities` (type, amount, validity, status) ; `ld_ledger`, `retention_ledger`, `variation_orders`.
 * `protests` (stage MR/HoPE, filed_at, deadlines, fee_escrow, tolling flag, decision, corrective_action) ; `sanction_cases` (track, SLA timestamps, scope, related entities JSON, registry sync) ; `annual_procurement_reports` (FY, payload JSON, submitted_at).
 * Catalogs: `bac_terms`, `supplier_registry_cache`, `gppb_form_versions`, `sector_certifiers`, `tatak_sectors`, `svp_caps`, `rule_versions` (+ `procurements.applicable_irr_version`).
-* Ledger: every phase transition publishes to existing streams (`procurement.status/events`) with actor + timestamp + inputs hash; OTS-anchored daily roots per trust plan.
+* Ledger: every phase transition is committed with actor, timestamp, and inputs hash in the append-only audit chain; daily Merkle roots are timestamped with an RFC 3161 authority under the trust plan. `[L]`
 
 ## Build order (municipal-first)
 

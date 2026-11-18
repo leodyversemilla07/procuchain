@@ -51,6 +51,7 @@ define_id!(SignatureId);
 define_id!(IssuanceId);
 define_id!(DistributionId);
 define_id!(AcknowledgementId);
+define_id!(AnchorId);
 define_id!(ArtifactId);
 define_id!(RecipientId);
 define_id!(RulePackSnapshotId);

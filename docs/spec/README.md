@@ -110,7 +110,8 @@ The following are fixed product decisions unless this specification is formally 
 - Approval, signature, issuance, distribution, and acknowledgement are separate recorded actions.
 - Approved or signed content is immutable; a correction creates a new version.
 - ProcuChain complements mandatory PhilGEPS use; it does not replace it.
-- MultiChain provides integrity anchoring and corroborating evidence; it is not the document database, workflow database, or search index.
+- Integrity anchoring is supplementary evidence: an audit hash chain, periodic Merkle roots, an RFC 3161 timestamp, WORM retention, and public posting. A consortium ledger is an optional adapter and never the system of record.
+- If a consortium ledger is activated, the selected technology is Hyperledger Fabric, operated by at least three independent institutions. Fabric receives anchor metadata only and never becomes the system of record.
 - The first complete vertical slice is `PPMP → Indicative APP → BAC recommendation/resolution → HoPE approval → signed final APP → issued and acknowledged`.
 
 ## Specification status terminology

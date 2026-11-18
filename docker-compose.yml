@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: procuchain
+      POSTGRES_USER: procuchain
+      POSTGRES_PASSWORD: procuchain_local_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - procuchain-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procuchain -d procuchain"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  procuchain-postgres:

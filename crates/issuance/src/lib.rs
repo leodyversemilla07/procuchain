@@ -291,6 +291,30 @@ impl Distribution {
         }
     }
 
+    /// Rehydrate a distribution and its delivery history from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: DistributionId,
+        issuance_id: IssuanceId,
+        version_id: DocumentVersionId,
+        recipient: Recipient,
+        channel: DistributionChannel,
+        acknowledgement_required: bool,
+        status: DistributionStatus,
+        attempts: Vec<DeliveryAttempt>,
+    ) -> Self {
+        Self {
+            id,
+            issuance_id,
+            version_id,
+            recipient,
+            channel,
+            acknowledgement_required,
+            status,
+            attempts,
+        }
+    }
+
     pub fn id(&self) -> DistributionId {
         self.id
     }
@@ -428,6 +452,36 @@ impl Issuance {
             manifest_hash,
             status: IssuanceStatus::Active,
         })
+    }
+
+    /// Rehydrate an issuance from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: IssuanceId,
+        version_id: DocumentVersionId,
+        version_hash: ContentHash,
+        issuer: Actor,
+        authority_ref: String,
+        issued_at: OffsetDateTime,
+        artifacts: Vec<IssuanceArtifact>,
+        recipients: Vec<IssuanceRecipient>,
+        distribution_ids: Vec<DistributionId>,
+        manifest_hash: ContentHash,
+        status: IssuanceStatus,
+    ) -> Self {
+        Self {
+            id,
+            version_id,
+            version_hash,
+            issuer,
+            authority_ref,
+            issued_at,
+            artifacts,
+            recipients,
+            distribution_ids,
+            manifest_hash,
+            status,
+        }
     }
 
     fn compute_manifest_hash(
@@ -618,6 +672,34 @@ impl Acknowledgement {
             declaration,
             status: AcknowledgementStatus::Active,
         })
+    }
+
+    /// Rehydrate an acknowledgement from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: AcknowledgementId,
+        distribution_id: DistributionId,
+        issuance_id: IssuanceId,
+        version_id: DocumentVersionId,
+        artifact_hash: ContentHash,
+        acknowledged_by: RecipientId,
+        acknowledged_at: OffsetDateTime,
+        method: AcknowledgementMethod,
+        declaration: Option<String>,
+        status: AcknowledgementStatus,
+    ) -> Self {
+        Self {
+            id,
+            distribution_id,
+            issuance_id,
+            version_id,
+            artifact_hash,
+            acknowledged_by,
+            acknowledged_at,
+            method,
+            declaration,
+            status,
+        }
     }
 
     pub fn id(&self) -> AcknowledgementId {

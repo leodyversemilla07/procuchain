@@ -948,18 +948,19 @@ using the applicable official template versions, with every state change, decisi
 
 **Verification:** controlled tamper test.
 
-### AC-133 — MultiChain is supplementary
+### AC-133 — Anchoring is supplementary
 
-**Must:** with MultiChain unavailable, all core platform functions continue; with an anchor present, verification explains that it corroborates a hash/root and does not establish workflow truth.
+**Must:** with every external anchor provider unavailable, all core platform functions continue; a stored anchor verifies through its Merkle inclusion proof, and verification explains that it corroborates a hash/root and does not establish workflow truth.
 
-**Source:** ARC-100–ARC-105.
-**Verification:** outage and verification tests.
+**Source:** ARC-100–ARC-106.
+**Verification:** outage, proof, and verification tests.
 
-### AC-134 — Anchor retry does not duplicate meaning
+### AC-134 — Anchor ranges are contiguous and non-duplicated
 
-**Must:** retrying an anchor job does not create semantically duplicate anchors for the same deterministic subject and batch.
+**Must:** each anchor covers exactly the audit sequence range after the previous anchor; retries or concurrent jobs do not create overlapping, duplicate, or empty anchors.
 
-**Verification:** retry/fault-injection test.
+**Source:** ARC-103–ARC-104.
+**Verification:** concurrency and retry/fault-injection test.
 
 ## 13. Records management and search
 
@@ -1094,7 +1095,7 @@ using the applicable official template versions, with every state change, decisi
 
 ### AC-172 — Legacy chain reconciliation
 
-**Must:** imported MultiChain references identify network, stream, transaction, key/address, timestamp, and payload hash; missing or inconsistent payloads are reported.
+**Must:** imported legacy chain references identify network, stream, transaction, key or address, timestamp, and payload hash; missing or inconsistent payloads are reported.
 
 **Source:** ARC-184.
 **Verification:** chain reconciliation test.

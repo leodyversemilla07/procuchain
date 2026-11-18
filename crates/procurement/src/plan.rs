@@ -120,6 +120,34 @@ pub struct AppContent {
 }
 
 impl AppContent {
+    /// Derive an indicative APP from a validated PPMP version.
+    pub fn from_ppmp(
+        ppmp: &PpmpContent,
+        ppmp_version_id: DocumentVersionId,
+    ) -> Result<Self, DomainError> {
+        ppmp.validate()?;
+        let content = Self {
+            fiscal_year: ppmp.fiscal_year,
+            edition: AppEdition::Indicative,
+            lines: ppmp
+                .lines
+                .iter()
+                .map(|line| AppLine {
+                    line_id: line.line_id.clone(),
+                    source_ppmp_version_id: ppmp_version_id,
+                    source_ppmp_line_id: line.line_id.clone(),
+                    description: line.description.clone(),
+                    abc: line.estimated_cost,
+                    schedule: line.schedule.clone(),
+                    mode: line.mode_consideration.clone(),
+                })
+                .collect(),
+            basis_version_id: None,
+        };
+        content.validate()?;
+        Ok(content)
+    }
+
     pub fn validate(&self) -> Result<(), DomainError> {
         if !(2000..=2100).contains(&self.fiscal_year) {
             return Err(DomainError::rule(
@@ -211,5 +239,40 @@ fn struct_to_canonical<T: Serialize>(
         _ => Err(DomainError::rule(format!(
             "{label} content must serialize to a JSON object"
         ))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn indicative_app_lines_preserve_ppmp_lineage() {
+        let ppmp_version_id = DocumentVersionId::new();
+        let ppmp = PpmpContent {
+            fiscal_year: 2026,
+            end_user_unit: "General Services".to_owned(),
+            project_title: "Office supplies".to_owned(),
+            scope: "Common office supplies".to_owned(),
+            market_scoping_ref: "MS-2026-001".to_owned(),
+            abc_basis: "Recent canvass".to_owned(),
+            schedule: "Q1 2026".to_owned(),
+            risks: Vec::new(),
+            lines: vec![PpmpLine {
+                line_id: "1".to_owned(),
+                description: "Bond paper".to_owned(),
+                quantity: 10,
+                unit: "ream".to_owned(),
+                estimated_cost: Amount::php_pesos(250).expect("amount is valid"),
+                schedule: "January 2026".to_owned(),
+                mode_consideration: "Small Value Procurement".to_owned(),
+            }],
+        };
+
+        let app = AppContent::from_ppmp(&ppmp, ppmp_version_id).expect("APP derives");
+        assert_eq!(app.edition, AppEdition::Indicative);
+        assert_eq!(app.lines[0].source_ppmp_version_id, ppmp_version_id);
+        assert_eq!(app.lines[0].source_ppmp_line_id, "1");
+        assert!(app.to_canonical().is_ok());
     }
 }

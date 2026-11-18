@@ -4,6 +4,7 @@ members = [
     "crates/app",
     "crates/evidence",
     "crates/issuance",
+    "crates/postgres",
     "crates/procurement",
     "crates/procuchain",
     "crates/records",
@@ -19,15 +20,21 @@ rust-version = "1.85"
 license = "AGPL-3.0-or-later"
 
 [workspace.dependencies]
+axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls-ring", "postgres", "uuid", "time", "json", "migrate", "macros"] }
 thiserror = "2"
 time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
 uuid = { version = "1", features = ["v7", "serde"] }
 procuchain-app = { path = "crates/app" }
 procuchain-evidence = { path = "crates/evidence" }
 procuchain-issuance = { path = "crates/issuance" }
+procuchain-postgres = { path = "crates/postgres" }
 procuchain-procurement = { path = "crates/procurement" }
 procuchain-records = { path = "crates/records" }
 procuchain-shared = { path = "crates/shared" }

@@ -334,6 +334,36 @@ impl BacResolution {
         })
     }
 
+    /// Rehydrate a recorded BAC resolution from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: BacResolutionId,
+        version_id: DocumentVersionId,
+        version_hash: ContentHash,
+        resolution_number: String,
+        membership: BacMembershipSnapshot,
+        attendance: BTreeSet<UserId>,
+        votes: BacVotes,
+        outcome: BacOutcome,
+        quorum_required: usize,
+        resolved_at: OffsetDateTime,
+        status: BacResolutionStatus,
+    ) -> Self {
+        Self {
+            id,
+            version_id,
+            version_hash,
+            resolution_number,
+            membership,
+            attendance,
+            votes,
+            outcome,
+            quorum_required,
+            resolved_at,
+            status,
+        }
+    }
+
     pub fn id(&self) -> BacResolutionId {
         self.id
     }

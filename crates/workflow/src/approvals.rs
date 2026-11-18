@@ -85,6 +85,36 @@ impl Approval {
         }
     }
 
+    /// Rehydrate a recorded approval from durable storage.
+    #[allow(clippy::too_many_arguments)]
+    pub fn restore(
+        id: ApprovalId,
+        version_id: DocumentVersionId,
+        content_hash: ContentHash,
+        approver: UserId,
+        approver_role: ActorRole,
+        approver_name: String,
+        decision: ApprovalDecision,
+        decided_at: OffsetDateTime,
+        authority_ref: String,
+        grounds: Option<String>,
+        status: ApprovalStatus,
+    ) -> Self {
+        Self {
+            id,
+            version_id,
+            content_hash,
+            approver,
+            approver_role,
+            approver_name,
+            decision,
+            decided_at,
+            authority_ref,
+            grounds,
+            status,
+        }
+    }
+
     pub fn id(&self) -> ApprovalId {
         self.id
     }

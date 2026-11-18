@@ -725,7 +725,7 @@ The system MUST support applicable procurement monitoring, contract implementati
 
 ### LIFE-153 — Integrity anchoring
 
-The system MAY anchor document hashes, workflow evidence, or periodic roots to MultiChain. The anchor MUST be supplementary and MUST NOT be presented as the canonical record or proof of workflow state.
+The system MAY anchor audit roots, document-version hashes, and evidence manifests to an RFC 3161 timestamp authority, WORM storage, or a public posting channel. Any anchor MUST be supplementary and MUST NOT be presented as the canonical record or proof of workflow state. `[L]` Timestamp provider and publishing channel need legal and records-management approval.
 
 ## 19. Build order
 
