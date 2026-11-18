@@ -1,5 +1,11 @@
 # Rule XVI - Protest Mechanism
 
+> **Status:** Superseded secondary summary — do not implement from this file.
+>
+> **Canonical specification:** [Procurement Lifecycle Specification](../spec/procurement-lifecycle-spec.md)
+>
+> This summary does not match the official IRR §83–§87. In particular, it assigns the fee and reconsideration procedure to the wrong sections, uses the former generic protest-fee formula, states that reconsideration stays the procurement process, and describes an HoPE suspension exception not found in the official provision. The official IRR requires reconsideration to the BAC within three calendar days, a BAC decision within seven, a verified position paper and electronic non-refundable fee for a protest to the HoPE, a HoPE decision within seven, and no stay except that the protest must be resolved before award (IRR §§83–86). Use the [Compliance Specification](../spec/compliance-spec.md) and controlled legal sources.
+
 ## Sections 83-87
 
 This rule establishes the protest mechanism for addressing complaints and disputes in procurement proceedings.

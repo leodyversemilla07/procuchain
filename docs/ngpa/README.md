@@ -1,5 +1,15 @@
 # New Government Procurement Act (NGPA)
 
+> **Status:** Secondary research summaries — not an authoritative legal source.
+>
+> **Canonical specification:** [ProcuChain Specification Index](../spec/README.md)
+>
+> **Official baseline:** IRR of RA 12009 approved through GPPB Resolution No. 02-2025. GPPB Public Advisory No. 09-2026 withdrew the unofficial GPPB-TSO compilation and directed stakeholders to use and cite only the officially approved IRR.
+>
+> These summaries remain useful for orientation and migration research. Their section numbering, paraphrases, thresholds, timelines, and legal conclusions MUST be verified against the controlled legal register in the [Compliance Specification](../spec/compliance-spec.md) before implementation. In particular, do not use the earlier local summaries of protest fees or sanction periods without checking the official IRR.
+>
+> Coverage gap: these summaries stop at Section 17. The official IRR continues with Section 18 (Renewal of Regular and Recurring Services), Section 19 (Warehousing and Inventory System), and Section 110 (Oversight Committee), which are not summarized here. Treat those provisions as unresearched locally and verify them against the official IRR before use.
+
 ## Republic Act No. 12009 - Implementing Rules and Regulations
 
 This directory contains the structured breakdown of the Implementing Rules and Regulations (IRR) of Republic Act No. 12009, also known as the **New Government Procurement Act**.
@@ -10,7 +20,7 @@ The IRR is organized into 23 Rules (Rules I - XXIII), each covering specific asp
 
 ### General Provisions & Planning
 - [Rule I - General Provisions](./rule-01-general-provisions.md) - Sections 1-6
-- [Rule II - Strategic Procurement Planning](./rule-02-strategic-procurement-planning.md) - Sections 7-19
+- [Rule II - Strategic Procurement Planning](./rule-02-strategic-procurement-planning.md) - Sections 7-17
 
 ### Electronic Procurement
 - [Rule III - Procurement by Electronic Means](./rule-03-procurement-by-electronic-means.md) - Sections 20-25

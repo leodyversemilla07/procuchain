@@ -1,5 +1,11 @@
 # Rule XXI - Suspension and Blacklisting
 
+> **Status:** Superseded secondary summary — do not implement from this file.
+>
+> **Canonical specification:** [Procurement Lifecycle Specification](../spec/procurement-lifecycle-spec.md)
+>
+> This summary does not match the official IRR §98–§105. In particular, it assigns the grounds and procedure to the wrong sections, uses a 90-day suspension period, and describes mandatory/discretionary penalty periods that differ from the official rules. The official IRR provides one-year first-offense and two-year second-offense suspension; one-year first-offense and two-year second-offense blacklisting; and perpetual disqualification under §101, with the notice/hearing, HoPE-decision, reconsideration, and GPPB-portal-posting procedure in §104. Use the [Compliance Specification](../spec/compliance-spec.md) and controlled legal sources.
+
 ## Sections 98-105
 
 This rule covers the suspension and blacklisting of bidders and contractors for procurement violations.

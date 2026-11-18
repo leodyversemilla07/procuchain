@@ -36,6 +36,9 @@ yarn-error.log
 # Binary document files
 *.docx
 
+# Specification working artifacts
+/.tmp-spec
+
 # Test results
 /test-results/
 

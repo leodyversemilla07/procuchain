@@ -1,8 +1,14 @@
 # Rule XXIII - Final Provisions
 
+> **Status:** Superseded secondary summary — do not implement from this file.
+>
+> **Canonical specification:** [Procurement Lifecycle Specification](../spec/procurement-lifecycle-spec.md)
+>
+> This summary does not match the official IRR §108–§117. It assigns the appropriations, capacity-building, oversight, mandatory-review, IRR-amendment, standard-forms, transitory, reportorial, repealing, separability, and effectivity provisions to the wrong sections, states a one-year transition, and omits the three-year standard-form transition in official IRR §113.3. The official provisions are: §108 Appropriations; §109 Whole-of-Government Approach; §110 Oversight Committee; §111 Mandatory Review; §112 IRR and Standard Forms; §113 Transitory Provisions; §114 Reportorial Requirements; §115 Repealing Clause; §116 Separability; and §117 Effectivity. Use the [Compliance Specification](../spec/compliance-spec.md) and controlled legal sources.
+
 ## Sections 108-117
 
-This rule contains the final provisions of the NGPA IRR including effectivity, repealing clause, and transitory provisions.
+This rule contains the final provisions of the NGPA IRR including appropriations, capacity building, oversight, mandatory review, IRR and standard forms, transitory provisions, reportorial requirements, repealing, separability, and effectivity.
 
 ---
 
