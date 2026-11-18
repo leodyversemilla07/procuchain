@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::shared::ids::UserId;
+use crate::ids::UserId;
 
 /// The actor role at the moment a governed action is performed.
 ///

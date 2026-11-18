@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::shared::{ContentHash, UserId};
+use procuchain_shared::{ContentHash, UserId};
 
 /// Append-only evidence record.
 ///

@@ -1,0 +1,12 @@
+[package]
+name = "procuchain-workflow"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Approval records and BAC composition, quorum, and decisions"
+
+[dependencies]
+procuchain-shared.workspace = true
+serde.workspace = true
+time.workspace = true

@@ -1,16 +1,22 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use procuchain::domain::procurement::{AppContent, AppEdition, AppLine, PpmpContent, PpmpLine};
-use procuchain::domain::{
-    AcknowledgementMethod, BacMemberSnapshot, BacMembershipSnapshot, BacOutcome, BacSeat, BacVote,
-    DeliveryResult, DistributionChannel, DistributionStatus, DocumentType, IssuanceArtifact,
-    IssuanceRecipient, Recipient, RecipientKind, RulePackRef, SignatureMethod, SignaturePolicy,
-    SignaturePurpose, SignatureValidation, VersionStatus,
+use procuchain_app::Platform;
+use procuchain_evidence::AuditLog;
+use procuchain_issuance::{
+    AcknowledgementMethod, DeliveryResult, DistributionChannel, DistributionStatus,
+    IssuanceArtifact, IssuanceRecipient, IssuanceStatus, Recipient, RecipientKind,
 };
-use procuchain::platform::Platform;
-use procuchain::shared::{
+use procuchain_procurement::{AppContent, AppEdition, AppLine, PpmpContent, PpmpLine};
+use procuchain_records::{DocumentType, RulePackRef, VersionStatus};
+use procuchain_shared::{
     Actor, ActorRole, Amount, ArtifactId, CommitteeId, ContentHash, DocumentVersionId, DomainError,
     RecipientId, RulePackSnapshotId, TenantId, UserId,
+};
+use procuchain_signatures::{
+    SignatureMethod, SignaturePolicy, SignaturePurpose, SignatureStatus, SignatureValidation,
+};
+use procuchain_workflow::{
+    ApprovalStatus, BacMemberSnapshot, BacMembershipSnapshot, BacOutcome, BacSeat, BacVote,
 };
 use time::{Duration, OffsetDateTime};
 
@@ -103,8 +109,8 @@ impl Fixture {
         })
     }
 
-    fn template(name: &str) -> procuchain::domain::TemplateRef {
-        procuchain::domain::TemplateRef::new(
+    fn template(name: &str) -> procuchain_records::TemplateRef {
+        procuchain_records::TemplateRef::new(
             format!("{name}-template"),
             "2026.1",
             "PE-controlled GPPB form register",
@@ -112,8 +118,8 @@ impl Fixture {
         .expect("test template is valid")
     }
 
-    fn schema(name: &str) -> procuchain::domain::SchemaRef {
-        procuchain::domain::SchemaRef::new(format!("{name}-schema"), "1.0")
+    fn schema(name: &str) -> procuchain_records::SchemaRef {
+        procuchain_records::SchemaRef::new(format!("{name}-schema"), "1.0")
             .expect("test schema is valid")
     }
 
@@ -593,7 +599,7 @@ fn life_160_first_vertical_slice_is_auditable_and_separates_actions() -> Result<
         .details
         .insert("tampered".to_owned(), "true".to_owned());
     assert!(
-        !procuchain::domain::AuditLog::verify_events(&tampered),
+        !AuditLog::verify_events(&tampered),
         "audit verification must detect a changed event"
     );
 
@@ -1095,15 +1101,14 @@ fn correction_preserves_and_invalidates_prior_evidence() -> Result<(), DomainErr
             .platform
             .approvals_for_version(app_version)
             .iter()
-            .all(|approval| approval.status() == procuchain::domain::ApprovalStatus::Superseded)
+            .all(|approval| approval.status() == ApprovalStatus::Superseded)
     );
     assert!(
         fixture
             .platform
             .signatures_for_version(app_version)
             .iter()
-            .all(|signature| signature.status()
-                == procuchain::domain::SignatureStatus::Invalidated)
+            .all(|signature| signature.status() == SignatureStatus::Invalidated)
     );
     assert!(
         fixture
@@ -1111,7 +1116,7 @@ fn correction_preserves_and_invalidates_prior_evidence() -> Result<(), DomainErr
             .issuance(issuance_id)
             .expect("issuance exists")
             .status()
-            == procuchain::domain::IssuanceStatus::Superseded
+            == IssuanceStatus::Superseded
     );
     assert_eq!(
         fixture

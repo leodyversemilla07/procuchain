@@ -3,8 +3,8 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::domain::document::CanonicalContent;
-use crate::shared::{Amount, DocumentVersionId, DomainError};
+use procuchain_records::CanonicalContent;
+use procuchain_shared::{Amount, DocumentVersionId, DomainError};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AppEdition {

@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::domain::document::DocumentType;
-use crate::shared::error::DomainError;
-use crate::shared::{
+use procuchain_records::DocumentType;
+use procuchain_shared::error::DomainError;
+use procuchain_shared::{
     Actor, ActorRole, ContentHash, DocumentVersionId, SignatureId, SignatureRequestId, UserId,
 };
 
@@ -239,7 +239,7 @@ pub struct SignatureRequest {
 
 impl SignatureRequest {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: SignatureRequestId,
         version_id: DocumentVersionId,
         content_hash: ContentHash,
@@ -328,7 +328,7 @@ impl SignatureRequest {
         self.status == SignatureRequestStatus::Requested
     }
 
-    pub(crate) fn set_status(&mut self, status: SignatureRequestStatus) {
+    pub fn set_status(&mut self, status: SignatureRequestStatus) {
         self.status = status;
     }
 }
@@ -353,7 +353,7 @@ pub struct Signature {
 
 impl Signature {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: SignatureId,
         request: &SignatureRequest,
         signed_at: OffsetDateTime,
@@ -455,7 +455,7 @@ impl Signature {
         self.status == SignatureStatus::Valid && self.validation.is_valid()
     }
 
-    pub(crate) fn invalidate(&mut self) {
+    pub fn invalidate(&mut self) {
         self.status = SignatureStatus::Invalidated;
     }
 }

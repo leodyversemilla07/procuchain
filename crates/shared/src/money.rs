@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::shared::error::DomainError;
+use crate::error::DomainError;
 
 /// Exact monetary amount. Values are stored in minor units; floating point is
 /// never used for procurement amounts.

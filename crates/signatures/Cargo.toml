@@ -1,0 +1,13 @@
+[package]
+name = "procuchain-signatures"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Signature policy, requests, and signature evidence"
+
+[dependencies]
+procuchain-records.workspace = true
+procuchain-shared.workspace = true
+serde.workspace = true
+time.workspace = true

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::shared::{
+use procuchain_shared::{
     Actor, ActorRole, BacResolutionId, CommitteeId, ContentHash, DocumentVersionId, DomainError,
     UserId,
 };
@@ -191,7 +191,7 @@ pub struct BacResolution {
 
 impl BacResolution {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn record(
+    pub fn record(
         id: BacResolutionId,
         version_id: DocumentVersionId,
         version_hash: ContentHash,
@@ -390,7 +390,7 @@ impl BacResolution {
         self.version_id == version_id && &self.version_hash == version_hash
     }
 
-    pub(crate) fn supersede(&mut self) {
+    pub fn supersede(&mut self) {
         self.status = BacResolutionStatus::Superseded;
     }
 }

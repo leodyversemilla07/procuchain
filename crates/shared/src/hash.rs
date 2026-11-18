@@ -3,7 +3,7 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::shared::error::DomainError;
+use crate::error::DomainError;
 
 /// SHA-256 hash of canonical bytes.
 ///

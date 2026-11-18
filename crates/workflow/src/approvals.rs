@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::shared::{Actor, ActorRole, ApprovalId, ContentHash, DocumentVersionId, UserId};
+use procuchain_shared::{Actor, ActorRole, ApprovalId, ContentHash, DocumentVersionId, UserId};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ApprovalDecision {
@@ -60,7 +60,7 @@ pub struct Approval {
 
 impl Approval {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: ApprovalId,
         version_id: DocumentVersionId,
         content_hash: ContentHash,
@@ -137,7 +137,7 @@ impl Approval {
         self.version_id == version_id && &self.content_hash == content_hash
     }
 
-    pub(crate) fn supersede(&mut self) {
+    pub fn supersede(&mut self) {
         self.status = ApprovalStatus::Superseded;
     }
 }

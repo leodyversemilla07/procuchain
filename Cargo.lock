@@ -167,12 +167,88 @@ dependencies = [
 name = "procuchain"
 version = "0.1.0"
 dependencies = [
+ "procuchain-app",
+]
+
+[[package]]
+name = "procuchain-app"
+version = "0.1.0"
+dependencies = [
+ "procuchain-evidence",
+ "procuchain-issuance",
+ "procuchain-procurement",
+ "procuchain-records",
+ "procuchain-shared",
+ "procuchain-signatures",
+ "procuchain-workflow",
+ "time",
+]
+
+[[package]]
+name = "procuchain-evidence"
+version = "0.1.0"
+dependencies = [
+ "procuchain-shared",
+ "serde",
+ "time",
+]
+
+[[package]]
+name = "procuchain-issuance"
+version = "0.1.0"
+dependencies = [
+ "procuchain-shared",
+ "serde",
+ "time",
+]
+
+[[package]]
+name = "procuchain-procurement"
+version = "0.1.0"
+dependencies = [
+ "procuchain-records",
+ "procuchain-shared",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "procuchain-records"
+version = "0.1.0"
+dependencies = [
+ "procuchain-shared",
+ "serde",
+ "serde_json",
+ "time",
+]
+
+[[package]]
+name = "procuchain-shared"
+version = "0.1.0"
+dependencies = [
+ "serde",
  "sha2",
  "thiserror",
- "time",
  "uuid",
+]
+
+[[package]]
+name = "procuchain-signatures"
+version = "0.1.0"
+dependencies = [
+ "procuchain-records",
+ "procuchain-shared",
+ "serde",
+ "time",
+]
+
+[[package]]
+name = "procuchain-workflow"
+version = "0.1.0"
+dependencies = [
+ "procuchain-shared",
+ "serde",
+ "time",
 ]
 
 [[package]]

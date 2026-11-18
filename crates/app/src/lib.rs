@@ -2,25 +2,26 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use time::OffsetDateTime;
 
-use crate::domain::approval::{Approval, ApprovalDecision};
-use crate::domain::audit::{AuditEvent, AuditLog};
-use crate::domain::bac::{BacMembershipSnapshot, BacResolution, BacResolutionStatus, BacVotes};
-use crate::domain::document::{
-    CanonicalContent, Document, DocumentType, DocumentVersion, RulePackRef, SchemaRef, TemplateRef,
-    VersionStatus,
-};
-use crate::domain::issuance::{
+use procuchain_evidence::{AuditEvent, AuditLog};
+use procuchain_issuance::{
     Acknowledgement, AcknowledgementMethod, DeliveryAttempt, DeliveryResult, Distribution,
     DistributionStatus, Issuance, IssuanceArtifact, IssuanceRecipient,
 };
-use crate::domain::signature::{
-    Signature, SignatureMethod, SignaturePolicy, SignaturePurpose, SignatureRequest,
-    SignatureRequestStatus, SignatureValidation,
+use procuchain_records::{
+    CanonicalContent, Document, DocumentType, DocumentVersion, RulePackRef, SchemaRef, TemplateRef,
+    VersionStatus,
 };
-use crate::shared::{
+use procuchain_shared::{
     AcknowledgementId, Actor, ActorRole, ApprovalId, BacResolutionId, ContentHash, DistributionId,
     DocumentId, DocumentVersionId, DomainError, IssuanceId, RecipientId, SignatureId,
     SignatureRequestId, TenantId,
+};
+use procuchain_signatures::{
+    Signature, SignatureMethod, SignaturePolicy, SignaturePurpose, SignatureRequest,
+    SignatureRequestStatus, SignatureValidation,
+};
+use procuchain_workflow::{
+    Approval, ApprovalDecision, BacMembershipSnapshot, BacResolution, BacResolutionStatus, BacVotes,
 };
 
 /// In-memory application service for the first vertical slice.
@@ -365,7 +366,7 @@ impl Platform {
         version_id: DocumentVersionId,
         resolution_number: impl Into<String>,
         membership: BacMembershipSnapshot,
-        attendance: BTreeSet<crate::shared::UserId>,
+        attendance: BTreeSet<procuchain_shared::UserId>,
         votes: BacVotes,
         presiding_actor: &Actor,
     ) -> Result<BacResolutionId, DomainError> {
@@ -902,7 +903,7 @@ impl Platform {
         method: AcknowledgementMethod,
         declaration: Option<String>,
         acknowledged_at: OffsetDateTime,
-    ) -> Result<crate::shared::AcknowledgementId, DomainError> {
+    ) -> Result<procuchain_shared::AcknowledgementId, DomainError> {
         let distribution = self
             .distributions
             .get(&distribution_id)
@@ -936,7 +937,7 @@ impl Platform {
         }
         let artifact_hash_label = artifact_hash.to_string();
         let acknowledgement = Acknowledgement::new(
-            crate::shared::AcknowledgementId::new(),
+            procuchain_shared::AcknowledgementId::new(),
             distribution_id,
             distribution.issuance_id(),
             distribution.version_id(),

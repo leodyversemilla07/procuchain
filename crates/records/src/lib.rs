@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use time::OffsetDateTime;
 
-use crate::shared::{
+use procuchain_shared::{
     ContentHash, DocumentId, DocumentVersionId, DomainError, RulePackSnapshotId, TenantId, UserId,
 };
 
@@ -343,10 +343,7 @@ impl Document {
         self.current_version_id
     }
 
-    pub(crate) fn register_version(
-        &mut self,
-        version_id: DocumentVersionId,
-    ) -> Result<u32, DomainError> {
+    pub fn register_version(&mut self, version_id: DocumentVersionId) -> Result<u32, DomainError> {
         let version_number = self.version_ids.len() as u32 + 1;
         self.version_ids.push(version_id);
         self.current_version_id = Some(version_id);
@@ -373,7 +370,7 @@ pub struct DocumentVersion {
 
 impl DocumentVersion {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: DocumentVersionId,
         document_id: DocumentId,
         version_number: u32,
@@ -470,7 +467,7 @@ impl DocumentVersion {
         }
     }
 
-    pub(crate) fn transition_to(
+    pub fn transition_to(
         &mut self,
         expected: &[VersionStatus],
         next: VersionStatus,
@@ -490,7 +487,7 @@ impl DocumentVersion {
         Ok(())
     }
 
-    pub(crate) fn set_status(&mut self, status: VersionStatus) {
+    pub fn set_status(&mut self, status: VersionStatus) {
         self.status = status;
     }
 }

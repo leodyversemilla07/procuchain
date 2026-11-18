@@ -355,7 +355,7 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 ## 6. Decisions needed before the next large increment
 
 - [ ] Web framework: Axum recommended, or document another choice.
-- [ ] Repository layout: single crate with modules versus a Cargo workspace split by bounded context.
+- [x] Repository layout: virtual Cargo workspace with bounded-context crates (`shared`, `records`, `workflow`, `signatures`, `issuance`, `procurement`, `evidence`, `app`, and the `procuchain` binary).
 - [ ] Persistence: confirm PostgreSQL + SQLx; choose migration and offline-query strategy.
 - [ ] Local object storage: MinIO/S3-compatible or filesystem abstraction with immutable keys.
 - [ ] Frontend delivery: React SPA against REST/OpenAPI versus an Inertia-compatible Rust adapter.

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::shared::{
+use procuchain_shared::{
     AcknowledgementId, Actor, ArtifactId, ContentHash, DistributionId, DocumentVersionId,
     DomainError, IssuanceId, RecipientId,
 };
@@ -271,7 +271,7 @@ pub struct Distribution {
 
 impl Distribution {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: DistributionId,
         issuance_id: IssuanceId,
         version_id: DocumentVersionId,
@@ -342,7 +342,7 @@ impl Distribution {
         Ok(())
     }
 
-    pub(crate) fn mark_acknowledged(&mut self) -> Result<(), DomainError> {
+    pub fn mark_acknowledged(&mut self) -> Result<(), DomainError> {
         if self.status != DistributionStatus::Delivered {
             return Err(DomainError::invalid_state(
                 "distribution",
@@ -354,7 +354,7 @@ impl Distribution {
         Ok(())
     }
 
-    pub(crate) fn supersede(&mut self) {
+    pub fn supersede(&mut self) {
         self.status = DistributionStatus::Superseded;
     }
 }
@@ -376,7 +376,7 @@ pub struct Issuance {
 
 impl Issuance {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: IssuanceId,
         version_id: DocumentVersionId,
         version_hash: ContentHash,
@@ -526,7 +526,7 @@ impl Issuance {
         self.artifacts.iter().any(|artifact| &artifact.hash == hash)
     }
 
-    pub(crate) fn supersede(&mut self) {
+    pub fn supersede(&mut self) {
         self.status = IssuanceStatus::Superseded;
     }
 }
@@ -581,7 +581,7 @@ pub struct Acknowledgement {
 
 impl Acknowledgement {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
+    pub fn new(
         id: AcknowledgementId,
         distribution_id: DistributionId,
         issuance_id: IssuanceId,
@@ -660,7 +660,7 @@ impl Acknowledgement {
         self.status
     }
 
-    pub(crate) fn invalidate(&mut self) {
+    pub fn invalidate(&mut self) {
         self.status = AcknowledgementStatus::Invalidated;
     }
 }
