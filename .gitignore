@@ -5,6 +5,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/target
 /vendor
 /resources/js/routes
 /resources/js/actions
