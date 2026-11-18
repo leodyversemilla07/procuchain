@@ -54,4 +54,5 @@ define_id!(AcknowledgementId);
 define_id!(AnchorId);
 define_id!(ArtifactId);
 define_id!(RecipientId);
+define_id!(WorkflowTaskId);
 define_id!(RulePackSnapshotId);

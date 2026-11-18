@@ -8,6 +8,7 @@ use procuchain_shared::{
     AcknowledgementId, Actor, ContentHash, DistributionId, DocumentVersionId, IssuanceId,
     RecipientId, TenantId, UserId,
 };
+use procuchain_storage::StoredObject;
 use sqlx::Row;
 use uuid::Uuid;
 
@@ -19,6 +20,22 @@ use crate::enums::{
 use crate::{PgStore, StoreError, UnitOfWork};
 
 impl PgStore {
+    pub async fn distribution_row_version(
+        &self,
+        tenant_id: TenantId,
+        distribution_id: DistributionId,
+    ) -> Result<Option<i64>, StoreError> {
+        let row =
+            sqlx::query("SELECT row_version FROM distributions WHERE tenant_id = $1 AND id = $2")
+                .bind(tenant_id.as_uuid())
+                .bind(distribution_id.as_uuid())
+                .fetch_optional(self.pool())
+                .await?;
+        row.map(|row| row.try_get("row_version"))
+            .transpose()
+            .map_err(StoreError::from)
+    }
+
     pub async fn load_issuance(
         &self,
         tenant_id: TenantId,
@@ -279,6 +296,32 @@ impl PgStore {
 }
 
 impl UnitOfWork<'_> {
+    /// Persist the immutable object-store key after the artifact bytes have
+    /// been written and verified by an [`ObjectStore`](procuchain_storage::ObjectStore).
+    pub async fn link_artifact_object(
+        &mut self,
+        tenant_id: TenantId,
+        issuance_id: IssuanceId,
+        artifact_id: procuchain_shared::ArtifactId,
+        object: &StoredObject,
+    ) -> Result<(), StoreError> {
+        let result = sqlx::query(
+            "UPDATE issuance_artifacts SET object_key = $4 WHERE tenant_id = $1 AND issuance_id = $2 AND artifact_id = $3",
+        )
+        .bind(tenant_id.as_uuid())
+        .bind(issuance_id.as_uuid())
+        .bind(artifact_id.as_uuid())
+        .bind(object.key())
+        .execute(&mut *self.transaction)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::invalid_value(
+                "issuance artifact does not exist",
+            ));
+        }
+        Ok(())
+    }
+
     pub async fn save_issuance(
         &mut self,
         tenant_id: TenantId,

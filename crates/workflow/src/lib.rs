@@ -2,9 +2,11 @@
 
 pub mod approvals;
 pub mod bac;
+pub mod tasks;
 
 pub use approvals::{Approval, ApprovalDecision, ApprovalStatus};
 pub use bac::{
     BacMemberSnapshot, BacMembershipSnapshot, BacOutcome, BacResolution, BacResolutionStatus,
     BacSeat, BacVote, BacVotes,
 };
+pub use tasks::{TaskStatus, WorkflowTask};

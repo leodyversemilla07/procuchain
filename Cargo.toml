@@ -4,12 +4,14 @@ members = [
     "crates/app",
     "crates/evidence",
     "crates/issuance",
+    "crates/integrations",
     "crates/postgres",
     "crates/procurement",
     "crates/procuchain",
     "crates/records",
     "crates/shared",
     "crates/signatures",
+    "crates/storage",
     "crates/workflow",
 ]
 
@@ -34,9 +36,11 @@ uuid = { version = "1", features = ["v7", "serde"] }
 procuchain-app = { path = "crates/app" }
 procuchain-evidence = { path = "crates/evidence" }
 procuchain-issuance = { path = "crates/issuance" }
+procuchain-integrations = { path = "crates/integrations" }
 procuchain-postgres = { path = "crates/postgres" }
 procuchain-procurement = { path = "crates/procurement" }
 procuchain-records = { path = "crates/records" }
 procuchain-shared = { path = "crates/shared" }
 procuchain-signatures = { path = "crates/signatures" }
+procuchain-storage = { path = "crates/storage" }
 procuchain-workflow = { path = "crates/workflow" }

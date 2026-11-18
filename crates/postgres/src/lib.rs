@@ -3,7 +3,11 @@
 //! Reads use a shared pool. Writes go through [`UnitOfWork`] so that aggregate
 //! updates, audit events, and outbox records can share one transaction.
 
-use procuchain_shared::DomainError;
+use procuchain_integrations::{
+    DispatchResult, IntegrationError, OutboxDispatcher, PublicationPort, RetentionPort,
+    TimestampPort,
+};
+use procuchain_shared::{ContentHash, DomainError, TenantId, UserId};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use sqlx::{Postgres, Row, Transaction};
 use thiserror::Error;
@@ -18,6 +22,7 @@ pub mod enums;
 pub mod identity;
 pub mod issuance;
 pub mod signatures;
+pub mod tasks;
 pub mod workflow;
 
 #[derive(Debug, Error)]
@@ -30,6 +35,8 @@ pub enum StoreError {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Domain(#[from] DomainError),
+    #[error(transparent)]
+    Integration(#[from] IntegrationError),
     #[error("invalid persisted value: {0}")]
     InvalidValue(String),
 }
@@ -67,6 +74,57 @@ impl PgStore {
         Ok(())
     }
 
+    /// Provision the single development principal used by the standalone Development.
+    ///
+    /// Production deployments should replace this bootstrap with a real
+    /// identity provider, but a fresh local database must be usable immediately
+    /// after migrations. Every statement is idempotent so restarting the API
+    /// does not create duplicate users, roles, or tokens.
+    pub async fn ensure_development_identity(
+        &self,
+        tenant_id: TenantId,
+        user_id: UserId,
+        display_name: &str,
+        bearer_token: &str,
+    ) -> Result<(), StoreError> {
+        let mut transaction = self.pool.begin().await?;
+        sqlx::query("INSERT INTO tenants (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING")
+            .bind(tenant_id.as_uuid())
+            .bind("ProcuChain Development Tenant")
+            .execute(&mut *transaction)
+            .await?;
+        sqlx::query(
+            "INSERT INTO users (id, tenant_id, display_name) VALUES ($1, $2, $3) ON CONFLICT (tenant_id, id) DO UPDATE SET display_name = EXCLUDED.display_name, status = 'active'",
+        )
+        .bind(user_id.as_uuid())
+        .bind(tenant_id.as_uuid())
+        .bind(display_name)
+        .execute(&mut *transaction)
+        .await?;
+        for role in ["bac_chairperson", "hope"] {
+            sqlx::query(
+                "INSERT INTO user_roles (tenant_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+            )
+            .bind(tenant_id.as_uuid())
+            .bind(user_id.as_uuid())
+            .bind(role)
+            .execute(&mut *transaction)
+            .await?;
+        }
+        let token_hash = ContentHash::sha256(bearer_token.as_bytes());
+        sqlx::query(
+            "INSERT INTO api_tokens (id, tenant_id, user_id, token_hash) VALUES ($1, $2, $3, $4) ON CONFLICT (token_hash) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, user_id = EXCLUDED.user_id, status = 'active'",
+        )
+        .bind(Uuid::now_v7())
+        .bind(tenant_id.as_uuid())
+        .bind(user_id.as_uuid())
+        .bind(token_hash.as_str())
+        .execute(&mut *transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(())
+    }
+
     pub async fn begin(&self) -> Result<UnitOfWork<'_>, StoreError> {
         Ok(UnitOfWork {
             transaction: self.pool.begin().await?,
@@ -78,7 +136,89 @@ pub struct UnitOfWork<'a> {
     transaction: Transaction<'a, Postgres>,
 }
 
+#[derive(Clone, Debug)]
+pub struct PendingOutboxEvent {
+    pub id: Uuid,
+    pub tenant_id: procuchain_shared::TenantId,
+    pub event_type: String,
+    pub payload: serde_json::Value,
+}
+
+impl PgStore {
+    pub async fn pending_outbox_events(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<PendingOutboxEvent>, StoreError> {
+        let rows = sqlx::query(
+            "SELECT id, tenant_id, event_type, payload FROM outbox_events WHERE published_at IS NULL ORDER BY occurred_at, id LIMIT $1",
+        )
+        .bind(limit)
+        .fetch_all(self.pool())
+        .await?;
+        rows.into_iter()
+            .map(|row| {
+                Ok(PendingOutboxEvent {
+                    id: row.try_get("id")?,
+                    tenant_id: procuchain_shared::TenantId::from_uuid(row.try_get("tenant_id")?),
+                    event_type: row.try_get("event_type")?,
+                    payload: row.try_get("payload")?,
+                })
+            })
+            .collect()
+    }
+
+    /// Process one bounded batch of outbox events and mark successful events
+    /// published in their own transaction. Provider failures leave events
+    /// pending for retry.
+    pub async fn dispatch_pending_outbox<P, T, R>(
+        &self,
+        dispatcher: &OutboxDispatcher<P, T, R>,
+        limit: i64,
+    ) -> Result<usize, StoreError>
+    where
+        P: PublicationPort,
+        T: TimestampPort,
+        R: RetentionPort,
+    {
+        let events = self.pending_outbox_events(limit).await?;
+        let mut published = 0;
+        for event in events {
+            let result =
+                dispatcher.dispatch(event.id, event.tenant_id, &event.event_type, event.payload)?;
+            if matches!(result, DispatchResult::Ignored) {
+                continue;
+            }
+            let mut unit = self.begin().await?;
+            if unit
+                .mark_outbox_published(event.id, OffsetDateTime::now_utc())
+                .await?
+            {
+                unit.commit().await?;
+                published += 1;
+            } else {
+                unit.rollback().await?;
+            }
+        }
+        Ok(published)
+    }
+}
+
 impl UnitOfWork<'_> {
+    pub async fn mark_outbox_published(
+        &mut self,
+        event_id: Uuid,
+        published_at: OffsetDateTime,
+    ) -> Result<bool, StoreError> {
+        let result = sqlx::query(
+            "UPDATE outbox_events SET published_at = $2, attempts = attempts + 1 WHERE id = $1 AND published_at IS NULL",
+        )
+        .bind(event_id)
+        .bind(published_at)
+        .execute(&mut *self.transaction)
+        .await?;
+        Ok(result.rows_affected() == 1)
+    }
+
     /// Reserve an idempotency key inside the same transaction as the command.
     ///
     /// A completed record is returned for safe replay. A record without a

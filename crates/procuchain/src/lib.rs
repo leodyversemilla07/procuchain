@@ -6,16 +6,18 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::Arc,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
 };
 
 use axum::{
     Json, Router,
+    body::Bytes,
     extract::{Path, Request, State},
     http::{HeaderMap, HeaderValue, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use procuchain_app::Platform;
 use procuchain_issuance::{
@@ -26,33 +28,72 @@ use procuchain_procurement::{AppContent, PpmpContent};
 use procuchain_records::{DocumentType, RulePackRef, SchemaRef, TemplateRef};
 use procuchain_shared::{
     Actor, ActorRole, ContentHash, DocumentVersionId, DomainError, RulePackSnapshotId, TenantId,
-    UserId,
+    UserId, WorkflowTaskId,
 };
 use procuchain_signatures::SignaturePolicy;
 use procuchain_signatures::{SignatureMethod, SignaturePurpose, SignatureValidation};
-use procuchain_workflow::{BacMembershipSnapshot, BacVote};
+use procuchain_storage::{FilesystemObjectStore, ObjectStore, StorageError};
+use procuchain_workflow::{BacMembershipSnapshot, BacVote, WorkflowTask};
 use serde::{Deserialize, Serialize};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
 use uuid::Uuid;
+
+const SESSION_COOKIE: &str = "procuchain_session";
 
 /// Mutable application state owned by the API process.
 ///
 /// The actor is configured by the server and is intentionally not accepted in
 /// the request payload. Authentication will replace this development actor at
-/// the API boundary before the MVP is production-ready.
+/// the API boundary before the Development is production-ready.
 #[derive(Clone)]
 pub struct ApiState {
     store: PgStore,
+    object_store: FilesystemObjectStore,
     tenant_id: TenantId,
     actor: Actor,
     hope_actor: Actor,
     _bearer_token: Arc<str>,
+    rate_limiter: Arc<RateLimiter>,
+}
+
+struct RateLimiter {
+    requests: Mutex<BTreeMap<String, (Instant, u32)>>,
+    limit: u32,
+    window: Duration,
+}
+
+impl RateLimiter {
+    fn new(limit: u32, window: Duration) -> Self {
+        Self {
+            requests: Mutex::new(BTreeMap::new()),
+            limit,
+            window,
+        }
+    }
+
+    fn allow(&self, key: &str) -> bool {
+        let mut requests = self
+            .requests
+            .lock()
+            .expect("rate limiter mutex is not poisoned");
+        let now = Instant::now();
+        let entry = requests.entry(key.to_owned()).or_insert((now, 0));
+        if now.duration_since(entry.0) >= self.window {
+            *entry = (now, 0);
+        }
+        if entry.1 >= self.limit {
+            return false;
+        }
+        entry.1 += 1;
+        true
+    }
 }
 
 impl ApiState {
     pub fn new(store: PgStore, tenant_id: TenantId, actor: Actor) -> Self {
-        Self::with_bearer_token(store, tenant_id, actor, "mvp-development-token")
+        Self::with_bearer_token(store, tenant_id, actor, "procuchain-development-token")
     }
 
     pub fn with_bearer_token(
@@ -63,14 +104,20 @@ impl ApiState {
     ) -> Self {
         Self {
             store,
+            object_store: FilesystemObjectStore::new(
+                std::env::var("PROCUCHAIN_OBJECT_ROOT")
+                    .unwrap_or_else(|_| "storage/objects".to_owned()),
+            )
+            .expect("the configured object storage root must be writable"),
             tenant_id,
             actor: actor.clone(),
             hope_actor: Actor::new(
                 actor.user_id(),
                 ActorRole::Hope,
-                "MVP Head of the Procuring Entity",
+                "Development Head of the Procuring Entity",
             ),
             _bearer_token: bearer_token.into(),
+            rate_limiter: Arc::new(RateLimiter::new(120, Duration::from_secs(60))),
         }
     }
 }
@@ -79,13 +126,65 @@ impl ApiState {
 pub fn router() -> Router {
     Router::new()
         .route("/api/v1/health", get(health))
+        .route("/workbench", get(workbench_shell))
+        .nest_service(
+            "/build",
+            ServeDir::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../public/build")),
+        )
+        .layer(middleware::from_fn(security_headers))
         .layer(middleware::from_fn(correlation_id))
+}
+
+async fn workbench_shell() -> Result<axum::response::Html<String>, StatusCode> {
+    let manifest = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../public/build/manifest.json"
+    ))
+    .map_err(|_| StatusCode::NOT_FOUND)?;
+    let manifest: serde_json::Value =
+        serde_json::from_str(&manifest).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let entry = manifest
+        .get("resources/js/app.tsx")
+        .and_then(|entry| entry.get("file"))
+        .and_then(serde_json::Value::as_str)
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let styles = manifest
+        .get("resources/js/app.tsx")
+        .and_then(|entry| entry.get("css"))
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(serde_json::Value::as_str)
+        .map(|style| format!("<link rel=\"stylesheet\" href=\"/build/{style}\">"))
+        .collect::<String>();
+    let page = serde_json::json!({"component": "workbench", "props": {}, "url": "/workbench", "version": null});
+    let page = serde_json::to_string(&page).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(axum::response::Html(format!(
+        "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">{styles}</head><body><div id=\"app\" data-page='{page}'></div><script type=\"module\" src=\"/build/{entry}\"></script></body></html>"
+    )))
 }
 
 /// Build the versioned API router with application state.
 pub fn router_with_state(state: ApiState) -> Router {
     Router::<ApiState>::new()
         .route("/api/v1/health", get(health))
+        .route("/workbench", get(workbench_shell))
+        .nest_service(
+            "/build",
+            ServeDir::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../public/build")),
+        )
+        .route("/api/v1/auth/session", post(create_session))
+        .route("/api/v1/auth/session", delete(delete_session))
+        .route("/api/v1/workflow/tasks", post(create_workflow_task))
+        .route("/api/v1/workflow/tasks/{task_id}", get(get_workflow_task))
+        .route(
+            "/api/v1/workflow/tasks/{task_id}/claim",
+            post(claim_workflow_task),
+        )
+        .route(
+            "/api/v1/workflow/tasks/{task_id}/complete",
+            post(complete_workflow_task),
+        )
         .route("/api/v1/me", get(current_principal))
         .route(
             "/api/v1/committees/{committee_id}/members",
@@ -115,6 +214,10 @@ pub fn router_with_state(state: ApiState) -> Router {
         )
         .route("/api/v1/app/{version_id}/issue", post(issue_app))
         .route(
+            "/api/v1/issuances/{issuance_id}/artifacts/{artifact_id}",
+            post(upload_issuance_artifact),
+        )
+        .route(
             "/api/v1/documents/{version_id}/submit",
             post(submit_document),
         )
@@ -127,8 +230,41 @@ pub fn router_with_state(state: ApiState) -> Router {
             post(acknowledge_distribution),
         )
         .layer(CorsLayer::permissive())
+        .layer(middleware::from_fn_with_state(state.clone(), rate_limit))
+        .layer(middleware::from_fn(security_headers))
         .layer(middleware::from_fn(correlation_id))
         .with_state(state)
+}
+
+async fn security_headers(request: Request, next: Next) -> Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        "x-content-type-options",
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert("x-frame-options", HeaderValue::from_static("DENY"));
+    headers.insert("referrer-policy", HeaderValue::from_static("no-referrer"));
+    headers.insert(
+        "content-security-policy",
+        HeaderValue::from_static("default-src 'none'; frame-ancestors 'none'"),
+    );
+    response
+}
+
+async fn rate_limit(State(state): State<ApiState>, request: Request, next: Next) -> Response {
+    let key = request
+        .headers()
+        .get("x-forwarded-for")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or("unknown");
+    if state.rate_limiter.allow(key) {
+        return next.run(request).await;
+    }
+    (StatusCode::TOO_MANY_REQUESTS, "rate limit exceeded").into_response()
 }
 
 #[derive(Debug, Serialize)]
@@ -136,6 +272,66 @@ struct HealthResponse {
     status: &'static str,
     service: &'static str,
     api_version: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+struct SessionResponse {
+    expires_at: String,
+}
+
+async fn create_session(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+) -> Result<(StatusCode, HeaderMap, Json<SessionResponse>), ApiError> {
+    let token = bearer_token(&headers).ok_or_else(ApiError::unauthorized)?;
+    let identity = state
+        .store
+        .resolve_api_token(state.tenant_id, token)
+        .await?
+        .ok_or_else(ApiError::unauthorized)?;
+    if !identity.active {
+        return Err(ApiError::unauthorized());
+    }
+    let expires_at = OffsetDateTime::now_utc() + time::Duration::hours(8);
+    let session = state
+        .store
+        .create_session(state.tenant_id, identity.user_id, expires_at)
+        .await?;
+    let secure = if std::env::var("PROCUCHAIN_COOKIE_SECURE").as_deref() == Ok("true") {
+        "; Secure"
+    } else {
+        ""
+    };
+    let mut response_headers = HeaderMap::new();
+    response_headers.insert(
+        "set-cookie",
+        HeaderValue::from_str(&format!(
+            "{SESSION_COOKIE}={session}; HttpOnly; SameSite=Lax; Path=/api/v1; Max-Age=28800{secure}"
+        ))
+        .map_err(|_| ApiError::internal("could not create session cookie"))?,
+    );
+    Ok((
+        StatusCode::CREATED,
+        response_headers,
+        Json(SessionResponse {
+            expires_at: expires_at
+                .format(&Rfc3339)
+                .map_err(|_| ApiError::internal("could not format session expiry"))?,
+        }),
+    ))
+}
+
+async fn delete_session(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+) -> Result<StatusCode, ApiError> {
+    if let Some(session) = session_cookie(&headers) {
+        state
+            .store
+            .revoke_session(state.tenant_id, session, OffsetDateTime::now_utc())
+            .await?;
+    }
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn health() -> Json<HealthResponse> {
@@ -232,6 +428,11 @@ pub struct CreatePpmpRequest {
     pub rule_pack_hash: String,
 }
 
+const PPMP_TEMPLATE_ID: &str = "ppmp-template";
+const PPMP_TEMPLATE_VERSION: &str = "2026.1";
+const PPMP_SCHEMA_ID: &str = "ppmp-schema";
+const PPMP_SCHEMA_VERSION: &str = "1.0";
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateIndicativeAppRequest {
     pub title: String,
@@ -306,6 +507,28 @@ pub struct AcknowledgeDistributionRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct CreateWorkflowTaskRequest {
+    pub task_type: String,
+    pub subject_ref: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CompleteWorkflowTaskRequest {
+    pub outcome: String,
+}
+
+#[derive(Debug, Serialize)]
+struct WorkflowTaskResponse {
+    id: String,
+    task_type: String,
+    subject_ref: String,
+    assignee_id: Option<String>,
+    status: String,
+    outcome: Option<String>,
+    row_version: i64,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct CreatePpmpResponse {
     document_id: String,
     version_id: String,
@@ -352,11 +575,18 @@ struct IssuanceResponse {
     manifest_hash: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct DistributionResponse {
     distribution_id: String,
     acknowledgement_id: Option<String>,
     status: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ArtifactUploadResponse {
+    object_key: String,
+    content_hash: String,
+    byte_length: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -365,12 +595,122 @@ struct SubmittedResponse {
     status: String,
 }
 
+fn workflow_task_response(task: &WorkflowTask) -> WorkflowTaskResponse {
+    WorkflowTaskResponse {
+        id: task.id().to_string(),
+        task_type: task.task_type().to_owned(),
+        subject_ref: task.subject_ref().to_owned(),
+        assignee_id: task.assignee().map(|id| id.to_string()),
+        status: task.status().label().to_owned(),
+        outcome: task.outcome().map(str::to_owned),
+        row_version: task.row_version(),
+    }
+}
+
+async fn create_workflow_task(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Json(request): Json<CreateWorkflowTaskRequest>,
+) -> Result<(StatusCode, Json<WorkflowTaskResponse>), ApiError> {
+    authenticate(&state, &headers).await?;
+    let task = WorkflowTask::create(
+        WorkflowTaskId::new(),
+        state.tenant_id,
+        request.task_type,
+        request.subject_ref,
+    )
+    .map_err(ApiError::domain)?;
+    let response = workflow_task_response(&task);
+    let mut unit = state.store.begin().await?;
+    unit.insert_workflow_task(&task).await?;
+    unit.commit().await?;
+    Ok((StatusCode::CREATED, Json(response)))
+}
+
+async fn get_workflow_task(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> Result<Json<WorkflowTaskResponse>, ApiError> {
+    authenticate(&state, &headers).await?;
+    let task = state
+        .store
+        .load_workflow_task(state.tenant_id, WorkflowTaskId::from_uuid(task_id))
+        .await?
+        .ok_or_else(|| ApiError::not_found("workflow task"))?;
+    Ok(Json(workflow_task_response(&task)))
+}
+
+async fn claim_workflow_task(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> Result<Json<WorkflowTaskResponse>, ApiError> {
+    let identity = authenticated_identity(&state, &headers).await?;
+    let id = WorkflowTaskId::from_uuid(task_id);
+    let task = state
+        .store
+        .load_workflow_task(state.tenant_id, id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("workflow task"))?;
+    let expected = task.row_version();
+    let mut updated = task;
+    updated.claim(identity.user_id).map_err(ApiError::domain)?;
+    let response = workflow_task_response(&updated);
+    let mut unit = state.store.begin().await?;
+    if !unit
+        .update_workflow_task_if_row_version(&updated, expected)
+        .await?
+    {
+        unit.rollback().await?;
+        return Err(ApiError::conflict(
+            "workflow task changed; refresh it and retry",
+        ));
+    }
+    unit.commit().await?;
+    Ok(Json(response))
+}
+
+async fn complete_workflow_task(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(task_id): Path<Uuid>,
+    Json(request): Json<CompleteWorkflowTaskRequest>,
+) -> Result<Json<WorkflowTaskResponse>, ApiError> {
+    let identity = authenticated_identity(&state, &headers).await?;
+    let id = WorkflowTaskId::from_uuid(task_id);
+    let task = state
+        .store
+        .load_workflow_task(state.tenant_id, id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("workflow task"))?;
+    let expected = task.row_version();
+    let mut updated = task;
+    updated
+        .complete(identity.user_id, request.outcome)
+        .map_err(ApiError::domain)?;
+    let response = workflow_task_response(&updated);
+    let mut unit = state.store.begin().await?;
+    if !unit
+        .update_workflow_task_if_row_version(&updated, expected)
+        .await?
+    {
+        unit.rollback().await?;
+        return Err(ApiError::conflict(
+            "workflow task changed; refresh it and retry",
+        ));
+    }
+    unit.commit().await?;
+    Ok(Json(response))
+}
+
 async fn create_ppmp(
     State(state): State<ApiState>,
     headers: HeaderMap,
     Json(request): Json<CreatePpmpRequest>,
 ) -> Result<(StatusCode, Json<CreatePpmpResponse>), ApiError> {
     authenticate(&state, &headers).await?;
+    validate_ppmp_request(&request)?;
     let idempotency_key = headers
         .get("idempotency-key")
         .map(|value| {
@@ -491,6 +831,40 @@ async fn create_ppmp(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+fn validate_ppmp_request(request: &CreatePpmpRequest) -> Result<(), ApiError> {
+    let checks = [
+        (
+            "template_id",
+            request.template_id == PPMP_TEMPLATE_ID,
+            format!("must reference the registered {PPMP_TEMPLATE_ID} template"),
+        ),
+        (
+            "template_version",
+            request.template_version == PPMP_TEMPLATE_VERSION,
+            format!("must use registered template version {PPMP_TEMPLATE_VERSION}"),
+        ),
+        (
+            "schema_id",
+            request.schema_id == PPMP_SCHEMA_ID,
+            format!("must reference the registered {PPMP_SCHEMA_ID} schema"),
+        ),
+        (
+            "schema_version",
+            request.schema_version == PPMP_SCHEMA_VERSION,
+            format!("must use registered schema version {PPMP_SCHEMA_VERSION}"),
+        ),
+    ];
+    if let Some((field, _, message)) = checks.into_iter().find(|(_, valid, _)| !valid) {
+        return Err(ApiError::validation(format!("{field} {message}")));
+    }
+    if request.template_authority.trim().is_empty() {
+        return Err(ApiError::validation(
+            "template_authority must identify the approving template register",
+        ));
+    }
+    Ok(())
+}
+
 async fn get_ppmp(
     State(state): State<ApiState>,
     headers: HeaderMap,
@@ -583,7 +957,7 @@ async fn submit_document(
         .load_document(state.tenant_id, version.document_id())
         .await?
         .ok_or_else(|| ApiError::not_found("document"))?;
-    let mut platform = Platform::new(state.tenant_id, mvp_signature_policy());
+    let mut platform = Platform::new(state.tenant_id, development_signature_policy());
     platform
         .restore_document_version(document, version)
         .map_err(ApiError::domain)?;
@@ -1098,14 +1472,14 @@ async fn create_hope_approval(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-fn mvp_signature_policy() -> SignaturePolicy {
+fn development_signature_policy() -> SignaturePolicy {
     SignaturePolicy::new()
         .with_rule(
             DocumentType::AnnualProcurementPlan,
             vec![ActorRole::Hope],
             vec![SignatureMethod::AdvancedElectronicSignature],
         )
-        .expect("MVP signature policy is valid")
+        .expect("Development signature policy is valid")
 }
 
 async fn create_signature_request(
@@ -1177,7 +1551,7 @@ async fn create_signature_request(
         .load_document(state.tenant_id, version.document_id())
         .await?
         .ok_or_else(|| ApiError::not_found("APP document"))?;
-    let mut platform = Platform::new(state.tenant_id, mvp_signature_policy());
+    let mut platform = Platform::new(state.tenant_id, development_signature_policy());
     platform
         .restore_document_version(document, version)
         .map_err(ApiError::domain)?;
@@ -1309,7 +1683,7 @@ async fn complete_signature(
         .store
         .signatures_for_version(state.tenant_id, app_version_id)
         .await?;
-    let mut platform = Platform::new(state.tenant_id, mvp_signature_policy());
+    let mut platform = Platform::new(state.tenant_id, development_signature_policy());
     platform
         .restore_document_version(document, version)
         .map_err(ApiError::domain)?;
@@ -1480,7 +1854,7 @@ async fn issue_app(
         .store
         .signatures_for_version(state.tenant_id, app_version_id)
         .await?;
-    let mut platform = Platform::new(state.tenant_id, mvp_signature_policy());
+    let mut platform = Platform::new(state.tenant_id, development_signature_policy());
     platform
         .restore_document_version(document, version)
         .map_err(ApiError::domain)?;
@@ -1588,11 +1962,62 @@ async fn record_delivery(
 ) -> Result<Json<DistributionResponse>, ApiError> {
     authenticate(&state, &headers).await?;
     let distribution_id = procuchain_shared::DistributionId::from_uuid(distribution_id);
+    let supplied_row_version = parse_if_match(&headers)?;
+    let idempotency_key = optional_idempotency_key(&headers)?;
+    let request_hash = ContentHash::sha256(
+        &serde_json::to_vec(&request).map_err(|_| ApiError::internal("could not hash request"))?,
+    );
+    let fingerprint = format!(
+        "delivery:{}:{:?}:{}",
+        distribution_id, supplied_row_version, request_hash
+    );
+    let mut unit = if let Some(key) = idempotency_key.as_deref() {
+        let mut unit = state.store.begin().await?;
+        match unit
+            .claim_idempotency(
+                state.tenant_id,
+                key,
+                "delivery.record",
+                &ContentHash::sha256(fingerprint.as_bytes()).to_string(),
+            )
+            .await?
+        {
+            IdempotencyClaim::Replay { status, body } => {
+                unit.commit().await?;
+                let response: DistributionResponse = serde_json::from_value(body)
+                    .map_err(|_| ApiError::internal("stored idempotent response is invalid"))?;
+                if status != StatusCode::OK.as_u16() as i32 {
+                    return Err(ApiError::internal("stored idempotent status is invalid"));
+                }
+                return Ok(Json(response));
+            }
+            IdempotencyClaim::Conflict => {
+                unit.rollback().await?;
+                return Err(ApiError::conflict(
+                    "Idempotency-Key is already used for a different request or is still running",
+                ));
+            }
+            IdempotencyClaim::Owner => unit,
+        }
+    } else {
+        state.store.begin().await?
+    };
     let distribution = state
         .store
         .load_distribution(state.tenant_id, distribution_id)
         .await?
         .ok_or_else(|| ApiError::not_found("distribution"))?;
+    let actual_row_version = state
+        .store
+        .distribution_row_version(state.tenant_id, distribution_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("distribution"))?;
+    if supplied_row_version.is_some_and(|expected| expected != actual_row_version) {
+        unit.rollback().await?;
+        return Err(ApiError::conflict(
+            "distribution changed; refresh it and retry with a new If-Match value",
+        ));
+    }
     let issuance = state
         .store
         .load_issuance(state.tenant_id, distribution.issuance_id())
@@ -1608,7 +2033,7 @@ async fn record_delivery(
         .load_document(state.tenant_id, version.document_id())
         .await?
         .ok_or_else(|| ApiError::not_found("document"))?;
-    let mut platform = Platform::new(state.tenant_id, mvp_signature_policy());
+    let mut platform = Platform::new(state.tenant_id, development_signature_policy());
     platform
         .restore_document_version(document, version)
         .map_err(ApiError::domain)?;
@@ -1630,7 +2055,6 @@ async fn record_delivery(
     let updated = platform
         .distribution(distribution_id)
         .ok_or_else(|| ApiError::not_found("updated distribution"))?;
-    let mut unit = state.store.begin().await?;
     unit.save_distribution(state.tenant_id, updated).await?;
     if let Some(event) = platform.audit_events().last().cloned() {
         unit.append_audit_event(
@@ -1644,12 +2068,47 @@ async fn record_delivery(
         )
         .await?;
     }
-    unit.commit().await?;
-    Ok(Json(DistributionResponse {
+    let response = DistributionResponse {
         distribution_id: distribution_id.to_string(),
         acknowledgement_id: None,
         status: updated.status().label().to_owned(),
-    }))
+    };
+    if let Some(key) = idempotency_key.as_deref() {
+        let body = serde_json::to_value(&response)
+            .map_err(|_| ApiError::internal("could not store idempotent response"))?;
+        unit.complete_idempotency(state.tenant_id, key, StatusCode::OK.as_u16() as i32, &body)
+            .await?;
+    }
+    unit.commit().await?;
+    Ok(Json(response))
+}
+
+async fn upload_issuance_artifact(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((issuance_id, artifact_id)): Path<(Uuid, Uuid)>,
+    body: Bytes,
+) -> Result<(StatusCode, Json<ArtifactUploadResponse>), ApiError> {
+    authenticate(&state, &headers).await?;
+    let object = state.object_store.put(&body).map_err(ApiError::storage)?;
+    let mut unit = state.store.begin().await?;
+    unit.link_artifact_object(
+        state.tenant_id,
+        procuchain_shared::IssuanceId::from_uuid(issuance_id),
+        procuchain_shared::ArtifactId::from_uuid(artifact_id),
+        &object,
+    )
+    .await?;
+    unit.commit().await?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(ArtifactUploadResponse {
+            object_key: object.key().to_owned(),
+            content_hash: object.content_hash().to_string(),
+            byte_length: object.byte_length(),
+        }),
+    ))
 }
 
 async fn acknowledge_distribution(
@@ -1660,11 +2119,62 @@ async fn acknowledge_distribution(
 ) -> Result<Json<DistributionResponse>, ApiError> {
     authenticate(&state, &headers).await?;
     let distribution_id = procuchain_shared::DistributionId::from_uuid(distribution_id);
+    let supplied_row_version = parse_if_match(&headers)?;
+    let idempotency_key = optional_idempotency_key(&headers)?;
+    let request_hash = ContentHash::sha256(
+        &serde_json::to_vec(&request).map_err(|_| ApiError::internal("could not hash request"))?,
+    );
+    let fingerprint = format!(
+        "acknowledgement:{}:{:?}:{}",
+        distribution_id, supplied_row_version, request_hash
+    );
+    let mut unit = if let Some(key) = idempotency_key.as_deref() {
+        let mut unit = state.store.begin().await?;
+        match unit
+            .claim_idempotency(
+                state.tenant_id,
+                key,
+                "acknowledgement.create",
+                &ContentHash::sha256(fingerprint.as_bytes()).to_string(),
+            )
+            .await?
+        {
+            IdempotencyClaim::Replay { status, body } => {
+                unit.commit().await?;
+                let response: DistributionResponse = serde_json::from_value(body)
+                    .map_err(|_| ApiError::internal("stored idempotent response is invalid"))?;
+                if status != StatusCode::OK.as_u16() as i32 {
+                    return Err(ApiError::internal("stored idempotent status is invalid"));
+                }
+                return Ok(Json(response));
+            }
+            IdempotencyClaim::Conflict => {
+                unit.rollback().await?;
+                return Err(ApiError::conflict(
+                    "Idempotency-Key is already used for a different request or is still running",
+                ));
+            }
+            IdempotencyClaim::Owner => unit,
+        }
+    } else {
+        state.store.begin().await?
+    };
     let distribution = state
         .store
         .load_distribution(state.tenant_id, distribution_id)
         .await?
         .ok_or_else(|| ApiError::not_found("distribution"))?;
+    let actual_row_version = state
+        .store
+        .distribution_row_version(state.tenant_id, distribution_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("distribution"))?;
+    if supplied_row_version.is_some_and(|expected| expected != actual_row_version) {
+        unit.rollback().await?;
+        return Err(ApiError::conflict(
+            "distribution changed; refresh it and retry with a new If-Match value",
+        ));
+    }
     let issuance = state
         .store
         .load_issuance(state.tenant_id, distribution.issuance_id())
@@ -1680,7 +2190,7 @@ async fn acknowledge_distribution(
         .load_document(state.tenant_id, version.document_id())
         .await?
         .ok_or_else(|| ApiError::not_found("document"))?;
-    let mut platform = Platform::new(state.tenant_id, mvp_signature_policy());
+    let mut platform = Platform::new(state.tenant_id, development_signature_policy());
     platform
         .restore_document_version(document, version)
         .map_err(ApiError::domain)?;
@@ -1704,7 +2214,6 @@ async fn acknowledge_distribution(
     let updated = platform
         .distribution(distribution_id)
         .ok_or_else(|| ApiError::not_found("updated distribution"))?;
-    let mut unit = state.store.begin().await?;
     unit.save_distribution(state.tenant_id, updated).await?;
     let acknowledgement = platform
         .acknowledgements()
@@ -1724,12 +2233,19 @@ async fn acknowledge_distribution(
         )
         .await?;
     }
-    unit.commit().await?;
-    Ok(Json(DistributionResponse {
+    let response = DistributionResponse {
         distribution_id: distribution_id.to_string(),
         acknowledgement_id: Some(acknowledgement_id.to_string()),
         status: updated.status().label().to_owned(),
-    }))
+    };
+    if let Some(key) = idempotency_key.as_deref() {
+        let body = serde_json::to_value(&response)
+            .map_err(|_| ApiError::internal("could not store idempotent response"))?;
+        unit.complete_idempotency(state.tenant_id, key, StatusCode::OK.as_u16() as i32, &body)
+            .await?;
+    }
+    unit.commit().await?;
+    Ok(Json(response))
 }
 
 fn parse_timestamp(value: &str) -> Result<OffsetDateTime, ApiError> {
@@ -1783,15 +2299,10 @@ async fn authenticated_identity(
     state: &ApiState,
     headers: &HeaderMap,
 ) -> Result<procuchain_postgres::identity::UserIdentity, ApiError> {
-    let supplied = headers
-        .get("authorization")
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.strip_prefix("Bearer "))
-        .filter(|value| !value.is_empty())
-        .ok_or_else(ApiError::unauthorized)?;
+    let supplied = session_cookie(headers).ok_or_else(ApiError::unauthorized)?;
     let identity = state
         .store
-        .resolve_api_token(state.tenant_id, supplied)
+        .resolve_session(state.tenant_id, supplied, OffsetDateTime::now_utc())
         .await?
         .ok_or_else(ApiError::unauthorized)?;
     if !identity.active {
@@ -1805,6 +2316,26 @@ async fn authenticated_identity(
         ));
     }
     Ok(identity)
+}
+
+fn bearer_token(headers: &HeaderMap) -> Option<&str> {
+    headers
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .filter(|value| !value.is_empty())
+}
+
+fn session_cookie(headers: &HeaderMap) -> Option<&str> {
+    headers
+        .get("cookie")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|cookies| {
+            cookies.split(';').find_map(|cookie| {
+                let (name, value) = cookie.trim().split_once('=')?;
+                (name == SESSION_COOKIE && !value.is_empty()).then_some(value)
+            })
+        })
 }
 
 #[derive(Debug, Serialize)]
@@ -1828,6 +2359,15 @@ impl ApiError {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: "validation_error",
             message: error.to_string(),
+            correlation_id: Uuid::now_v7().to_string(),
+        }
+    }
+
+    fn validation(message: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::UNPROCESSABLE_ENTITY,
+            code: "validation_error",
+            message: message.into(),
             correlation_id: Uuid::now_v7().to_string(),
         }
     }
@@ -1885,6 +2425,15 @@ impl ApiError {
             correlation_id: Uuid::now_v7().to_string(),
         }
     }
+
+    fn storage(error: StorageError) -> Self {
+        Self {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            code: "storage_error",
+            message: error.to_string(),
+            correlation_id: Uuid::now_v7().to_string(),
+        }
+    }
 }
 
 impl From<StoreError> for ApiError {
@@ -1928,10 +2477,12 @@ impl ResponseCorrelation for Response {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::{ApiState, router, router_with_state};
     use axum::{
         body::Body,
-        http::{Request, StatusCode},
+        http::{HeaderValue, Request, StatusCode},
         response::IntoResponse,
     };
     use procuchain_postgres::PgStore;
@@ -1939,6 +2490,8 @@ mod tests {
     use serde_json::{Value, json};
     use tower::ServiceExt;
     use uuid::Uuid;
+
+    const OPENAPI: &str = include_str!("../openapi.json");
 
     async fn state() -> Option<ApiState> {
         let Ok(database_url) = std::env::var("PROCUCHAIN_TEST_DATABASE_URL") else {
@@ -1966,7 +2519,7 @@ mod tests {
         )
         .bind(actor_id)
         .bind(tenant_id.as_uuid())
-        .bind("MVP BAC Chairperson")
+        .bind("Development BAC Chairperson")
         .execute(store.pool())
         .await
         .expect("test actor exists");
@@ -1988,7 +2541,7 @@ mod tests {
         )
         .bind(committee_id)
         .bind(tenant_id.as_uuid())
-        .bind("MVP BAC")
+        .bind("Development BAC")
         .execute(store.pool())
         .await
         .expect("test committee exists");
@@ -2007,7 +2560,7 @@ mod tests {
             )
             .bind(user_id)
             .bind(tenant_id.as_uuid())
-            .bind(format!("MVP BAC Member {index}"))
+            .bind(format!("Development BAC Member {index}"))
             .execute(store.pool())
             .await
             .expect("test BAC user exists");
@@ -2051,7 +2604,7 @@ mod tests {
         )
         .bind(tenant_id.as_uuid())
         .bind(actor_id)
-        .bind(ContentHash::sha256(b"mvp-development-token").as_str())
+        .bind(ContentHash::sha256(b"procuchain-development-token").as_str())
         .execute(store.pool())
         .await
         .expect("test API token exists");
@@ -2061,9 +2614,34 @@ mod tests {
             Actor::new(
                 UserId::from_uuid(actor_id),
                 ActorRole::BacChairperson,
-                "MVP BAC Chairperson",
+                "Development BAC Chairperson",
             ),
         ))
+    }
+
+    async fn session_cookie(state: &ApiState) -> String {
+        let response = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/auth/session")
+                    .header("authorization", "Bearer procuchain-development-token")
+                    .body(Body::empty())
+                    .expect("session request is valid"),
+            )
+            .await
+            .expect("session route responds");
+        assert_eq!(response.status(), StatusCode::CREATED);
+        response
+            .headers()
+            .get("set-cookie")
+            .expect("session response has a cookie")
+            .to_str()
+            .expect("session cookie is valid ASCII")
+            .split(';')
+            .next()
+            .expect("session cookie has a value")
+            .to_owned()
     }
 
     #[tokio::test]
@@ -2087,6 +2665,14 @@ mod tests {
                 .expect("response has a correlation ID"),
             "test-correlation-123"
         );
+        assert_eq!(
+            response.headers().get("x-content-type-options"),
+            Some(&HeaderValue::from_static("nosniff"))
+        );
+        assert_eq!(
+            response.headers().get("x-frame-options"),
+            Some(&HeaderValue::from_static("DENY"))
+        );
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
             .expect("response body is readable");
@@ -2094,6 +2680,351 @@ mod tests {
             body,
             r#"{"status":"ok","service":"procuchain","api_version":"v1"}"#
         );
+    }
+
+    #[tokio::test]
+    async fn rust_serves_the_workbench_shell_without_laravel() {
+        let response = router()
+            .oneshot(
+                Request::builder()
+                    .uri("/workbench")
+                    .body(Body::empty())
+                    .expect("workbench request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("workbench body is readable");
+        let body = String::from_utf8(body.to_vec()).expect("workbench body is UTF-8");
+        assert!(body.contains("data-page"));
+        assert!(body.contains("workbench"));
+    }
+
+    #[tokio::test]
+    async fn sessions_replace_direct_bearer_access_and_can_be_revoked() {
+        let Some(state) = state().await else {
+            return;
+        };
+        let session = session_cookie(&state).await;
+        let response = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/me")
+                    .header("cookie", &session)
+                    .body(Body::empty())
+                    .expect("session request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let bearer_response = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/me")
+                    .header("authorization", "Bearer procuchain-development-token")
+                    .body(Body::empty())
+                    .expect("bearer request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(bearer_response.status(), StatusCode::UNAUTHORIZED);
+
+        let logout = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri("/api/v1/auth/session")
+                    .header("cookie", &session)
+                    .body(Body::empty())
+                    .expect("logout request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(logout.status(), StatusCode::NO_CONTENT);
+
+        let revoked_response = router_with_state(state)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/me")
+                    .header("cookie", &session)
+                    .body(Body::empty())
+                    .expect("revoked session request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(revoked_response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn workflow_task_api_supports_create_claim_complete_and_read() {
+        let Some(state) = state().await else {
+            return;
+        };
+        let session = session_cookie(&state).await;
+        let response = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/workflow/tasks")
+                    .header("content-type", "application/json")
+                    .header("cookie", &session)
+                    .body(Body::from(
+                        r#"{"task_type":"ppmp_review","subject_ref":"ppmp:acceptance"}"#,
+                    ))
+                    .expect("task create request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(response.status(), StatusCode::CREATED);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body");
+        let task: Value = serde_json::from_slice(&body).expect("task response is JSON");
+        let task_id = task["id"].as_str().expect("task ID");
+        assert_eq!(task["status"], "pending");
+
+        let response = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/v1/workflow/tasks/{task_id}/claim"))
+                    .header("cookie", &session)
+                    .body(Body::empty())
+                    .expect("task claim request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = router_with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/v1/workflow/tasks/{task_id}/complete"))
+                    .header("content-type", "application/json")
+                    .header("cookie", &session)
+                    .body(Body::from(r#"{"outcome":"validated"}"#))
+                    .expect("task completion request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = router_with_state(state)
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/workflow/tasks/{task_id}"))
+                    .header("cookie", &session)
+                    .body(Body::empty())
+                    .expect("task read request is valid"),
+            )
+            .await
+            .expect("router responds");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body");
+        let task: Value = serde_json::from_slice(&body).expect("task response is JSON");
+        assert_eq!(task["status"], "completed");
+        assert_eq!(task["outcome"], "validated");
+    }
+
+    #[test]
+    fn rate_limiter_rejects_requests_after_the_configured_window_budget() {
+        let limiter = super::RateLimiter::new(1, Duration::from_secs(60));
+        assert!(limiter.allow("test-client"));
+        assert!(!limiter.allow("test-client"));
+        assert!(limiter.allow("different-client"));
+    }
+
+    #[test]
+    fn ppmp_template_validation_rejects_unregistered_metadata() {
+        let request: super::CreatePpmpRequest = serde_json::from_value(json!({
+            "title": "PPMP",
+            "content": {
+                "fiscal_year": 2026,
+                "end_user_unit": "General Services",
+                "project_title": "Office supplies",
+                "scope": "Common office supplies",
+                "market_scoping_ref": "MS-001",
+                "abc_basis": "Recent canvass",
+                "schedule": "Q1 2026",
+                "risks": [],
+                "lines": [{
+                    "line_id": "1",
+                    "description": "Bond paper",
+                    "quantity": 10,
+                    "unit": "ream",
+                    "estimated_cost": {"centavos": 25000, "currency": "Php"},
+                    "schedule": "January 2026",
+                    "mode_consideration": "Small Value Procurement"
+                }]
+            },
+            "template_id": "unregistered-template",
+            "template_version": "2026.1",
+            "template_authority": "PE template register",
+            "schema_id": "ppmp-schema",
+            "schema_version": "1.0",
+            "rule_pack_snapshot_id": "018f0e2e-6f7a-7b6c-8d5e-4c3b2a190001",
+            "rule_pack_id": "rp-2026-a",
+            "rule_pack_hash": "6f1ed002ab5595859014ebf0951522d7a5a3fdd1b2f3c7d7a8a0d8c6e1d6a5a5"
+        }))
+        .expect("test request is valid JSON");
+        let error =
+            super::validate_ppmp_request(&request).expect_err("template must be registered");
+        assert_eq!(error.code, "validation_error");
+        assert!(error.message.contains("registered ppmp-template"));
+    }
+
+    #[test]
+    fn openapi_contract_covers_the_versioned_router_surface() {
+        let document: Value =
+            serde_json::from_str(OPENAPI).expect("OpenAPI contract is valid JSON");
+        assert_eq!(document["openapi"], "3.1.0");
+        assert_eq!(document["servers"][0]["url"], "/api/v1");
+        assert_eq!(
+            document["security"][0]["sessionCookie"]
+                .as_array()
+                .map(Vec::len),
+            Some(0)
+        );
+        assert_eq!(
+            document["components"]["securitySchemes"]["sessionCookie"]["in"],
+            "cookie"
+        );
+
+        let paths = document["paths"].as_object().expect("paths are an object");
+        for path in [
+            "/auth/session",
+            "/workflow/tasks",
+            "/workflow/tasks/{task_id}",
+            "/workflow/tasks/{task_id}/claim",
+            "/workflow/tasks/{task_id}/complete",
+            "/health",
+            "/me",
+            "/committees/{committee_id}/members",
+            "/ppmp",
+            "/ppmp/{version_id}",
+            "/ppmp/{version_id}/indicative-app",
+            "/app/{version_id}/bac-resolution",
+            "/app/{version_id}/hope-approval",
+            "/app/{version_id}/signature-request",
+            "/signature-requests/{request_id}/complete",
+            "/app/{version_id}/issue",
+            "/issuances/{issuance_id}/artifacts/{artifact_id}",
+            "/documents/{version_id}/submit",
+            "/distributions/{distribution_id}/deliver",
+            "/distributions/{distribution_id}/acknowledge",
+        ] {
+            assert!(paths.contains_key(path), "OpenAPI is missing {path}");
+        }
+
+        assert_eq!(
+            document["components"]["schemas"]["ErrorResponse"]["required"],
+            json!(["code", "message", "correlation_id"])
+        );
+
+        for schema in [
+            "CreatePpmpRequest",
+            "CreateIndicativeAppRequest",
+            "CreateBacResolutionRequest",
+            "CreateHopeApprovalRequest",
+            "CreateSignatureRequest",
+            "CompleteSignatureRequest",
+            "IssueAppRequest",
+            "RecordDeliveryRequest",
+            "AcknowledgeDistributionRequest",
+            "CreatePpmpResponse",
+            "BacResolutionResponse",
+            "HopeApprovalResponse",
+            "SignatureResponse",
+            "IssuanceResponse",
+            "DistributionResponse",
+            "ArtifactUploadResponse",
+            "CreateWorkflowTaskRequest",
+            "CompleteWorkflowTaskRequest",
+            "WorkflowTaskResponse",
+        ] {
+            assert!(
+                document["components"]["schemas"].get(schema).is_some(),
+                "OpenAPI is missing schema {schema}"
+            );
+        }
+
+        let upload = &paths["/issuances/{issuance_id}/artifacts/{artifact_id}"]["post"];
+        assert_eq!(
+            upload["requestBody"]["content"]["application/octet-stream"]["schema"]["format"],
+            "binary"
+        );
+        assert_eq!(
+            upload["responses"]["201"]["content"]["application/json"]["schema"]["$ref"],
+            "#/components/schemas/ArtifactUploadResponse"
+        );
+
+        for (path, request_schema, response_code, response_schema) in [
+            ("/ppmp", "CreatePpmpRequest", "201", "CreatePpmpResponse"),
+            (
+                "/ppmp/{version_id}/indicative-app",
+                "CreateIndicativeAppRequest",
+                "201",
+                "CreatePpmpResponse",
+            ),
+            (
+                "/app/{version_id}/bac-resolution",
+                "CreateBacResolutionRequest",
+                "201",
+                "BacResolutionResponse",
+            ),
+            (
+                "/app/{version_id}/hope-approval",
+                "CreateHopeApprovalRequest",
+                "201",
+                "HopeApprovalResponse",
+            ),
+            (
+                "/app/{version_id}/signature-request",
+                "CreateSignatureRequest",
+                "201",
+                "SignatureResponse",
+            ),
+            (
+                "/signature-requests/{request_id}/complete",
+                "CompleteSignatureRequest",
+                "201",
+                "SignatureResponse",
+            ),
+            (
+                "/app/{version_id}/issue",
+                "IssueAppRequest",
+                "201",
+                "IssuanceResponse",
+            ),
+            (
+                "/distributions/{distribution_id}/deliver",
+                "RecordDeliveryRequest",
+                "200",
+                "DistributionResponse",
+            ),
+            (
+                "/distributions/{distribution_id}/acknowledge",
+                "AcknowledgeDistributionRequest",
+                "200",
+                "DistributionResponse",
+            ),
+        ] {
+            let operation = &paths[path]["post"];
+            assert_eq!(
+                operation["requestBody"]["content"]["application/json"]["schema"]["$ref"],
+                format!("#/components/schemas/{request_schema}")
+            );
+            assert_eq!(
+                operation["responses"][response_code]["content"]["application/json"]["schema"]["$ref"],
+                format!("#/components/schemas/{response_schema}")
+            );
+        }
     }
 
     #[test]
@@ -2128,13 +3059,14 @@ mod tests {
         let Some(created_state) = state().await else {
             return;
         };
+        let created_session = session_cookie(&created_state).await;
         let response = router_with_state(created_state)
             .oneshot(
                 Request::builder()
                     .method("POST")
                     .uri("/api/v1/ppmp")
                     .header("content-type", "application/json")
-                    .header("authorization", "Bearer mvp-development-token")
+                    .header("cookie", &created_session)
                     .body(Body::from(
                         r#"{
                             "title":"PPMP FY 2026",
@@ -2184,11 +3116,12 @@ mod tests {
         let Some(restarted_state) = state().await else {
             return;
         };
+        let restarted_session = session_cookie(&restarted_state).await;
         let response = router_with_state(restarted_state)
             .oneshot(
                 Request::builder()
                     .uri(format!("/api/v1/ppmp/{version_id}"))
-                    .header("authorization", "Bearer mvp-development-token")
+                    .header("cookie", &restarted_session)
                     .body(Body::empty())
                     .expect("request is valid"),
             )
@@ -2206,13 +3139,14 @@ mod tests {
         let Some(app_state) = state().await else {
             return;
         };
+        let app_session = session_cookie(&app_state).await;
         let response = router_with_state(app_state)
             .oneshot(
                 Request::builder()
                     .method("POST")
                     .uri(format!("/api/v1/ppmp/{version_id}/indicative-app"))
                     .header("content-type", "application/json")
-                    .header("authorization", "Bearer mvp-development-token")
+                    .header("cookie", &app_session)
                     .body(Body::from(
                         r#"{
                             "title":"Indicative APP FY 2026",
@@ -2238,13 +3172,14 @@ mod tests {
         let Some(state) = state().await else {
             return;
         };
+        let session = session_cookie(&state).await;
         let response = router_with_state(state)
             .oneshot(
                 Request::builder()
                     .method("POST")
                     .uri("/api/v1/ppmp")
                     .header("content-type", "application/json")
-                    .header("authorization", "Bearer mvp-development-token")
+                    .header("cookie", &session)
                     .body(Body::from("{\"title\":\"invalid\"}"))
                     .expect("request is valid"),
             )
@@ -2277,11 +3212,12 @@ mod tests {
         let Some(state) = state().await else {
             return;
         };
+        let session = session_cookie(&state).await;
         let response = router_with_state(state)
             .oneshot(
                 Request::builder()
                     .uri("/api/v1/committees/018f0e2e-6f7a-7b6c-8d5e-4c3b2a190090/members")
-                    .header("authorization", "Bearer mvp-development-token")
+                    .header("cookie", &session)
                     .body(Body::empty())
                     .expect("request is valid"),
             )
@@ -2297,13 +3233,14 @@ mod tests {
     }
 
     async fn post_json(state: ApiState, path: String, payload: Value) -> (StatusCode, Value) {
+        let session = session_cookie(&state).await;
         let response = router_with_state(state)
             .oneshot(
                 Request::builder()
                     .method("POST")
                     .uri(path)
                     .header("content-type", "application/json")
-                    .header("authorization", "Bearer mvp-development-token")
+                    .header("cookie", &session)
                     .body(Body::from(payload.to_string()))
                     .expect("request is valid"),
             )
@@ -2370,7 +3307,7 @@ mod tests {
             "018f0e2e-6f7a-7b6c-8d5e-4c3b2a190093",
             "018f0e2e-6f7a-7b6c-8d5e-4c3b2a190094",
         ];
-        let bac = json!({"resolution_number":"BAC-AC120-001","membership":{"committee_id":"018f0e2e-6f7a-7b6c-8d5e-4c3b2a190090","members":[{"user_id":ids[0],"seat":"Chairperson","display_name":"MVP BAC Chairperson"},{"user_id":ids[1],"seat":"ViceChairperson","display_name":"MVP BAC Member 0"},{"user_id":ids[2],"seat":"Member","display_name":"MVP BAC Member 1"},{"user_id":ids[3],"seat":"Member","display_name":"MVP BAC Member 2"},{"user_id":ids[4],"seat":"Member","display_name":"MVP BAC Member 3"}]},"attendance":ids,"votes":[{"user_id":ids[1],"vote":"Recommend"},{"user_id":ids[2],"vote":"Recommend"},{"user_id":ids[3],"vote":"Recommend"},{"user_id":ids[4],"vote":"Recommend"}]});
+        let bac = json!({"resolution_number":"BAC-AC120-001","membership":{"committee_id":"018f0e2e-6f7a-7b6c-8d5e-4c3b2a190090","members":[{"user_id":ids[0],"seat":"Chairperson","display_name":"Development BAC Chairperson"},{"user_id":ids[1],"seat":"ViceChairperson","display_name":"Development BAC Member 0"},{"user_id":ids[2],"seat":"Member","display_name":"Development BAC Member 1"},{"user_id":ids[3],"seat":"Member","display_name":"Development BAC Member 2"},{"user_id":ids[4],"seat":"Member","display_name":"Development BAC Member 3"}]},"attendance":ids,"votes":[{"user_id":ids[1],"vote":"Recommend"},{"user_id":ids[2],"vote":"Recommend"},{"user_id":ids[3],"vote":"Recommend"},{"user_id":ids[4],"vote":"Recommend"}]});
         let (status, bac_result) = post_json(
             state.clone(),
             format!("/api/v1/app/{app_id}/bac-resolution"),

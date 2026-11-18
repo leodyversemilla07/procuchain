@@ -13,9 +13,9 @@ async fn main() {
 
     println!("ProcuChain API listening on http://{address}");
     let bearer_token = std::env::var("PROCUCHAIN_DEV_BEARER_TOKEN")
-        .unwrap_or_else(|_| "mvp-development-token".to_owned());
+        .unwrap_or_else(|_| "procuchain-development-token".to_owned());
     let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be configured for the durable MVP API");
+        .expect("DATABASE_URL must be configured for the durable Development API");
     let store = PgStore::connect(&database_url)
         .await
         .expect("the configured PostgreSQL database must be reachable");
@@ -32,11 +32,24 @@ async fn main() {
         "PROCUCHAIN_ACTOR_ID",
         "018f0e2e-6f7a-7b6c-8d5e-4c3b2a190098",
     ));
+    store
+        .ensure_development_identity(
+            tenant_id,
+            actor_id,
+            "Development BAC Chairperson",
+            &bearer_token,
+        )
+        .await
+        .expect("the development identity must be provisioned");
 
     let state = ApiState::with_bearer_token(
         store,
         tenant_id,
-        Actor::new(actor_id, ActorRole::BacChairperson, "MVP BAC Chairperson"),
+        Actor::new(
+            actor_id,
+            ActorRole::BacChairperson,
+            "Development BAC Chairperson",
+        ),
         bearer_token,
     );
     axum::serve(listener, router_with_state(state))

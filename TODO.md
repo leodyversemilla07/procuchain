@@ -39,7 +39,7 @@
 The in-memory service works; persistence now rehydrates the same aggregates from PostgreSQL.
 
 - [x] Choose and document the persistence stack: PostgreSQL + SQLx + migrations.
-- [x] Add local PostgreSQL via Docker Compose and a CI service container. Local development can use `postgres://procuchain:procuchain_local_dev@127.0.0.1:5433/procuchain` and `PROCUCHAIN_TEST_DATABASE_URL`.
+- [~] Configure a locally managed PostgreSQL instance and CI database service. The WSL PostgreSQL instance is now usable for local verification with `PROCUCHAIN_TEST_DATABASE_URL`; CI database provisioning remains.
 - [x] Create migrations for:
   - tenants, users, roles, organizational units, committees, and memberships;
   - documents, document versions, canonical content, template/schema/rule-pack references;
@@ -70,8 +70,8 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 ### 2.3 API and React workbench (P0)
 
 - [~] Choose Axum (or document an alternative) and add versioned `/api/v1` command/resource endpoints. Axum is now the transport boundary; only the initial health endpoint exists.
-- [ ] Add OpenAPI generation and contract tests.
-- [~] Add idempotency keys and optimistic concurrency for state-changing commands. PPMP creation, indicative APP creation, BAC resolution creation, HoPE approval, signature-request creation, signature completion, and document submission support transactional idempotency; submission, APP derivation, BAC resolution, HoPE approval, signature-request creation, and signature completion validate `If-Match` row-version preconditions. Remaining commands still need keys and version preconditions.
+- [~] Add OpenAPI generation and contract tests. A checked-in OpenAPI 3.1 contract and route-surface contract test now cover the API; generated schemas and request/response field validation remain.
+- [~] Add idempotency keys and optimistic concurrency for state-changing commands. PPMP creation, indicative APP creation, BAC resolution creation, HoPE approval, signature-request creation, signature completion, issuance, delivery, acknowledgement, and document submission support transactional idempotency; submission, APP derivation, BAC resolution, HoPE approval, signature-request creation, signature completion, issuance, delivery, and acknowledgement validate `If-Match` row-version preconditions.
 - [~] Add the stable API error model: machine code, message, correlation ID, field violations. Machine codes and correlation IDs are implemented; field-level violations remain.
 - [ ] Add authentication/session handling, CSRF protection, security headers, and rate limits.
 - [ ] Build React/TypeScript workbench pages for:
@@ -107,11 +107,11 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 - [ ] Implement a provider-neutral signature adapter, callback security, verification, revocation, and evidence bundles.
 - [ ] Implement signature-method matrices per PE and document class.
 - [ ] Implement issuance withdrawal/reissue and per-distribution artifact binding.
-- [ ] Implement publication records, PhilGEPS adapter boundary, manual fallback, and reconciliation evidence.
+- [~] Implement publication records, PhilGEPS adapter boundary, manual fallback, and reconciliation evidence. Provider-neutral publication/timestamp/retention ports and persisted-outbox dispatch are implemented; concrete adapters and publication records remain.
 - [ ] Implement evidence-bundle assembly, hashed/signed manifests, export, and printable evidence views.
 - [x] Implement the audit hash chain, Merkle-batched anchors, inclusion proofs, and anchor verification.
-- [ ] Configure an RFC 3161 timestamp authority and store its receipts. `[L]` Provider selection and admissibility need legal and records-management review.
-- [ ] Add WORM retention and public posting of anchor roots and inclusion proofs. `[L]` Publishing channel and legal effect need review.
+- [~] Configure an RFC 3161 timestamp authority and store its receipts. `[L]` A provider-neutral timestamp port and outbox route exist; provider selection and admissibility need review.
+- [~] Add WORM retention and public posting of anchor roots and inclusion proofs. `[L]` A provider-neutral retention port and outbox route exist; the WORM backend and legal effect need review.
 - [ ] Run an end-to-end browser/API acceptance test and independent audit reconstruction.
 
 ---
@@ -315,7 +315,7 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 
 ### Operations
 
-- [ ] Docker Compose for local PostgreSQL, object storage, and fake providers.
+- [~] Local PostgreSQL, object storage, and fake providers. A content-addressed filesystem object-store boundary is implemented; provider deployment and artifact API integration remain.
 - [ ] CI: formatting, clippy, tests, migrations, frontend checks, dependency audit.
 - [ ] Structured logging, correlation IDs, metrics, tracing, and health endpoints.
 - [ ] Backup/restore and point-in-time recovery rehearsal.
@@ -361,7 +361,7 @@ The current platform trusts an `Actor` supplied by the caller. A real API must r
 - [ ] Web framework: Axum recommended, or document another choice.
 - [x] Repository layout: virtual Cargo workspace with bounded-context crates (`shared`, `records`, `workflow`, `signatures`, `issuance`, `procurement`, `evidence`, `app`, and the `procuchain` binary).
 - [x] Persistence: PostgreSQL + SQLx with embedded migrations and runtime-checked queries.
-- [ ] Local object storage: MinIO/S3-compatible or filesystem abstraction with immutable keys.
+- [~] Local object storage: provider-neutral `procuchain-storage` port and content-addressed filesystem adapter are implemented; MinIO/S3 deployment and API integration remain.
 - [ ] Frontend delivery: React SPA against REST/OpenAPI versus an Inertia-compatible Rust adapter.
 - [ ] Authentication for local development and the target government identity provider.
 - [ ] Signature provider and fake-provider contract.

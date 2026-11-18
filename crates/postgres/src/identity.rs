@@ -1,4 +1,4 @@
-//! Durable users and role assignments for the MVP identity boundary.
+//! Durable users and role assignments for the Development identity boundary.
 
 use procuchain_shared::{ActorRole, ContentHash, TenantId, UserId};
 use sqlx::Row;
@@ -16,6 +16,69 @@ pub struct UserIdentity {
 }
 
 impl PgStore {
+    pub async fn create_session(
+        &self,
+        tenant_id: TenantId,
+        user_id: UserId,
+        expires_at: OffsetDateTime,
+    ) -> Result<String, StoreError> {
+        let session = uuid::Uuid::now_v7().to_string();
+        let token_hash = ContentHash::sha256(session.as_bytes());
+        sqlx::query(
+            "INSERT INTO api_sessions (id, tenant_id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4, $5)",
+        )
+        .bind(uuid::Uuid::now_v7())
+        .bind(tenant_id.as_uuid())
+        .bind(user_id.as_uuid())
+        .bind(token_hash.as_str())
+        .bind(expires_at)
+        .execute(self.pool())
+        .await?;
+        Ok(session)
+    }
+
+    pub async fn resolve_session(
+        &self,
+        tenant_id: TenantId,
+        session: &str,
+        now: OffsetDateTime,
+    ) -> Result<Option<UserIdentity>, StoreError> {
+        let token_hash = ContentHash::sha256(session.as_bytes());
+        let user_id = sqlx::query_scalar(
+            "SELECT user_id FROM api_sessions WHERE tenant_id = $1 AND token_hash = $2 AND revoked_at IS NULL AND expires_at > $3",
+        )
+        .bind(tenant_id.as_uuid())
+        .bind(token_hash.as_str())
+        .bind(now)
+        .fetch_optional(self.pool())
+        .await?;
+        match user_id {
+            Some(user_id) => {
+                self.load_user_identity(tenant_id, UserId::from_uuid(user_id))
+                    .await
+            }
+            None => Ok(None),
+        }
+    }
+
+    pub async fn revoke_session(
+        &self,
+        tenant_id: TenantId,
+        session: &str,
+        revoked_at: OffsetDateTime,
+    ) -> Result<bool, StoreError> {
+        let token_hash = ContentHash::sha256(session.as_bytes());
+        let result = sqlx::query(
+            "UPDATE api_sessions SET revoked_at = $3 WHERE tenant_id = $1 AND token_hash = $2 AND revoked_at IS NULL",
+        )
+        .bind(tenant_id.as_uuid())
+        .bind(token_hash.as_str())
+        .bind(revoked_at)
+        .execute(self.pool())
+        .await?;
+        Ok(result.rows_affected() == 1)
+    }
+
     pub async fn resolve_api_token(
         &self,
         tenant_id: TenantId,

@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Head } from '@inertiajs/react';
 import { CheckCircle2, Circle, Loader2, LockKeyhole, Send } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type StageStatus = 'pending' | 'complete' | 'active';
 
@@ -20,6 +21,14 @@ type WorkflowState = {
 
 type Principal = { user_id: string; display_name: string; roles: string[] };
 type CommitteeMember = { user_id: string; display_name: string; seat: string };
+type PpmpVersion = {
+    document_id: string;
+    version_id: string;
+    version_number: number;
+    status: string;
+    content: Record<string, unknown>;
+    content_hash: string;
+};
 
 const stages = ['PPMP', 'Indicative APP', 'BAC resolution', 'HoPE approval', 'Signature', 'Issuance', 'Delivery', 'Acknowledgement'];
 
@@ -27,51 +36,73 @@ const defaultRulePackHash = '6f1ed002ab5595859014ebf0951522d7a5a3fdd1b2f3c7d7a8a
 const defaultRulePackSnapshot = '018f0e2e-6f7a-7b6c-8d5e-4c3b2a190001';
 const defaultCommitteeId = '018f0e2e-6f7a-7b6c-8d5e-4c3b2a190090';
 
-export default function MvpWorkbench() {
-    const [token, setToken] = useState(() => localStorage.getItem('procuchain_mvp_token') ?? '');
+export default function Workbench() {
+    const [token, setToken] = useState(() => localStorage.getItem('procuchain_token') ?? '');
     const [title, setTitle] = useState('PPMP FY 2026');
+    const [fiscalYear, setFiscalYear] = useState('2026');
+    const [endUserUnit, setEndUserUnit] = useState('General Services');
+    const [projectTitle, setProjectTitle] = useState('Office supplies');
+    const [scope, setScope] = useState('Common office supplies');
+    const [schedule, setSchedule] = useState('Q1 2026');
+    const [lineDescription, setLineDescription] = useState('Bond paper');
+    const [lineQuantity, setLineQuantity] = useState('10');
+    const [lineUnit, setLineUnit] = useState('ream');
+    const [lineCost, setLineCost] = useState('25000');
     const [workflow, setWorkflow] = useState<WorkflowState>({ stage: 0 });
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState('Start by creating a validated PPMP draft.');
     const [error, setError] = useState('');
     const [principal, setPrincipal] = useState<Principal>();
     const [committeeMembers, setCommitteeMembers] = useState<CommitteeMember[]>([]);
+    const [ppmpVersion, setPpmpVersion] = useState<PpmpVersion>();
+    const [sessionReady, setSessionReady] = useState(false);
 
-    const headers = useMemo(
-        () => ({
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        }),
-        [token],
-    );
+    const headers = useMemo(() => ({ 'Content-Type': 'application/json' }), []);
     const apiUrl = (path: string) => `${import.meta.env.VITE_PROCUCHAIN_API_URL ?? ''}${path}`;
+
+    const initializeSession = useCallback(async () => {
+        setSessionReady(false);
+        setError('');
+        try {
+            const login = await fetch(apiUrl('/api/v1/auth/session'), {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: 'include',
+            });
+            const loginPayload = await login.json();
+            if (!login.ok) throw new Error(loginPayload.message ?? 'Unable to start an authenticated session.');
+            setSessionReady(true);
+            localStorage.setItem('procuchain_token', token);
+            const [me, members] = await Promise.all([
+                fetch(apiUrl('/api/v1/me'), { headers, credentials: 'include' }),
+                fetch(apiUrl(`/api/v1/committees/${defaultCommitteeId}/members`), { headers, credentials: 'include' }),
+            ]);
+            const principalPayload = await me.json();
+            const membersPayload = await members.json();
+            if (!me.ok) throw new Error(principalPayload.message ?? 'Unable to resolve authenticated user.');
+            if (!members.ok) throw new Error(membersPayload.message ?? 'Unable to load BAC membership.');
+            setPrincipal(principalPayload);
+            setCommitteeMembers(membersPayload);
+        } catch (caught) {
+            setSessionReady(false);
+            setError(caught instanceof Error ? caught.message : 'Unable to start an authenticated session.');
+        }
+    }, [headers, token]);
 
     useEffect(() => {
         if (!token) {
             setPrincipal(undefined);
+            setSessionReady(false);
             return;
         }
-        fetch(apiUrl('/api/v1/me'), { headers })
-            .then(async (response) => {
-                const payload = await response.json();
-                if (!response.ok) throw new Error(payload.message ?? 'Unable to resolve authenticated user.');
-                setPrincipal(payload);
-            })
-            .catch((caught) => setError(caught instanceof Error ? caught.message : 'Unable to resolve authenticated user.'));
-        fetch(apiUrl(`/api/v1/committees/${defaultCommitteeId}/members`), { headers })
-            .then(async (response) => {
-                const payload = await response.json();
-                if (!response.ok) throw new Error(payload.message ?? 'Unable to load BAC membership.');
-                setCommitteeMembers(payload);
-            })
-            .catch((caught) => setError(caught instanceof Error ? caught.message : 'Unable to load BAC membership.'));
-    }, [headers, token]);
+        initializeSession();
+    }, [initializeSession, token]);
 
     async function post(path: string, body: Record<string, unknown> = {}) {
         setBusy(true);
         setError('');
         try {
-            const response = await fetch(apiUrl(path), { method: 'POST', headers, body: JSON.stringify(body) });
+            const response = await fetch(apiUrl(path), { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) });
             const payload = await response.json();
             if (!response.ok) {
                 throw new Error(payload.message ?? `Request failed (${response.status})`);
@@ -82,26 +113,42 @@ export default function MvpWorkbench() {
         }
     }
 
+    async function loadPpmp(versionId: string) {
+        setError('');
+        const response = await fetch(apiUrl(`/api/v1/ppmp/${versionId}`), { headers, credentials: 'include' });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.message ?? `Unable to load PPMP (${response.status})`);
+        }
+        setPpmpVersion(payload);
+        return payload as PpmpVersion;
+    }
+
     async function createPpmp() {
+        const validationMessage = validateAuthoring();
+        if (validationMessage) {
+            setError(validationMessage);
+            return;
+        }
         try {
             const payload = await post('/api/v1/ppmp', {
                 title,
                 content: {
-                    fiscal_year: 2026,
-                    end_user_unit: 'General Services',
-                    project_title: 'Office supplies',
-                    scope: 'Common office supplies',
-                    market_scoping_ref: 'MVP-WORKBENCH-001',
+                    fiscal_year: Number(fiscalYear),
+                    end_user_unit: endUserUnit,
+                    project_title: projectTitle,
+                    scope,
+                    market_scoping_ref: 'WORKBENCH-001',
                     abc_basis: 'Recent market scoping',
-                    schedule: 'Q1 2026',
+                    schedule,
                     risks: [],
                     lines: [
                         {
                             line_id: '1',
-                            description: 'Bond paper',
-                            quantity: 10,
-                            unit: 'ream',
-                            estimated_cost: { centavos: 25000, currency: 'Php' },
+                            description: lineDescription,
+                            quantity: Number(lineQuantity),
+                            unit: lineUnit,
+                            estimated_cost: { centavos: Number(lineCost), currency: 'Php' },
                             schedule: 'January 2026',
                             mode_consideration: 'Small Value Procurement',
                         },
@@ -116,12 +163,26 @@ export default function MvpWorkbench() {
                 rule_pack_id: 'rp-2026-a',
                 rule_pack_hash: defaultRulePackHash,
             });
-            localStorage.setItem('procuchain_mvp_token', token);
             setWorkflow({ stage: 1, ppmpVersionId: payload.version_id, contentHash: payload.content_hash });
+            await loadPpmp(payload.version_id);
             setMessage(`PPMP ${payload.version_id} created and durably stored.`);
         } catch (caught) {
             setError(caught instanceof Error ? caught.message : 'Unable to create PPMP.');
         }
+    }
+
+    function validateAuthoring(): string | undefined {
+        if (!title.trim()) return 'title is required.';
+        if (!/^(20\d{2}|2100)$/.test(fiscalYear)) return 'fiscal_year must be between 2000 and 2100.';
+        if (!endUserUnit.trim()) return 'end_user_unit is required.';
+        if (!projectTitle.trim()) return 'project_title is required.';
+        if (!scope.trim()) return 'scope is required.';
+        if (!schedule.trim()) return 'schedule is required.';
+        if (!lineDescription.trim()) return 'lines[0].description is required.';
+        if (!Number.isInteger(Number(lineQuantity)) || Number(lineQuantity) <= 0) return 'lines[0].quantity must be positive.';
+        if (!lineUnit.trim()) return 'lines[0].unit is required.';
+        if (!Number.isInteger(Number(lineCost)) || Number(lineCost) <= 0) return 'lines[0].estimated_cost must be positive.';
+        return undefined;
     }
 
     async function deriveApp() {
@@ -221,7 +282,7 @@ export default function MvpWorkbench() {
                 {
                     signed_at: '2030-01-02T00:00:00Z',
                     provider_transaction: `workbench-${Date.now()}`,
-                    credential_ref: 'mvp-workbench',
+                    credential_ref: 'workbench',
                     signed_artifact_hash: workflow.contentHash,
                     validation: 'Valid',
                 },
@@ -294,12 +355,12 @@ export default function MvpWorkbench() {
 
     return (
         <>
-            <Head title="MVP Workbench" />
+            <Head title="Workbench" />
             <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950 sm:px-8">
                 <div className="mx-auto flex max-w-7xl flex-col gap-6">
                     <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <p className="text-sm font-semibold tracking-wide text-blue-700 uppercase">ProcuChain MVP</p>
+                            <p className="text-sm font-semibold tracking-wide text-blue-700 uppercase">ProcuChain</p>
                             <h1 className="mt-1 text-3xl font-semibold tracking-tight">AC-120 workflow workbench</h1>
                             <p className="mt-2 max-w-2xl text-sm text-slate-600">
                                 A guided workspace for the first governed slice: planning, review, approval, signing, issuance, delivery, and
@@ -315,26 +376,29 @@ export default function MvpWorkbench() {
                         <CardHeader>
                             <CardTitle>Authenticated session</CardTitle>
                             <CardDescription>
-                                Use the MVP bearer token configured for the API. It is stored locally in this browser only.
+                                Use the development bearer token configured for the API. It is stored locally in this browser only.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                             <div className="grid gap-2">
-                                <Label htmlFor="mvp-token">Bearer token</Label>
+                                <Label htmlFor="bearer-token">Bearer token</Label>
                                 <Input
-                                    id="mvp-token"
+                                    id="bearer-token"
+                                    data-testid="bearer-token"
                                     type="password"
                                     value={token}
                                     onChange={(event) => setToken(event.target.value)}
-                                    placeholder="Paste MVP token"
+                                    placeholder="Paste development token"
                                 />
                             </div>
-                            <Button variant="outline" onClick={() => localStorage.setItem('procuchain_mvp_token', token)}>
-                                Save session
+                            <Button data-testid="start-session" variant="outline" disabled={!token || busy} onClick={initializeSession}>
+                                Start session
                             </Button>
                             {principal ? (
                                 <p className="text-xs text-slate-600">
-                                    {principal.display_name} · {principal.roles.join(', ')}
+                                    <span data-testid="authenticated-principal">
+                                        {principal.display_name} · {principal.roles.join(', ')}
+                                    </span>
                                 </p>
                             ) : null}
                             <p className="text-xs text-slate-600">
@@ -370,27 +434,80 @@ export default function MvpWorkbench() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-5">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="ppmp-title">PPMP title</Label>
-                                    <Input id="ppmp-title" value={title} onChange={(event) => setTitle(event.target.value)} />
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2 sm:col-span-2">
+                                        <Label htmlFor="ppmp-title">PPMP title</Label>
+                                        <Input id="ppmp-title" value={title} onChange={(event) => setTitle(event.target.value)} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="fiscal-year">Fiscal year</Label>
+                                        <Input
+                                            id="fiscal-year"
+                                            inputMode="numeric"
+                                            value={fiscalYear}
+                                            onChange={(event) => setFiscalYear(event.target.value)}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="end-user-unit">End-user unit</Label>
+                                        <Input id="end-user-unit" value={endUserUnit} onChange={(event) => setEndUserUnit(event.target.value)} />
+                                    </div>
+                                    <div className="grid gap-2 sm:col-span-2">
+                                        <Label htmlFor="project-title">Project title</Label>
+                                        <Input id="project-title" value={projectTitle} onChange={(event) => setProjectTitle(event.target.value)} />
+                                    </div>
+                                    <div className="grid gap-2 sm:col-span-2">
+                                        <Label htmlFor="scope">Scope</Label>
+                                        <Textarea id="scope" value={scope} onChange={(event) => setScope(event.target.value)} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="schedule">Schedule</Label>
+                                        <Input id="schedule" value={schedule} onChange={(event) => setSchedule(event.target.value)} />
+                                    </div>
                                 </div>
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    <div className="rounded-lg bg-slate-100 p-4">
-                                        <p className="text-xs text-slate-500">Fiscal year</p>
-                                        <p className="mt-1 font-semibold">2026</p>
-                                    </div>
-                                    <div className="rounded-lg bg-slate-100 p-4">
-                                        <p className="text-xs text-slate-500">End-user unit</p>
-                                        <p className="mt-1 font-semibold">General Services</p>
-                                    </div>
-                                    <div className="rounded-lg bg-slate-100 p-4">
-                                        <p className="text-xs text-slate-500">Line items</p>
-                                        <p className="mt-1 font-semibold">1 validated line</p>
+                                <div className="rounded-lg border p-4">
+                                    <p className="mb-3 text-sm font-medium">First procurement line</p>
+                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                        <div className="grid gap-2 lg:col-span-2">
+                                            <Label htmlFor="line-description">Description</Label>
+                                            <Input
+                                                id="line-description"
+                                                value={lineDescription}
+                                                onChange={(event) => setLineDescription(event.target.value)}
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="line-quantity">Quantity</Label>
+                                            <Input
+                                                id="line-quantity"
+                                                inputMode="numeric"
+                                                value={lineQuantity}
+                                                onChange={(event) => setLineQuantity(event.target.value)}
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="line-unit">Unit</Label>
+                                            <Input id="line-unit" value={lineUnit} onChange={(event) => setLineUnit(event.target.value)} />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="line-cost">Estimated cost (centavos)</Label>
+                                            <Input
+                                                id="line-cost"
+                                                inputMode="numeric"
+                                                value={lineCost}
+                                                onChange={(event) => setLineCost(event.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-3">
                                     {actions.map((action) => (
-                                        <Button key={action.label} disabled={busy || action.disabled || !token} onClick={action.onClick}>
+                                        <Button
+                                            key={action.label}
+                                            data-testid={action.label.toLowerCase().replaceAll(' ', '-')}
+                                            disabled={busy || action.disabled || !sessionReady}
+                                            onClick={action.onClick}
+                                        >
                                             {busy && !action.disabled ? <Loader2 className="animate-spin" /> : null}
                                             {action.label}
                                         </Button>
@@ -410,7 +527,7 @@ export default function MvpWorkbench() {
                                 <CardDescription>Identifiers are retained as the workflow advances.</CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-4 text-sm">
-                                <Evidence label="PPMP version" value={workflow.ppmpVersionId} />
+                                <Evidence label="PPMP version" value={workflow.ppmpVersionId} testId="ppmp-version-id" />
                                 <Evidence label="APP version" value={workflow.appVersionId} />
                                 <Evidence label="Content hash" value={workflow.contentHash} />
                                 <p className="text-xs leading-relaxed text-slate-500">
@@ -420,17 +537,59 @@ export default function MvpWorkbench() {
                             </CardContent>
                         </Card>
                     </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Document and version view</CardTitle>
+                            <CardDescription>Read the immutable PPMP version back from the API after it is created.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                                <Evidence label="Document" value={ppmpVersion?.document_id} />
+                                <Evidence
+                                    label="Version"
+                                    value={ppmpVersion ? `v${ppmpVersion.version_number} · ${ppmpVersion.status}` : undefined}
+                                />
+                                {workflow.ppmpVersionId ? (
+                                    <Button
+                                        data-testid="refresh-ppmp-version"
+                                        variant="outline"
+                                        disabled={busy || !sessionReady}
+                                        onClick={() =>
+                                            loadPpmp(workflow.ppmpVersionId!).catch((caught) =>
+                                                setError(caught instanceof Error ? caught.message : 'Unable to load PPMP.'),
+                                            )
+                                        }
+                                    >
+                                        Refresh version
+                                    </Button>
+                                ) : null}
+                            </div>
+                            <div className="grid gap-2">
+                                <p className="text-xs font-medium text-slate-500">Canonical content returned by GET /api/v1/ppmp/{'{version_id}'}</p>
+                                <pre
+                                    data-testid="document-version-content"
+                                    className="max-h-96 overflow-auto rounded-lg bg-slate-950 p-4 text-xs leading-relaxed text-slate-100"
+                                >
+                                    {ppmpVersion ? JSON.stringify(ppmpVersion.content, null, 2) : 'Create a PPMP to load its persisted version.'}
+                                </pre>
+                            </div>
+                            <Evidence label="Persisted content hash" value={ppmpVersion?.content_hash} />
+                        </CardContent>
+                    </Card>
                 </div>
             </main>
         </>
     );
 }
 
-function Evidence({ label, value }: { label: string; value?: string }) {
+function Evidence({ label, value, testId }: { label: string; value?: string; testId?: string }) {
     return (
         <div>
             <p className="text-xs font-medium text-slate-500">{label}</p>
-            <p className="mt-1 truncate font-mono text-xs text-slate-800">{value ?? '—'}</p>
+            <p data-testid={testId} className="mt-1 truncate font-mono text-xs text-slate-800">
+                {value ?? '—'}
+            </p>
         </div>
     );
 }

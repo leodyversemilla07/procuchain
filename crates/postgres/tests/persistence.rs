@@ -24,6 +24,7 @@ use procuchain_shared::{
     AcknowledgementId, Actor, ActorRole, AnchorId, ApprovalId, ArtifactId, BacResolutionId,
     CommitteeId, ContentHash, DistributionId, DocumentId, DocumentVersionId, DomainError,
     IssuanceId, RecipientId, RulePackSnapshotId, SignatureId, SignatureRequestId, TenantId, UserId,
+    WorkflowTaskId,
 };
 use procuchain_signatures::{
     Signature, SignatureMethod, SignaturePurpose, SignatureRequest, SignatureRequestStatus,
@@ -31,7 +32,7 @@ use procuchain_signatures::{
 };
 use procuchain_workflow::{
     Approval, ApprovalDecision, ApprovalStatus, BacMemberSnapshot, BacMembershipSnapshot,
-    BacResolution, BacResolutionStatus, BacSeat, BacVote,
+    BacResolution, BacResolutionStatus, BacSeat, BacVote, WorkflowTask,
 };
 use time::OffsetDateTime;
 
@@ -52,6 +53,169 @@ async fn test_store() -> Option<PgStore> {
         .expect("test database must be reachable");
     store.migrate().await.expect("migrations must apply");
     Some(store)
+}
+
+#[tokio::test]
+async fn development_identity_bootstrap_is_idempotent_and_authenticatable() {
+    let Some(store) = test_store().await else {
+        return;
+    };
+    let tenant_id = TenantId::new();
+    let user_id = UserId::new();
+    store
+        .ensure_development_identity(
+            tenant_id,
+            user_id,
+            "Development Operator",
+            "test-development-token",
+        )
+        .await
+        .expect("first bootstrap succeeds");
+    store
+        .ensure_development_identity(
+            tenant_id,
+            user_id,
+            "Development Operator",
+            "test-development-token",
+        )
+        .await
+        .expect("second bootstrap is idempotent");
+
+    let identity = store
+        .resolve_api_token(tenant_id, "test-development-token")
+        .await
+        .expect("token lookup succeeds")
+        .expect("bootstrapped token resolves");
+    assert_eq!(identity.user_id, user_id);
+    assert!(identity.active);
+    assert!(
+        identity
+            .roles
+            .iter()
+            .any(|role| role.label() == "BAC Chairperson")
+    );
+    assert!(identity.roles.iter().any(|role| role.label() == "HoPE"));
+}
+
+#[tokio::test]
+async fn sessions_are_hashed_expiring_and_revocable() {
+    let Some(store) = test_store().await else {
+        return;
+    };
+    let tenant_id = TenantId::new();
+    let user_id = UserId::new();
+    store
+        .ensure_development_identity(
+            tenant_id,
+            user_id,
+            "Session User",
+            "session-bootstrap-token",
+        )
+        .await
+        .expect("identity bootstrap");
+    let now = OffsetDateTime::now_utc();
+    let session = store
+        .create_session(tenant_id, user_id, now + time::Duration::hours(1))
+        .await
+        .expect("session creation");
+    assert!(
+        store
+            .resolve_session(tenant_id, &session, now)
+            .await
+            .expect("session lookup")
+            .is_some()
+    );
+    assert!(
+        store
+            .resolve_session(tenant_id, &session, now + time::Duration::hours(2))
+            .await
+            .expect("expired session lookup")
+            .is_none()
+    );
+    assert!(
+        store
+            .revoke_session(tenant_id, &session, now)
+            .await
+            .expect("session revocation")
+    );
+    assert!(
+        store
+            .resolve_session(tenant_id, &session, now)
+            .await
+            .expect("revoked session lookup")
+            .is_none()
+    );
+}
+
+#[tokio::test]
+async fn workflow_task_round_trip_claims_and_completes_atomically() {
+    let Some(store) = test_store().await else {
+        return;
+    };
+    let tenant_id = TenantId::new();
+    let user_id = UserId::new();
+    store
+        .ensure_development_identity(
+            tenant_id,
+            user_id,
+            "Task Operator",
+            "task-development-token",
+        )
+        .await
+        .expect("identity bootstrap");
+    let task = WorkflowTask::create(
+        WorkflowTaskId::new(),
+        tenant_id,
+        "ppmp_review",
+        "ppmp:version-1",
+    )
+    .expect("task creation");
+    let mut unit = store.begin().await.expect("transaction");
+    unit.insert_workflow_task(&task).await.expect("task insert");
+    unit.commit().await.expect("task commit");
+
+    let loaded = store
+        .load_workflow_task(tenant_id, task.id())
+        .await
+        .expect("task load")
+        .expect("task exists");
+    let expected = loaded.row_version();
+    let mut claimed = loaded;
+    claimed.claim(user_id).expect("task claim");
+    let mut unit = store.begin().await.expect("claim transaction");
+    assert!(
+        unit.update_workflow_task_if_row_version(&claimed, expected)
+            .await
+            .expect("task claim update")
+    );
+    unit.commit().await.expect("claim commit");
+
+    let loaded = store
+        .load_workflow_task(tenant_id, task.id())
+        .await
+        .expect("claimed task load")
+        .expect("claimed task exists");
+    let expected = loaded.row_version();
+    let mut completed = loaded;
+    completed
+        .complete(user_id, "validated")
+        .expect("task completion");
+    let mut unit = store.begin().await.expect("completion transaction");
+    assert!(
+        unit.update_workflow_task_if_row_version(&completed, expected)
+            .await
+            .expect("task completion update")
+    );
+    unit.commit().await.expect("completion commit");
+
+    let completed = store
+        .load_workflow_task(tenant_id, task.id())
+        .await
+        .expect("completed task load")
+        .expect("completed task exists");
+    assert_eq!(completed.outcome(), Some("validated"));
+    assert_eq!(completed.status().label(), "completed");
+    assert_eq!(completed.row_version(), 2);
 }
 
 struct Seed {
