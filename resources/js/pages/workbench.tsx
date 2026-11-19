@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Head } from '@inertiajs/react';
 import { CheckCircle2, Circle, Loader2, LockKeyhole, Send } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type StageStatus = 'pending' | 'complete' | 'active';
 
@@ -35,6 +35,23 @@ const stages = ['PPMP', 'Indicative APP', 'BAC resolution', 'HoPE approval', 'Si
 const defaultRulePackHash = '6f1ed002ab5595859014ebf0951522d7a5a3fdd1b2f3c7d7a8a0d8c6e1d6a5a5';
 const defaultRulePackSnapshot = '018f0e2e-6f7a-7b6c-8d5e-4c3b2a190001';
 const defaultCommitteeId = '018f0e2e-6f7a-7b6c-8d5e-4c3b2a190090';
+const workflowStorageKey = 'procuchain_workbench_workflow';
+
+function readStoredWorkflow(): WorkflowState {
+    try {
+        const stored = localStorage.getItem(workflowStorageKey);
+        if (!stored) return { stage: 0 };
+
+        const parsed = JSON.parse(stored) as Partial<WorkflowState>;
+        if (typeof parsed.stage !== 'number' || parsed.stage < 0 || parsed.stage > stages.length) {
+            return { stage: 0 };
+        }
+
+        return { ...parsed, stage: Math.floor(parsed.stage) };
+    } catch {
+        return { stage: 0 };
+    }
+}
 
 export default function Workbench() {
     const [token, setToken] = useState(() => localStorage.getItem('procuchain_token') ?? '');
@@ -48,7 +65,7 @@ export default function Workbench() {
     const [lineQuantity, setLineQuantity] = useState('10');
     const [lineUnit, setLineUnit] = useState('ream');
     const [lineCost, setLineCost] = useState('25000');
-    const [workflow, setWorkflow] = useState<WorkflowState>({ stage: 0 });
+    const [workflow, setWorkflow] = useState<WorkflowState>(readStoredWorkflow);
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState('Start by creating a validated PPMP draft.');
     const [error, setError] = useState('');
@@ -56,6 +73,7 @@ export default function Workbench() {
     const [committeeMembers, setCommitteeMembers] = useState<CommitteeMember[]>([]);
     const [ppmpVersion, setPpmpVersion] = useState<PpmpVersion>();
     const [sessionReady, setSessionReady] = useState(false);
+    const restoredVersionRef = useRef<string | undefined>(undefined);
 
     const headers = useMemo(() => ({ 'Content-Type': 'application/json' }), []);
     const apiUrl = (path: string) => `${import.meta.env.VITE_PROCUCHAIN_API_URL ?? ''}${path}`;
@@ -83,11 +101,22 @@ export default function Workbench() {
             if (!members.ok) throw new Error(membersPayload.message ?? 'Unable to load BAC membership.');
             setPrincipal(principalPayload);
             setCommitteeMembers(membersPayload);
+            const storedWorkflow = readStoredWorkflow();
+            if (storedWorkflow.ppmpVersionId && restoredVersionRef.current !== storedWorkflow.ppmpVersionId) {
+                restoredVersionRef.current = storedWorkflow.ppmpVersionId;
+                setWorkflow(storedWorkflow);
+                await loadPpmp(storedWorkflow.ppmpVersionId);
+                setMessage('Resumed the durable workflow from this browser.');
+            }
         } catch (caught) {
             setSessionReady(false);
             setError(caught instanceof Error ? caught.message : 'Unable to start an authenticated session.');
         }
     }, [headers, token]);
+
+    useEffect(() => {
+        localStorage.setItem(workflowStorageKey, JSON.stringify(workflow));
+    }, [workflow]);
 
     useEffect(() => {
         if (!token) {
@@ -340,6 +369,15 @@ export default function Workbench() {
             );
     }
 
+    function resetWorkbench() {
+        localStorage.removeItem(workflowStorageKey);
+        restoredVersionRef.current = undefined;
+        setWorkflow({ stage: 0 });
+        setPpmpVersion(undefined);
+        setMessage('Start by creating a validated PPMP draft.');
+        setError('');
+    }
+
     const actions = [
         { label: 'Create PPMP', onClick: createPpmp, disabled: workflow.stage > 0 },
         { label: 'Derive Indicative APP', onClick: deriveApp, disabled: workflow.stage !== 1 },
@@ -404,6 +442,9 @@ export default function Workbench() {
                             <p className="text-xs text-slate-600">
                                 BAC roster: {committeeMembers.length ? `${committeeMembers.length} designated members loaded` : 'not loaded'}
                             </p>
+                            <Button data-testid="reset-workbench" variant="ghost" disabled={busy} onClick={resetWorkbench}>
+                                Reset local progress
+                            </Button>
                         </CardContent>
                     </Card>
 

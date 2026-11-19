@@ -99,7 +99,11 @@ test('PPMP workbench logs in, creates a PPMP, reads its persisted version, and r
     assert.equal(unauthenticated.status(), 401);
     await api.dispose();
 
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch(
+        process.env.PROCUCHAIN_E2E_BROWSER_PATH
+            ? { headless: true, executablePath: process.env.PROCUCHAIN_E2E_BROWSER_PATH }
+            : { headless: true, channel: 'chrome' },
+    );
     const context = await browser.newContext();
     const page = await context.newPage();
     try {

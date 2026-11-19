@@ -1,4 +1,4 @@
--- Hashed bearer tokens for server-side Development authentication.
+-- Hashed bearer tokens for server-side MVP authentication.
 
 CREATE TABLE api_tokens (
     id uuid PRIMARY KEY,

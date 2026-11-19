@@ -1,4 +1,4 @@
--- Durable Development identity and role assignments.
+-- Durable MVP identity and role assignments.
 
 CREATE TABLE user_roles (
     tenant_id uuid NOT NULL REFERENCES tenants (id),

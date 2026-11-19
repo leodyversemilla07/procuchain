@@ -160,7 +160,7 @@ async fn workbench_shell() -> Result<axum::response::Html<String>, StatusCode> {
     let page = serde_json::json!({"component": "workbench", "props": {}, "url": "/workbench", "version": null});
     let page = serde_json::to_string(&page).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(axum::response::Html(format!(
-        "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">{styles}</head><body><div id=\"app\" data-page='{page}'></div><script type=\"module\" src=\"/build/{entry}\"></script></body></html>"
+        "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">{styles}</head><body><script type=\"application/json\" data-page=\"app\">{page}</script><div id=\"app\"></div><script type=\"module\" src=\"/build/{entry}\"></script></body></html>"
     )))
 }
 
@@ -247,7 +247,9 @@ async fn security_headers(request: Request, next: Next) -> Response {
     headers.insert("referrer-policy", HeaderValue::from_static("no-referrer"));
     headers.insert(
         "content-security-policy",
-        HeaderValue::from_static("default-src 'none'; frame-ancestors 'none'"),
+        HeaderValue::from_static(
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
+        ),
     );
     response
 }
